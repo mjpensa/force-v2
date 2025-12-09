@@ -22,12 +22,12 @@ const router = express.Router();
 
 // In-memory session storage with LRU-style management
 // Map<sessionId, { prompt, researchFiles, content, createdAt, lastAccessed }>
-const sessions = new Map();
+export const sessions = new Map();
 const MAX_SESSIONS = 100; // Limit max sessions to prevent memory issues
 const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 // Performance: Track access for LRU eviction
-function touchSession(sessionId) {
+export function touchSession(sessionId) {
   const session = sessions.get(sessionId);
   if (session) {
     session.lastAccessed = Date.now();
