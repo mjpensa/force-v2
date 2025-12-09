@@ -16,17 +16,18 @@ const PUBLIC_DIR = path.join(ROOT_DIR, 'Public');
 const DIST_DIR = path.join(PUBLIC_DIR, 'dist');
 
 // Files to minify (entry points and standalone modules)
+// Paths relative to PUBLIC_DIR
 const JS_FILES = [
   'main.js',
   'viewer.js',
   'GanttChart.js',
-  'GanttEditor.js',
-  'GanttExporter.js',
-  'DraggableGantt.js',
-  'ResizableGantt.js',
-  'InteractiveGanttHandler.js',
-  'ContextMenu.js',
-  'TaskAnalyzer.js',
+  'gantt/GanttEditor.js',
+  'gantt/GanttExporter.js',
+  'gantt/DraggableGantt.js',
+  'gantt/ResizableGantt.js',
+  'gantt/InteractiveGanttHandler.js',
+  'gantt/ContextMenu.js',
+  'analysis/TaskAnalyzer.js',
   'Utils.js',
   'config.js'
 ];
@@ -44,7 +45,9 @@ async function build() {
 
   for (const file of JS_FILES) {
     const inputPath = path.join(PUBLIC_DIR, file);
-    const outputPath = path.join(DIST_DIR, file.replace('.js', '.min.js'));
+    // Flatten output path - put all minified files directly in dist/
+    const baseName = path.basename(file);
+    const outputPath = path.join(DIST_DIR, baseName.replace('.js', '.min.js'));
 
     try {
       // Check if file exists
