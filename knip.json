@@ -1,0 +1,38 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "server.js",
+    "Public/main.js",
+    "Public/viewer.js",
+    "Public/chart-renderer.js",
+    "Public/GanttChart.js",
+    "Public/Router.js",
+    "scripts/build-js.mjs"
+  ],
+  "project": [
+    "server/**/*.js",
+    "Public/**/*.js",
+    "scripts/**/*.mjs"
+  ],
+  "ignore": [
+    "Public/dist/**",
+    "coverage/**",
+    "reports/**",
+    "node_modules/**"
+  ],
+  "ignoreDependencies": [
+    "tailwindcss"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "rules": {
+    "files": "warn",
+    "dependencies": "warn",
+    "devDependencies": "warn",
+    "unlisted": "warn",
+    "binaries": "warn",
+    "unresolved": "warn",
+    "exports": "warn",
+    "types": "off",
+    "duplicates": "warn"
+  }
+}

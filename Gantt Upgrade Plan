@@ -1,0 +1,635 @@
+# Comprehensive Technical Analysis & Implementation Plan
+
+## Executive Summary
+
+Your drag-to-edit feature has fundamental issues with DOM element referencing and event handling. The current implementation fails to properly constrain dragging to the same row due to incorrect parent element comparisons and problematic task indexing that doesn't account for swimlanes. Additionally, the server lacks real persistence. This plan provides a complete roadmap to fix these issues and add the requested enhancements.
+
+---
+
+## 1. Analysis: Fixing Row-Constrained Drag-and-Drop
+
+### Current Bug Analysis
+
+**Root Cause 1: Incorrect Parent Element Comparison**
+```javascript
+// Current problematic code in _handleDragOver and _handleDrop:
+if (barArea !== this.draggedTask.barArea) {
+    // This comparison fails because...
+}
+```
+
+**The Problem**: The `barArea` stored in `draggedTask` is the parent element of the bar, but during `dragover` and `drop` events, `event.currentTarget` might be a child element (like `.gantt-time-cell`) due to pointer-events settings. This causes the comparison to fail even when dropping in the same row.
+
+**Root Cause 2: Task Index Calculation Issues**
+```javascript
+// _findTaskIndexByBar doesn't account for swimlanes properly
+const barAreaIndex = allBarAreas.indexOf(barArea);
+```
+This returns the DOM index, not the data array index. Swimlanes create misalignment.
+
+### Proposed Fix (Detailed Plan)
+
+#### Step 1: Add Unique Row Identifiers
+```javascript
+// In GanttChart.js when creating rows:
+_createDataRows(numCols) {
+    this.ganttData.data.forEach((row, dataIndex) => {
+        const barAreaEl = this._createBarArea(row, numCols, isSwimlane);
+        // ADD: Set a unique row identifier
+        barAreaEl.setAttribute('data-row-id', `row-${dataIndex}`);
+        barAreaEl.setAttribute('data-task-index', dataIndex);
+        // ...
+    });
+}
+```
+
+#### Step 2: Fix Drop Zone Registration
+```javascript
+// In DraggableGantt.js enableDragging():
+enableDragging() {
+    // Current code adds listeners to barAreas
+    // CHANGE TO: Add to the grid element for better event capturing
+    
+    this.gridElement.addEventListener('dragover', this._handleDragOver.bind(this));
+    this.gridElement.addEventListener('drop', this._handleDrop.bind(this));
+    // This ensures events bubble up properly
+}
+```
+
+#### Step 3: Robust Row Identification
+```javascript
+// In DraggableGantt.js:
+_handleDragStart(event) {
+    const bar = event.target;
+    const barArea = bar.closest('.gantt-bar-area'); // Use closest() for reliability
+    const rowId = barArea.getAttribute('data-row-id');
+    const taskIndex = parseInt(barArea.getAttribute('data-task-index'));
+    
+    this.draggedTask = {
+        element: bar,
+        rowId: rowId, // Store row ID instead of element reference
+        taskIndex: taskIndex, // Store the correct index
+        // ... rest of properties
+    };
+}
+
+_handleDragOver(event) {
+    event.preventDefault();
+    
+    // Find the bar area being hovered over
+    const targetBarArea = event.target.closest('.gantt-bar-area');
+    if (!targetBarArea) return;
+    
+    const targetRowId = targetBarArea.getAttribute('data-row-id');
+    
+    // Check if same row
+    if (targetRowId !== this.draggedTask.rowId) {
+        event.dataTransfer.dropEffect = 'none';
+        // Add visual feedback for invalid drop
+        targetBarArea.classList.add('invalid-drop-zone');
+    } else {
+        event.dataTransfer.dropEffect = 'move';
+        // Add visual feedback for valid drop
+        targetBarArea.classList.add('valid-drop-zone');
+    }
+}
+```
+
+#### Step 4: Fix Column Position Calculation
+```javascript
+_getColumnFromMousePosition(event, barArea) {
+    // Current implementation has issues with event coordinates
+    // FIX: Use pageX instead of clientX for accuracy
+    const rect = barArea.getBoundingClientRect();
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    const absoluteLeft = rect.left + scrollLeft;
+    const relativeX = event.pageX - absoluteLeft;
+    
+    // Rest of calculation...
+}
+```
+
+---
+
+## 2. New Feature Plan: Bar Resizing (Start/End Dates)
+
+### DOM & CSS Strategy
+
+**Approach: Use Pseudo-Elements with JavaScript Enhancement**
+
+```css
+/* In style.css */
+.gantt-bar {
+    position: relative;
+}
+
+.gantt-bar::before,
+.gantt-bar::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 80%;
+    background: rgba(255, 255, 255, 0.3);
+    cursor: ew-resize;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.gantt-bar::before {
+    left: 0;
+    border-radius: 3px 0 0 3px;
+}
+
+.gantt-bar::after {
+    right: 0;
+    border-radius: 0 3px 3px 0;
+}
+
+.gantt-bar:hover::before,
+.gantt-bar:hover::after,
+.gantt-bar.resizing::before,
+.gantt-bar.resizing::after {
+    opacity: 1;
+}
+```
+
+### Event Handling Strategy
+
+**Recommendation: Use mousedown/mousemove/mouseup for Resizing**
+
+**Rationale**: 
+- HTML5 Drag API doesn't provide granular control needed for resizing
+- Mouse events allow pixel-perfect positioning
+- Better visual feedback during resize
+- No conflict with main drag handler
+
+```javascript
+// New file: Public/ResizableGantt.js
+export class ResizableGantt {
+    constructor(gridElement, ganttData, onTaskResize) {
+        this.gridElement = gridElement;
+        this.ganttData = ganttData;
+        this.onTaskResize = onTaskResize;
+        this.resizeState = null;
+    }
+    
+    enableResizing() {
+        // Use event delegation on the grid
+        this.gridElement.addEventListener('mousedown', this._handleMouseDown.bind(this));
+        document.addEventListener('mousemove', this._handleMouseMove.bind(this));
+        document.addEventListener('mouseup', this._handleMouseUp.bind(this));
+    }
+    
+    _handleMouseDown(event) {
+        const target = event.target;
+        const bar = target.closest('.gantt-bar');
+        if (!bar) return;
+        
+        // Detect if clicking on resize handle (within 6px of edge)
+        const rect = bar.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        
+        if (x <= 6) {
+            // Resizing from left
+            this._startResize(bar, 'left', event);
+        } else if (x >= rect.width - 6) {
+            // Resizing from right
+            this._startResize(bar, 'right', event);
+        }
+    }
+    
+    _startResize(bar, handle, event) {
+        event.preventDefault();
+        event.stopPropagation(); // Prevent drag from starting
+        
+        const barArea = bar.closest('.gantt-bar-area');
+        const taskIndex = parseInt(barArea.getAttribute('data-task-index'));
+        
+        this.resizeState = {
+            bar: bar,
+            handle: handle,
+            taskIndex: taskIndex,
+            startX: event.pageX,
+            originalGridColumn: bar.style.gridColumn,
+            barArea: barArea
+        };
+        
+        bar.classList.add('resizing');
+        document.body.style.cursor = 'ew-resize';
+    }
+}
+```
+
+### Implementation Logic
+
+```javascript
+_handleMouseMove(event) {
+    if (!this.resizeState) return;
+    
+    const deltaX = event.pageX - this.resizeState.startX;
+    const barArea = this.resizeState.barArea;
+    const columnWidth = barArea.offsetWidth / this.ganttData.timeColumns.length;
+    const columnDelta = Math.round(deltaX / columnWidth);
+    
+    // Parse original grid column
+    const [startCol, endCol] = this.resizeState.originalGridColumn
+        .split('/')
+        .map(v => parseInt(v.trim()));
+    
+    let newStartCol = startCol;
+    let newEndCol = endCol;
+    
+    if (this.resizeState.handle === 'left') {
+        newStartCol = Math.max(1, startCol + columnDelta);
+        // Prevent start from going past end
+        newStartCol = Math.min(newStartCol, endCol - 1);
+    } else {
+        newEndCol = Math.min(this.ganttData.timeColumns.length + 1, endCol + columnDelta);
+        // Prevent end from going before start
+        newEndCol = Math.max(newEndCol, startCol + 1);
+    }
+    
+    // Live update
+    this.resizeState.bar.style.gridColumn = `${newStartCol} / ${newEndCol}`;
+}
+```
+
+---
+
+## 3. New Feature Plan: Dynamic Chart Editing
+
+### A) Add & Remove Rows
+
+**UI Design:**
+```html
+<!-- Add to each row in GanttChart.js -->
+<div class="row-actions">
+    <button class="row-action-btn add-task" title="Add task below">+</button>
+    <button class="row-action-btn delete-task" title="Delete this row">×</button>
+</div>
+```
+
+**Partial Re-render Strategy:**
+```javascript
+// In GanttChart.js
+addNewTaskRow(afterIndex, taskData) {
+    // 1. Insert into data model
+    this.ganttData.data.splice(afterIndex + 1, 0, taskData);
+    
+    // 2. Create DOM elements for new row
+    const fragment = document.createDocumentFragment();
+    const labelEl = this._createRowLabel(taskData);
+    const barAreaEl = this._createBarArea(taskData, this.numCols, false);
+    
+    // 3. Find insertion point in DOM
+    const allLabels = this.gridElement.querySelectorAll('.gantt-row-label');
+    const insertBeforeLabel = allLabels[afterIndex + 1];
+    
+    // 4. Insert into DOM
+    if (insertBeforeLabel) {
+        this.gridElement.insertBefore(labelEl, insertBeforeLabel);
+        this.gridElement.insertBefore(barAreaEl, insertBeforeLabel);
+    } else {
+        this.gridElement.appendChild(labelEl);
+        this.gridElement.appendChild(barAreaEl);
+    }
+    
+    // 5. Re-initialize drag handlers for new row
+    if (this.draggableGantt) {
+        this.draggableGantt.refreshHandlers();
+    }
+}
+
+removeTaskRow(taskIndex) {
+    // 1. Remove from data model
+    this.ganttData.data.splice(taskIndex, 1);
+    
+    // 2. Find DOM elements
+    const allLabels = Array.from(this.gridElement.querySelectorAll('.gantt-row-label'));
+    const allBarAreas = Array.from(this.gridElement.querySelectorAll('.gantt-bar-area'));
+    
+    // 3. Remove with animation
+    const label = allLabels[taskIndex];
+    const barArea = allBarAreas[taskIndex];
+    
+    label.style.transition = 'opacity 0.3s, height 0.3s';
+    barArea.style.transition = 'opacity 0.3s, height 0.3s';
+    
+    label.style.opacity = '0';
+    barArea.style.opacity = '0';
+    
+    setTimeout(() => {
+        label.remove();
+        barArea.remove();
+        // Update data-task-index attributes on remaining rows
+        this._updateRowIndices();
+    }, 300);
+}
+```
+
+### B) Edit Gantt & Swimlane Titles
+
+**Recommendation: Use contenteditable with XSS Protection**
+
+**Pros of contenteditable:**
+- Native browser behavior
+- Maintains styling
+- No layout shift
+- Better UX
+
+**Implementation with XSS Protection:**
+```javascript
+// In GanttChart.js
+_makeEditable(labelElement) {
+    const originalText = labelElement.textContent;
+    
+    labelElement.setAttribute('contenteditable', 'true');
+    labelElement.classList.add('editing');
+    labelElement.focus();
+    
+    // Select all text
+    const range = document.createRange();
+    range.selectNodeContents(labelElement);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    
+    const saveChanges = () => {
+        labelElement.setAttribute('contenteditable', 'false');
+        labelElement.classList.remove('editing');
+        
+        // Sanitize input to prevent XSS
+        const newText = DOMPurify.sanitize(labelElement.textContent, {
+            ALLOWED_TAGS: [], // No HTML tags allowed
+            ALLOWED_ATTR: []
+        });
+        
+        labelElement.textContent = newText; // Set as text, not HTML
+        
+        // Update data model
+        const taskIndex = parseInt(labelElement.getAttribute('data-task-index'));
+        this.ganttData.data[taskIndex].title = newText;
+        
+        // Trigger save
+        this.onTaskUpdate({
+            type: 'title-change',
+            taskIndex: taskIndex,
+            newTitle: newText
+        });
+    };
+    
+    labelElement.addEventListener('blur', saveChanges, { once: true });
+    labelElement.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            labelElement.blur();
+        }
+        if (e.key === 'Escape') {
+            labelElement.textContent = originalText;
+            labelElement.blur();
+        }
+    });
+}
+```
+
+---
+
+## 4. New Feature Plan: Change Gantt Bar Color
+
+**UI Design: Context Menu**
+```javascript
+// New file: Public/ContextMenu.js
+export class ContextMenu {
+    constructor() {
+        this.menu = null;
+        this.targetBar = null;
+    }
+    
+    show(event, bar) {
+        event.preventDefault();
+        this.targetBar = bar;
+        
+        // Create menu if doesn't exist
+        if (!this.menu) {
+            this.menu = this._createMenu();
+        }
+        
+        // Position near cursor
+        this.menu.style.left = `${event.pageX}px`;
+        this.menu.style.top = `${event.pageY}px`;
+        this.menu.style.display = 'block';
+        
+        // Close on outside click
+        document.addEventListener('click', this.hide.bind(this), { once: true });
+    }
+    
+    _createMenu() {
+        const menu = document.createElement('div');
+        menu.className = 'context-menu';
+        menu.innerHTML = `
+            <div class="context-menu-title">Change Color</div>
+            <div class="color-option" data-color="priority-red">
+                <span class="color-preview" style="background: #EF4444;"></span> High Priority
+            </div>
+            <div class="color-option" data-color="medium-red">
+                <span class="color-preview" style="background: #FB923C;"></span> Medium Priority
+            </div>
+            <!-- ... more colors ... -->
+        `;
+        
+        menu.addEventListener('click', (e) => {
+            const option = e.target.closest('.color-option');
+            if (option) {
+                const newColor = option.dataset.color;
+                this._changeColor(newColor);
+            }
+        });
+        
+        document.body.appendChild(menu);
+        return menu;
+    }
+    
+    _changeColor(newColor) {
+        // Update DOM
+        this.targetBar.setAttribute('data-color', newColor);
+        
+        // Update data model
+        const barArea = this.targetBar.closest('.gantt-bar-area');
+        const taskIndex = parseInt(barArea.getAttribute('data-task-index'));
+        
+        // Trigger update callback
+        // ... update ganttData and call server
+    }
+}
+```
+
+---
+
+## 5. Server & Persistence Strategy
+
+### Current State Analysis
+The server currently has no real persistence - it just acknowledges requests. The `chartStore` is in-memory only.
+
+### Proposed Persistent Implementation
+
+#### New Server Endpoints
+```javascript
+// server/routes/charts.js
+
+// 1. Update task title
+router.post('/update-task-title', async (req, res) => {
+    const { chartId, taskIndex, newTitle } = req.body;
+    
+    const chart = getChart(chartId);
+    if (!chart) return res.status(404).json({ error: 'Chart not found' });
+    
+    // Update in memory
+    chart.data.data[taskIndex].title = newTitle;
+    
+    // Persist to storage
+    updateChartInStorage(chartId, chart);
+    
+    res.json({ success: true });
+});
+
+// 2. Add task
+router.post('/add-task', async (req, res) => {
+    const { chartId, afterIndex, taskData } = req.body;
+    
+    const chart = getChart(chartId);
+    if (!chart) return res.status(404).json({ error: 'Chart not found' });
+    
+    // Insert task
+    chart.data.data.splice(afterIndex + 1, 0, taskData);
+    
+    // Persist
+    updateChartInStorage(chartId, chart);
+    
+    res.json({ success: true, taskIndex: afterIndex + 1 });
+});
+
+// 3. Delete task
+router.delete('/delete-task/:chartId/:taskIndex', async (req, res) => {
+    const { chartId, taskIndex } = req.params;
+    
+    const chart = getChart(chartId);
+    if (!chart) return res.status(404).json({ error: 'Chart not found' });
+    
+    // Remove task
+    chart.data.data.splice(parseInt(taskIndex), 1);
+    
+    // Persist
+    updateChartInStorage(chartId, chart);
+    
+    res.json({ success: true });
+});
+```
+
+#### Storage Layer Enhancement
+```javascript
+// server/storage.js
+
+// Add update functionality
+export function updateChartInStorage(chartId, updatedChart) {
+    const existing = chartStore.get(chartId);
+    if (!existing) throw new Error('Chart not found');
+    
+    // Update with new data, preserve metadata
+    chartStore.set(chartId, {
+        ...existing,
+        data: updatedChart.data,
+        lastModified: Date.now()
+    });
+    
+    // Optional: Persist to file/database
+    if (process.env.PERSIST_TO_FILE) {
+        persistChartToFile(chartId, updatedChart);
+    }
+}
+
+// Optional file persistence
+import fs from 'fs/promises';
+import path from 'path';
+
+async function persistChartToFile(chartId, chart) {
+    const dataDir = path.join(process.cwd(), 'data', 'charts');
+    await fs.mkdir(dataDir, { recursive: true });
+    
+    const filePath = path.join(dataDir, `${chartId}.json`);
+    await fs.writeFile(filePath, JSON.stringify(chart, null, 2));
+}
+
+// Load from file on startup
+export async function loadPersistedCharts() {
+    const dataDir = path.join(process.cwd(), 'data', 'charts');
+    
+    try {
+        const files = await fs.readdir(dataDir);
+        for (const file of files) {
+            if (file.endsWith('.json')) {
+                const chartId = file.replace('.json', '');
+                const data = await fs.readFile(path.join(dataDir, file), 'utf8');
+                chartStore.set(chartId, JSON.parse(data));
+            }
+        }
+        console.log(`Loaded ${files.length} persisted charts`);
+    } catch (error) {
+        console.log('No persisted charts found');
+    }
+}
+```
+
+---
+
+## Implementation Roadmap
+
+### Phase 1: Fix Drag Constraint (2-3 hours)
+1. Add row identifiers to DOM elements
+2. Fix event handling with proper element references  
+3. Test thoroughly with swimlanes and regular tasks
+
+### Phase 2: Add Resizing (3-4 hours)
+1. Implement CSS for resize handles
+2. Create ResizableGantt.js module
+3. Integrate with existing DraggableGantt
+4. Add server endpoint for date updates
+
+### Phase 3: Add/Remove Rows (2-3 hours)
+1. Add UI buttons to rows
+2. Implement partial re-rendering methods
+3. Create server endpoints for add/delete
+4. Test data model consistency
+
+### Phase 4: Edit Titles (1-2 hours)
+1. Add double-click handler
+2. Implement contenteditable with XSS protection
+3. Add server endpoint for title updates
+
+### Phase 5: Color Changing (1-2 hours)
+1. Implement context menu
+2. Add color picker UI
+3. Create server endpoint for color updates
+
+### Phase 6: Server Persistence (2-3 hours)
+1. Enhance storage.js with update methods
+2. Add file/database persistence
+3. Implement chart loading on startup
+4. Add versioning/history tracking
+
+---
+
+## Key Technical Decisions
+
+1. **Event Handling**: Use event delegation on grid element rather than individual elements for better performance and reliability
+
+2. **DOM Updates**: Implement partial re-rendering instead of full re-render for better performance
+
+3. **Security**: Always sanitize user input with DOMPurify, especially for contenteditable
+
+4. **Persistence**: Start with file-based persistence, migrate to database later if needed
+
+5. **State Management**: Keep data model and DOM in sync through centralized update methods
+
+This comprehensive plan should give you everything needed to implement these features successfully. The modular approach ensures each feature can be developed and tested independently.

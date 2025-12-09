@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Roadmap Generator Result</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/bip_logo.png">
+
+    <!-- 1. Load html2canvas for exporting (needed for the renderer) -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+      xintegrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+cHio/BJLMBKSnQYjDRMvMMlPzgw6D/LIIXbaK3ddhiNRVbcC+WfcD+WjGg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <!-- 2. Load the original chart styles -->
+    <!-- <link rel="stylesheet" href="/style.css" /> -->
+    <script>
+      // --- FIX: Cache-bust the CSS file ---
+      // This forces the browser to load the new CSS file and not use an old (cached) one.
+      const head = document.getElementsByTagName('head')[0];
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = '/style.css?t=' + new Date().getTime(); // Appends a unique timestamp
+      head.appendChild(link);
+    </script>
+
+</head>
+<body>
+
+    <!-- ACCESSIBILITY: Skip to main content link for keyboard users -->
+    <a href="#chart-root" class="skip-to-content">Skip to main content</a>
+
+    <!--
+      The chart-renderer.js script will find this div
+      and build the chart inside it.
+    -->
+    <div id="chart-root"></div>
+
+    <!-- 3. Load DOMPurify for XSS protection -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+
+    <!-- 4. Load Router (non-module, exposes window.Router) -->
+    <script src="/Router.js"></script>
+
+    <!-- 5. Load the new chart rendering logic -->
+    <script type="module" src="/chart-renderer.js"></script>
+
+</body>
+</html>

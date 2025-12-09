@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <title>AI Roadmap Generator</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/bip_logo.png">
+
+    <!-- 1. Load Tailwind CSS (with production warning suppressed) -->
+    <script>window.__DISABLE_TAILWIND_CDN_WARNING__ = true;</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. Load html2canvas for exporting -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+      xintegrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+cHio/BJLMBKSnQYjDRMvMMlPzgw6D/LIIXbaK3ddhiNRVbcC+WfcD+WjGg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <!-- 3. Load DOMPurify for XSS protection -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"
+      integrity="sha512-H+rglffZ6f5gF7UJgvH4Naa+fGCgjrHKMgoFOGmcPTRwR6oILo5R+gtzNrpDp7iMV3udbymBVjkeZGNz1Em4rQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <!-- 4. Load design system (includes glassmorphic styles) -->
+    <link rel="stylesheet" href="/styles/design-system.css" />
+
+    <!-- 5. Load the original chart styles (must be loaded AFTER design system) -->
+    <link rel="stylesheet" href="/style.css" />
+
+    <!-- 5. Configure Tailwind with custom theme (Extended for Glassmorphic Design) -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Legacy custom colors
+                        'custom-text': '#0c2340',
+                        'custom-outline': '#da291c',
+                        'custom-button': '#da291c',
+                        'custom-button-hover': '#b82317',
+
+                        // Glassmorphic Navy Palette
+                        'navy': {
+                            deep: '#0c2340',
+                            mid: '#143052',
+                            light: '#1d4168',
+                            pale: '#2a5580',
+                        },
+
+                        // Glassmorphic Accent Colors
+                        'accent-red': {
+                            DEFAULT: '#da291c',
+                            hover: '#b82317',
+                        },
+
+                        // Glassmorphic Success Colors
+                        'glass-success': {
+                            DEFAULT: '#50AF7B',
+                            light: '#6BC492',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+
+                    // Glassmorphic Backdrop Blur
+                    backdropBlur: {
+                        'xs': '4px',
+                        'glass-sm': '8px',
+                        'glass': '12px',
+                        'glass-lg': '16px',
+                        'glass-xl': '20px',
+                        'glass-2xl': '32px',
+                    },
+
+                    // Glassmorphic Border Radius
+                    borderRadius: {
+                        'glass-sm': '8px',
+                        'glass': '12px',
+                        'glass-lg': '16px',
+                        'glass-xl': '24px',
+                        'glass-2xl': '32px',
+                    },
+
+                    // Glassmorphic Box Shadows
+                    boxShadow: {
+                        'glass-1': '0 4px 16px rgba(12, 35, 64, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                        'glass-2': '0 8px 32px rgba(12, 35, 64, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                        'glass-3': '0 12px 48px rgba(12, 35, 64, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                        'glass-4': '0 24px 64px rgba(12, 35, 64, 0.30), inset 0 2px 0 rgba(255, 255, 255, 0.15)',
+                    },
+
+                    // Glassmorphic Background Colors (for bg-glass-* utilities)
+                    backgroundColor: {
+                        'glass-5': 'rgba(255, 255, 255, 0.05)',
+                        'glass-8': 'rgba(255, 255, 255, 0.08)',
+                        'glass-10': 'rgba(255, 255, 255, 0.10)',
+                        'glass-15': 'rgba(255, 255, 255, 0.15)',
+                        'glass-20': 'rgba(255, 255, 255, 0.20)',
+                    },
+
+                    // Glassmorphic Border Colors
+                    borderColor: {
+                        'glass': 'rgba(255, 255, 255, 0.15)',
+                        'glass-strong': 'rgba(255, 255, 255, 0.25)',
+                        'glass-active': 'rgba(255, 255, 255, 0.40)',
+                    },
+                },
+            },
+            plugins: [],
+        }
+    </script>
+
+    <!-- 6. Add custom styles -->
+    <style>
+        /* Ensure proper viewport scaling and prevent layout issues */
+        html {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+            font-size: 16px; /* Base font size for rem calculations */
+        }
+
+        body {
+            overflow-x: hidden;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Apply the custom text color globally to WHITE (#FFFFFF) */
+        body, h1, h2, p, div, span, label {
+            color: #FFFFFF;
+        }
+
+        /* Style the placeholder with the white color and slight opacity */
+        .custom-placeholder::placeholder {
+            color: #FFFFFF;
+            opacity: 0.5;
+        }
+
+        /* Custom focus ring for form elements (Keeping red outline) */
+        .custom-focus:focus {
+            outline: none;
+            border-color: transparent;
+            box-shadow: 0 0 0 2px #da291c; /* Use box-shadow for a ring effect */
+        }
+        
+        /* New: Style for scaling the content on hover */
+        .dropzone-glass:hover .dropzone-content {
+             /* Scale the content up slightly on hover */
+             transform: scale(1.03);
+        }
+
+        /* Ensure responsive text scaling */
+        @media screen and (max-width: 640px) {
+            html {
+                font-size: 14px;
+            }
+        }
+
+        @media screen and (min-width: 1920px) {
+            html {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans relative min-h-screen overflow-hidden">
+
+    <!--
+      Dynamic Roadmap Background SVG
+    -->
+    <svg id="roadmap-svg" class="absolute w-full -z-10" preserveAspectRatio="none">
+        <!-- Lines will be dynamically added here by JS -->
+        <g id="roadmap-lines"></g>
+        <!-- Points will be dynamically added here by JS -->
+        <g id="roadmap-points"></g>
+    </svg>
+
+    <!-- Main container with glassmorphic background -->
+    <div class="relative min-h-screen flex flex-col items-center justify-center p-6 md:p-12 bg-glass-gradient">
+        <!-- Ambient Background Logo - Glassmorphic treatment -->
+        <div class="ambient-logo-container" aria-hidden="true">
+            <img src="/bip-background-logo.svg" alt="" class="ambient-logo" />
+        </div>
+
+        <!-- Content -->
+        <main class="w-full max-w-6xl z-10">
+            <!-- Header Text -->
+            <!-- Glassmorphic title section - scaled down ~30% -->
+            <div class="text-center mb-4" id="title-block">
+                <h1 class="text-2xl md:text-3xl font-bold mb-2 title-glass title-glass-animate">
+                    AI Roadmap Generator
+                </h1>
+                <p class="text-sm md:text-base max-w-3xl mx-auto subtitle-glass">
+                    Transform your research documents into interactive Gantt charts with AI-powered analysis
+                </p>
+            </div>
+
+            <!--
+              Main Form - Glassmorphic Panel
+            -->
+            <form id="gantt-form" class="form-glass-panel glass-panel-animate max-w-[600px] mx-auto">
+                
+                <!-- NEW LOGO HEADER ADDED HERE - scaled down ~30% -->
+                <header class="absolute top-0 right-0 p-3 md:p-4 pointer-events-none">
+                    <!-- LOGO SIZE scaled down ~30% -->
+                    <img src="/bip_logo.png" alt="BIP Logo" class="h-7 w-auto pointer-events-auto">
+                </header>
+
+                <!-- Project Instructions Section - scaled down ~30% -->
+                <section class="mt-8">
+                    <h2 class="text-base md:text-lg font-semibold mb-2">
+                        Project Instructions
+                    </h2>
+
+                    <!-- Glassmorphic textarea -->
+                    <textarea id="prompt-input" rows="2" class="textarea-glass text-xs md:text-sm leading-relaxed"
+                              placeholder="Describe your project goals, timeline preferences, key milestones, or any specific requirements for the roadmap generation..."></textarea>
+                </section>
+
+                <!-- Upload Section - scaled down ~30% -->
+                <section class="mt-5">
+                    <h2 class="text-base md:text-lg font-semibold mb-2">
+                        Upload Research Documents
+                    </h2>
+
+                    <!--
+                      File Dropzone - Glassmorphic
+                    -->
+                    <label for="upload-input" class="dropzone-glass flex flex-col items-center justify-center text-center" tabindex="0" role="button" aria-label="Upload files">
+
+                        <div id="dropzone-prompt" class="flex flex-col items-center justify-center dropzone-content">
+                            <!-- Upload Icon with Glass Container -->
+                            <div class="upload-icon-container">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                                </svg>
+                            </div>
+
+                            <p id="dropzone-title" class="text-[10px] md:text-xs font-medium text-glass-primary">
+                                Drop files here or click to browse
+                            </p>
+                            <p class="text-[9px] text-glass-muted mt-0.5">
+                                Supports .docx, .md, .txt, .pdf
+                            </p>
+                        </div>
+
+                        <!-- Container for file/folder statistics - Glassmorphic -->
+                        <div id="file-list-container" class="hidden w-full">
+                            <div id="folder-stats" class="hidden mb-6 stats-grid-glass">
+                                <div class="stat-card-glass">
+                                    <p class="stat-value" id="total-files">0</p>
+                                    <p class="stat-label">Total Files</p>
+                                </div>
+                                <div class="stat-card-glass">
+                                    <p class="stat-value text-glass-success" id="valid-files">0</p>
+                                    <p class="stat-label">Valid Files</p>
+                                </div>
+                                <div class="stat-card-glass">
+                                    <p class="stat-value" id="total-size">0 MB</p>
+                                    <p class="stat-label">Total Size</p>
+                                </div>
+                                <div class="stat-card-glass">
+                                    <p class="stat-value" id="file-types">.md</p>
+                                    <p class="stat-label">File Types</p>
+                                </div>
+                            </div>
+
+                            <p class="text-xs md:text-sm font-semibold mb-1 text-glass-primary">Selected Files:</p>
+                            <ul id="file-list" class="file-list-glass list-none text-left">
+                                <!-- File names will be injected here by JS -->
+                            </ul>
+                            <p class="text-[9px] md:text-xs text-glass-muted mt-1 font-light">Click again or drop to change selection</p>
+                        </div>
+                    </label>
+
+                    <!-- The actual file input, hidden but functional -->
+                    <input type="file" id="upload-input" multiple accept=".md, .txt, .docx, application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden">
+                </section>
+
+                <!-- Form Actions (Button & Loader) - Glassmorphic - scaled down ~30% -->
+                <div class="form-actions mt-5">
+                    <div class="flex items-center gap-3">
+                        <button type="submit" id="generate-btn" class="button-glass-primary text-xs md:text-sm">
+                            Generate Chart
+                        </button>
+
+                        <div id="loading-indicator" class="flex items-center gap-2" style="display: none;">
+                            <div class="spinner-glass"></div>
+                            <span id="loading-text" class="text-xs md:text-sm text-glass-secondary">Generating content (this may take a few minutes)...</span>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+            
+            <!-- Error Message Box - scaled down ~30% -->
+            <div id="error-message" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-4 text-sm md:text-base" style="display: none;"></div>
+
+            <!-- Chart will be rendered here -->
+            <div id="chart-output" class="w-full">
+                <!-- This is where main.js will build the chart -->
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Script for Dynamic SVG Background -->
+    <script>
+        // Wait for the window to load
+        window.onload = function() {
+            
+            // --- DOM Elements ---
+            let titleEl, formEl, svg, linesGroup, pointsGroup;
+
+            // --- Animation Parameters ---
+            // Set lines and dots to white (#FFFFFF) with transparency
+            const pointColor = 'rgba(255, 255, 255, 0.5)'; // White with 50% opacity
+            const lineColor = 'rgba(255, 255, 255, 0.4)';  // White with 40% opacity
+            const numMilestonesPerSide = 3; 
+            const pointRadius = 5;
+            const zigZagAmount = 80;
+
+            // --- Animation State ---
+            let milestones = []; 
+            let milestoneElements = []; 
+            let tracerPath; 
+            let totalPathLength = 0;
+            
+            // Animation state for Draw-On / Recede effect
+            let animationPhase = "drawing"; 
+            let headPosition = 0;
+            let tailPosition = 0;
+            const animationSpeed = 2;
+
+            // SVG Namespace for creating elements
+            const svgNS = "http://www.w3.org/2000/svg";
+
+            /**
+             * Updates all coordinate calculations.
+             * Called on init and on window resize.
+             */
+            function updateDimensions() {
+                // Get dimensions of content
+                const titleRect = titleEl.getBoundingClientRect();
+                const formRect = formEl.getBoundingClientRect();
+                const topOffset = titleRect.top + titleRect.height + 20;
+                const availableHeight = window.innerHeight - topOffset;
+                
+                // Set SVG dimensions
+                svg.style.top = `${topOffset}px`;
+                svg.style.height = `${availableHeight}px`;
+                svg.setAttribute('viewBox', `0 0 ${window.innerWidth} ${availableHeight}`);
+                
+                const cardLeft = formRect.left;
+                const cardRight = formRect.right;
+                const gutterLeft = cardLeft * 0.5;
+                const gutterRight = cardLeft + (window.innerWidth - cardRight) * 0.5;
+                
+                const numTotalMilestones = numMilestonesPerSide * 2;
+                const verticalSpacing = availableHeight / (numMilestonesPerSide + 1);
+
+                milestones = [];
+                
+                // Add virtual start point
+                milestones.push({ x: -200, y: verticalSpacing, length: 0 });
+
+                // Add left-side dots (top to bottom)
+                for (let i = 0; i < numMilestonesPerSide; i++) {
+                    const x = gutterLeft + (Math.random() - 0.5) * zigZagAmount;
+                    const y = verticalSpacing * (i + 1);
+                    milestones.push({ x, y, length: 0 });
+                }
+                
+                // Add right-side dots (BOTTOM to TOP)
+                for (let i = 0; i < numMilestonesPerSide; i++) {
+                    const x = gutterRight + (Math.random() - 0.5) * zigZagAmount;
+                    const y = verticalSpacing * (numMilestonesPerSide - i);
+                    milestones.push({ x, y, length: 0 });
+                }
+
+                // Add virtual end point
+                milestones.push({ x: window.innerWidth + 200, y: verticalSpacing, length: 0 });
+                
+                // Path has changed, rebuild it
+                buildStaticPath();
+            }
+
+            /**
+             * Builds the <path> element, dots, and calculates lengths.
+             */
+            function buildStaticPath() {
+                if (milestones.length === 0) return;
+                
+                // Clear old elements
+                pointsGroup.innerHTML = '';
+                milestoneElements = [];
+                
+                let d = `M ${milestones[0].x} ${milestones[0].y}`;
+                for (let i = 1; i < milestones.length; i++) {
+                    d += ` L ${milestones[i].x} ${milestones[i].y}`;
+                }
+
+                // Use a temporary path to measure lengths
+                let tempPath = document.createElementNS(svgNS, 'path');
+                tempPath.setAttribute('d', d);
+                totalPathLength = tempPath.getTotalLength();
+
+                // Draw static milestone dots and store them
+                for (let i = 1; i < milestones.length - 1; i++) { // Skip virtual points
+                    const dot = document.createElementNS(svgNS, 'circle');
+                    dot.setAttribute('cx', milestones[i].x);
+                    dot.setAttribute('cy', milestones[i].y);
+                    dot.setAttribute('r', pointRadius);
+                    dot.setAttribute('fill', pointColor);
+                    dot.style.opacity = 0; // Start hidden
+                    dot.style.transition = 'opacity 0.3s ease';
+                    pointsGroup.appendChild(dot);
+                    milestoneElements.push(dot);
+                    
+                    // Get length at this dot
+                    // Create a *new* path segment for measuring
+                    let measurePath = document.createElementNS(svgNS, 'path');
+                    let measureD = `M ${milestones[0].x} ${milestones[0].y}`;
+                    for (let j = 1; j <= i; j++) {
+                        measureD += ` L ${milestones[j].x} ${milestones[j].y}`;
+                    }
+                    measurePath.setAttribute('d', measureD);
+                    milestones[i].length = measurePath.getTotalLength();
+                    measurePath = null; // Clean up
+                }
+                
+                // Set the final path for the visible tracer
+                tracerPath.setAttribute('d', d);
+                
+                // Clean up the temp path
+                tempPath = null;
+            }
+
+            /**
+             * One-time setup.
+             */
+            function init() {
+                // Create the main <path> element for the line
+                tracerPath = document.createElementNS(svgNS, 'path');
+                tracerPath.setAttribute('stroke', lineColor);
+                tracerPath.setAttribute('stroke-width', '2');
+                tracerPath.setAttribute('fill', 'none');
+                linesGroup.appendChild(tracerPath);
+                
+                // Set initial dimensions and build the path
+                updateDimensions();
+                
+                // Add resize listener
+                window.addEventListener('resize', updateDimensions);
+            }
+
+            /**
+             * The main animation loop.
+             */
+            function animate() {
+                // Safety check: Don't run if path isn't ready
+                if (!tracerPath || !totalPathLength || totalPathLength === 0) {
+                    requestAnimationFrame(animate); // Wait
+                    return;
+                }
+
+                // --- Draw-On / Recede Animation Logic ---
+
+                if (animationPhase === "drawing") {
+                    headPosition += animationSpeed;
+                    
+                    const dashLength = headPosition;
+                    const gapLength = totalPathLength - dashLength;
+                    
+                    if (tracerPath.style) {
+                        tracerPath.style.strokeDasharray = `${dashLength} ${gapLength}`;
+                        tracerPath.style.strokeDashoffset = 0;
+                    }
+
+                    if (headPosition >= totalPathLength) {
+                        headPosition = totalPathLength;
+                        animationPhase = "receding";
+                    }
+
+                } else if (animationPhase === "receding") {
+                    tailPosition += animationSpeed;
+
+                    if (tracerPath.style) {
+                        tracerPath.style.strokeDasharray = `${totalPathLength} ${totalPathLength}`;
+                        tracerPath.style.strokeDashoffset = -tailPosition;
+                    }
+                    
+                    if (tailPosition >= totalPathLength) {
+                        tailPosition = 0;
+                        headPosition = 0;
+                        animationPhase = "drawing";
+                    }
+                }
+
+                // UPDATE DOT VISIBILITY
+                for (let i = 0; i < milestoneElements.length; i++) {
+                    // milestone[i+1] because [0] is virtual start
+                    const dotLength = milestones[i+1].length; 
+                    const dotElement = milestoneElements[i];
+
+                    // Safety check: Check elements before styling
+                    if (dotElement && dotElement.style) {
+                        const isVisible = (dotLength > tailPosition && dotLength < headPosition);
+                        dotElement.style.opacity = isVisible ? 1 : 0;
+                    }
+                }
+                
+                // Request the next animation frame
+                requestAnimationFrame(animate);
+            }
+
+            /**
+             * Robust Initialization:
+             * Waits for key DOM elements to be ready AND RENDERED.
+             */
+            function retryInit(attemptsLeft = 10) {
+                // Find all required elements
+                titleEl = document.getElementById('title-block');
+                formEl = document.getElementById('gantt-form');
+                svg = document.getElementById('roadmap-svg');
+                linesGroup = document.getElementById('roadmap-lines');
+                pointsGroup = document.getElementById('roadmap-points');
+                
+                // Check if all elements were found AND are rendered
+                let allElementsReady = false;
+                if (titleEl && formEl && svg && linesGroup && pointsGroup) {
+                    // Now, check if they are rendered
+                    try {
+                        const titleRect = titleEl.getBoundingClientRect();
+                        const formRect = formEl.getBoundingClientRect();
+                        // Check for valid, non-zero dimensions (or at least that they exist)
+                        if (titleRect && formRect) {
+                            allElementsReady = true;
+                        }
+                    } catch (e) {
+                        // Bounding rect failed, not ready
+                    }
+                }
+                
+                if (allElementsReady) {
+                    // All elements found and rendered, proceed
+                    console.log("DOM elements are ready, initializing animation.");
+                    init();
+                    // Start the animation loop
+                    animate();
+                } else if (attemptsLeft > 0) {
+                    // Elements not found or not rendered, wait and retry
+                    console.log("Waiting for DOM elements to render...");
+                    setTimeout(() => retryInit(attemptsLeft - 1), 200);
+                } else {
+                    // Failed after all attempts
+                    console.error("Failed to initialize animation: DOM elements not found or not rendered.");
+                }
+            }
+            
+            // Start the initialization check
+            retryInit();
+        };
+    </script>
+    
+    <!-- Load the main application logic -->
+    <script type="module" src="/main.js"></script>
+    
+</body>
+</html>

@@ -1,0 +1,37 @@
+/**
+ * CSS Entry Point - Modular Styles
+ *
+ * This file imports all CSS modules in the correct order.
+ * Use this as an alternative to the monolithic style.css.
+ *
+ * Modules:
+ * - base.css: Resets, typography, accessibility
+ * - modal.css: Dialog and overlay styles (consolidated duplicate rules)
+ * - gantt.css: Gantt chart components
+ * - analysis.css: Analysis sections and task details
+ * - responsive.css: Accessibility and motion preferences
+ *
+ * Note: The original style.css still exists for backward compatibility.
+ * This modular structure allows for:
+ * - Better code organization
+ * - Easier maintenance
+ * - Reduced duplication
+ * - Tree-shaking potential in build tools
+ */
+
+/* Foundation */
+@import './base.css';
+
+/* Components */
+@import './modal.css';
+@import './gantt.css';
+@import './analysis.css';
+
+/* Utilities & Overrides */
+@import './responsive.css';
+
+/* Design System Variables (if exists) */
+@import './design-system.css';
+
+/* Analysis View Extended Styles (if exists) */
+@import './analysis-view.css';

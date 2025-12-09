@@ -1,0 +1,39 @@
+Node.js
+
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+Testing
+
+coverage/
+*.test.js.skip
+
+Environment variables
+
+.env
+.env.local
+.env.*.local
+
+macOS
+
+.DS_Store
+
+Database
+
+roadmap.db
+roadmap.db-shm
+roadmap.db-wal
+
+# SQLite database files
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/*.db-journal
+*.sqlite
+*.sqlite3
+
+# Code analysis reports
+reports/

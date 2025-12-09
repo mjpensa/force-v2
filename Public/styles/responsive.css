@@ -1,0 +1,53 @@
+/**
+ * Responsive CSS - Accessibility and motion preferences
+ * Contains: prefers-contrast, prefers-reduced-motion, print styles
+ */
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  button:focus,
+  a:focus {
+    outline-width: 4px;
+  }
+
+  .gantt-bar {
+    border: 2px solid white;
+  }
+
+  .gantt-grid {
+    border: 2px solid white;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .export-container,
+  .edit-mode-toggle-button,
+  .copy-url-button {
+    display: none !important;
+  }
+
+  .gantt-chart-container {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+
+  .modal-overlay {
+    display: none !important;
+  }
+
+  body {
+    background-color: white;
+  }
+}
