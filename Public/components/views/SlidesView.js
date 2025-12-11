@@ -162,13 +162,14 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 // SLIDES VIEW CLASS
 // ========================================
 export class SlidesView {
-  constructor(data) {
-    // ALWAYS show demo slide first for template testing
-    this.slides = [DEMO_SLIDE];
-
-    // Then add any provided slides after the demo
+  constructor(data, sessionId = null) {
+    this.sessionId = sessionId;
+    
+    // Use provided slides or show demo slide if none
     if (data?.slides?.length) {
-      this.slides = this.slides.concat(data.slides);
+      this.slides = data.slides;
+    } else {
+      this.slides = [DEMO_SLIDE];
     }
 
     this.index = 0;
@@ -214,6 +215,7 @@ export class SlidesView {
 
     const prevBtn = this._btn('← Prev', () => this.go(-1));
     const nextBtn = this._btn('Next →', () => this.go(1));
+    const exportBtn = this._btn('Export to PPT', () => this._exportToPPT(), '#DA291C');
 
     this.counter = document.createElement('span');
     this.counter.style.cssText = 'color: white; font-size: 14px; min-width: 60px; text-align: center;';
@@ -221,6 +223,7 @@ export class SlidesView {
     nav.appendChild(prevBtn);
     nav.appendChild(this.counter);
     nav.appendChild(nextBtn);
+    nav.appendChild(exportBtn);
 
     container.appendChild(wrapper);
     container.appendChild(nav);
@@ -236,16 +239,54 @@ export class SlidesView {
     return container;
   }
 
-  _btn(text, onClick) {
+  _btn(text, onClick, bgColor = '#444') {
     const btn = document.createElement('button');
     btn.textContent = text;
     btn.onclick = onClick;
     btn.style.cssText = `
       padding: 10px 20px; cursor: pointer;
-      background: #444; color: white;
+      background: ${bgColor}; color: white;
       border: none; border-radius: 4px; font-size: 14px;
     `;
     return btn;
+  }
+
+  async _exportToPPT() {
+    if (!this.sessionId) {
+      alert('No session available for export. Please generate slides first.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/content/${this.sessionId}/slides/export`);
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Export failed');
+      }
+
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'Presentation.pptx';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match) filename = match[1];
+      }
+
+      // Download the file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('PPT export failed:', error);
+      alert(`Export failed: ${error.message}`);
+    }
   }
 
   go(delta) {
