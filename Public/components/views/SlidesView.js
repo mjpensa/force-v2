@@ -1,7 +1,7 @@
 /**
  * SlidesView - Single Template Only
  * EXACT measurements extracted from PPT Templates_SHORT3.pptx
- * 
+ *
  * Slide: 12192000 x 6858000 EMU (16:9)
  * All positions calculated as percentages from source XML
  */
@@ -20,7 +20,7 @@ function renderSlide(slide, index) {
   // Use container query units (cqw/cqh) for scalable text
   // Fallback to vw-based calculations for older browsers
   // Base reference: 1200px slide width, so 1% = 12px at full size
-  
+
   // EYEBROW (red tagline) - EXACT from XML:
   // x=257175/12192000 = 2.11%, y=235177/6858000 = 3.43%
   // width=2039291/12192000 = 16.73%
@@ -63,7 +63,7 @@ function renderSlide(slide, index) {
   const titleText = slide.title || '';
   const sentenceCase = titleText.charAt(0).toUpperCase() + titleText.slice(1).toLowerCase();
   let lines = sentenceCase.split('\n').map(l => l.trim()).filter(l => l);
-  
+
   // Enforce exactly 4 lines
   if (lines.length > 4) {
     lines = lines.slice(0, 4);
@@ -71,7 +71,7 @@ function renderSlide(slide, index) {
   while (lines.length < 4) {
     lines.push('');
   }
-  
+
   title.textContent = lines.join('\n');
   el.appendChild(title);
 
@@ -85,29 +85,50 @@ function renderSlide(slide, index) {
     position: absolute;
     left: 50.59%;
     width: 44.30%;
-    top: 46%;
-    bottom: 8%;
+    top: 57%;
+    bottom: 6%;
     font-family: 'Work Sans', sans-serif;
     font-size: clamp(7px, 1.15cqw, 14px);
     font-weight: 400;
     line-height: 1.35;
-    letter-spacing: -0.01em;
-    word-spacing: -0.02em;
+    letter-spacing: 0.02em;
+    word-spacing: 0.08em;
     color: #0C2340;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
   `;
-  
+
   // Body text with proper paragraph spacing - limit to 2 paragraphs
   const bodyText = slide.body || '';
   const paragraphs = bodyText.split(/\n\n+/).filter(p => p.trim()).slice(0, 2);
   body.innerHTML = paragraphs.map(p => 
-    `<p style="margin: 0 0 0.8em 0; flex-shrink: 0;">${p.trim().replace(/\n/g, ' ')}</p>`
+    `<p style="margin: 0 0 0.8em 0;">${p.trim().replace(/\n/g, ' ')}</p>`
   ).join('');
-  
+
   el.appendChild(body);
+
+  // CORNER GRAPHIC - top right (1.45" x 1.45" on 13.33" x 7.5" slide)
+  const cornerGraphic = document.createElement('img');
+  cornerGraphic.src = 'bip corner graphic.svg';
+  cornerGraphic.style.cssText = `
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 10.9%;
+    height: auto;
+  `;
+  el.appendChild(cornerGraphic);
+
+  // BIP LOGO - bottom right
+  const bipLogo = document.createElement('img');
+  bipLogo.src = 'Red BIP Logo.png';
+  bipLogo.style.cssText = `
+    position: absolute;
+    bottom: 3%;
+    right: 2%;
+    height: 4%;
+    width: auto;
+  `;
+  el.appendChild(bipLogo);
 
   // SLIDE NUMBER - bottom left, matching eyebrow position
   const footer = document.createElement('div');
@@ -144,12 +165,12 @@ export class SlidesView {
   constructor(data) {
     // ALWAYS show demo slide first for template testing
     this.slides = [DEMO_SLIDE];
-    
+
     // Then add any provided slides after the demo
     if (data?.slides?.length) {
       this.slides = this.slides.concat(data.slides);
     }
-    
+
     this.index = 0;
     this.slideEl = null;
     this.counter = null;
