@@ -97,13 +97,19 @@ function renderSlide(slide, index) {
     overflow: hidden;
   `;
 
-  // Body text with proper paragraph spacing - limit to 2 paragraphs
-  // AI is instructed to generate 380-410 char paragraphs that fit naturally
-  const bodyText = slide.body || '';
-  const paragraphs = bodyText.split(/\n\n+/).filter(p => p.trim()).slice(0, 2);
+  // Body text - uses paragraph1 and paragraph2 fields (or falls back to body for compatibility)
+  // AI generates each paragraph at 380-410 characters to fit naturally
+  let paragraphs = [];
+  if (slide.paragraph1 || slide.paragraph2) {
+    // New schema with separate paragraph fields
+    if (slide.paragraph1) paragraphs.push(slide.paragraph1.trim().replace(/\n/g, ' '));
+    if (slide.paragraph2) paragraphs.push(slide.paragraph2.trim().replace(/\n/g, ' '));
+  } else if (slide.body) {
+    // Legacy schema with combined body field
+    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => p.trim().replace(/\n/g, ' '));
+  }
   body.innerHTML = paragraphs.map(p => {
-    const text = p.trim().replace(/\n/g, ' ');
-    return `<p style="margin: 0 0 0.8em 0;">${text}</p>`;
+    return `<p style="margin: 0 0 0.8em 0;">${p}</p>`;
   }).join('');
 
   el.appendChild(body);
@@ -154,10 +160,9 @@ function renderSlide(slide, index) {
 // ========================================
 const DEMO_SLIDE = {
   tagline: 'LOREM IPSUM',
-  title: 'Lorem ipsum sit amet sit lorem',
-  body: `Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitationLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitationLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.`
+  title: 'Lorem\nipsum\nsit amet\nsit lorem',
+  paragraph1: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur excepteur sint occaecat.',
+  paragraph2: 'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit sed quia consequuntur magni dolores eos ratione voluptatem.'
 };
 
 // ========================================
