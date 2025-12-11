@@ -108,8 +108,12 @@ function renderSlide(slide, index) {
     // Legacy schema with combined body field
     paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => p.trim().replace(/\n/g, ' '));
   }
-  body.innerHTML = paragraphs.map(p => {
-    return `<p style="margin: 0 0 0.8em 0;">${p}</p>`;
+  
+  // Create paragraphs with clear visual separation
+  body.innerHTML = paragraphs.map((p, i) => {
+    // Add more bottom margin to first paragraph for clear separation
+    const marginBottom = i === 0 ? '1.2em' : '0';
+    return `<p style="margin: 0 0 ${marginBottom} 0;">${p}</p>`;
   }).join('');
 
   el.appendChild(body);
