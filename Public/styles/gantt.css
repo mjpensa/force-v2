@@ -733,3 +733,19 @@
     border: 2px solid white;
   }
 }
+
+/* Header/Footer SVG Styling */
+.gantt-header-svg,
+.gantt-footer-svg {
+  display: block !important;
+  width: 100% !important;
+  height: 12px !important;
+  background-image: url('/horizontal-stripe.svg') !important;
+  background-repeat: repeat-x !important;
+  background-size: auto 100% !important;
+  background-position: left top !important;
+  background-color: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}

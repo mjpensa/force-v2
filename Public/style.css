@@ -1593,17 +1593,19 @@ select:focus-visible {
   outline: 2px solid #3C8D62;
   background-color: rgba(80, 175, 123, 0.15);
 }
-.gantt-header-svg {
-  width: 100%;
-  background-color: transparent;
-  margin: 0;
-  padding: 0;
-}
+.gantt-header-svg,
 .gantt-footer-svg {
-  width: 100%;
-  background-color: transparent;
-  margin: 0;
-  padding: 0;
+  display: block !important;
+  width: 100% !important;
+  height: 12px !important;
+  background-image: url('/horizontal-stripe.svg') !important;
+  background-repeat: repeat-x !important;
+  background-size: auto 100% !important;
+  background-position: left top !important;
+  background-color: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
 }
 .gantt-bar[draggable="true"] {
   cursor: move !important;
