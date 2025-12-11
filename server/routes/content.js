@@ -568,7 +568,4 @@ router.post('/update-task-color', express.json(), (req, res) => {
 // Apply upload error handling middleware
 router.use(handleUploadErrors);
 
-// Export sessions map for use by analysis routes
-export { sessions, touchSession };
-
 export default router;
