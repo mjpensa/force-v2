@@ -95,6 +95,7 @@ function withTimeout(promise, timeoutMs, operationName) {
 }
 async function generateWithGemini(prompt, schema, contentType, configOverrides = {}) {
   try {
+    console.log(`[${contentType}] Starting generation with model: ${CONFIG.API.GEMINI_MODEL}`);
     const {
       temperature,
       topP,
@@ -111,6 +112,7 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     if (temperature !== undefined) generationConfig.temperature = temperature;
     if (topP !== undefined) generationConfig.topP = topP;
     if (topK !== undefined) generationConfig.topK = topK;
+    console.log(`[${contentType}] Generation config:`, JSON.stringify({ temperature, topP, topK, thinkingBudget }));
     const model = genAI.getGenerativeModel({
       model: CONFIG.API.GEMINI_MODEL,
       generationConfig
@@ -122,10 +124,13 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     );
     const response = result.response;
     const text = response.text();
+    console.log(`[${contentType}] Received response, length: ${text.length} chars`);
     try {
       const data = JSON.parse(text);
+      console.log(`[${contentType}] Successfully parsed JSON`);
       return data;
     } catch (parseError) {
+      console.log(`[${contentType}] JSON parse error: ${parseError.message}`);
       const positionMatch = parseError.message.match(/position (\d+)/);
       const errorPosition = positionMatch ? parseInt(positionMatch[1]) : 0;
       if (errorPosition > 0) {
@@ -135,12 +140,15 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
       try {
         const repairedJsonText = jsonrepair(text);
         const repairedData = JSON.parse(repairedJsonText);
+        console.log(`[${contentType}] Successfully repaired and parsed JSON`);
         return repairedData;
       } catch (repairError) {
+        console.log(`[${contentType}] JSON repair also failed`);
         throw parseError; // Throw the original parse error
       }
     }
   } catch (error) {
+    console.error(`[${contentType}] Generation failed:`, error.message);
     throw new Error(`Failed to generate ${contentType}: ${error.message}`);
   }
 }
