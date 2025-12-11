@@ -165,11 +165,12 @@ export class SlidesView {
   constructor(data, sessionId = null) {
     this.sessionId = sessionId;
     
-    // Use provided slides or show demo slide if none
+    // ALWAYS show demo slide first for template reference
+    this.slides = [DEMO_SLIDE];
+
+    // Then add any provided slides after the demo
     if (data?.slides?.length) {
-      this.slides = data.slides;
-    } else {
-      this.slides = [DEMO_SLIDE];
+      this.slides = this.slides.concat(data.slides);
     }
 
     this.index = 0;
