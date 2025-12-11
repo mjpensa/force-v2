@@ -425,15 +425,29 @@ export class DocumentView {
    */
   _scrollToSection(sectionId) {
     const section = document.getElementById(sectionId);
+    const scrollContainer = document.querySelector('.app-main') || window;
+    
     if (section) {
-      const headerOffset = 100; // Account for sticky header
-      const elementPosition = section.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+      const headerOffset = 32; // Account for padding
+      
+      if (scrollContainer === window) {
+        const elementPosition = section.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      } else {
+        // Scroll within .app-main container
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const sectionRect = section.getBoundingClientRect();
+        const offsetPosition = sectionRect.top - containerRect.top + scrollContainer.scrollTop - headerOffset;
+        
+        scrollContainer.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
     }
   }
 
@@ -443,19 +457,25 @@ export class DocumentView {
   _setupScrollSpy() {
     if (!this.documentData || !this.documentData.sections) return;
 
+    const scrollContainer = document.querySelector('.app-main') || window;
+    
     const sections = this.documentData.sections.map(s => ({
       id: s.id,
       element: document.getElementById(s.id)
     })).filter(s => s.element);
 
     this.scrollHandler = () => {
-      const scrollPosition = window.scrollY + 150; // Offset for header
+      const containerTop = scrollContainer === window 
+        ? 0 
+        : scrollContainer.getBoundingClientRect().top;
+      const scrollOffset = 150; // Offset for header
 
       // Find the current section
       let currentSection = null;
       for (let i = sections.length - 1; i >= 0; i--) {
         const section = sections[i];
-        if (section.element.offsetTop <= scrollPosition) {
+        const sectionTop = section.element.getBoundingClientRect().top - containerTop;
+        if (sectionTop <= scrollOffset) {
           currentSection = section.id;
           break;
         }
@@ -468,7 +488,11 @@ export class DocumentView {
       }
     };
 
-    window.addEventListener('scroll', this.scrollHandler, { passive: true });
+    const eventTarget = scrollContainer === window ? window : scrollContainer;
+    eventTarget.addEventListener('scroll', this.scrollHandler, { passive: true });
+    
+    // Store reference to remove listener later
+    this.scrollContainer = eventTarget;
 
     // Initial check
     this.scrollHandler();
@@ -494,9 +518,10 @@ export class DocumentView {
    * Cleanup and remove event listeners
    */
   destroy() {
-    if (this.scrollHandler) {
-      window.removeEventListener('scroll', this.scrollHandler);
+    if (this.scrollHandler && this.scrollContainer) {
+      this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
       this.scrollHandler = null;
+      this.scrollContainer = null;
     }
 
     if (this.resizeObserver) {
