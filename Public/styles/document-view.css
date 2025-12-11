@@ -1,0 +1,449 @@
+/**
+ * Document View Styles
+ * Google Docs-inspired long-form reading experience with glassmorphic design
+ */
+
+.document-view {
+  /* Transparent - inherits glassmorphic background from app-shell */
+  background: transparent;
+  min-height: 0; /* Allow proper scroll containment within app-main */
+  animation: fadeIn var(--transition-base);
+}
+
+.document-container {
+  max-width: var(--container-lg);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  gap: var(--spacing-8);
+  padding: var(--spacing-8);
+  align-items: start;
+}
+
+/* ========== TABLE OF CONTENTS ========== */
+
+.document-toc {
+  position: sticky;
+  top: var(--spacing-8); /* Relative to scroll container (app-main), not body */
+  height: fit-content;
+  max-height: calc(100vh - var(--header-height) - var(--spacing-16));
+  overflow-y: auto;
+  padding: var(--spacing-4);
+  /* Glassmorphic glass panel */
+  background: var(--glass-white-8);
+  -webkit-backdrop-filter: blur(var(--blur-lg));
+  backdrop-filter: blur(var(--blur-lg));
+  border: var(--border-glass);
+  border-radius: var(--radius-glass-lg);
+  box-shadow: var(--shadow-glass-2);
+}
+
+/* Custom scrollbar for TOC */
+.document-toc::-webkit-scrollbar {
+  width: 6px;
+}
+
+.document-toc::-webkit-scrollbar-track {
+  background: var(--glass-white-5);
+  border-radius: var(--radius-full);
+}
+
+.document-toc::-webkit-scrollbar-thumb {
+  background: var(--glass-white-20);
+  border-radius: var(--radius-full);
+}
+
+.document-toc::-webkit-scrollbar-thumb:hover {
+  background: var(--glass-white-30);
+}
+
+.toc-title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--glass-text-secondary);
+  margin: 0 0 var(--spacing-4) 0;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.toc-list li {
+  margin-bottom: var(--spacing-1);
+}
+
+.toc-link {
+  display: block;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-glass-sm);
+  color: var(--glass-text-secondary);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  transition: all var(--transition-fast);
+  border-left: 2px solid transparent;
+  line-height: var(--leading-snug);
+}
+
+.toc-link:hover {
+  background: var(--glass-white-15);
+  color: var(--glass-text-primary);
+}
+
+.toc-link.active {
+  background: rgba(80, 175, 123, 0.20);
+  color: var(--color-glass-success);
+  font-weight: var(--weight-medium);
+  border-left-color: var(--color-glass-success);
+}
+
+.toc-sublist {
+  list-style: none;
+  margin: var(--spacing-1) 0 var(--spacing-2) var(--spacing-4);
+  padding: 0;
+}
+
+.toc-sublist .toc-link {
+  font-size: var(--text-xs);
+  padding-left: var(--spacing-2);
+}
+
+/* ========== DOCUMENT CONTENT ========== */
+
+.document-content {
+  /* Glassmorphic glass panel */
+  background: var(--glass-white-8);
+  -webkit-backdrop-filter: blur(var(--blur-xl));
+  backdrop-filter: blur(var(--blur-xl));
+  border: var(--border-glass);
+  border-radius: var(--radius-glass-xl);
+  box-shadow: var(--shadow-glass-3);
+  padding: var(--spacing-12);
+  max-width: var(--content-width);
+}
+
+/* Document Header */
+.document-header {
+  margin-bottom: var(--spacing-12);
+  padding-bottom: var(--spacing-8);
+  border-bottom: var(--border-glass);
+}
+
+.document-content .document-title {
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-tight);
+  color: var(--glass-text-primary);
+  margin: 0 0 var(--spacing-4) 0;
+}
+
+.document-subtitle {
+  font-size: var(--text-xl);
+  color: var(--glass-text-secondary);
+  margin: 0 0 var(--spacing-6) 0;
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-normal);
+}
+
+.document-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--text-sm);
+  color: var(--glass-text-muted);
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.meta-divider {
+  color: var(--glass-white-30);
+  margin: 0 var(--spacing-1);
+}
+
+/* ========== SECTIONS ========== */
+
+.document-section {
+  margin-bottom: var(--spacing-12);
+}
+
+.section-heading {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-tight);
+  color: var(--glass-text-primary);
+  margin: 0 0 var(--spacing-6) 0;
+  scroll-margin-top: var(--spacing-8); /* Relative to scroll container (app-main), not body */
+  position: relative;
+}
+
+/* Active section indicator */
+.section-heading::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--spacing-6));
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 0;
+  background: var(--color-accent-red);
+  border-radius: var(--radius-full);
+  transition: height var(--transition-base);
+}
+
+.section-heading:hover::before {
+  height: 100%;
+}
+
+.section-subheading {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-medium);
+  color: var(--glass-text-primary);
+  margin: var(--spacing-8) 0 var(--spacing-4) 0;
+  line-height: var(--leading-tight);
+}
+
+/* ========== CONTENT BLOCKS ========== */
+
+.section-paragraph {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--glass-text-primary);
+  margin: 0 0 var(--spacing-4) 0;
+  text-align: justify;
+}
+
+.section-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.section-list {
+  margin: var(--spacing-4) 0;
+  padding-left: var(--spacing-6);
+  color: var(--glass-text-primary);
+  line-height: var(--leading-relaxed);
+}
+
+.section-list li {
+  margin-bottom: var(--spacing-2);
+}
+
+.section-list li:last-child {
+  margin-bottom: 0;
+}
+
+/* Tables */
+.table-wrapper {
+  overflow-x: auto;
+  margin: var(--spacing-6) 0;
+  border-radius: var(--radius-glass-md);
+  border: var(--border-glass);
+  background: var(--glass-white-5);
+}
+
+.section-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.section-table th {
+  background: var(--glass-white-10);
+  padding: var(--spacing-3) var(--spacing-4);
+  text-align: left;
+  font-weight: var(--weight-semibold);
+  color: var(--glass-text-primary);
+  border-bottom: var(--border-glass-strong);
+}
+
+.section-table td {
+  padding: var(--spacing-3) var(--spacing-4);
+  border-bottom: var(--border-glass);
+  color: var(--glass-text-primary);
+}
+
+.section-table tr:last-child td {
+  border-bottom: none;
+}
+
+.section-table tbody tr:hover {
+  background: var(--glass-white-10);
+}
+
+/* Quotes */
+.section-quote {
+  margin: var(--spacing-6) 0;
+  padding: var(--spacing-4) var(--spacing-6);
+  border-left: 4px solid var(--color-accent-red);
+  background: var(--glass-white-8);
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  backdrop-filter: blur(var(--blur-sm));
+  border-radius: var(--radius-glass-sm);
+  font-size: var(--text-lg);
+  font-style: italic;
+  color: var(--glass-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+/* ========== APPENDICES ========== */
+
+.appendix {
+  margin-top: var(--spacing-8);
+  padding-top: var(--spacing-6);
+  border-top: var(--border-glass);
+}
+
+.appendix-title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-medium);
+  color: var(--glass-text-primary);
+  margin: 0 0 var(--spacing-4) 0;
+}
+
+/* ========== REFERENCES ========== */
+
+.references-list {
+  list-style-position: inside;
+  margin: var(--spacing-4) 0;
+  padding: 0;
+}
+
+.references-list li {
+  font-size: var(--text-sm);
+  color: var(--glass-text-secondary);
+  margin-bottom: var(--spacing-3);
+  line-height: var(--leading-relaxed);
+}
+
+/* ========== EMPTY STATE ========== */
+
+.document-view .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-16);
+  text-align: center;
+  color: var(--glass-text-secondary);
+}
+
+.document-view .empty-state svg {
+  margin-bottom: var(--spacing-6);
+  opacity: 0.6;
+  stroke: var(--glass-text-muted);
+}
+
+.document-view .empty-state h2 {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-medium);
+  color: var(--glass-text-primary);
+  margin: 0 0 var(--spacing-4) 0;
+}
+
+.document-view .empty-state p {
+  font-size: var(--text-base);
+  color: var(--glass-text-secondary);
+  margin: 0;
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (max-width: 1023px) {
+  .document-container {
+    grid-template-columns: 1fr;
+  }
+
+  .document-toc {
+    position: static;
+    max-height: none;
+    margin-bottom: var(--spacing-6);
+    padding: var(--spacing-4);
+    background: var(--glass-white-8);
+    -webkit-backdrop-filter: blur(var(--blur-lg));
+    backdrop-filter: blur(var(--blur-lg));
+    border: var(--border-glass);
+    border-radius: var(--radius-glass-lg);
+    box-shadow: var(--shadow-glass-2);
+  }
+}
+
+@media (max-width: 767px) {
+  .document-container {
+    padding: var(--spacing-4);
+  }
+
+  .document-content {
+    padding: var(--spacing-6);
+    border-radius: var(--radius-glass-lg);
+    -webkit-backdrop-filter: blur(var(--blur-lg));
+    backdrop-filter: blur(var(--blur-lg));
+  }
+
+  .document-content .document-title {
+    font-size: var(--text-3xl);
+  }
+
+  .section-heading {
+    font-size: var(--text-2xl);
+  }
+
+  .section-paragraph {
+    text-align: left; /* Remove justify on mobile */
+  }
+
+  .table-wrapper {
+    margin-left: calc(-1 * var(--spacing-6));
+    margin-right: calc(-1 * var(--spacing-6));
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
+
+/* ========== PRINT STYLES ========== */
+
+@media print {
+  .document-toc {
+    display: none;
+  }
+
+  .document-container {
+    display: block;
+    padding: 0;
+  }
+
+  .document-content {
+    box-shadow: none;
+    padding: 0;
+    max-width: 100%;
+    background: white;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .section-heading {
+    page-break-after: avoid;
+  }
+
+  .section-heading::before {
+    display: none;
+  }
+
+  .section-paragraph {
+    page-break-inside: avoid;
+    color: black;
+  }
+
+  .table-wrapper {
+    page-break-inside: avoid;
+  }
+
+  .section-quote {
+    page-break-inside: avoid;
+  }
+}

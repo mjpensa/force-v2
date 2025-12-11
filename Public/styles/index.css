@@ -33,5 +33,8 @@
 /* Design System Variables (if exists) */
 @import './design-system.css';
 
+/* View-specific Styles */
+@import './document-view.css';
+
 /* Analysis View Extended Styles (if exists) */
 @import './analysis-view.css';
