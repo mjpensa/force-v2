@@ -98,15 +98,33 @@ function renderSlide(slide, index) {
   `;
 
   // Body text - uses paragraph1 and paragraph2 fields (or falls back to body for compatibility)
-  // AI generates each paragraph at 380-410 characters to fit naturally
+  // Hard limit: 415 chars per paragraph - truncate at sentence boundary if AI exceeds
+  const MAX_CHARS = 415;
+  
+  const truncateToSentence = (text) => {
+    if (text.length <= MAX_CHARS) return text;
+    // Find last sentence end before the limit
+    const truncated = text.substring(0, MAX_CHARS);
+    const lastPeriod = truncated.lastIndexOf('.');
+    const lastQuestion = truncated.lastIndexOf('?');
+    const lastExclaim = truncated.lastIndexOf('!');
+    const lastSentenceEnd = Math.max(lastPeriod, lastQuestion, lastExclaim);
+    if (lastSentenceEnd > MAX_CHARS * 0.6) {
+      // Found a sentence end in the last 40% of allowed text
+      return text.substring(0, lastSentenceEnd + 1);
+    }
+    // No good sentence break, cut at word boundary
+    return truncated.replace(/\s+\S*$/, '') + '.';
+  };
+
   let paragraphs = [];
   if (slide.paragraph1 || slide.paragraph2) {
     // New schema with separate paragraph fields
-    if (slide.paragraph1) paragraphs.push(slide.paragraph1.trim().replace(/\n/g, ' '));
-    if (slide.paragraph2) paragraphs.push(slide.paragraph2.trim().replace(/\n/g, ' '));
+    if (slide.paragraph1) paragraphs.push(truncateToSentence(slide.paragraph1.trim().replace(/\n/g, ' ')));
+    if (slide.paragraph2) paragraphs.push(truncateToSentence(slide.paragraph2.trim().replace(/\n/g, ' ')));
   } else if (slide.body) {
     // Legacy schema with combined body field
-    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => p.trim().replace(/\n/g, ' '));
+    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(p.trim().replace(/\n/g, ' ')));
   }
   body.innerHTML = paragraphs.map(p => {
     return `<p style="margin: 0 0 0.8em 0;">${p}</p>`;
