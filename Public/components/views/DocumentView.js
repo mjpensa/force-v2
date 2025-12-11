@@ -39,6 +39,9 @@ export class DocumentView {
       return this.container;
     }
 
+    // Normalize sections - add id and level if missing
+    this._normalizeSections();
+
     // Main container with TOC + content layout
     const documentContainer = document.createElement('div');
     documentContainer.className = 'document-container';
@@ -57,6 +60,36 @@ export class DocumentView {
     setTimeout(() => this._setupScrollSpy(), 100);
 
     return this.container;
+  }
+
+  /**
+   * Normalize sections to ensure they have id and level properties
+   */
+  _normalizeSections() {
+    this.documentData.sections = this.documentData.sections.map((section, index) => {
+      // Generate id from heading if missing
+      if (!section.id) {
+        section.id = this._generateId(section.heading, index);
+      }
+      // Default to level 1 if missing
+      if (!section.level) {
+        section.level = 1;
+      }
+      return section;
+    });
+  }
+
+  /**
+   * Generate a URL-safe id from heading text
+   */
+  _generateId(heading, index) {
+    if (!heading) return `section-${index}`;
+    return heading
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .substring(0, 50) || `section-${index}`;
   }
 
   /**
