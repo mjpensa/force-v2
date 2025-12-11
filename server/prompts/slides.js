@@ -62,12 +62,21 @@ Each slide object must have exactly three fields:
 - title: Multi-line title text that can wrap (this is the main headline)
 - body: EXACTLY 2 paragraphs of body text. Separate paragraphs with a blank line (\\n\\n).
 
-BODY PARAGRAPH FORMAT REQUIREMENT:
+BODY PARAGRAPH FORMAT REQUIREMENT (CRITICAL - COUNT CHARACTERS CAREFULLY):
 - The body MUST contain EXACTLY 2 paragraphs separated by a double newline (\\n\\n)
-- Each paragraph MUST be MAXIMUM 415 characters (including spaces)
-- Aim for 350-415 characters per paragraph for optimal density
-- This ensures the text fits properly in the slide layout without overflow
+- Each paragraph MUST be EXACTLY 380-410 characters (including spaces)
+- COUNT the characters in each paragraph BEFORE finalizing. If over 410, remove words. If under 380, add detail.
+- DO NOT write paragraphs that will be truncated - each paragraph must be COMPLETE with proper ending punctuation
+- Each paragraph must end with a complete sentence and period, not cut off mid-thought
+- Write concise, complete thoughts that fit EXACTLY within 380-410 characters
 - Focus on the most impactful insights, not comprehensive coverage
+
+PARAGRAPH WRITING PROCESS:
+1. Write the paragraph
+2. Count characters including spaces
+3. If count > 410: Remove unnecessary words or shorten phrases until 380-410
+4. If count < 380: Add relevant detail or expand on the point until 380-410
+5. Verify the paragraph ends with a complete sentence
 
 CRITICAL TITLE TYPOGRAPHY RULES:
 The slide title uses very tight line spacing (70% line-height) and sentence case. To prevent letter overlap, you MUST:
