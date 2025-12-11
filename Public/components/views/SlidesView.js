@@ -97,12 +97,18 @@ function renderSlide(slide, index) {
     overflow: hidden;
   `;
 
-  // Body text with proper paragraph spacing - limit to 2 paragraphs
+  // Body text with proper paragraph spacing - limit to 2 paragraphs, 415 chars each
   const bodyText = slide.body || '';
+  const MAX_PARAGRAPH_CHARS = 415;
   const paragraphs = bodyText.split(/\n\n+/).filter(p => p.trim()).slice(0, 2);
-  body.innerHTML = paragraphs.map(p => 
-    `<p style="margin: 0 0 0.8em 0;">${p.trim().replace(/\n/g, ' ')}</p>`
-  ).join('');
+  body.innerHTML = paragraphs.map(p => {
+    let text = p.trim().replace(/\n/g, ' ');
+    // Truncate to 415 characters if needed, ending at word boundary with ellipsis
+    if (text.length > MAX_PARAGRAPH_CHARS) {
+      text = text.substring(0, MAX_PARAGRAPH_CHARS).replace(/\s+\S*$/, '') + '...';
+    }
+    return `<p style="margin: 0 0 0.8em 0;">${text}</p>`;
+  }).join('');
 
   el.appendChild(body);
 
