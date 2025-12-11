@@ -1,5 +1,3 @@
-import { SchemaType } from '@google/generative-ai';
-
 /**
  * Single Template Slide Schema
  * Every slide uses the SAME layout: tagline + title (left), body (right)
@@ -7,31 +5,31 @@ import { SchemaType } from '@google/generative-ai';
  */
 export const slidesSchema = {
   description: "Presentation slides - single two-column template only",
-  type: SchemaType.OBJECT,
+  type: "object",
   properties: {
     title: {
-      type: SchemaType.STRING,
+      type: "string",
       description: "Title of the presentation",
       nullable: false
     },
     slides: {
-      type: SchemaType.ARRAY,
+      type: "array",
       description: "Array of slides - all use identical two-column layout",
       items: {
-        type: SchemaType.OBJECT,
+        type: "object",
         properties: {
           tagline: {
-            type: SchemaType.STRING,
+            type: "string",
             description: "Small uppercase tagline in red (top-left, e.g. 'EXECUTIVE SUMMARY')",
             nullable: false
           },
           title: {
-            type: SchemaType.STRING,
+            type: "string",
             description: "Large title text (left column, thin font weight)",
             nullable: false
           },
           body: {
-            type: SchemaType.STRING,
+            type: "string",
             description: "Body paragraphs (right column). Use newlines to separate paragraphs.",
             nullable: false
           }
