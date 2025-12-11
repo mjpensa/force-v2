@@ -4,6 +4,7 @@ import { generateRoadmapPrompt, roadmapSchema } from './prompts/roadmap.js';
 import { generateSlidesPrompt, slidesSchema } from './prompts/slides.js';
 import { generateDocumentPrompt, documentSchema } from './prompts/document.js';
 import { generateResearchAnalysisPrompt, researchAnalysisSchema } from './prompts/research-analysis.js';
+import { CONFIG } from './config.js';
 
 // Initialize Gemini API (using API_KEY from environment to match server/config.js)
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
@@ -111,7 +112,7 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     if (topP !== undefined) generationConfig.topP = topP;
     if (topK !== undefined) generationConfig.topK = topK;
     const model = genAI.getGenerativeModel({
-      model: 'models/gemini-flash-latest',
+      model: CONFIG.API.GEMINI_MODEL,
       generationConfig
     });
     const result = await withTimeout(
