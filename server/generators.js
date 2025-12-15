@@ -73,10 +73,10 @@ const RESEARCH_ANALYSIS_CONFIG = {
   thinkingBudget: 0      // Disabled for speed
 };
 const SLIDES_CONFIG = {
-  temperature: 0.1,
-  topP: 0.3,
-  topK: 5,
-  thinkingBudget: 0   // Zero: no thinking needed for simple JSON
+  temperature: 0.15,   // Slight increase: more varied phrasing
+  topP: 0.4,           // Broader: richer vocabulary selection
+  topK: 10,            // Expanded: better word choice variety
+  thinkingBudget: 256  // Light reasoning for content quality decisions
 };
 
 /**
@@ -122,6 +122,56 @@ function validateExecutiveSummary(execSummary) {
   const weaselWords = /(significant|substantial|considerable|various|many|some|often|generally)/i;
   if (weaselWords.test(text)) {
     issues.push('Contains vague weasel words');
+  }
+
+  return {
+    valid: issues.length === 0,
+    issues
+  };
+}
+
+/**
+ * Validate slide content quality (logging only, no retry)
+ * Checks for analytical rigor and narrative energy markers
+ * @param {object} slidesData - Generated slides object
+ * @returns {{ valid: boolean, issues: string[] }}
+ */
+function validateSlideQuality(slidesData) {
+  const issues = [];
+
+  if (!slidesData?.slides || !Array.isArray(slidesData.slides)) {
+    return { valid: false, issues: ['Invalid slides structure'] };
+  }
+
+  for (let i = 0; i < slidesData.slides.length; i++) {
+    const slide = slidesData.slides[i];
+    const slideId = `Slide ${i + 1} "${slide.tagline || 'untitled'}"`;
+    const allText = `${slide.paragraph1 || ''} ${slide.paragraph2 || ''} ${slide.paragraph3 || ''}`;
+
+    // Check for quantified data
+    if (!/\d+/.test(allText)) {
+      issues.push(`${slideId}: Missing quantified data point`);
+    }
+
+    // Check for weak openers
+    if (/^(This|The|Our|In today|As we|It is|There (is|are))/i.test(slide.paragraph1?.trim() || '')) {
+      issues.push(`${slideId}: Weak opening detected`);
+    }
+
+    // Check for weasel words
+    if (/(significant|substantial|considerable|various|many|some|often|generally)/i.test(allText)) {
+      issues.push(`${slideId}: Contains vague weasel words`);
+    }
+
+    // Check for topic-label taglines
+    if (/^(OVERVIEW|INTRODUCTION|SUMMARY|ANALYSIS|BACKGROUND|CONCLUSION)$/i.test(slide.tagline?.trim() || '')) {
+      issues.push(`${slideId}: Generic tagline (should signal insight)`);
+    }
+
+    // Check for source citations
+    if (!/\[.*?\]/.test(allText) && !/(according to|reveals|shows)/i.test(allText)) {
+      issues.push(`${slideId}: No apparent source citation`);
+    }
   }
 
   return {
@@ -213,7 +263,16 @@ async function generateSlides(userPrompt, researchFiles) {
   try {
     const prompt = generateSlidesPrompt(userPrompt, researchFiles);
     const data = await generateWithGemini(prompt, slidesSchema, 'Slides', SLIDES_CONFIG);
-    return { success: true, data };
+
+    // Validate quality (logging only - don't block user)
+    const validation = validateSlideQuality(data);
+    if (!validation.valid) {
+      console.log(`[Slides] Quality validation issues:`, validation.issues);
+    } else {
+      console.log(`[Slides] Quality validation passed`);
+    }
+
+    return { success: true, data, validationIssues: validation.issues };
   } catch (error) {
     return { success: false, error: error.message };
   }

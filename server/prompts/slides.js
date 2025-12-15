@@ -57,6 +57,33 @@ export const slidesSchema = {
 };
 
 /**
+ * Extract key statistics from research content for prompt enhancement
+ * Forces AI to use real data points from research
+ * @param {string} content - Combined research content
+ * @returns {string} - Comma-separated list of key data points
+ */
+function extractKeyStats(content) {
+  if (!content) return '';
+
+  const patterns = [
+    /\d+\.?\d*\s*%/g,                          // Percentages: 23%, 4.5%
+    /\$\d[\d,]*\.?\d*\s*[MBK]?(?:illion)?/gi,  // Currency: $4M, $2.5 billion
+    /\d+x\b/gi,                                // Multipliers: 3x, 10x
+    /\d{1,3}(?:,\d{3})+/g,                     // Large numbers: 1,000,000
+    /Q[1-4]\s*20\d{2}/gi,                      // Quarters: Q3 2024
+    /20\d{2}/g                                 // Years: 2024, 2025
+  ];
+
+  const matches = new Set();
+  for (const pattern of patterns) {
+    const found = content.match(pattern) || [];
+    found.slice(0, 5).forEach(m => matches.add(m.trim()));
+  }
+
+  return Array.from(matches).slice(0, 15).join(', ');
+}
+
+/**
  * Generate prompt for slides with research content
  * AI automatically chooses the best layout (twoColumn or threeColumn) for each slide
  * @param {string} userPrompt - The user's request
@@ -68,6 +95,9 @@ export function generateSlidesPrompt(userPrompt, researchFiles) {
   const researchContent = researchFiles
     .map(file => `=== ${file.filename} ===\n${file.content}`)
     .join('\n\n');
+
+  // Extract key statistics to force AI to use real data
+  const keyStats = extractKeyStats(researchContent);
 
   return `You are creating presentation slides with STRICT formatting requirements.
 
@@ -103,6 +133,37 @@ PARAGRAPH REQUIREMENTS (CRITICAL):
 - Count characters carefully before finalizing each paragraph
 - twoColumn paragraphs: 380-410 characters each
 - threeColumn paragraphs: 370-390 characters each
+
+ANALYTICAL RIGOR (CRITICAL):
+- Each paragraph MUST contain at least ONE specific data point from research
+- Cite sources explicitly: "[filename] reveals..." or "According to [filename]..."
+- Quantify all claims: use percentages, dollar amounts, timeframes
+- NEVER use vague terms: "significant", "substantial", "considerable", "various"
+- Follow the chain: Evidence → Insight → Implication
+
+NARRATIVE ENERGY (CRITICAL):
+- Lead each paragraph with tension, insight, or stakes - not topic introduction
+- Use power verbs: Reveals, Threatens, Enables, Erodes, Accelerates, Undermines, Exposes
+- Vary sentence rhythm: follow complex sentences with short punchy ones
+- Use contrast: "While X suggests..., Y reveals..."
+- End paragraphs with forward momentum pointing to implications, not summary
+- Use active voice: "Revenue collapsed 40%" not "There was a 40% decline"
+
+ANTI-PATTERNS TO REJECT:
+- Opening with: "This slide discusses...", "The following points...", "In this section..."
+- Generic statements without data: "Growth has been strong", "Performance improved"
+- Weasel words: significant, substantial, considerable, various, many, some, often
+- Passive voice hiding the actor: "It was determined that..." → "Analysis reveals..."
+- Topic-label taglines: "OVERVIEW", "INTRODUCTION", "SUMMARY", "ANALYSIS"
+- Backward-looking conclusions: "In summary, we discussed..." → forward implications
+
+TAGLINE QUALITY:
+- Taglines must signal INSIGHT, not topic
+- BAD: "EXECUTIVE SUMMARY", "KEY POINTS", "OVERVIEW"
+- GOOD: "MARGIN EROSION", "Q3 DEADLINE", "73% CHURN RISK", "COST WINDOW CLOSING"
+
+KEY DATA POINTS FROM RESEARCH (use at least one per slide):
+${keyStats || 'Extract specific numbers, percentages, and dates from the research text'}
 
 USER REQUEST: "${userPrompt}"
 
