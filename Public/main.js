@@ -319,13 +319,6 @@ async function handleChartGenerate(event) {
     }
     const formData = new FormData();
     formData.append('prompt', promptInput.value);
-
-    // Get slide layout selection
-    const slideLayoutSelect = document.getElementById('slide-layout');
-    if (slideLayoutSelect) {
-      formData.append('slideLayout', slideLayoutSelect.value);
-    }
-
     for (const file of validFiles) {
       formData.append('researchFiles', file);
     }

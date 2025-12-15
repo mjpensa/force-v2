@@ -217,6 +217,7 @@ function renderThreeColumnSlide(slide, index) {
   // TITLE - x=228209/12192000=1.87%, y=613997/6858000=8.95%
   // width=2519754/12192000=20.67%, height=2150574/6858000=31.36%
   // Font: 44pt Work Sans Light (not italic), line-height 70%
+  // Note: Narrower container than twoColumn, so font-size scaled down proportionally
   const title = document.createElement('div');
   title.style.cssText = `
     position: absolute;
@@ -225,9 +226,9 @@ function renderThreeColumnSlide(slide, index) {
     width: 20.67%;
     height: 31.36%;
     font-family: 'Work Sans', sans-serif;
-    font-size: clamp(16px, 6cqw, 72px);
+    font-size: clamp(14px, 4.5cqw, 55px);
     font-weight: 300;
-    line-height: 0.70;
+    line-height: 0.75;
     color: #0C2340;
     white-space: pre-line;
   `;

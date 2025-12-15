@@ -58,71 +58,59 @@ export const slidesSchema = {
 
 /**
  * Generate prompt for slides with research content
+ * AI automatically chooses the best layout (twoColumn or threeColumn) for each slide
  * @param {string} userPrompt - The user's request
  * @param {Array<{filename: string, content: string}>} researchFiles - Research files to analyze
- * @param {string} layout - 'twoColumn' (default) or 'threeColumn'
  * @returns {string} Complete prompt for AI
  */
-export function generateSlidesPrompt(userPrompt, researchFiles, layout = 'twoColumn') {
+export function generateSlidesPrompt(userPrompt, researchFiles) {
   // Convert array to formatted string (consistent with other generators)
   const researchContent = researchFiles
     .map(file => `=== ${file.filename} ===\n${file.content}`)
     .join('\n\n');
 
-  const isTwoColumn = layout !== 'threeColumn';
-
-  const paragraphRules = isTwoColumn
-    ? `PARAGRAPH REQUIREMENTS (CRITICAL):
-- paragraph1 and paragraph2 are SEPARATE fields, not combined
-- Each paragraph MUST be 380-410 characters (including spaces) - NO EXCEPTIONS
-- Each paragraph must be a complete thought ending with a period
-- Count characters carefully before finalizing each paragraph`
-    : `PARAGRAPH REQUIREMENTS (CRITICAL):
-- paragraph1, paragraph2, and paragraph3 are SEPARATE fields (3 columns)
-- Each paragraph MUST be 370-390 characters (including spaces) - NO EXCEPTIONS
-- Each paragraph must be a complete thought ending with a period
-- Count characters carefully before finalizing each paragraph`;
-
-  const slideStructure = isTwoColumn
-    ? `SLIDE STRUCTURE - Each slide has exactly 4 fields:
-- tagline: 2-word uppercase label, MAX 21 characters. Example: "EXECUTIVE SUMMARY"
-- title: EXACTLY 4 lines separated by \\n (see TITLE RULES below)
-- paragraph1: First body paragraph, EXACTLY 380-410 characters including spaces
-- paragraph2: Second body paragraph, EXACTLY 380-410 characters including spaces`
-    : `SLIDE STRUCTURE - Each slide has exactly 5 fields:
-- tagline: 2-word uppercase label, MAX 21 characters. Example: "EXECUTIVE SUMMARY"
-- title: EXACTLY 4 lines separated by \\n (see TITLE RULES below)
-- paragraph1: Column 1 text, EXACTLY 370-390 characters including spaces
-- paragraph2: Column 2 text, EXACTLY 370-390 characters including spaces
-- paragraph3: Column 3 text, EXACTLY 370-390 characters including spaces`;
-
-  const outputFormat = isTwoColumn
-    ? `Generate JSON with "title" (string) and "slides" array. Each slide: {tagline, title, paragraph1, paragraph2}.`
-    : `Generate JSON with "title" (string) and "slides" array. Each slide: {layout: "threeColumn", tagline, title, paragraph1, paragraph2, paragraph3}.`;
-
   return `You are creating presentation slides with STRICT formatting requirements.
 
-${slideStructure}
+TWO LAYOUT OPTIONS - Choose the best layout for each slide:
 
-${paragraphRules}
+LAYOUT 1: "twoColumn" (default) - Use for focused topics, executive summaries, key findings
+- Fields: tagline, title, paragraph1, paragraph2
+- paragraph1 and paragraph2: EXACTLY 380-410 characters each
+- Omit the "layout" field (defaults to twoColumn)
+
+LAYOUT 2: "threeColumn" - Use for comparisons, multiple related points, detailed breakdowns
+- Fields: layout, tagline, title, paragraph1, paragraph2, paragraph3
+- MUST include: layout: "threeColumn"
+- paragraph1, paragraph2, paragraph3: EXACTLY 370-390 characters each
+
+WHEN TO USE EACH LAYOUT:
+- twoColumn: Introduction, conclusion, single-topic deep dives, executive summaries
+- threeColumn: Comparing options, listing multiple benefits/features, process steps, before/during/after
+
+COMMON RULES FOR ALL SLIDES:
+
+TAGLINE: 2-word uppercase label, MAX 21 characters. Example: "EXECUTIVE SUMMARY"
 
 TITLE RULES (CRITICAL - MUST BE EXACTLY 4 LINES):
-- The title MUST contain EXACTLY 4 lines separated by \\n characters
 - Pattern: "Line1\\nLine2\\nLine3\\nLine4" - exactly 3 newlines, 4 lines
-- Each line should be 1-2 words, MAX 10 characters per line
-- Line 1: 1 word
-- Line 2: 1-2 words
-- Line 3: 1-2 words
-- Line 4: 1 word
+- Each line: 1-2 words, MAX 10 characters per line
 - AVOID letters g, y, p, q, j on lines 1-3 (descenders overlap next line)
 - Line 4 can use any letters
 - Example: "Driving\\nModern\\nBusiness\\nForward"
+
+PARAGRAPH REQUIREMENTS (CRITICAL):
+- Each paragraph must be a complete thought ending with a period
+- Count characters carefully before finalizing each paragraph
+- twoColumn paragraphs: 380-410 characters each
+- threeColumn paragraphs: 370-390 characters each
 
 USER REQUEST: "${userPrompt}"
 
 RESEARCH CONTENT:
 ${researchContent}
 
-${outputFormat}
+Generate JSON with "title" (string) and "slides" array. Mix layouts as appropriate:
+- twoColumn slide: {tagline, title, paragraph1, paragraph2}
+- threeColumn slide: {layout: "threeColumn", tagline, title, paragraph1, paragraph2, paragraph3}
 `;
 }

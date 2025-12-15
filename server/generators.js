@@ -157,9 +157,9 @@ async function generateRoadmap(userPrompt, researchFiles) {
     return { success: false, error: error.message };
   }
 }
-async function generateSlides(userPrompt, researchFiles, layout = 'twoColumn') {
+async function generateSlides(userPrompt, researchFiles) {
   try {
-    const prompt = generateSlidesPrompt(userPrompt, researchFiles, layout);
+    const prompt = generateSlidesPrompt(userPrompt, researchFiles);
     const data = await generateWithGemini(prompt, slidesSchema, 'Slides', SLIDES_CONFIG);
     return { success: true, data };
   } catch (error) {
@@ -191,19 +191,13 @@ async function generateResearchAnalysis(userPrompt, researchFiles) {
 /**
  * Generate all content types with controlled concurrency via API queue
  * This prevents overwhelming the Gemini API with too many simultaneous requests
- * @param {string} userPrompt - The user's request
- * @param {Array} researchFiles - Research files to analyze
- * @param {Object} options - Optional settings
- * @param {string} options.slideLayout - 'twoColumn' (default) or 'threeColumn'
  */
-export async function generateAllContent(userPrompt, researchFiles, options = {}) {
+export async function generateAllContent(userPrompt, researchFiles) {
   try {
-    const { slideLayout = 'twoColumn' } = options;
-
     // Use apiQueue.runAll to control concurrency and prevent rate limiting
     const tasks = [
       { task: () => generateRoadmap(userPrompt, researchFiles), name: 'Roadmap' },
-      { task: () => generateSlides(userPrompt, researchFiles, slideLayout), name: 'Slides' },
+      { task: () => generateSlides(userPrompt, researchFiles), name: 'Slides' },
       { task: () => generateDocument(userPrompt, researchFiles), name: 'Document' },
       { task: () => generateResearchAnalysis(userPrompt, researchFiles), name: 'ResearchAnalysis' }
     ];
@@ -215,16 +209,15 @@ export async function generateAllContent(userPrompt, researchFiles, options = {}
     throw error;
   }
 }
-export async function regenerateContent(viewType, prompt, researchFiles, options = {}) {
+export async function regenerateContent(viewType, prompt, researchFiles) {
   try {
-    const { slideLayout = 'twoColumn' } = options;
     const taskName = `Regenerate-${viewType}`;
     const task = async () => {
       switch (viewType) {
         case 'roadmap':
           return generateRoadmap(prompt, researchFiles);
         case 'slides':
-          return generateSlides(prompt, researchFiles, slideLayout);
+          return generateSlides(prompt, researchFiles);
         case 'document':
           return generateDocument(prompt, researchFiles);
         case 'research-analysis':

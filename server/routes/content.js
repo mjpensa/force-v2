@@ -125,7 +125,7 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
   req.setTimeout(GENERATE_TIMEOUT_MS);
   res.setTimeout(GENERATE_TIMEOUT_MS);
   try {
-    const { prompt, slideLayout } = req.body;
+    const { prompt } = req.body;
     const files = req.files;
 
     // Validate input
@@ -167,7 +167,7 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
     const researchFiles = await Promise.all(fileProcessingPromises);
 
     // Generate all content synchronously
-    const results = await generateAllContent(prompt, researchFiles, { slideLayout });
+    const results = await generateAllContent(prompt, researchFiles);
 
     // Create session and store content (including research for task analysis)
     const sessionId = generateSessionId();
@@ -237,7 +237,7 @@ router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), as
 
   try {
     const { viewType } = req.params;
-    const { prompt, slideLayout } = req.body;
+    const { prompt } = req.body;
     const files = req.files;
 
     // Validate view type
@@ -276,7 +276,7 @@ router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), as
     const researchFiles = await Promise.all(fileProcessingPromises);
 
     // Regenerate content
-    const result = await regenerateContent(viewType, prompt, researchFiles, { slideLayout });
+    const result = await regenerateContent(viewType, prompt, researchFiles);
 
     res.json({
       viewType,
