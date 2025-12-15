@@ -66,8 +66,8 @@ export const LAYOUTS = {
       },
       threeColumns: {
         x: 3.56, y: 3.46, w: 9.10, h: 3.52,
-        fontSize: 22, fontFace: FONTS.regular, color: COLORS.navy,
-        lineSpacing: 120, columnGap: 0.59
+        fontSize: 11, fontFace: FONTS.regular, color: COLORS.navy,
+        lineSpacing: 130, columnGap: 0.59
       },
       pageNumber: {
         x: 0.33, y: 7.15, w: 0.5, h: 0.2,

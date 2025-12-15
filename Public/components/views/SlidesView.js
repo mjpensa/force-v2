@@ -241,7 +241,7 @@ function renderThreeColumnSlide(slide, index) {
   el.appendChild(title);
 
   // THREE COLUMNS - PPT: x=3.56", y=3.46", w=9.10", h=3.52" → 26.71%, 46.13%, 68.27%, 46.93%
-  // Font: 22pt Work Sans, lineSpacing: 120 (1.2 line-height), columnGap: 0.59" → 4.43%
+  // Font: 11pt Work Sans, lineSpacing: 120 (1.2 line-height), columnGap: 0.59" → 4.43%
   const MAX_CHARS = 400;
   const truncateToSentence = (text) => {
     if (!text || text.length <= MAX_CHARS) return text || '';
@@ -278,9 +278,9 @@ function renderThreeColumnSlide(slide, index) {
     col.style.cssText = `
       flex: 1;
       font-family: 'Work Sans', sans-serif;
-      font-size: clamp(10px, 2.4cqw, 29px);
+      font-size: clamp(7px, 1.15cqw, 14px);
       font-weight: 400;
-      line-height: 1.2;
+      line-height: 1.3;
       color: #0C2340;
       overflow: hidden;
     `;
