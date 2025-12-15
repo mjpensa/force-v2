@@ -52,9 +52,9 @@ const apiQueue = new APIQueue(4);
  * Generation config presets for different content types
  */
 const DOCUMENT_CONFIG = {
-  temperature: 0.3,      // Moderate for varied expression
-  topP: 0.6,             // Broader vocabulary selection
-  topK: 20,              // More token choices
+  temperature: 0.1,      // Low: deterministic for reliable structured output
+  topP: 0.3,             // Constrained: follow schema strictly
+  topK: 5,               // Minimal exploration: consistent JSON structure
   thinkingBudget: 0      // Disabled for speed
 };
 const STRUCTURED_DEFAULT_CONFIG = {
@@ -96,7 +96,10 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
       temperature,
       topP,
       topK,
-      thinkingBudget = STRUCTURED_DEFAULT_CONFIG.thinkingBudget
+      thinkingBudget = STRUCTURED_DEFAULT_CONFIG.thinkingBudget,
+      maxOutputTokens,
+      frequencyPenalty,
+      presencePenalty
     } = configOverrides;
     const generationConfig = {
       responseMimeType: 'application/json',
@@ -108,6 +111,9 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     if (temperature !== undefined) generationConfig.temperature = temperature;
     if (topP !== undefined) generationConfig.topP = topP;
     if (topK !== undefined) generationConfig.topK = topK;
+    if (maxOutputTokens !== undefined) generationConfig.maxOutputTokens = maxOutputTokens;
+    if (frequencyPenalty !== undefined) generationConfig.frequencyPenalty = frequencyPenalty;
+    if (presencePenalty !== undefined) generationConfig.presencePenalty = presencePenalty;
     console.log(`[${contentType}] Generation config:`, JSON.stringify({ temperature, topP, topK, thinkingBudget }));
     const model = genAI.getGenerativeModel({
       model: CONFIG.API.GEMINI_MODEL,
@@ -127,12 +133,6 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
       return data;
     } catch (parseError) {
       console.log(`[${contentType}] JSON parse error: ${parseError.message}`);
-      const positionMatch = parseError.message.match(/position (\d+)/);
-      const errorPosition = positionMatch ? parseInt(positionMatch[1]) : 0;
-      if (errorPosition > 0) {
-        const contextStart = Math.max(0, errorPosition - 200);
-        const contextEnd = Math.min(text.length, errorPosition + 200);
-      }
       try {
         const repairedJsonText = jsonrepair(text);
         const repairedData = JSON.parse(repairedJsonText);

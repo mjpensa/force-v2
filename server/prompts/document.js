@@ -17,27 +17,37 @@ export const documentSchema = {
   properties: {
     title: {
       type: "string",
-      description: "Compelling document title that signals the core insight"
+      description: "Compelling document title that signals the core insight",
+      maxLength: 200
     },
     executiveSummary: {
       type: "string",
-      description: "2-3 sentence overview for time-pressed executives - the 30-second version"
+      description: "2-3 sentence overview for time-pressed executives - the 30-second version",
+      maxLength: 500
     },
     sections: {
       type: "array",
+      minItems: 4,
+      maxItems: 6,
+      description: "Document sections - MUST have 4-6 sections covering different aspects",
       items: {
         type: "object",
         properties: {
           heading: {
             type: "string",
-            description: "Section heading - lead with insight, not topic label"
+            description: "Section heading - lead with insight, not topic label",
+            maxLength: 150
           },
           keyInsight: {
             type: "string",
-            description: "Single most important takeaway from this section"
+            description: "Single most important takeaway from this section",
+            maxLength: 300
           },
           content: {
             type: "array",
+            minItems: 2,
+            maxItems: 6,
+            description: "Rich content blocks - MUST have 2-6 varied content blocks per section",
             items: {
               type: "object",
               properties: {
@@ -48,7 +58,8 @@ export const documentSchema = {
                 },
                 text: {
                   type: "string",
-                  description: "Text content for paragraph, quote, or evidence blocks"
+                  description: "Text content for paragraph, quote, or evidence blocks",
+                  maxLength: 800
                 },
                 items: {
                   type: "array",
@@ -74,15 +85,18 @@ export const documentSchema = {
                 },
                 claim: {
                   type: "string",
-                  description: "The claim being supported (for evidence blocks)"
+                  description: "The claim being supported (for evidence blocks)",
+                  maxLength: 400
                 },
                 source: {
                   type: "string",
-                  description: "Source filename or reference (for evidence/quote blocks)"
+                  description: "Source filename or reference (for evidence/quote blocks)",
+                  maxLength: 200
                 },
                 attribution: {
                   type: "string",
-                  description: "Attribution for quotes"
+                  description: "Attribution for quotes",
+                  maxLength: 200
                 }
               },
               required: ["type"]
@@ -101,12 +115,16 @@ export const documentSchema = {
     },
     recommendations: {
       type: "array",
+      minItems: 2,
+      maxItems: 4,
+      description: "Prioritized action items with rationale - MUST have 2-4 recommendations",
       items: {
         type: "object",
         properties: {
           action: {
             type: "string",
-            description: "Specific recommended action"
+            description: "Specific recommended action",
+            maxLength: 300
           },
           priority: {
             type: "string",
@@ -115,16 +133,17 @@ export const documentSchema = {
           },
           rationale: {
             type: "string",
-            description: "Why this action matters - connect to evidence"
+            description: "Why this action matters - connect to evidence",
+            maxLength: 400
           },
           timeframe: {
             type: "string",
-            description: "When to act: immediate, short-term, or long-term"
+            description: "When to act: immediate, short-term, or long-term",
+            maxLength: 50
           }
         },
         required: ["action", "priority", "rationale"]
-      },
-      description: "Prioritized action items with rationale"
+      }
     }
   },
   required: ["title", "executiveSummary", "sections", "recommendations"]
