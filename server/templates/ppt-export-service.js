@@ -21,6 +21,28 @@ function getSectionLabel(slideData) {
   return label ? String(label).toUpperCase() : null;
 }
 
+// Common acronyms that should always be capitalized
+const ACRONYMS = [
+  'DRR', 'CDM', 'API', 'ROI', 'KPI', 'CEO', 'CTO', 'CFO', 'COO', 'CIO',
+  'AI', 'ML', 'US', 'UK', 'EU', 'UN', 'CFTC', 'SEC', 'FDA', 'EPA',
+  'UTI', 'UPI', 'ESG', 'DEI', 'M&A', 'IPO', 'ETF', 'GDP', 'B2B', 'B2C',
+  'SaaS', 'PaaS', 'IaaS', 'AWS', 'GCP', 'IT', 'HR', 'PR', 'R&D', 'P&L',
+  'CPMI', 'IOSCO', 'OTC', 'FX', 'USD', 'EUR', 'GBP'
+];
+
+/**
+ * Capitalize known acronyms in text
+ */
+function capitalizeAcronyms(text) {
+  let result = text;
+  for (const acronym of ACRONYMS) {
+    // Match acronym case-insensitively as a whole word
+    const regex = new RegExp(`\\b${acronym}\\b`, 'gi');
+    result = result.replace(regex, acronym);
+  }
+  return result;
+}
+
 function enforceExactlyFourLinesFallback(title) {
   const titleText = title || '';
   let lines = titleText.split('\n').map(l => l.trim()).filter(l => l);
@@ -60,7 +82,7 @@ async function rewordTitleToFourLines(title) {
 
   // If already 4 lines or fewer, use fallback (handles padding)
   if (lines.length <= 4) {
-    return enforceExactlyFourLinesFallback(title);
+    return capitalizeAcronyms(enforceExactlyFourLinesFallback(title));
   }
 
   try {
@@ -82,6 +104,7 @@ Rules:
 - Each line should be 1-2 words, max 10 characters
 - Preserve the core message and meaning
 - Use impactful, concise language
+- KEEP ACRONYMS CAPITALIZED (e.g., DRR, CDM, API, ROI, CFTC, ESG)
 
 Output ONLY the 4-line title, nothing else:`;
 
@@ -92,15 +115,15 @@ Output ONLY the 4-line title, nothing else:`;
     // Verify AI produced exactly 4 lines
     if (rewordedLines.length === 4) {
       console.log(`[PPT Export] AI reworded title from ${lines.length} to 4 lines`);
-      return rewordedLines.join('\n');
+      return capitalizeAcronyms(rewordedLines.join('\n'));
     }
 
     // AI didn't produce 4 lines, fall back
     console.log(`[PPT Export] AI produced ${rewordedLines.length} lines, using fallback`);
-    return enforceExactlyFourLinesFallback(title);
+    return capitalizeAcronyms(enforceExactlyFourLinesFallback(title));
   } catch (error) {
     console.log(`[PPT Export] AI rewording failed: ${error.message}, using fallback`);
-    return enforceExactlyFourLinesFallback(title);
+    return capitalizeAcronyms(enforceExactlyFourLinesFallback(title));
   }
 }
 
@@ -184,7 +207,7 @@ function addTextTwoColumnSlide(pptx, slideData, slideNumber) {
     });
   }
 
-  slide.addText(enforceExactlyFourLinesFallback(slideData.title), {
+  slide.addText(capitalizeAcronyms(enforceExactlyFourLinesFallback(slideData.title)), {
     x: layout.elements.title.x,
     y: layout.elements.title.y,
     w: layout.elements.title.w,
@@ -246,7 +269,7 @@ function addTextThreeColumnSlide(pptx, slideData, slideNumber) {
   }
 
   // Title (narrower, non-italic for this layout)
-  slide.addText(enforceExactlyFourLinesFallback(slideData.title), {
+  slide.addText(capitalizeAcronyms(enforceExactlyFourLinesFallback(slideData.title)), {
     x: layout.elements.title.x,
     y: layout.elements.title.y,
     w: layout.elements.title.w,
