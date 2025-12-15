@@ -70,7 +70,7 @@ const DOCUMENT_CONFIG_ENHANCED = {
   temperature: 0.3,      // Higher for varied expression
   topP: 0.6,             // Broader vocabulary selection
   topK: 20,              // More token choices
-  thinkingBudget: 8192   // Enable deep reasoning
+  thinkingBudget: 0      // Disabled - prompt improvements are sufficient
 };
 
 const DOCUMENT_POLISH_CONFIG = {
@@ -232,25 +232,25 @@ Return the improved version in the exact same JSON schema.`;
 }
 
 /**
- * Generate executive summary document with enhanced quality
- * Falls back to fast generation if enhanced mode fails
+ * Generate executive summary document
+ * Uses enhanced prompt/schema with single-pass generation for speed
+ * Two-pass mode available but disabled by default due to latency
  */
-async function generateDocument(userPrompt, researchFiles, enhanced = true) {
+async function generateDocument(userPrompt, researchFiles, twoPass = false) {
   try {
-    if (enhanced) {
+    if (twoPass) {
+      // Two-pass: structure + polish (slower, higher quality)
       try {
         const data = await generateDocumentEnhanced(userPrompt, researchFiles);
         return { success: true, data };
       } catch (enhancedError) {
-        console.warn('[Document] Enhanced generation failed, falling back to fast mode:', enhancedError.message);
-        // Fall through to fast generation
+        console.warn('[Document] Two-pass generation failed, falling back to single-pass:', enhancedError.message);
       }
     }
 
-    // Fast generation (fallback)
-    console.log('[Document] Using fast generation mode');
+    // Single-pass: enhanced prompt/schema, no polish pass (default - fast)
     const prompt = generateDocumentPrompt(userPrompt, researchFiles);
-    const data = await generateWithGemini(prompt, documentSchema, 'Document', DOCUMENT_CONFIG_FAST);
+    const data = await generateWithGemini(prompt, documentSchema, 'Document', DOCUMENT_CONFIG_ENHANCED);
     return { success: true, data };
   } catch (error) {
     return { success: false, error: error.message };

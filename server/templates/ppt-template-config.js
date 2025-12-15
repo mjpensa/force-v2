@@ -9,7 +9,6 @@ export const COLORS = {
   navy: '0C2340',
   red: 'DA291C',
   white: 'FFFFFF',
-  lightGray: 'E8E8E8',
   darkGray: '6B7280'
 };
 
@@ -17,8 +16,7 @@ export const COLORS = {
 export const FONTS = {
   thin: 'Work Sans Thin',
   regular: 'Work Sans',
-  semibold: 'Work Sans SemiBold',
-  bold: 'Work Sans Bold'
+  semibold: 'Work Sans SemiBold'
 };
 
 // Slide dimensions (16:9)
