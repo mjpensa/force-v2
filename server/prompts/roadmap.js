@@ -101,8 +101,11 @@ You MUST respond with *only* a valid JSON object matching the schema.
       * **INCLUDE ALL TASKS THAT OVERLAP THE RANGE:** You MUST include EVERY task that has ANY portion within the user's time range:
         - Tasks entirely within the range → INCLUDE
         - Tasks that START BEFORE the range but END WITHIN or AFTER the range start → INCLUDE (set startCol=1 to clip to chart start)
-        - Tasks that START WITHIN the range but END AFTER the range → INCLUDE
-        - Example: User says "2015-2020" and research has a task from 2010-2018 → INCLUDE it (it overlaps 2015-2018), with startCol=1
+        - Tasks that START WITHIN the range but END AFTER the range → INCLUDE (set endCol to last column + 1 to clip to chart end)
+        - Tasks that START BEFORE and END AFTER the range → INCLUDE (clip both: startCol=1, endCol=last column + 1)
+        - Example: User says "2015-2020" and research has a task from 2010-2018 → INCLUDE it (overlaps 2015-2018), with startCol=1
+        - Example: User says "2015-2020" and research has a task from 2018-2025 → INCLUDE it (overlaps 2018-2020), with endCol clipped to chart end
+        - Example: User says "2015-2020" and research has a task from 2010-2025 → INCLUDE it (spans entire range), with startCol=1 and endCol clipped to chart end
       * **Only exclude tasks ENTIRELY outside the range:** Exclude ONLY if the task's END date is before the range start, OR the task's START date is after the range end.
         - Example: User says "2015-2020" and research mentions a 2022 event → exclude (starts after range ends)
         - Example: User says "2015-2020" and research has a task from 2010-2012 → exclude (ends before range starts)
@@ -144,8 +147,15 @@ You MUST respond with *only* a valid JSON object matching the schema.
       * If a date falls BEFORE the first timeColumn, set startCol=1 (start of chart).
       * If a date is "Q1 2024" and the interval is "Years", map it to the "2024" column index.
     - **DURATION:** For tasks spanning multiple periods, endCol should reflect the actual end date. Minimum duration is 1 column (endCol = startCol + 1).
+    - **CLIPPING TO CHART BOUNDARIES (CRITICAL):**
+      * If a task STARTS BEFORE the first timeColumn → set startCol=1 (clip to chart start)
+      * If a task ENDS AFTER the last timeColumn → set endCol to (number of timeColumns + 1) (clip to chart end)
+      * Example: timeColumns=["2015","2016","2017","2018","2019","2020"], task runs 2010-2018 → startCol=1, endCol=5 (2018 is index 4, plus 1)
+      * Example: timeColumns=["2015","2016","2017","2018","2019","2020"], task runs 2018-2025 → startCol=4, endCol=7 (clips to end of chart)
+      * Example: timeColumns=["2015","2016","2017","2018","2019","2020"], task runs 2010-2025 → startCol=1, endCol=7 (spans entire chart)
     - **UNKNOWN DATES:** If a date is truly unknown/unspecified in the research, use \`{ "startCol": null, "endCol": null, "color": "..." }\`.
     - **VERIFY:** Double-check that tasks mentioned as occurring at the START of a project/initiative have startCol=1 or early columns, not middle columns.
+    - **VERIFY BOUNDARY TASKS:** Double-check that tasks extending beyond the chart boundaries are INCLUDED with clipped startCol/endCol values, NOT excluded.
 6.  **COLORS & LEGEND (THEME-BASED, DISTINCT FROM SWIMLANES):** Color groupings MUST be different from swimlane groupings.
     a.  **Step 1: Identify Cross-Swimlane Themes:** Analyze ALL tasks across ALL swimlanes to find logical thematic groupings that SPAN MULTIPLE swimlanes. Valid themes must:
         - Appear in at least 2 different swimlanes
@@ -180,11 +190,12 @@ You MUST respond with *only* a valid JSON object matching the schema.
     **EXTRACTION RULES:**
     - Do NOT summarize or consolidate similar items - include each one separately
     - Do NOT skip items because they seem minor - include everything mentioned
-    - Do NOT skip items because they are in the PAST - historical context is critical (unless they fall outside the user's specified time range)
+    - Do NOT skip items because they are in the PAST - historical context is critical (unless the task ends ENTIRELY before the user's specified time range starts)
+    - Do NOT skip items because they EXTEND BEYOND the time range - if ANY portion overlaps with the range, INCLUDE the task
     - If an item appears in multiple places, include it once with the most complete information
-    - If dates are mentioned for ANY activity, that activity MUST appear in the chart (if within the time range)
+    - If dates are mentioned for ANY activity, that activity MUST appear in the chart (if it overlaps with the time range)
     - Err on the side of INCLUSION - when in doubt, add it to the chart
-    - **VERIFY TIME RANGE COVERAGE:** After extraction, review ALL items and confirm that EVERY event with a date falling within the user's specified time range (or the derived range) is included. Do NOT skip items within the range.
+    - **VERIFY TIME RANGE COVERAGE:** After extraction, review ALL items and confirm that EVERY event that OVERLAPS with the user's specified time range is included. This includes tasks that start before OR end after the range - if any portion falls within the range, include it.
     - **VERIFY EARLY DATES:** After extraction, confirm that events from the BEGINNING of the timeline are included with correct startCol values (startCol=1 for the earliest events).
     - **VERIFY SWIMLANE COMPLETENESS:** After identifying all tasks, review to ensure EVERY distinct topic, entity, organization, or category that has 3 or more tasks is represented as its own swimlane. Do not merge or consolidate distinct topics into broader categories if they independently qualify for their own swimlane.
 10. **RESEARCH ANALYSIS (REQUIRED):** You MUST generate a comprehensive analysis of the research quality in the "researchAnalysis" object. This helps users understand if their research inputs are fit for purpose.

@@ -19,21 +19,25 @@ export const documentSchema = {
     executiveSummary: {
       type: "object",
       properties: {
-        stakes: {
+        situation: {
           type: "string",
-          description: "What's at risk? Quantified impact statement (e.g., '$4M revenue at risk', '23% margin erosion'). Start with power verb."
+          description: "Current competitive reality - what HAS happened or IS happening. Specific facts with numbers. (e.g., 'JPMorgan deployed CDM in Q4 2024, cutting reconciliation costs 50%')"
         },
-        keyFinding: {
+        insight: {
           type: "string",
-          description: "Core insight with specific data point from research. Must cite source: '[filename] reveals/shows...'"
+          description: "The 'so what' - quantified impact to THIS organization. Dollar amount or percentage at risk. (e.g., 'Each quarter of delay costs $2.3M in manual reconciliation and exposes the firm to DRR non-compliance penalties')"
         },
-        recommendation: {
+        action: {
           type: "string",
-          description: "Specific action + owner + timeline (e.g., 'CFO approve $2M pilot by Q2', 'Engineering hire 5 devs by March')"
+          description: "Single clear directive: [Role] [verb] [object] by [date]. Max 12 words. (e.g., 'CTO greenlight CDM pilot by Q2 2025')"
+        },
+        source: {
+          type: "string",
+          description: "Primary source filename for the key data point (e.g., 'jpm-analysis.md')"
         }
       },
-      required: ["stakes", "keyFinding", "recommendation"],
-      description: "Structured executive summary with stakes, key finding, and actionable recommendation"
+      required: ["situation", "insight", "action", "source"],
+      description: "Structured executive summary: Situation (what is) → Insight (so what) → Action (now what)"
     },
     sections: {
       type: "array",
@@ -115,30 +119,52 @@ ANTI-PATTERNS TO AVOID:
 - Topic-label headings ("Overview", "Background", "Analysis")
 - Concluding paragraphs that merely restate what was said
 
-EXECUTIVE SUMMARY FORMULA (mandatory):
-Sentence 1: Stakes + Tension - What's at risk if we do nothing? Include quantified impact.
-Sentence 2: Key finding with specific data point extracted from research (cite source)
-Sentence 3: Recommended action with specific owner/timeline
+EXECUTIVE SUMMARY - SITUATION → INSIGHT → ACTION FLOW:
+
+The executive summary must follow a strict causal chain:
+1. SITUATION: What HAS happened or IS happening (competitor action, market shift, regulatory change)
+   - State facts, not risks. Use past/present tense.
+   - Include specific numbers from research.
+   - Example: "JPMorgan deployed ISDA CDM in Q4 2024, achieving 50% reduction in reconciliation costs."
+
+2. INSIGHT: The 'so what' for THIS organization (quantified impact)
+   - Translate the situation into dollars/percentage at stake for the reader's firm.
+   - Be specific: "$X at risk" or "Y% cost disadvantage" - not vague "operational inefficiency"
+   - Example: "Each quarter of delay widens the cost gap by $2.3M and risks DRR non-compliance penalties starting Q1 2026."
+
+3. ACTION: Single clear directive (max 12 words)
+   - Format: [Role] [verb] [object] by [date]
+   - One action only. No compound sentences. No rationale.
+   - Example: "CTO greenlight CDM pilot by Q2 2025."
+
+EXECUTIVE SUMMARY ANTI-PATTERNS (NEVER do these):
+- NEVER say what is "unknown", "unclear", or "uncertain" - only state what IS known
+- NEVER use "undermines", "exposes to risk", or other vague threat language without specific $ amounts
+- NEVER use bureaucratic phrasing ("must publicly commit to", "should prioritize")
+- NEVER combine multiple actions or add rationale to the action field
+- NEVER include inline citations like [filename.md] in prose - use the separate source field
+- NEVER use passive voice ("implementation status remains unknown")
+- NEVER start with "This analysis..." or "This report..."
 
 EXECUTIVE SUMMARY EXAMPLES:
 
-BAD (generic, no data, passive):
-"This analysis examines market trends and provides recommendations for improving operational efficiency."
+BAD:
+situation: "Undermines operational efficiency and exposes the firm to mounting regulatory risk"
+insight: "Competitors are already locking in cost reductions by adopting industry-standard data models"
+action: "Chief Technology Officer (CTO) must publicly commit to a CDM/DRR production timeline by Q2 2026, prioritizing derivatives reporting over general digital transformation projects to mitigate competitive and compliance risk."
 
-GOOD (stakes, data, action):
-"A 23% cost advantage window closes in Q3 as competitors scale production—[competitor-analysis.pdf] shows first-mover margins erode 40% within 18 months. Authorize the $2M Vietnam pilot by March to lock in $12M annual savings before price parity."
+WHY IT'S BAD: Situation is vague (no specific event). Insight talks about competitors, not THIS firm's $ impact. Action is 35 words with bureaucratic language and embedded rationale.
 
-BAD (weasel words, no urgency):
-"There has been significant growth in the market, and various opportunities exist for substantial improvement."
+GOOD:
+situation: "JPMorgan deployed ISDA CDM for derivatives reporting in Q4 2024, cutting reconciliation time 60% and positioning for automated DRR compliance."
+insight: "Bank of America's manual processes now cost $2.3M more per quarter than JPMorgan's, with the gap widening 15% annually."
+action: "CTO approve CDM pilot by Q2 2025."
+source: "jpm-competitive-analysis.md"
 
-GOOD (specific, urgent, actionable):
-"Customer churn spiked to 18% in Q4—[support-data.xlsx] reveals 73% cite response time. Hire 12 support engineers by February or forfeit $4.2M ARR to competitors already offering 4-hour SLAs."
-
-POWER VERBS FOR OPENING (use one):
-Threatens, Reveals, Demands, Enables, Erodes, Accelerates, Undermines, Unlocks, Exposes, Validates
+WHY IT'S GOOD: Situation states a specific fact. Insight quantifies THIS firm's disadvantage in dollars. Action is 6 words with clear owner/deadline.
 
 STRUCTURE:
-- executiveSummary: Object with stakes (quantified risk), keyFinding (data + source), recommendation (action + owner + timeline)
+- executiveSummary: Object with situation (fact), insight ($ impact), action (directive), source (filename)
 - 4-6 sections covering: situation analysis, implications, risks, recommendations
 - Each section: insight-driven heading, key takeaway, supporting evidence, 2-4 focused paragraphs
 - keyInsight: Single sentence with the most important point from that section
@@ -148,9 +174,10 @@ OUTPUT FORMAT:
 {
   "title": "Insight-driven title that signals the core finding",
   "executiveSummary": {
-    "stakes": "Quantified risk/opportunity starting with power verb (e.g., 'Erodes $4M margin by Q3')",
-    "keyFinding": "Key insight with data point and [source.ext] citation",
-    "recommendation": "Specific action + owner + timeline (e.g., 'Board approve $2M by March')"
+    "situation": "Specific fact about what has happened or is happening (with numbers)",
+    "insight": "Quantified impact to THIS organization in dollars or percentage",
+    "action": "[Role] [verb] [object] by [date] - max 12 words",
+    "source": "primary-source-filename.ext"
   },
   "sections": [
     {

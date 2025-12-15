@@ -311,31 +311,71 @@ export class DocumentView {
       header.appendChild(meta);
     }
 
-    // Executive Summary (TL;DR) - handles both structured object and legacy string formats
+    // Executive Summary (At a Glance) - handles new and legacy formats
     if (this.documentData.executiveSummary) {
       const summary = document.createElement('div');
       summary.className = 'executive-summary';
 
+      // Header row with label and source badge
+      const headerRow = document.createElement('div');
+      headerRow.className = 'executive-summary-header';
+
       const label = document.createElement('span');
       label.className = 'executive-summary-label';
       label.textContent = 'At a Glance';
-      summary.appendChild(label);
+      headerRow.appendChild(label);
 
       const execSummary = this.documentData.executiveSummary;
 
-      // Handle structured object format (new) - check for any of the expected properties
+      // Add source badge if present (new format)
+      if (typeof execSummary === 'object' && execSummary !== null && execSummary.source) {
+        const sourceBadge = document.createElement('span');
+        sourceBadge.className = 'executive-summary-source';
+        sourceBadge.textContent = execSummary.source;
+        sourceBadge.title = `Primary source: ${execSummary.source}`;
+        headerRow.appendChild(sourceBadge);
+      }
+
+      summary.appendChild(headerRow);
+
+      // Handle NEW structured format (situation, insight, action)
       if (typeof execSummary === 'object' && execSummary !== null &&
+          (execSummary.situation || execSummary.insight || execSummary.action)) {
+
+        if (execSummary.situation) {
+          const situationEl = document.createElement('p');
+          situationEl.className = 'executive-summary-situation';
+          situationEl.textContent = execSummary.situation;
+          summary.appendChild(situationEl);
+        }
+
+        if (execSummary.insight) {
+          const insightEl = document.createElement('p');
+          insightEl.className = 'executive-summary-insight';
+          insightEl.textContent = execSummary.insight;
+          summary.appendChild(insightEl);
+        }
+
+        if (execSummary.action) {
+          const actionEl = document.createElement('p');
+          actionEl.className = 'executive-summary-action';
+          actionEl.textContent = execSummary.action;
+          summary.appendChild(actionEl);
+        }
+      }
+      // Handle LEGACY structured format (stakes, keyFinding, recommendation)
+      else if (typeof execSummary === 'object' && execSummary !== null &&
           (execSummary.stakes || execSummary.keyFinding || execSummary.recommendation)) {
         if (execSummary.stakes) {
           const stakesEl = document.createElement('p');
-          stakesEl.className = 'executive-summary-stakes';
+          stakesEl.className = 'executive-summary-situation'; // Map to new class
           stakesEl.textContent = execSummary.stakes;
           summary.appendChild(stakesEl);
         }
 
         if (execSummary.keyFinding) {
           const findingEl = document.createElement('p');
-          findingEl.className = 'executive-summary-finding';
+          findingEl.className = 'executive-summary-insight'; // Map to new class
           findingEl.textContent = execSummary.keyFinding;
           summary.appendChild(findingEl);
         }
