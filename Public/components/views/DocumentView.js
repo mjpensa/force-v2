@@ -318,7 +318,7 @@ export class DocumentView {
 
       const label = document.createElement('span');
       label.className = 'executive-summary-label';
-      label.textContent = 'TL;DR';
+      label.textContent = 'At a Glance';
       summary.appendChild(label);
 
       const text = document.createElement('p');

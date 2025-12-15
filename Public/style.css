@@ -3195,9 +3195,11 @@ body.dragging {
   width: var(--icon-rail-icon-size);
   height: var(--icon-rail-icon-size);
   color: var(--glass-text-muted);
-  transition: all var(--icon-rail-transition-fast);
-  flex-shrink: 0;
-  display: block;
+  transition: color var(--icon-rail-transition-fast);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 .icon-rail-item:hover .icon-rail-item-icon svg {
   color: var(--glass-text-secondary);
