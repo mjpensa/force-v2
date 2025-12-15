@@ -446,10 +446,10 @@ router.post('/slides/export', express.json({ limit: '50mb' }), async (req, res) 
   try {
     const { slides } = req.body;
 
-    if (!slides || !slides.slides || !Array.isArray(slides.slides)) {
+    if (!slides || !slides.sections || !Array.isArray(slides.sections)) {
       return res.status(400).json({
         error: 'Invalid slides data',
-        message: 'Request must include slides object with slides array'
+        message: 'Request must include slides object with sections array'
       });
     }
 

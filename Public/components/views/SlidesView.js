@@ -5,9 +5,7 @@
  * Slide: 12192000 x 6858000 EMU (16:9)
  * All positions calculated as percentages from source XML
  *
- * Supports both:
- * - New sections structure (aligned with Gantt swimlanes)
- * - Legacy flat slides array
+ * Sections structure aligned with Gantt chart swimlanes
  */
 
 // Dispatcher - routes to correct renderer based on layout
@@ -470,14 +468,10 @@ export class SlidesView {
     // ALWAYS show demo slides first for template reference
     this.slides = [DEMO_SLIDE_TWO_COL, DEMO_SLIDE_THREE_COL];
 
-    // Handle new sections structure (aligned with Gantt swimlanes)
+    // Handle sections structure (aligned with Gantt swimlanes)
     if (data?.sections?.length) {
       const flattenedSlides = this._flattenSections(data.sections);
       this.slides = this.slides.concat(flattenedSlides);
-    }
-    // Legacy: flat slides array
-    else if (data?.slides?.length) {
-      this.slides = this.slides.concat(data.slides);
     }
 
     this.index = 0;

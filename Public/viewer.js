@@ -711,7 +711,7 @@ class ContentViewer {
     if (!data) return false;
     switch (viewName) {
       case 'slides':
-        return data.slides && Array.isArray(data.slides) && data.slides.length > 0;
+        return data.sections && Array.isArray(data.sections) && data.sections.length > 0;
       case 'document':
         return data.sections && Array.isArray(data.sections) && data.sections.length > 0;
       case 'research-analysis':

@@ -220,7 +220,7 @@ export class StateManager {
         }
       }
       if (viewName === 'slides') {
-        if (!data.slides || !Array.isArray(data.slides) || data.slides.length === 0) {
+        if (!data.sections || !Array.isArray(data.sections) || data.sections.length === 0) {
           throw new AppError(
             `Slides generation completed but produced empty content. Please try regenerating.`,
             ErrorTypes.VALIDATION,

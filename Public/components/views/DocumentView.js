@@ -96,7 +96,10 @@ export class DocumentView {
   }
 
   /**
-   * Render table of contents
+   * Render table of contents with structured navigation:
+   * 1. Overview (Analysis Overview section)
+   * 2. Swimlane topic sections
+   * 3. Closing
    */
   _renderTableOfContents() {
     const tocContainer = document.createElement('div');
@@ -110,14 +113,35 @@ export class DocumentView {
     const tocList = document.createElement('ul');
     tocList.className = 'toc-list';
 
-    // Build TOC from sections
-    this.documentData.sections.forEach(section => {
-      const li = document.createElement('li');
+    // 1. Overview link (if analysis overview exists)
+    if (this.documentData.analysisOverview) {
+      const overviewLi = document.createElement('li');
+      const overviewLink = document.createElement('a');
+      overviewLink.className = 'toc-link';
+      overviewLink.href = '#analysis-overview';
+      overviewLink.textContent = 'Overview';
+      overviewLink.setAttribute('data-section-id', 'analysis-overview');
 
+      overviewLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        this._scrollToSection('analysis-overview');
+      });
+
+      this.tocLinks.set('analysis-overview', overviewLink);
+      overviewLi.appendChild(overviewLink);
+      tocList.appendChild(overviewLi);
+    }
+
+    // 2. Swimlane topic sections - use swimlaneTopic name if available
+    this.documentData.sections.forEach(section => {
+      if (section.level !== 1) return; // Only top-level sections
+
+      const li = document.createElement('li');
       const link = document.createElement('a');
       link.className = 'toc-link';
       link.href = `#${section.id}`;
-      link.textContent = section.heading;
+      // Use swimlaneTopic for display if available, otherwise use heading
+      link.textContent = section.swimlaneTopic || section.heading;
       link.setAttribute('data-section-id', section.id);
 
       link.addEventListener('click', (e) => {
@@ -127,43 +151,26 @@ export class DocumentView {
 
       // Store reference for scroll spy
       this.tocLinks.set(section.id, link);
-
       li.appendChild(link);
-
-      // Add subsections if level 2
-      if (section.level === 1 && this.documentData.sections.some(s =>
-        s.level === 2 && this._isSubsectionOf(s, section)
-      )) {
-        const sublist = document.createElement('ul');
-        sublist.className = 'toc-sublist';
-
-        this.documentData.sections
-          .filter(s => s.level === 2 && this._isSubsectionOf(s, section))
-          .forEach(subsection => {
-            const subli = document.createElement('li');
-            const sublink = document.createElement('a');
-            sublink.className = 'toc-link';
-            sublink.href = `#${subsection.id}`;
-            sublink.textContent = subsection.heading;
-            sublink.setAttribute('data-section-id', subsection.id);
-
-            sublink.addEventListener('click', (e) => {
-              e.preventDefault();
-              this._scrollToSection(subsection.id);
-            });
-
-            this.tocLinks.set(subsection.id, sublink);
-            subli.appendChild(sublink);
-            sublist.appendChild(subli);
-          });
-
-        li.appendChild(sublist);
-      }
-
-      if (section.level === 1) {
-        tocList.appendChild(li);
-      }
+      tocList.appendChild(li);
     });
+
+    // 3. Closing link (always add at the end)
+    const closingLi = document.createElement('li');
+    const closingLink = document.createElement('a');
+    closingLink.className = 'toc-link';
+    closingLink.href = '#document-closing';
+    closingLink.textContent = 'Closing';
+    closingLink.setAttribute('data-section-id', 'document-closing');
+
+    closingLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      this._scrollToSection('document-closing');
+    });
+
+    this.tocLinks.set('document-closing', closingLink);
+    closingLi.appendChild(closingLink);
+    tocList.appendChild(closingLi);
 
     tocContainer.appendChild(tocList);
     return tocContainer;
@@ -203,6 +210,12 @@ export class DocumentView {
     const header = this._renderDocumentHeader();
     contentContainer.appendChild(header);
 
+    // Analysis Overview (if present) - comprehensive synthesis before detailed sections
+    const overview = this._renderAnalysisOverview();
+    if (overview) {
+      contentContainer.appendChild(overview);
+    }
+
     // Sections
     this.documentData.sections.forEach(section => {
       const sectionEl = this._renderSection(section);
@@ -215,7 +228,208 @@ export class DocumentView {
       contentContainer.appendChild(recommendations);
     }
 
+    // Closing section (always rendered for TOC navigation)
+    const closing = this._renderClosingSection();
+    contentContainer.appendChild(closing);
+
     return contentContainer;
+  }
+
+  /**
+   * Render closing section - wraps up the document
+   */
+  _renderClosingSection() {
+    const container = document.createElement('div');
+    container.className = 'document-closing';
+    container.id = 'document-closing'; // ID for TOC navigation
+
+    const header = document.createElement('h2');
+    header.className = 'section-heading closing-heading';
+    header.textContent = 'Closing';
+    container.appendChild(header);
+
+    // Generate closing content based on executive summary action
+    const closingContent = document.createElement('div');
+    closingContent.className = 'closing-content';
+
+    // Primary closing paragraph
+    const closingParagraph = document.createElement('p');
+    closingParagraph.className = 'closing-paragraph';
+
+    if (this.documentData.executiveSummary?.action) {
+      closingParagraph.textContent = `The analysis presented above supports a clear path forward. The recommended action—${this.documentData.executiveSummary.action.replace(/\.$/, '')}—addresses the critical findings and positions the organization to capitalize on the opportunities identified across each strategic theme.`;
+    } else {
+      closingParagraph.textContent = 'The analysis presented above provides a comprehensive view of the strategic landscape. The detailed sections offer actionable insights for each key area, enabling informed decision-making and strategic prioritization.';
+    }
+    closingContent.appendChild(closingParagraph);
+
+    // Next steps callout
+    const nextSteps = document.createElement('div');
+    nextSteps.className = 'closing-next-steps';
+
+    const nextStepsLabel = document.createElement('span');
+    nextStepsLabel.className = 'next-steps-label';
+    nextStepsLabel.textContent = 'Next Steps';
+    nextSteps.appendChild(nextStepsLabel);
+
+    const nextStepsList = document.createElement('ul');
+    nextStepsList.className = 'next-steps-list';
+
+    const steps = [
+      'Review the detailed findings in each section above',
+      'Align key stakeholders on priorities and timelines',
+      'Reference the roadmap for implementation sequencing'
+    ];
+
+    steps.forEach(step => {
+      const li = document.createElement('li');
+      li.textContent = step;
+      nextStepsList.appendChild(li);
+    });
+
+    nextSteps.appendChild(nextStepsList);
+    closingContent.appendChild(nextSteps);
+
+    container.appendChild(closingContent);
+    return container;
+  }
+
+  /**
+   * Render analysis overview - comprehensive strategic synthesis
+   */
+  _renderAnalysisOverview() {
+    const overview = this.documentData.analysisOverview;
+    if (!overview) return null;
+
+    const container = document.createElement('div');
+    container.className = 'analysis-overview';
+    container.id = 'analysis-overview'; // ID for TOC navigation
+
+    // Overview header
+    const header = document.createElement('div');
+    header.className = 'analysis-overview-header';
+
+    const label = document.createElement('span');
+    label.className = 'analysis-overview-label';
+    label.textContent = 'Strategic Analysis Overview';
+    header.appendChild(label);
+
+    container.appendChild(header);
+
+    // Narrative section
+    if (overview.narrative) {
+      const narrativeContainer = document.createElement('div');
+      narrativeContainer.className = 'overview-narrative';
+
+      // Split narrative into paragraphs if it contains newlines, otherwise treat as single block
+      const paragraphs = overview.narrative.split(/\n\n+/).filter(p => p.trim());
+      paragraphs.forEach(para => {
+        const p = document.createElement('p');
+        p.className = 'narrative-paragraph';
+        p.textContent = para.trim();
+        narrativeContainer.appendChild(p);
+      });
+
+      container.appendChild(narrativeContainer);
+    }
+
+    // Key Themes section
+    if (overview.keyThemes && Array.isArray(overview.keyThemes) && overview.keyThemes.length > 0) {
+      const themesContainer = document.createElement('div');
+      themesContainer.className = 'overview-themes';
+
+      const themesLabel = document.createElement('h3');
+      themesLabel.className = 'overview-section-label';
+      themesLabel.textContent = 'Key Themes';
+      themesContainer.appendChild(themesLabel);
+
+      const themesList = document.createElement('div');
+      themesList.className = 'themes-list';
+
+      overview.keyThemes.forEach(theme => {
+        const themeItem = document.createElement('div');
+        themeItem.className = 'theme-item';
+
+        const themeName = document.createElement('h4');
+        themeName.className = 'theme-name';
+        themeName.textContent = theme.theme;
+        themeItem.appendChild(themeName);
+
+        if (theme.description) {
+          const themeDesc = document.createElement('p');
+          themeDesc.className = 'theme-description';
+          themeDesc.textContent = theme.description;
+          themeItem.appendChild(themeDesc);
+        }
+
+        if (theme.affectedTopics && Array.isArray(theme.affectedTopics) && theme.affectedTopics.length > 0) {
+          const topicsContainer = document.createElement('div');
+          topicsContainer.className = 'theme-topics';
+
+          theme.affectedTopics.forEach(topic => {
+            const topicBadge = document.createElement('span');
+            topicBadge.className = 'theme-topic-badge';
+            topicBadge.textContent = topic;
+            topicsContainer.appendChild(topicBadge);
+          });
+
+          themeItem.appendChild(topicsContainer);
+        }
+
+        themesList.appendChild(themeItem);
+      });
+
+      themesContainer.appendChild(themesList);
+      container.appendChild(themesContainer);
+    }
+
+    // Critical Findings section
+    if (overview.criticalFindings && Array.isArray(overview.criticalFindings) && overview.criticalFindings.length > 0) {
+      const findingsContainer = document.createElement('div');
+      findingsContainer.className = 'overview-findings';
+
+      const findingsLabel = document.createElement('h3');
+      findingsLabel.className = 'overview-section-label';
+      findingsLabel.textContent = 'Critical Findings';
+      findingsContainer.appendChild(findingsLabel);
+
+      const findingsList = document.createElement('ul');
+      findingsList.className = 'findings-list';
+
+      overview.criticalFindings.forEach(finding => {
+        const li = document.createElement('li');
+        li.className = 'finding-item';
+        li.textContent = finding;
+        findingsList.appendChild(li);
+      });
+
+      findingsContainer.appendChild(findingsList);
+      container.appendChild(findingsContainer);
+    }
+
+    // Strategic Context section
+    if (overview.strategicContext) {
+      const contextContainer = document.createElement('div');
+      contextContainer.className = 'overview-context';
+
+      const contextLabel = document.createElement('h3');
+      contextLabel.className = 'overview-section-label';
+      contextLabel.textContent = 'Strategic Context';
+      contextContainer.appendChild(contextLabel);
+
+      // Split into paragraphs
+      const paragraphs = overview.strategicContext.split(/\n\n+/).filter(p => p.trim());
+      paragraphs.forEach(para => {
+        const p = document.createElement('p');
+        p.className = 'context-paragraph';
+        p.textContent = para.trim();
+        contextContainer.appendChild(p);
+      });
+
+      container.appendChild(contextContainer);
+    }
+
+    return container;
   }
 
   /**

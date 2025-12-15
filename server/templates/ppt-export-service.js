@@ -189,14 +189,13 @@ export async function generatePptx(slidesData, options = {}) {
   pptx.defineLayout({ name: 'CUSTOM_16_9', width: SLIDE_SIZE.width, height: SLIDE_SIZE.height });
   pptx.layout = 'CUSTOM_16_9';
 
-  // Handle new sections structure or legacy flat slides array
+  // Handle sections structure (aligned with Gantt swimlanes)
   let slidesArray;
   if (slidesData.sections?.length) {
     console.log(`[PPT Export] Processing ${slidesData.sections.length} sections`);
     slidesArray = flattenSections(slidesData.sections);
-  } else if (slidesData.slides?.length) {
-    slidesArray = slidesData.slides;
   } else {
+    console.log(`[PPT Export] No sections found in slides data`);
     slidesArray = [];
   }
 

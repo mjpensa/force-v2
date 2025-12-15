@@ -172,48 +172,33 @@ function validateExecutiveSummary(execSummary) {
 /**
  * Validate slide content quality (logging only, no retry)
  * Checks for analytical rigor and narrative energy markers
- * Supports both new sections structure and legacy flat slides array
- * @param {object} slidesData - Generated slides object
+ * @param {object} slidesData - Generated slides object with sections structure
  * @returns {{ valid: boolean, issues: string[] }}
  */
 function validateSlideQuality(slidesData) {
   const issues = [];
 
-  // Handle new sections structure
-  if (slidesData?.sections && Array.isArray(slidesData.sections)) {
-    let slideIndex = 0;
-    for (const section of slidesData.sections) {
-      const sectionName = section.swimlane || 'Unknown Section';
+  if (!slidesData?.sections || !Array.isArray(slidesData.sections)) {
+    return { valid: false, issues: ['Invalid slides structure - missing sections array'] };
+  }
 
-      if (!section.slides || section.slides.length === 0) {
-        issues.push(`Section "${sectionName}": No slides generated (minimum 1-2 required)`);
-        continue;
-      }
+  let slideIndex = 0;
+  for (const section of slidesData.sections) {
+    const sectionName = section.swimlane || 'Unknown Section';
 
-      for (const slide of section.slides) {
-        slideIndex++;
-        const slideId = `Section "${sectionName}" Slide ${slideIndex} "${slide.tagline || 'untitled'}"`;
-        validateSingleSlide(slide, slideId, issues);
-      }
+    if (!section.slides || section.slides.length === 0) {
+      issues.push(`Section "${sectionName}": No slides generated (minimum 1-2 required)`);
+      continue;
     }
-    return { valid: issues.length === 0, issues };
+
+    for (const slide of section.slides) {
+      slideIndex++;
+      const slideId = `Section "${sectionName}" Slide ${slideIndex} "${slide.tagline || 'untitled'}"`;
+      validateSingleSlide(slide, slideId, issues);
+    }
   }
 
-  // Legacy: flat slides array
-  if (!slidesData?.slides || !Array.isArray(slidesData.slides)) {
-    return { valid: false, issues: ['Invalid slides structure'] };
-  }
-
-  for (let i = 0; i < slidesData.slides.length; i++) {
-    const slide = slidesData.slides[i];
-    const slideId = `Slide ${i + 1} "${slide.tagline || 'untitled'}"`;
-    validateSingleSlide(slide, slideId, issues);
-  }
-
-  return {
-    valid: issues.length === 0,
-    issues
-  };
+  return { valid: issues.length === 0, issues };
 }
 
 /**

@@ -39,6 +39,49 @@ export const documentSchema = {
       required: ["situation", "insight", "action", "source"],
       description: "Structured executive summary: Situation (what is) → Insight (so what) → Action (now what)"
     },
+    analysisOverview: {
+      type: "object",
+      description: "Comprehensive overview synthesizing key themes across all research topics",
+      properties: {
+        narrative: {
+          type: "string",
+          description: "2-3 paragraph narrative overview that sets the strategic context, explains why this analysis matters, and previews the key themes. Should be compelling and insight-driven, not a dry summary."
+        },
+        keyThemes: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              theme: {
+                type: "string",
+                description: "Name of the cross-cutting theme (e.g., 'Regulatory Pressure Accelerating', 'Technology Debt Compounding')"
+              },
+              description: {
+                type: "string",
+                description: "2-3 sentence explanation of this theme and its significance"
+              },
+              affectedTopics: {
+                type: "array",
+                items: { type: "string" },
+                description: "List of swimlane topics this theme impacts"
+              }
+            },
+            required: ["theme", "description", "affectedTopics"]
+          },
+          description: "3-5 cross-cutting themes that emerge from the research across multiple topics"
+        },
+        criticalFindings: {
+          type: "array",
+          items: { type: "string" },
+          description: "4-6 bullet points highlighting the most critical findings from the research"
+        },
+        strategicContext: {
+          type: "string",
+          description: "1-2 paragraphs explaining the broader strategic context and how the different topics interconnect"
+        }
+      },
+      required: ["narrative", "keyThemes", "criticalFindings", "strategicContext"]
+    },
     sections: {
       type: "array",
       items: {
@@ -97,7 +140,7 @@ export const documentSchema = {
       description: "One section per swimlane topic, covering research findings and strategic implications"
     }
   },
-  required: ["title", "executiveSummary", "sections"]
+  required: ["title", "executiveSummary", "analysisOverview", "sections"]
 };
 
 /**
@@ -175,9 +218,46 @@ source: "jpm-competitive-analysis.md"
 
 WHY IT'S GOOD: Situation states a specific fact. Insight quantifies THIS firm's disadvantage in dollars. Action is 6 words with clear owner/deadline.
 
+ANALYSIS OVERVIEW - COMPREHENSIVE STRATEGIC SYNTHESIS:
+
+The analysisOverview provides a detailed, insightful synthesis of the entire analysis. This is NOT a summary - it's a strategic narrative that:
+- Sets the broader context for why this analysis matters NOW
+- Identifies cross-cutting themes that span multiple topics
+- Highlights critical findings that demand attention
+- Explains how different topics interconnect and influence each other
+
+ANALYSIS OVERVIEW REQUIREMENTS:
+
+1. NARRATIVE (2-3 paragraphs):
+   - Open with a compelling hook that frames the strategic stakes
+   - Explain the convergence of forces driving this analysis
+   - Preview the key themes and their significance
+   - Use vivid, specific language - NOT generic business speak
+   - Example opening: "Three forces are colliding in Q1 2025: regulatory deadlines that cannot slip, competitor moves that are reshaping cost structures, and technology debt that compounds quarterly."
+
+2. KEY THEMES (3-5 themes):
+   - Identify patterns that cut ACROSS multiple swimlane topics
+   - Each theme should be named with an insight, not a label (e.g., "Cost Gap Accelerating" not "Costs")
+   - Explain why each theme matters strategically
+   - List which swimlane topics each theme affects
+   - Example: {"theme": "Regulatory Pressure Creates Technology Forcing Function", "description": "DRR compliance deadlines in Q1 2026 are forcing technology modernization decisions that would otherwise be deferred. Organizations that treat compliance as a technology opportunity will achieve 2-3x ROI vs. minimum viable compliance.", "affectedTopics": ["IT/Technology", "Legal/Compliance", "Finance"]}
+
+3. CRITICAL FINDINGS (4-6 bullet points):
+   - The most important discoveries from the research
+   - Each should be specific, quantified where possible
+   - Focus on findings that drive decisions, not background facts
+   - Example: "Competitors who adopted CDM in 2024 are reporting 40-60% reduction in reconciliation costs, creating a widening cost advantage."
+
+4. STRATEGIC CONTEXT (1-2 paragraphs):
+   - Explain how the different swimlane topics connect to each other
+   - Identify dependencies, sequencing requirements, or trade-offs
+   - Provide the "big picture" that helps readers understand the full landscape
+   - Address what happens if action is delayed vs. taken promptly
+
 STRUCTURE:
 - executiveSummary: Object with situation (fact), insight ($ impact), action (directive), source (filename)
-- 4-6 sections covering: situation analysis, implications, risks, recommendations
+- analysisOverview: Object with narrative, keyThemes, criticalFindings, strategicContext
+- sections: One section per swimlane topic with detailed analysis
 - Each section: insight-driven heading, key takeaway, supporting evidence, 2-4 focused paragraphs
 - keyInsight: Single sentence with the most important point from that section
 - supportingEvidence: 2-4 citations per section linking claims to research quotes
@@ -190,6 +270,14 @@ OUTPUT FORMAT:
     "insight": "Quantified impact to THIS organization in dollars or percentage",
     "action": "[Role] [verb] [object] by [date] - max 12 words",
     "source": "primary-source-filename.ext"
+  },
+  "analysisOverview": {
+    "narrative": "2-3 compelling paragraphs setting strategic context...",
+    "keyThemes": [
+      {"theme": "Theme Name as Insight", "description": "Why this matters...", "affectedTopics": ["Topic1", "Topic2"]}
+    ],
+    "criticalFindings": ["Finding 1 with specifics", "Finding 2 with data"],
+    "strategicContext": "1-2 paragraphs on interconnections and big picture..."
   },
   "sections": [
     {
