@@ -171,6 +171,7 @@ router.post('/ask-question', apiLimiter, async (req, res) => {
     const textResponse = await callGeminiForText(payload);
     res.json({ answer: textResponse });
   } catch (e) {
+    console.error('Q&A error:', e.message);
     res.status(500).json({ error: `Error generating answer: ${e.message}` });
   }
 });

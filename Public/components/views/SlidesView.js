@@ -184,7 +184,7 @@ function renderTwoColumnSlide(slide, index) {
 
 // ========================================
 // THREE COLUMN LAYOUT RENDERER
-// Measurements from Slide Template 2 - Three Column.pptx
+// Measurements from ppt-template-config.js (13.33" x 7.5" slide)
 // ========================================
 function renderThreeColumnSlide(slide, index) {
   const el = document.createElement('div');
@@ -197,12 +197,12 @@ function renderThreeColumnSlide(slide, index) {
     overflow: hidden;
   `;
 
-  // TAGLINE - x=257175/12192000=2.11%, y=235177/6858000=3.43%
+  // TAGLINE - PPT: x=0.28", y=0.26" → 2.10%, 3.47%
   const tagline = document.createElement('div');
   tagline.style.cssText = `
     position: absolute;
-    top: 3.43%;
-    left: 2.11%;
+    top: 3.47%;
+    left: 2.10%;
     font-family: 'Work Sans', sans-serif;
     font-size: clamp(8px, 1.3cqw, 16px);
     font-weight: 600;
@@ -214,21 +214,19 @@ function renderThreeColumnSlide(slide, index) {
   tagline.textContent = slide.tagline || '';
   el.appendChild(tagline);
 
-  // TITLE - x=228209/12192000=1.87%, y=613997/6858000=8.95%
-  // width=2519754/12192000=20.67%, height=2150574/6858000=31.36%
-  // Font: 44pt Work Sans Light (not italic), line-height 70%
-  // Note: Narrower container than twoColumn, so font-size scaled down proportionally
+  // TITLE - PPT: x=0.25", y=0.67", w=2.76", h=2.35" → 1.88%, 8.93%, 20.70%, 31.33%
+  // Font: 44pt Work Sans Light, lineSpacing: 70 (0.70 line-height)
   const title = document.createElement('div');
   title.style.cssText = `
     position: absolute;
-    top: 8.95%;
-    left: 1.87%;
-    width: 20.67%;
-    height: 31.36%;
+    top: 8.93%;
+    left: 1.88%;
+    width: 20.70%;
+    height: 31.33%;
     font-family: 'Work Sans', sans-serif;
-    font-size: clamp(14px, 4.5cqw, 55px);
+    font-size: clamp(14px, 4.6cqw, 55px);
     font-weight: 300;
-    line-height: 0.75;
+    line-height: 0.70;
     color: #0C2340;
     white-space: pre-line;
   `;
@@ -242,9 +240,8 @@ function renderThreeColumnSlide(slide, index) {
   title.textContent = lines.join('\n');
   el.appendChild(title);
 
-  // THREE COLUMN BODY - x=3251199/12192000=26.67%, y=3159889/6858000=46.08%
-  // width=8316914/12192000=68.22%, height=3221861/6858000=46.98%
-  // Column gap: 540000 EMU = 4.43% of slide width
+  // THREE COLUMNS - PPT: x=3.56", y=3.46", w=9.10", h=3.52" → 26.71%, 46.13%, 68.27%, 46.93%
+  // Font: 22pt Work Sans, lineSpacing: 120 (1.2 line-height), columnGap: 0.59" → 4.43%
   const MAX_CHARS = 400;
   const truncateToSentence = (text) => {
     if (!text || text.length <= MAX_CHARS) return text || '';
@@ -262,10 +259,10 @@ function renderThreeColumnSlide(slide, index) {
   const columnsContainer = document.createElement('div');
   columnsContainer.style.cssText = `
     position: absolute;
-    left: 26.67%;
-    top: 46.08%;
-    width: 68.22%;
-    height: 46.98%;
+    left: 26.71%;
+    top: 46.13%;
+    width: 68.27%;
+    height: 46.93%;
     display: flex;
     gap: 4.43%;
   `;
@@ -281,7 +278,7 @@ function renderThreeColumnSlide(slide, index) {
     col.style.cssText = `
       flex: 1;
       font-family: 'Work Sans', sans-serif;
-      font-size: clamp(7px, 1.1cqw, 13px);
+      font-size: clamp(10px, 2.4cqw, 29px);
       font-weight: 400;
       line-height: 1.2;
       color: #0C2340;
