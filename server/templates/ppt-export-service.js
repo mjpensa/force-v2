@@ -1,6 +1,6 @@
 /**
  * PPT Export Service - Simplified
- * Only 3 slide types: textTwoColumn, textThreeColumn, textWithCards
+ * Single slide type: textTwoColumn
  * Text-only elements (no logos or graphics)
  */
 
@@ -24,14 +24,6 @@ function getArrayProp(slideData, ...propNames) {
   return [];
 }
 
-function getStringProp(slideData, ...propNames) {
-  for (const prop of propNames) {
-    const value = slideData[prop];
-    if (typeof value === 'string' && value.trim()) return value.trim();
-  }
-  return '';
-}
-
 // ============================================================================
 // MAIN EXPORT
 // ============================================================================
@@ -49,28 +41,7 @@ export async function generatePptx(slidesData, options = {}) {
   pptx.layout = 'CUSTOM_16_9';
 
   for (let i = 0; i < slidesData.slides.length; i++) {
-    const slideData = slidesData.slides[i];
-    const slideNumber = i + 1;
-
-    switch (slideData.type) {
-      case 'textTwoColumn':
-        addTextTwoColumnSlide(pptx, slideData, slideNumber);
-        break;
-      case 'textThreeColumn':
-        addTextThreeColumnSlide(pptx, slideData, slideNumber);
-        break;
-      case 'textWithCards':
-        addTextWithCardsSlide(pptx, slideData, slideNumber);
-        break;
-      default:
-        if (slideData.cards?.length > 0) {
-          addTextWithCardsSlide(pptx, slideData, slideNumber);
-        } else if (slideData.columns?.length > 0) {
-          addTextThreeColumnSlide(pptx, slideData, slideNumber);
-        } else {
-          addTextTwoColumnSlide(pptx, slideData, slideNumber);
-        }
-    }
+    addTextTwoColumnSlide(pptx, slidesData.slides[i], i + 1);
   }
 
   return await pptx.write({ outputType: 'nodebuffer' });

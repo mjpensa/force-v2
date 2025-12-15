@@ -739,7 +739,7 @@
 .gantt-footer-svg {
   display: block !important;
   width: 100% !important;
-  height: 12px !important;
+  height: 16px !important;
   background-image: url('/horizontal-stripe.svg') !important;
   background-repeat: repeat-x !important;
   background-size: auto 100% !important;

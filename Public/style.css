@@ -3169,6 +3169,8 @@ body.dragging {
   border: 1px solid var(--glass-white-10);
   border-radius: 12px;
   transition: all var(--icon-rail-transition-fast);
+  transform-origin: center center;
+  box-sizing: border-box;
 }
 .icon-rail-item:hover .icon-rail-item-icon {
   background: var(--glass-white-10);
@@ -3184,6 +3186,8 @@ body.dragging {
   height: var(--icon-rail-icon-size);
   color: var(--glass-text-muted);
   transition: all var(--icon-rail-transition-fast);
+  flex-shrink: 0;
+  display: block;
 }
 .icon-rail-item:hover .icon-rail-item-icon svg {
   color: var(--glass-text-secondary);

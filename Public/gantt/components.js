@@ -23,15 +23,9 @@ export class GanttComponents {
     const headerSvgEl = document.createElement('div');
     headerSvgEl.className = 'gantt-header-svg';
 
-    const img = document.createElement('img');
-    img.src = `data:image/svg+xml,${encodedFooterSVG}`;
-    img.alt = '';
-    img.style.height = '16px';
-    img.style.width = '100%';
-    img.style.display = 'block';
-    img.style.objectFit = 'cover';
-
-    headerSvgEl.appendChild(img);
+    // Store SVG data for html2canvas export (as data attribute)
+    headerSvgEl.dataset.svgSrc = `data:image/svg+xml,${encodedFooterSVG}`;
+    // CSS handles display with background-repeat: repeat-x for proper tiling
     chartWrapper.appendChild(headerSvgEl);
   }
 
@@ -111,15 +105,9 @@ export class GanttComponents {
     const footerSvgEl = document.createElement('div');
     footerSvgEl.className = 'gantt-footer-svg';
 
-    const img = document.createElement('img');
-    img.src = `data:image/svg+xml,${encodedFooterSVG}`;
-    img.alt = '';
-    img.style.height = '16px';
-    img.style.width = '100%';
-    img.style.display = 'block';
-    img.style.objectFit = 'cover';
-
-    footerSvgEl.appendChild(img);
+    // Store SVG data for html2canvas export (as data attribute)
+    footerSvgEl.dataset.svgSrc = `data:image/svg+xml,${encodedFooterSVG}`;
+    // CSS handles display with background-repeat: repeat-x for proper tiling
     chartWrapper.appendChild(footerSvgEl);
   }
 
