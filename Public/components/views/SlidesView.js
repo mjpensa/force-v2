@@ -1,18 +1,128 @@
 /**
- * SlidesView - Two Templates: twoColumn, threeColumn
+ * SlidesView - Templates: sectionTitle, twoColumn, threeColumn
  * EXACT measurements extracted from PPT XML
  *
  * Slide: 12192000 x 6858000 EMU (16:9)
  * All positions calculated as percentages from source XML
+ *
+ * Supports both:
+ * - New sections structure (aligned with Gantt swimlanes)
+ * - Legacy flat slides array
  */
 
 // Dispatcher - routes to correct renderer based on layout
 function renderSlide(slide, index) {
   const layout = slide.layout || 'twoColumn';
+  if (layout === 'sectionTitle') {
+    return renderSectionTitleSlide(slide, index);
+  }
   if (layout === 'threeColumn') {
     return renderThreeColumnSlide(slide, index);
   }
   return renderTwoColumnSlide(slide, index);
+}
+
+// ========================================
+// SECTION TITLE SLIDE RENDERER
+// Full-bleed title slide for section breaks
+// ========================================
+function renderSectionTitleSlide(slide, index) {
+  const el = document.createElement('div');
+  el.style.cssText = `
+    width: 100%; height: 100%;
+    background: #0C2340;
+    position: relative;
+    font-family: 'Work Sans', sans-serif;
+    box-sizing: border-box;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  `;
+
+  // Section number / swimlane indicator (top left)
+  const sectionLabel = document.createElement('div');
+  sectionLabel.style.cssText = `
+    position: absolute;
+    top: 5%;
+    left: 4%;
+    font-family: 'Work Sans', sans-serif;
+    font-size: clamp(10px, 1.5cqw, 18px);
+    font-weight: 600;
+    color: #DA291C;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  `;
+  sectionLabel.textContent = slide.swimlane || '';
+  el.appendChild(sectionLabel);
+
+  // Main section title (centered, large)
+  const title = document.createElement('div');
+  title.style.cssText = `
+    font-family: 'Work Sans', sans-serif;
+    font-size: clamp(32px, 8cqw, 96px);
+    font-weight: 100;
+    color: #FFFFFF;
+    text-align: center;
+    line-height: 1.1;
+    max-width: 80%;
+    padding: 0 10%;
+  `;
+  title.textContent = slide.sectionTitle || slide.title || '';
+  el.appendChild(title);
+
+  // Decorative line under title
+  const line = document.createElement('div');
+  line.style.cssText = `
+    width: 15%;
+    height: 3px;
+    background: #DA291C;
+    margin-top: 3%;
+  `;
+  el.appendChild(line);
+
+  // CORNER GRAPHIC - top right (inverted for dark background)
+  const cornerGraphic = document.createElement('img');
+  cornerGraphic.src = 'bip corner graphic.svg';
+  cornerGraphic.style.cssText = `
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 10.9%;
+    height: auto;
+    filter: brightness(0) invert(1);
+    opacity: 0.3;
+  `;
+  el.appendChild(cornerGraphic);
+
+  // BIP LOGO - bottom right (white version or filtered)
+  const bipLogo = document.createElement('img');
+  bipLogo.src = 'Red BIP Logo.png';
+  bipLogo.style.cssText = `
+    position: absolute;
+    bottom: 3%;
+    right: 2%;
+    height: 4%;
+    width: auto;
+  `;
+  el.appendChild(bipLogo);
+
+  // SLIDE NUMBER - bottom left
+  const footer = document.createElement('div');
+  footer.style.cssText = `
+    position: absolute;
+    bottom: 3.43%;
+    left: 2.11%;
+    font-family: 'Work Sans', sans-serif;
+    font-size: clamp(6px, 1cqw, 12px);
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.6);
+  `;
+  footer.textContent = index + 1;
+  el.appendChild(footer);
+
+  return el;
 }
 
 function renderTwoColumnSlide(slide, index) {
@@ -360,8 +470,13 @@ export class SlidesView {
     // ALWAYS show demo slides first for template reference
     this.slides = [DEMO_SLIDE_TWO_COL, DEMO_SLIDE_THREE_COL];
 
-    // Then add any provided slides after the demos
-    if (data?.slides?.length) {
+    // Handle new sections structure (aligned with Gantt swimlanes)
+    if (data?.sections?.length) {
+      const flattenedSlides = this._flattenSections(data.sections);
+      this.slides = this.slides.concat(flattenedSlides);
+    }
+    // Legacy: flat slides array
+    else if (data?.slides?.length) {
       this.slides = this.slides.concat(data.slides);
     }
 
@@ -369,6 +484,32 @@ export class SlidesView {
     this.slideEl = null;
     this.counter = null;
     this._keyHandler = null;
+  }
+
+  /**
+   * Flatten sections structure into a linear array of slides
+   * Inserts a section title slide at the start of each section
+   * @param {Array} sections - Array of section objects with swimlane and slides
+   * @returns {Array} Flattened array of slides
+   */
+  _flattenSections(sections) {
+    const flatSlides = [];
+
+    for (const section of sections) {
+      // Add section title slide
+      flatSlides.push({
+        layout: 'sectionTitle',
+        swimlane: section.swimlane,
+        sectionTitle: section.sectionTitle || section.swimlane
+      });
+
+      // Add all content slides for this section
+      if (section.slides?.length) {
+        flatSlides.push(...section.slides);
+      }
+    }
+
+    return flatSlides;
   }
 
   render() {

@@ -98,17 +98,27 @@ You MUST respond with *only* a valid JSON object matching the schema.
     - Check the user's prompt for an *explicitly requested* time range (e.g., "2020-2030", "2024-2026").
     - **IF USER SPECIFIES A TIME RANGE:** Use that range for the timeColumns array.
       * The timeColumns array MUST start at the user's specified start date and end at the user's specified end date.
-      * **INCLUDE ALL TASKS THAT OVERLAP THE RANGE:** You MUST include EVERY task that has ANY portion within the user's time range:
-        - Tasks entirely within the range → INCLUDE
-        - Tasks that START BEFORE the range but END WITHIN or AFTER the range start → INCLUDE (set startCol=1 to clip to chart start)
-        - Tasks that START WITHIN the range but END AFTER the range → INCLUDE (set endCol to last column + 1 to clip to chart end)
-        - Tasks that START BEFORE and END AFTER the range → INCLUDE (clip both: startCol=1, endCol=last column + 1)
-        - Example: User says "2015-2020" and research has a task from 2010-2018 → INCLUDE it (overlaps 2015-2018), with startCol=1
-        - Example: User says "2015-2020" and research has a task from 2018-2025 → INCLUDE it (overlaps 2018-2020), with endCol clipped to chart end
-        - Example: User says "2015-2020" and research has a task from 2010-2025 → INCLUDE it (spans entire range), with startCol=1 and endCol clipped to chart end
-      * **Only exclude tasks ENTIRELY outside the range:** Exclude ONLY if the task's END date is before the range start, OR the task's START date is after the range end.
-        - Example: User says "2015-2020" and research mentions a 2022 event → exclude (starts after range ends)
-        - Example: User says "2015-2020" and research has a task from 2010-2012 → exclude (ends before range starts)
+      * **OVERLAP CHECK ALGORITHM (MUST FOLLOW FOR EVERY TASK):**
+        For each task found in the research, apply this test:
+        - Let TASK_START = the task's start date (or start year)
+        - Let TASK_END = the task's end date (or end year). If single-date event, TASK_END = TASK_START
+        - Let RANGE_START = user's requested start (e.g., 2015)
+        - Let RANGE_END = user's requested end (e.g., 2020)
+
+        **INCLUDE the task if:** TASK_END >= RANGE_START AND TASK_START <= RANGE_END
+        **EXCLUDE the task if:** TASK_END < RANGE_START OR TASK_START > RANGE_END
+
+        This means:
+        - Task 2010-2018 on range 2015-2020: 2018 >= 2015 AND 2010 <= 2020 → TRUE → INCLUDE
+        - Task 2018-2025 on range 2015-2020: 2025 >= 2015 AND 2018 <= 2020 → TRUE → INCLUDE
+        - Task 2010-2025 on range 2015-2020: 2025 >= 2015 AND 2010 <= 2020 → TRUE → INCLUDE
+        - Task 2022-2024 on range 2015-2020: 2024 >= 2015 AND 2022 <= 2020 → FALSE → EXCLUDE
+        - Task 2010-2012 on range 2015-2020: 2012 >= 2015 → FALSE → EXCLUDE
+
+      * **CLIPPING RULES for included tasks:**
+        - If TASK_START < RANGE_START → set startCol=1 (clip to chart start)
+        - If TASK_END > RANGE_END → set endCol to (number of timeColumns + 1) (clip to chart end)
+        - If both → clip both ends
       * **When dates are ambiguous:** If a task's timing is unclear, INCLUDE it (err on the side of inclusion).
     - **IF NO USER-SPECIFIED RANGE:** Scan ALL research files to identify EVERY date mentioned (past, present, and future). Use the EARLIEST date found as the start and the LATEST date as the end.
     - The timeColumns array MUST align with the determined time range (column 1 = first time period).
@@ -190,8 +200,10 @@ You MUST respond with *only* a valid JSON object matching the schema.
     **EXTRACTION RULES:**
     - Do NOT summarize or consolidate similar items - include each one separately
     - Do NOT skip items because they seem minor - include everything mentioned
-    - Do NOT skip items because they are in the PAST - historical context is critical (unless the task ends ENTIRELY before the user's specified time range starts)
-    - Do NOT skip items because they EXTEND BEYOND the time range - if ANY portion overlaps with the range, INCLUDE the task
+    - Do NOT skip items because they are in the PAST - use the OVERLAP CHECK ALGORITHM from section 1 to decide inclusion
+    - Do NOT skip items because they START BEFORE the time range - if the task ENDS within or after the range start, INCLUDE it
+    - Do NOT skip items because they EXTEND BEYOND the time range - if the task STARTS within or before the range end, INCLUDE it
+    - **REMINDER: Apply the OVERLAP CHECK ALGORITHM:** TASK_END >= RANGE_START AND TASK_START <= RANGE_END → INCLUDE
     - If an item appears in multiple places, include it once with the most complete information
     - If dates are mentioned for ANY activity, that activity MUST appear in the chart (if it overlaps with the time range)
     - Err on the side of INCLUSION - when in doubt, add it to the chart

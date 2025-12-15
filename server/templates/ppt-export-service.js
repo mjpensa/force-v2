@@ -1,12 +1,13 @@
 /**
  * PPT Export Service
- * Slide types: textTwoColumn, textThreeColumn
+ * Slide types: sectionTitle, textTwoColumn, textThreeColumn
+ * Supports both sections structure (Gantt-aligned) and legacy flat slides
  * Text-only elements (no logos or graphics)
  */
 
 import PptxGenJS from 'pptxgenjs';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { SLIDE_SIZE, LAYOUTS, DEFAULT_METADATA } from './ppt-template-config.js';
+import { SLIDE_SIZE, LAYOUTS, COLORS, FONTS, DEFAULT_METADATA } from './ppt-template-config.js';
 import { CONFIG } from '../config.js';
 
 // Initialize Gemini for title rewording
@@ -143,6 +144,36 @@ function getParagraphText(slideData) {
 }
 
 // ============================================================================
+// SECTION FLATTENING - Convert sections structure to flat slides array
+// ============================================================================
+
+/**
+ * Flatten sections structure into a linear array of slides
+ * Inserts section title slides at the start of each section
+ * @param {Array} sections - Array of section objects with swimlane and slides
+ * @returns {Array} Flattened array of slides
+ */
+function flattenSections(sections) {
+  const flatSlides = [];
+
+  for (const section of sections) {
+    // Add section title slide
+    flatSlides.push({
+      layout: 'sectionTitle',
+      swimlane: section.swimlane,
+      sectionTitle: section.sectionTitle || section.swimlane
+    });
+
+    // Add all content slides for this section
+    if (section.slides?.length) {
+      flatSlides.push(...section.slides);
+    }
+  }
+
+  return flatSlides;
+}
+
+// ============================================================================
 // MAIN EXPORT
 // ============================================================================
 
@@ -158,9 +189,24 @@ export async function generatePptx(slidesData, options = {}) {
   pptx.defineLayout({ name: 'CUSTOM_16_9', width: SLIDE_SIZE.width, height: SLIDE_SIZE.height });
   pptx.layout = 'CUSTOM_16_9';
 
-  // Pre-process titles that need rewording (more than 4 lines)
+  // Handle new sections structure or legacy flat slides array
+  let slidesArray;
+  if (slidesData.sections?.length) {
+    console.log(`[PPT Export] Processing ${slidesData.sections.length} sections`);
+    slidesArray = flattenSections(slidesData.sections);
+  } else if (slidesData.slides?.length) {
+    slidesArray = slidesData.slides;
+  } else {
+    slidesArray = [];
+  }
+
+  // Pre-process titles that need rewording (more than 4 lines) - only for content slides
   const processedSlides = await Promise.all(
-    slidesData.slides.map(async (slideData) => {
+    slidesArray.map(async (slideData) => {
+      // Skip title rewording for section title slides
+      if (slideData.layout === 'sectionTitle') {
+        return slideData;
+      }
       const titleLines = (slideData.title || '').split('\n').filter(l => l.trim()).length;
       if (titleLines > 4) {
         const rewordedTitle = await rewordTitleToFourLines(slideData.title);
@@ -174,7 +220,9 @@ export async function generatePptx(slidesData, options = {}) {
     const slideData = processedSlides[i];
     const layout = slideData.layout || 'twoColumn';
 
-    if (layout === 'threeColumn') {
+    if (layout === 'sectionTitle') {
+      addSectionTitleSlide(pptx, slideData, i + 1);
+    } else if (layout === 'threeColumn') {
       addTextThreeColumnSlide(pptx, slideData, i + 1);
     } else {
       addTextTwoColumnSlide(pptx, slideData, i + 1);
@@ -187,6 +235,63 @@ export async function generatePptx(slidesData, options = {}) {
 // ============================================================================
 // SLIDE RENDERERS
 // ============================================================================
+
+/**
+ * Add a section title slide (full-bleed dark background with centered title)
+ */
+function addSectionTitleSlide(pptx, slideData, slideNumber) {
+  const slide = pptx.addSlide();
+  slide.background = { color: COLORS.navy.replace('#', '') };
+
+  // Swimlane label (top left, red)
+  if (slideData.swimlane) {
+    slide.addText(slideData.swimlane.toUpperCase(), {
+      x: 0.5,
+      y: 0.4,
+      w: 5,
+      h: 0.4,
+      fontSize: 14,
+      fontFace: FONTS.workSansSemiBold,
+      color: COLORS.red.replace('#', ''),
+      align: 'left'
+    });
+  }
+
+  // Main section title (centered, large, white)
+  slide.addText(slideData.sectionTitle || slideData.swimlane || '', {
+    x: 0.5,
+    y: 2.5,
+    w: SLIDE_SIZE.width - 1,
+    h: 2,
+    fontSize: 60,
+    fontFace: FONTS.workSansThin,
+    color: COLORS.white.replace('#', ''),
+    align: 'center',
+    valign: 'middle'
+  });
+
+  // Decorative red line under title
+  slide.addShape(pptx.ShapeType.rect, {
+    x: (SLIDE_SIZE.width - 2) / 2,
+    y: 4.7,
+    w: 2,
+    h: 0.04,
+    fill: { color: COLORS.red.replace('#', '') },
+    line: { color: COLORS.red.replace('#', ''), width: 0 }
+  });
+
+  // Page number (bottom left, muted white)
+  slide.addText(String(slideNumber), {
+    x: 0.28,
+    y: SLIDE_SIZE.height - 0.5,
+    w: 0.5,
+    h: 0.3,
+    fontSize: 10,
+    fontFace: FONTS.workSansRegular,
+    color: 'AAAAAA',
+    align: 'left'
+  });
+}
 
 function addTextTwoColumnSlide(pptx, slideData, slideNumber) {
   const layout = LAYOUTS.textTwoColumn;

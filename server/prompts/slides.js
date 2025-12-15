@@ -1,10 +1,51 @@
 /**
- * Slide Schema - Two layouts supported:
- * - twoColumn: tagline + title (left), 2 paragraphs (right)
- * - threeColumn: tagline + title (left), 3 columns below
+ * Slide Schema - Organized by sections (aligned with Gantt chart swimlanes)
+ * Each section contains:
+ * - A section title slide
+ * - Multiple content slides (twoColumn or threeColumn layouts)
  */
+
+// Schema for individual content slides
+const contentSlideSchema = {
+  type: "object",
+  properties: {
+    layout: {
+      type: "string",
+      enum: ["twoColumn", "threeColumn"],
+      description: "Slide layout: 'twoColumn' (2 paragraphs right) or 'threeColumn' (3 columns below)"
+    },
+    tagline: {
+      type: "string",
+      description: "2-word uppercase tagline, max 21 characters (e.g. 'MARGIN EROSION')",
+      nullable: false
+    },
+    title: {
+      type: "string",
+      description: "EXACTLY 4 lines separated by \\n. Format: 'Line1\\nLine2\\nLine3\\nLine4'. Each line max 10 chars. MUST have exactly 3 newline characters.",
+      nullable: false
+    },
+    paragraph1: {
+      type: "string",
+      description: "First paragraph. 380-410 chars for twoColumn, 370-390 chars for threeColumn.",
+      nullable: false
+    },
+    paragraph2: {
+      type: "string",
+      description: "Second paragraph. 380-410 chars for twoColumn, 370-390 chars for threeColumn.",
+      nullable: false
+    },
+    paragraph3: {
+      type: "string",
+      description: "Third paragraph (threeColumn only). 370-390 characters.",
+      nullable: true
+    }
+  },
+  required: ["tagline", "title", "paragraph1", "paragraph2"]
+};
+
+// Main schema with sections structure
 export const slidesSchema = {
-  description: "Presentation slides with layout options",
+  description: "Presentation slides organized by sections (aligned with Gantt chart swimlanes)",
   type: "object",
   properties: {
     title: {
@@ -12,48 +53,33 @@ export const slidesSchema = {
       description: "Title of the presentation",
       nullable: false
     },
-    slides: {
+    sections: {
       type: "array",
-      description: "Array of slides",
+      description: "Array of sections, each aligned with a Gantt chart swimlane topic",
       items: {
         type: "object",
         properties: {
-          layout: {
+          swimlane: {
             type: "string",
-            enum: ["twoColumn", "threeColumn"],
-            description: "Slide layout: 'twoColumn' (2 paragraphs right) or 'threeColumn' (3 columns below)"
-          },
-          tagline: {
-            type: "string",
-            description: "2-word uppercase tagline, max 21 characters (e.g. 'EXECUTIVE SUMMARY')",
+            description: "The swimlane/topic name from the Gantt chart",
             nullable: false
           },
-          title: {
+          sectionTitle: {
             type: "string",
-            description: "EXACTLY 4 lines separated by \\n. Format: 'Line1\\nLine2\\nLine3\\nLine4'. Each line max 10 chars. MUST have exactly 3 newline characters.",
+            description: "A compelling 2-4 word section title for the title slide (can differ from swimlane name)",
             nullable: false
           },
-          paragraph1: {
-            type: "string",
-            description: "First paragraph. 380-410 chars for twoColumn, 370-390 chars for threeColumn.",
-            nullable: false
-          },
-          paragraph2: {
-            type: "string",
-            description: "Second paragraph. 380-410 chars for twoColumn, 370-390 chars for threeColumn.",
-            nullable: false
-          },
-          paragraph3: {
-            type: "string",
-            description: "Third paragraph (threeColumn only). 370-390 characters.",
-            nullable: true
+          slides: {
+            type: "array",
+            description: "Content slides for this section (minimum 1-2 slides per section)",
+            items: contentSlideSchema
           }
         },
-        required: ["tagline", "title", "paragraph1", "paragraph2"]
+        required: ["swimlane", "sectionTitle", "slides"]
       }
     }
   },
-  required: ["title", "slides"]
+  required: ["title", "sections"]
 };
 
 /**
@@ -84,13 +110,14 @@ function extractKeyStats(content) {
 }
 
 /**
- * Generate prompt for slides with research content
- * AI automatically chooses the best layout (twoColumn or threeColumn) for each slide
+ * Generate prompt for slides with research content, organized by swimlane sections
+ * AI creates multiple slides per swimlane topic, summarizing research for each
  * @param {string} userPrompt - The user's request
  * @param {Array<{filename: string, content: string}>} researchFiles - Research files to analyze
+ * @param {Array<{name: string, entity: string, taskCount: number}>} swimlanes - Swimlane topics from Gantt chart
  * @returns {string} Complete prompt for AI
  */
-export function generateSlidesPrompt(userPrompt, researchFiles) {
+export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = []) {
   // Convert array to formatted string (consistent with other generators)
   const researchContent = researchFiles
     .map(file => `=== ${file.filename} ===\n${file.content}`)
@@ -99,9 +126,55 @@ export function generateSlidesPrompt(userPrompt, researchFiles) {
   // Extract key statistics to force AI to use real data
   const keyStats = extractKeyStats(researchContent);
 
-  return `You are creating presentation slides with STRICT formatting requirements.
+  // Format swimlanes for the prompt
+  const swimlaneList = swimlanes.length > 0
+    ? swimlanes.map((s, i) => `${i + 1}. "${s.name}" (${s.taskCount} related tasks in roadmap)`).join('\n')
+    : null;
 
-TWO LAYOUT OPTIONS - Choose the best layout for each slide:
+  // Build section-specific instructions if swimlanes are provided
+  const sectionInstructions = swimlanes.length > 0
+    ? `
+SECTION STRUCTURE (CRITICAL - FOLLOW EXACTLY):
+You MUST create one section for each swimlane topic listed below, IN THE SAME ORDER.
+Each section represents a key topic from the project roadmap.
+
+SWIMLANE TOPICS (create sections in this exact order):
+${swimlaneList}
+
+FOR EACH SECTION:
+1. "swimlane": Use the EXACT swimlane name from the list above
+2. "sectionTitle": Create a compelling 2-4 word title for the section title slide (can be more engaging than the swimlane name)
+3. "slides": Generate content slides summarizing research findings for this topic
+
+SLIDES PER SECTION:
+- Analyze research depth for each topic
+- Generate MORE slides (3-5) for topics with rich research content
+- Generate FEWER slides (1-2 minimum) for topics with limited research content
+- Every section MUST have at least 1-2 content slides
+
+CONTENT FOCUS:
+- Summarize key findings, insights, and implications from research for each topic
+- Do NOT copy task-level details from the Gantt chart
+- Focus on strategic insights, data points, and recommendations
+- Each slide should stand alone with valuable information
+`
+    : `
+SLIDE GENERATION:
+Generate a logical sequence of slides covering the key topics from the research.
+Aim for 6-12 slides total, organized by theme.
+
+Create sections based on major themes you identify in the research.
+Each section should have:
+- "swimlane": A topic name you identify from the research
+- "sectionTitle": A compelling 2-4 word title for that topic
+- "slides": 1-4 content slides per section
+`;
+
+  return `You are creating presentation slides organized into SECTIONS, with STRICT formatting requirements.
+
+${sectionInstructions}
+
+TWO LAYOUT OPTIONS - Choose the best layout for each content slide:
 
 LAYOUT 1: "twoColumn" (default) - Use for focused topics, executive summaries, key findings
 - Fields: tagline, title, paragraph1, paragraph2
@@ -117,9 +190,9 @@ WHEN TO USE EACH LAYOUT:
 - twoColumn: Introduction, conclusion, single-topic deep dives, executive summaries
 - threeColumn: Comparing options, listing multiple benefits/features, process steps, before/during/after
 
-COMMON RULES FOR ALL SLIDES:
+COMMON RULES FOR ALL CONTENT SLIDES:
 
-TAGLINE: 2-word uppercase label, MAX 21 characters. Example: "EXECUTIVE SUMMARY"
+TAGLINE: 2-word uppercase label, MAX 21 characters. Example: "MARGIN EROSION"
 
 TITLE RULES (CRITICAL - MUST BE EXACTLY 4 LINES):
 - Pattern: "Line1\\nLine2\\nLine3\\nLine4" - exactly 3 newlines, 4 lines
@@ -170,8 +243,15 @@ USER REQUEST: "${userPrompt}"
 RESEARCH CONTENT:
 ${researchContent}
 
-Generate JSON with "title" (string) and "slides" array. Mix layouts as appropriate:
-- twoColumn slide: {tagline, title, paragraph1, paragraph2}
-- threeColumn slide: {layout: "threeColumn", tagline, title, paragraph1, paragraph2, paragraph3}
+Generate JSON with:
+- "title": Presentation title (string)
+- "sections": Array of section objects, each with:
+  - "swimlane": Topic name (string)
+  - "sectionTitle": Compelling section title for title slide (string)
+  - "slides": Array of content slides for this section
+
+Content slide format:
+- twoColumn: {tagline, title, paragraph1, paragraph2}
+- threeColumn: {layout: "threeColumn", tagline, title, paragraph1, paragraph2, paragraph3}
 `;
 }

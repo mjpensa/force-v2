@@ -79,6 +79,45 @@ const SLIDES_CONFIG = {
   thinkingBudget: 256  // Light reasoning for content quality decisions
 };
 
+// ============================================================================
+// SWIMLANE EXTRACTION - Extracts topic swimlanes from roadmap for document alignment
+// ============================================================================
+
+/**
+ * Extract swimlane topics from roadmap data for document section alignment
+ * @param {object} roadmapData - Generated roadmap data with data array
+ * @returns {Array<{name: string, entity: string, taskCount: number}>} Swimlane topics
+ */
+function extractSwimlanesFromRoadmap(roadmapData) {
+  if (!roadmapData?.data) return [];
+
+  const swimlanes = [];
+  let currentSwimlane = null;
+  let taskCount = 0;
+
+  for (const row of roadmapData.data) {
+    if (row.isSwimlane) {
+      // Save previous swimlane with its task count
+      if (currentSwimlane) {
+        swimlanes.push({ ...currentSwimlane, taskCount });
+      }
+      currentSwimlane = { name: row.title, entity: row.entity };
+      taskCount = 0;
+    } else if (currentSwimlane) {
+      // Count tasks under current swimlane
+      taskCount++;
+    }
+  }
+
+  // Don't forget the last swimlane
+  if (currentSwimlane) {
+    swimlanes.push({ ...currentSwimlane, taskCount });
+  }
+
+  console.log(`[Swimlane Extraction] Found ${swimlanes.length} swimlanes:`, swimlanes.map(s => s.name));
+  return swimlanes;
+}
+
 /**
  * Validate executive summary quality
  * Returns { valid: boolean, issues: string[] }
@@ -133,12 +172,34 @@ function validateExecutiveSummary(execSummary) {
 /**
  * Validate slide content quality (logging only, no retry)
  * Checks for analytical rigor and narrative energy markers
+ * Supports both new sections structure and legacy flat slides array
  * @param {object} slidesData - Generated slides object
  * @returns {{ valid: boolean, issues: string[] }}
  */
 function validateSlideQuality(slidesData) {
   const issues = [];
 
+  // Handle new sections structure
+  if (slidesData?.sections && Array.isArray(slidesData.sections)) {
+    let slideIndex = 0;
+    for (const section of slidesData.sections) {
+      const sectionName = section.swimlane || 'Unknown Section';
+
+      if (!section.slides || section.slides.length === 0) {
+        issues.push(`Section "${sectionName}": No slides generated (minimum 1-2 required)`);
+        continue;
+      }
+
+      for (const slide of section.slides) {
+        slideIndex++;
+        const slideId = `Section "${sectionName}" Slide ${slideIndex} "${slide.tagline || 'untitled'}"`;
+        validateSingleSlide(slide, slideId, issues);
+      }
+    }
+    return { valid: issues.length === 0, issues };
+  }
+
+  // Legacy: flat slides array
   if (!slidesData?.slides || !Array.isArray(slidesData.slides)) {
     return { valid: false, issues: ['Invalid slides structure'] };
   }
@@ -146,38 +207,48 @@ function validateSlideQuality(slidesData) {
   for (let i = 0; i < slidesData.slides.length; i++) {
     const slide = slidesData.slides[i];
     const slideId = `Slide ${i + 1} "${slide.tagline || 'untitled'}"`;
-    const allText = `${slide.paragraph1 || ''} ${slide.paragraph2 || ''} ${slide.paragraph3 || ''}`;
-
-    // Check for quantified data
-    if (!/\d+/.test(allText)) {
-      issues.push(`${slideId}: Missing quantified data point`);
-    }
-
-    // Check for weak openers
-    if (/^(This|The|Our|In today|As we|It is|There (is|are))/i.test(slide.paragraph1?.trim() || '')) {
-      issues.push(`${slideId}: Weak opening detected`);
-    }
-
-    // Check for weasel words
-    if (/(significant|substantial|considerable|various|many|some|often|generally)/i.test(allText)) {
-      issues.push(`${slideId}: Contains vague weasel words`);
-    }
-
-    // Check for topic-label taglines
-    if (/^(OVERVIEW|INTRODUCTION|SUMMARY|ANALYSIS|BACKGROUND|CONCLUSION)$/i.test(slide.tagline?.trim() || '')) {
-      issues.push(`${slideId}: Generic tagline (should signal insight)`);
-    }
-
-    // Check for source citations
-    if (!/\[.*?\]/.test(allText) && !/(according to|reveals|shows)/i.test(allText)) {
-      issues.push(`${slideId}: No apparent source citation`);
-    }
+    validateSingleSlide(slide, slideId, issues);
   }
 
   return {
     valid: issues.length === 0,
     issues
   };
+}
+
+/**
+ * Validate a single slide's content quality
+ * @param {object} slide - Single slide object
+ * @param {string} slideId - Identifier for error messages
+ * @param {string[]} issues - Array to push issues to
+ */
+function validateSingleSlide(slide, slideId, issues) {
+  const allText = `${slide.paragraph1 || ''} ${slide.paragraph2 || ''} ${slide.paragraph3 || ''}`;
+
+  // Check for quantified data
+  if (!/\d+/.test(allText)) {
+    issues.push(`${slideId}: Missing quantified data point`);
+  }
+
+  // Check for weak openers
+  if (/^(This|The|Our|In today|As we|It is|There (is|are))/i.test(slide.paragraph1?.trim() || '')) {
+    issues.push(`${slideId}: Weak opening detected`);
+  }
+
+  // Check for weasel words
+  if (/(significant|substantial|considerable|various|many|some|often|generally)/i.test(allText)) {
+    issues.push(`${slideId}: Contains vague weasel words`);
+  }
+
+  // Check for topic-label taglines
+  if (/^(OVERVIEW|INTRODUCTION|SUMMARY|ANALYSIS|BACKGROUND|CONCLUSION)$/i.test(slide.tagline?.trim() || '')) {
+    issues.push(`${slideId}: Generic tagline (should signal insight)`);
+  }
+
+  // Check for source citations
+  if (!/\[.*?\]/.test(allText) && !/(according to|reveals|shows)/i.test(allText)) {
+    issues.push(`${slideId}: No apparent source citation`);
+  }
 }
 
 function withTimeout(promise, timeoutMs, operationName) {
@@ -259,9 +330,21 @@ async function generateRoadmap(userPrompt, researchFiles) {
     return { success: false, error: error.message };
   }
 }
-async function generateSlides(userPrompt, researchFiles) {
+/**
+ * Generate presentation slides with optional swimlane alignment
+ * @param {string} userPrompt - User's analysis request
+ * @param {Array} researchFiles - Research files to analyze
+ * @param {Array} swimlanes - Optional swimlane topics from roadmap for section alignment
+ */
+async function generateSlides(userPrompt, researchFiles, swimlanes = []) {
   try {
-    const prompt = generateSlidesPrompt(userPrompt, researchFiles);
+    if (swimlanes.length > 0) {
+      console.log(`[Slides] Generating with ${swimlanes.length} swimlane-aligned sections`);
+    } else {
+      console.log(`[Slides] Generating without swimlane alignment (will auto-detect topics)`);
+    }
+
+    const prompt = generateSlidesPrompt(userPrompt, researchFiles, swimlanes);
     const data = await generateWithGemini(prompt, slidesSchema, 'Slides', SLIDES_CONFIG);
 
     // Validate quality (logging only - don't block user)
@@ -278,16 +361,23 @@ async function generateSlides(userPrompt, researchFiles) {
   }
 }
 /**
- * Generate executive summary document
+ * Generate executive summary document with optional swimlane alignment
+ * @param {string} userPrompt - User's analysis request
+ * @param {Array} researchFiles - Research files to analyze
+ * @param {Array} swimlanes - Optional swimlane topics from roadmap for section alignment
  */
-async function generateDocument(userPrompt, researchFiles) {
+async function generateDocument(userPrompt, researchFiles, swimlanes = []) {
   const MAX_RETRIES = 2;
   let lastResult = null;
   let lastValidation = null;
 
+  if (swimlanes.length > 0) {
+    console.log(`[Document] Generating with ${swimlanes.length} swimlane-aligned sections`);
+  }
+
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const prompt = generateDocumentPrompt(userPrompt, researchFiles);
+      const prompt = generateDocumentPrompt(userPrompt, researchFiles, swimlanes);
       const data = await generateWithGemini(prompt, documentSchema, 'Document', DOCUMENT_CONFIG);
 
       // Validate executive summary quality
@@ -326,20 +416,34 @@ async function generateResearchAnalysis(userPrompt, researchFiles) {
 }
 
 /**
- * Generate all content types with controlled concurrency via API queue
- * This prevents overwhelming the Gemini API with too many simultaneous requests
+ * Generate all content types with two-phase approach for swimlane alignment
+ *
+ * Phase 1: Generate roadmap first to extract swimlane topics
+ * Phase 2: Generate remaining content in parallel, with document using swimlane alignment
+ *
+ * This ensures document sections align with Gantt chart swimlanes while
+ * maintaining parallel generation for other content types.
  */
 export async function generateAllContent(userPrompt, researchFiles) {
   try {
-    // Use apiQueue.runAll to control concurrency and prevent rate limiting
+    // Phase 1: Generate roadmap first to extract swimlane topics
+    console.log('[Generation] Phase 1: Generating roadmap to extract swimlanes...');
+    const roadmap = await generateRoadmap(userPrompt, researchFiles);
+
+    // Extract swimlane topics for document section alignment
+    const swimlanes = roadmap.success
+      ? extractSwimlanesFromRoadmap(roadmap.data)
+      : [];
+
+    // Phase 2: Generate remaining content with swimlane-aligned slides and document
+    console.log(`[Generation] Phase 2: Generating slides (${swimlanes.length} swimlanes), document, and research analysis...`);
     const tasks = [
-      { task: () => generateRoadmap(userPrompt, researchFiles), name: 'Roadmap' },
-      { task: () => generateSlides(userPrompt, researchFiles), name: 'Slides' },
-      { task: () => generateDocument(userPrompt, researchFiles), name: 'Document' },
+      { task: () => generateSlides(userPrompt, researchFiles, swimlanes), name: 'Slides' },
+      { task: () => generateDocument(userPrompt, researchFiles, swimlanes), name: 'Document' },
       { task: () => generateResearchAnalysis(userPrompt, researchFiles), name: 'ResearchAnalysis' }
     ];
 
-    const [roadmap, slides, document, researchAnalysis] = await apiQueue.runAll(tasks);
+    const [slides, document, researchAnalysis] = await apiQueue.runAll(tasks);
 
     return { roadmap, slides, document, researchAnalysis };
   } catch (error) {

@@ -48,9 +48,21 @@ export const documentSchema = {
             type: "string",
             description: "Section heading - lead with insight, not topic label"
           },
+          swimlaneTopic: {
+            type: "string",
+            description: "The swimlane/topic from the roadmap that this section covers (e.g., 'IT/Technology', 'Regulatory Compliance')"
+          },
           keyInsight: {
             type: "string",
             description: "Single most important takeaway from this section"
+          },
+          researchSummary: {
+            type: "string",
+            description: "2-3 sentence summary of research findings specific to this topic"
+          },
+          implications: {
+            type: "string",
+            description: "Strategic implications - what this means for the organization's decision-making"
           },
           supportingEvidence: {
             type: "array",
@@ -80,9 +92,9 @@ export const documentSchema = {
             description: "Section paragraphs - keep each paragraph 2-4 sentences, evidence-backed"
           }
         },
-        required: ["heading", "paragraphs"]
+        required: ["heading", "keyInsight", "paragraphs"]
       },
-      description: "4-6 document sections"
+      description: "One section per swimlane topic, covering research findings and strategic implications"
     }
   },
   required: ["title", "executiveSummary", "sections"]
@@ -219,18 +231,83 @@ function extractKeyStats(content) {
 }
 
 /**
- * Generate prompt with research content
+ * Generate swimlane-aligned section instructions
+ * @param {Array<{name: string, entity: string, taskCount: number}>} swimlanes - Swimlane topics from roadmap
+ * @returns {string} - Prompt section for swimlane alignment
  */
-export function generateDocumentPrompt(userPrompt, researchFiles) {
+function generateSwimlaneSectionInstructions(swimlanes) {
+  if (!swimlanes || swimlanes.length === 0) {
+    return '';
+  }
+
+  const swimlaneList = swimlanes
+    .map((s, i) => `${i + 1}. "${s.name}" (${s.taskCount} activities identified in roadmap)`)
+    .join('\n');
+
+  return `
+
+SWIMLANE-ALIGNED SECTIONS (CRITICAL REQUIREMENT):
+You MUST create exactly ONE section for EACH of the following swimlane topics. These represent the key strategic themes identified in the roadmap analysis:
+
+${swimlaneList}
+
+SECTION REQUIREMENTS FOR EACH SWIMLANE TOPIC:
+For each swimlane topic above, create a dedicated section that:
+
+1. HEADING: Create an insight-driven heading that captures the key finding for this topic
+   - Do NOT just use the swimlane name as the heading
+   - Example: Instead of "IT/Technology", use "Legacy Systems Block 40% Cost Reduction"
+
+2. SWIMLANE TOPIC: Set the "swimlaneTopic" field to the exact swimlane name from the list above
+
+3. KEY INSIGHT: Single sentence capturing the most important finding for this topic
+
+4. RESEARCH SUMMARY: 2-3 sentences summarizing what the research reveals about this topic
+   - Focus on facts, data points, and evidence from the research files
+   - Reference specific sources
+
+5. IMPLICATIONS: Strategic implications - what this means for decision-making
+   - Connect the research findings to organizational impact
+   - Highlight risks, opportunities, or required actions
+
+6. SUPPORTING EVIDENCE: 2-4 citations linking claims to direct quotes from research
+
+7. PARAGRAPHS: 3-5 paragraphs providing robust, compelling content that:
+   - Synthesizes research findings for this topic
+   - Does NOT list individual tasks or timeline details (the Gantt chart covers that)
+   - Focuses on the "why it matters" and strategic significance
+   - Uses narrative energy: varied sentence rhythm, active voice, tension/stakes
+   - Includes quantified data points where available
+
+SECTION ORDER: Arrange sections in a logical narrative flow that builds toward recommendations.
+
+ANTI-PATTERNS FOR SWIMLANE SECTIONS:
+- Do NOT create generic sections like "Overview" or "Summary"
+- Do NOT list out tasks, milestones, or timeline items (that's the Gantt chart's job)
+- Do NOT create sections for topics not in the swimlane list
+- Do NOT merge multiple swimlane topics into one section
+- Do NOT skip any swimlane topic - each one MUST have its own section
+`;
+}
+
+/**
+ * Generate prompt with research content and optional swimlane alignment
+ * @param {string} userPrompt - User's analysis request
+ * @param {Array} researchFiles - Research files to analyze
+ * @param {Array} swimlanes - Optional swimlane topics from roadmap for section alignment
+ */
+export function generateDocumentPrompt(userPrompt, researchFiles, swimlanes = []) {
   const researchContent = researchFiles
     .map(file => `=== ${file.filename} ===\n${file.content}`)
     .join('\n\n');
 
   const keyStats = extractKeyStats(researchContent);
+  const swimlaneInstructions = generateSwimlaneSectionInstructions(swimlanes);
 
   return `${documentPrompt}
+${swimlaneInstructions}
 
-KEY DATA POINTS EXTRACTED FROM RESEARCH (use at least one in executiveSummary.stakes or executiveSummary.keyFinding):
+KEY DATA POINTS EXTRACTED FROM RESEARCH (use at least one in executiveSummary.situation or executiveSummary.insight):
 ${keyStats || 'No specific statistics found - extract key numbers from the research text'}
 
 REQUEST: ${userPrompt}
@@ -238,5 +315,5 @@ REQUEST: ${userPrompt}
 RESEARCH:
 ${researchContent}
 
-Generate the document JSON now. The executiveSummary MUST reference specific data from the research.`;
+Generate the document JSON now. The executiveSummary MUST reference specific data from the research.${swimlanes.length > 0 ? ` You MUST create exactly ${swimlanes.length} sections, one for each swimlane topic listed above.` : ''}`;
 }

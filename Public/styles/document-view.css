@@ -428,6 +428,77 @@
   line-height: var(--leading-relaxed);
 }
 
+/* ========== SWIMLANE TOPIC BADGE ========== */
+
+.swimlane-topic-badge {
+  display: inline-block;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-accent-red);
+  background: rgba(211, 47, 47, 0.12);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--spacing-3);
+  border: 1px solid rgba(211, 47, 47, 0.25);
+}
+
+/* ========== RESEARCH SUMMARY ========== */
+
+.research-summary {
+  background: var(--glass-white-8);
+  border-radius: var(--radius-glass-md);
+  padding: var(--spacing-4);
+  margin: var(--spacing-4) 0;
+  border: var(--border-glass);
+}
+
+.research-summary-label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--glass-text-muted);
+  margin-bottom: var(--spacing-2);
+}
+
+.research-summary-text {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--glass-text-primary);
+  margin: 0;
+}
+
+/* ========== STRATEGIC IMPLICATIONS ========== */
+
+.strategic-implications {
+  background: rgba(80, 175, 123, 0.08);
+  border-left: 3px solid var(--color-glass-success);
+  border-radius: 0 var(--radius-glass-md) var(--radius-glass-md) 0;
+  padding: var(--spacing-4);
+  margin: var(--spacing-4) 0;
+}
+
+.implications-label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-glass-success);
+  margin-bottom: var(--spacing-2);
+}
+
+.implications-text {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--glass-text-primary);
+  margin: 0;
+  font-weight: var(--weight-medium);
+}
+
 /* ========== EVIDENCE BLOCK ========== */
 
 .evidence-block {
@@ -678,6 +749,30 @@
     font-size: var(--text-base);
   }
 
+  /* Swimlane topic badge mobile */
+  .swimlane-topic-badge {
+    font-size: 10px;
+    padding: var(--spacing-1) var(--spacing-2);
+  }
+
+  /* Research summary mobile */
+  .research-summary {
+    padding: var(--spacing-3);
+  }
+
+  .research-summary-text {
+    font-size: var(--text-sm);
+  }
+
+  /* Strategic implications mobile */
+  .strategic-implications {
+    padding: var(--spacing-3);
+  }
+
+  .implications-text {
+    font-size: var(--text-sm);
+  }
+
   /* Recommendations mobile */
   .recommendation-item {
     padding: var(--spacing-4);
@@ -838,5 +933,44 @@
   .recommendation-timeframe {
     color: #666;
     background: #eee;
+  }
+
+  /* Swimlane topic badge print */
+  .swimlane-topic-badge {
+    color: #666;
+    background: #f0f0f0;
+    border-color: #ccc;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Research summary print */
+  .research-summary {
+    background: #f9f9f9;
+    border-color: #ddd;
+    page-break-inside: avoid;
+  }
+
+  .research-summary-label {
+    color: #666;
+  }
+
+  .research-summary-text {
+    color: black;
+  }
+
+  /* Strategic implications print */
+  .strategic-implications {
+    background: #f0f9f4;
+    border-left-color: #059669;
+    page-break-inside: avoid;
+  }
+
+  .implications-label {
+    color: #059669;
+  }
+
+  .implications-text {
+    color: black;
   }
 }

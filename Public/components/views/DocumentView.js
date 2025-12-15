@@ -425,6 +425,15 @@ export class DocumentView {
     sectionEl.className = 'document-section';
     sectionEl.id = section.id;
 
+    // Swimlane topic badge (if present) - shows alignment with Gantt chart topic
+    if (section.swimlaneTopic) {
+      const topicBadge = document.createElement('span');
+      topicBadge.className = 'swimlane-topic-badge';
+      topicBadge.textContent = section.swimlaneTopic;
+      topicBadge.title = `This section covers the "${section.swimlaneTopic}" topic from the roadmap`;
+      sectionEl.appendChild(topicBadge);
+    }
+
     // Section heading
     const headingLevel = Math.min(section.level + 1, 6); // h2-h4 (level 1-3 maps to h2-h4)
     const heading = document.createElement(`h${headingLevel}`);
@@ -439,6 +448,42 @@ export class DocumentView {
       insight.className = 'key-insight';
       insight.textContent = section.keyInsight;
       sectionEl.appendChild(insight);
+    }
+
+    // Research summary (if present) - new field for swimlane-aligned sections
+    if (section.researchSummary) {
+      const summaryContainer = document.createElement('div');
+      summaryContainer.className = 'research-summary';
+
+      const summaryLabel = document.createElement('span');
+      summaryLabel.className = 'research-summary-label';
+      summaryLabel.textContent = 'Research Findings';
+      summaryContainer.appendChild(summaryLabel);
+
+      const summaryText = document.createElement('p');
+      summaryText.className = 'research-summary-text';
+      summaryText.textContent = section.researchSummary;
+      summaryContainer.appendChild(summaryText);
+
+      sectionEl.appendChild(summaryContainer);
+    }
+
+    // Strategic implications (if present) - new field for swimlane-aligned sections
+    if (section.implications) {
+      const implicationsContainer = document.createElement('div');
+      implicationsContainer.className = 'strategic-implications';
+
+      const implicationsLabel = document.createElement('span');
+      implicationsLabel.className = 'implications-label';
+      implicationsLabel.textContent = 'Strategic Implications';
+      implicationsContainer.appendChild(implicationsLabel);
+
+      const implicationsText = document.createElement('p');
+      implicationsText.className = 'implications-text';
+      implicationsText.textContent = section.implications;
+      implicationsContainer.appendChild(implicationsText);
+
+      sectionEl.appendChild(implicationsContainer);
     }
 
     // Supporting evidence (if present) - renders evidence citations from schema
