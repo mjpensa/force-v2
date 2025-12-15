@@ -52,10 +52,10 @@ const apiQueue = new APIQueue(4);
  * Generation config presets for different content types
  */
 const DOCUMENT_CONFIG = {
-  temperature: 0.1,      // Low: deterministic for reliable structured output
-  topP: 0.3,             // Constrained: follow schema strictly
-  topK: 5,               // Minimal exploration: consistent JSON structure
-  thinkingBudget: 0      // Disabled for speed
+  temperature: 0.35,     // Moderate: allows varied word choice and narrative energy
+  topP: 0.5,             // Balanced: enables creative phrasing while staying coherent
+  topK: 15,              // Broader vocabulary selection for richer prose
+  thinkingBudget: 2048   // Extended reasoning for deeper analysis and evidence connections
 };
 const STRUCTURED_DEFAULT_CONFIG = {
   thinkingBudget: 0  // Disabled for speed

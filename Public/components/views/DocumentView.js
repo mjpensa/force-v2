@@ -356,6 +356,19 @@ export class DocumentView {
       sectionEl.appendChild(insight);
     }
 
+    // Supporting evidence (if present) - renders evidence citations from schema
+    if (section.supportingEvidence && Array.isArray(section.supportingEvidence)) {
+      section.supportingEvidence.forEach(evidence => {
+        // Reuse existing _renderEvidence method, mapping 'quote' to 'text'
+        const evidenceBlock = this._renderEvidence({
+          claim: evidence.claim,
+          text: evidence.quote,  // Schema uses 'quote', renderer expects 'text'
+          source: evidence.source
+        });
+        sectionEl.appendChild(evidenceBlock);
+      });
+    }
+
     // Content blocks
     if (section.content && Array.isArray(section.content)) {
       section.content.forEach(block => {

@@ -94,12 +94,13 @@ You MUST respond with *only* a valid JSON object matching the schema.
 **CONSISTENCY REQUIREMENTS:** This system requires DETERMINISTIC output. Given the same inputs, you MUST produce the same output every time. Follow the rules below EXACTLY without deviation.
 
 **CRITICAL LOGIC:**
-1.  **TIME HORIZON (STRICT ADHERENCE):**
+1.  **TIME HORIZON:**
     - Check the user's prompt for an *explicitly requested* time range (e.g., "2020-2030", "2024-2026").
-    - **IF USER SPECIFIES A TIME RANGE:** Use EXACTLY that range. Do NOT extend or modify it.
+    - **IF USER SPECIFIES A TIME RANGE:** Use that range for the timeColumns array.
       * The timeColumns array MUST start at the user's specified start date and end at the user's specified end date.
-      * **EXCLUDE** any tasks or events from the research that fall OUTSIDE the user's specified range. Do not include them in the chart.
-      * Example: User says "2024-2026" but research mentions events from 2022 → Use 2024-2026 as the range and EXCLUDE the 2022 events.
+      * **INCLUDE ALL TASKS WITHIN THE RANGE:** You MUST include EVERY task, event, milestone, and activity from the research that falls within or overlaps with the user's specified time range. Do NOT skip any item that has a date within the range.
+      * **Only exclude tasks with dates DEFINITIVELY outside the range:** If a task has a specific date that is clearly before the start OR clearly after the end of the user's range, exclude it. Example: User says "2024-2026" and research mentions a 2022 event → exclude the 2022 event.
+      * **When dates are ambiguous or span the boundary:** If a task's timing is unclear, or if it spans into the user's range, INCLUDE it (err on the side of inclusion).
     - **IF NO USER-SPECIFIED RANGE:** Scan ALL research files to identify EVERY date mentioned (past, present, and future). Use the EARLIEST date found as the start and the LATEST date as the end.
     - The timeColumns array MUST align with the determined time range (column 1 = first time period).
 2.  **TIME INTERVAL:** Based on the *total duration* of the time range, you MUST choose an interval using EXACTLY these thresholds:
@@ -173,10 +174,11 @@ You MUST respond with *only* a valid JSON object matching the schema.
     **EXTRACTION RULES:**
     - Do NOT summarize or consolidate similar items - include each one separately
     - Do NOT skip items because they seem minor - include everything mentioned
-    - Do NOT skip items because they are in the PAST - historical context is critical
+    - Do NOT skip items because they are in the PAST - historical context is critical (unless they fall outside the user's specified time range)
     - If an item appears in multiple places, include it once with the most complete information
-    - If dates are mentioned for ANY activity, that activity MUST appear in the chart
+    - If dates are mentioned for ANY activity, that activity MUST appear in the chart (if within the time range)
     - Err on the side of INCLUSION - when in doubt, add it to the chart
+    - **VERIFY TIME RANGE COVERAGE:** After extraction, review ALL items and confirm that EVERY event with a date falling within the user's specified time range (or the derived range) is included. Do NOT skip items within the range.
     - **VERIFY EARLY DATES:** After extraction, confirm that events from the BEGINNING of the timeline are included with correct startCol values (startCol=1 for the earliest events).
     - **VERIFY SWIMLANE COMPLETENESS:** After identifying all tasks, review to ensure EVERY distinct topic, entity, organization, or category that has 3 or more tasks is represented as its own swimlane. Do not merge or consolidate distinct topics into broader categories if they independently qualify for their own swimlane.
 10. **RESEARCH ANALYSIS (REQUIRED):** You MUST generate a comprehensive analysis of the research quality in the "researchAnalysis" object. This helps users understand if their research inputs are fit for purpose.
