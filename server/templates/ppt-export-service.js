@@ -12,16 +12,23 @@ import { SLIDE_SIZE, LAYOUTS, DEFAULT_METADATA } from './ppt-template-config.js'
 // ============================================================================
 
 function getSectionLabel(slideData) {
-  const label = slideData.section || slideData.sectionLabel;
+  const label = slideData.section || slideData.sectionLabel || slideData.tagline;
   return label ? String(label).toUpperCase() : null;
 }
 
-function getArrayProp(slideData, ...propNames) {
-  for (const prop of propNames) {
-    const value = slideData[prop];
-    if (Array.isArray(value) && value.length > 0) return value;
+function getParagraphText(slideData) {
+  // Current schema: paragraph1 and paragraph2 as separate string fields
+  if (slideData.paragraph1 || slideData.paragraph2) {
+    const parts = [];
+    if (slideData.paragraph1) parts.push(slideData.paragraph1.trim());
+    if (slideData.paragraph2) parts.push(slideData.paragraph2.trim());
+    return parts.join('\n\n');
   }
-  return [];
+  // Legacy: body field with double-newline separated paragraphs
+  if (slideData.body) {
+    return slideData.body.trim();
+  }
+  return '';
 }
 
 // ============================================================================
@@ -83,9 +90,8 @@ function addTextTwoColumnSlide(pptx, slideData, slideNumber) {
     lineSpacing: layout.elements.title.lineSpacing
   });
 
-  const paragraphs = getArrayProp(slideData, 'paragraphs', 'content');
-  if (paragraphs.length > 0) {
-    const paragraphText = paragraphs.map(p => String(p)).join('\n\n');
+  const paragraphText = getParagraphText(slideData);
+  if (paragraphText) {
     slide.addText(paragraphText, {
       x: layout.elements.paragraphs.x,
       y: layout.elements.paragraphs.y,

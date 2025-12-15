@@ -51,15 +51,33 @@ const apiQueue = new APIQueue(4);
 /**
  * Generation config presets for different content types
  *
- * DOCUMENT_CONFIG: Optimized for SPEED - MVP executive summaries
+ * DOCUMENT_CONFIG_FAST: Optimized for SPEED - fallback mode
  * - No thinking budget for instant generation
  * - Low temperature for consistent output
+ *
+ * DOCUMENT_CONFIG_ENHANCED: Optimized for QUALITY - analytical rigor
+ * - Extended thinking for deep reasoning
+ * - Higher temperature for narrative variety
  */
-const DOCUMENT_CONFIG = {
+const DOCUMENT_CONFIG_FAST = {
   temperature: 0.1,
   topP: 0.3,
   topK: 5,
   thinkingBudget: 0   // Zero: fast generation
+};
+
+const DOCUMENT_CONFIG_ENHANCED = {
+  temperature: 0.3,      // Higher for varied expression
+  topP: 0.6,             // Broader vocabulary selection
+  topK: 20,              // More token choices
+  thinkingBudget: 8192   // Enable deep reasoning
+};
+
+const DOCUMENT_POLISH_CONFIG = {
+  temperature: 0.5,      // Higher creativity for narrative polish
+  topP: 0.7,
+  topK: 30,
+  thinkingBudget: 0      // Speed - structure already done
 };
 const STRUCTURED_DEFAULT_CONFIG = {
   thinkingBudget: 0  // Disabled for speed
@@ -170,10 +188,69 @@ async function generateSlides(userPrompt, researchFiles) {
     return { success: false, error: error.message };
   }
 }
-async function generateDocument(userPrompt, researchFiles) {
+/**
+ * Enhanced document generation with two passes:
+ * Pass 1: Deep analytical structure with extended thinking
+ * Pass 2: Narrative polish for engagement
+ */
+async function generateDocumentEnhanced(userPrompt, researchFiles) {
+  // Pass 1: Analytical structure (with thinking)
+  console.log('[Document-Enhanced] Starting Pass 1: Analytical structure with extended thinking');
+  const structurePrompt = generateDocumentPrompt(userPrompt, researchFiles);
+  const structure = await generateWithGemini(
+    structurePrompt,
+    documentSchema,
+    'Document-Analysis',
+    DOCUMENT_CONFIG_ENHANCED
+  );
+
+  // Pass 2: Narrative polish (faster, creative)
+  console.log('[Document-Enhanced] Starting Pass 2: Narrative polish');
+  const polishPrompt = `Rewrite this executive summary to maximize narrative energy and engagement.
+
+INSTRUCTIONS:
+- Sharpen every heading to lead with insight, not topic labels
+- Strengthen verb choices (eliminate "is/are/was/were" where possible)
+- Vary sentence rhythm for better flow
+- Ensure each paragraph opens with its most compelling point
+- Keep all facts, evidence, and structure intact
+- Preserve all JSON fields and structure exactly
+
+CURRENT DRAFT:
+${JSON.stringify(structure, null, 2)}
+
+Return the improved version in the exact same JSON schema.`;
+
+  const polished = await generateWithGemini(
+    polishPrompt,
+    documentSchema,
+    'Document-Polish',
+    DOCUMENT_POLISH_CONFIG
+  );
+
+  return polished;
+}
+
+/**
+ * Generate executive summary document with enhanced quality
+ * Falls back to fast generation if enhanced mode fails
+ */
+async function generateDocument(userPrompt, researchFiles, enhanced = true) {
   try {
+    if (enhanced) {
+      try {
+        const data = await generateDocumentEnhanced(userPrompt, researchFiles);
+        return { success: true, data };
+      } catch (enhancedError) {
+        console.warn('[Document] Enhanced generation failed, falling back to fast mode:', enhancedError.message);
+        // Fall through to fast generation
+      }
+    }
+
+    // Fast generation (fallback)
+    console.log('[Document] Using fast generation mode');
     const prompt = generateDocumentPrompt(userPrompt, researchFiles);
-    const data = await generateWithGemini(prompt, documentSchema, 'Document', DOCUMENT_CONFIG);
+    const data = await generateWithGemini(prompt, documentSchema, 'Document', DOCUMENT_CONFIG_FAST);
     return { success: true, data };
   } catch (error) {
     return { success: false, error: error.message };

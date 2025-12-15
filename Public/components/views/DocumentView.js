@@ -5,7 +5,10 @@
  * Features:
  * - Table of contents with scroll spy (highlights current section)
  * - Hierarchical section rendering (3 heading levels)
- * - Content blocks: paragraphs, lists, tables, quotes
+ * - Content blocks: paragraphs, lists, tables, quotes, evidence
+ * - Executive summary with TL;DR label
+ * - Key insights per section
+ * - Prioritized recommendations section
  * - Sticky TOC navigation for easy jumping
  * - Print-friendly layout
  * - Responsive design (mobile hides TOC, shows inline)
@@ -206,7 +209,71 @@ export class DocumentView {
       contentContainer.appendChild(sectionEl);
     });
 
+    // Recommendations section (if present)
+    const recommendations = this._renderRecommendations();
+    if (recommendations) {
+      contentContainer.appendChild(recommendations);
+    }
+
     return contentContainer;
+  }
+
+  /**
+   * Render recommendations section with prioritized actions
+   */
+  _renderRecommendations() {
+    if (!this.documentData.recommendations || !Array.isArray(this.documentData.recommendations) || this.documentData.recommendations.length === 0) {
+      return null;
+    }
+
+    const section = document.createElement('section');
+    section.className = 'recommendations-section';
+
+    const heading = document.createElement('h2');
+    heading.className = 'section-heading';
+    heading.textContent = 'Recommended Actions';
+    section.appendChild(heading);
+
+    const list = document.createElement('div');
+    list.className = 'recommendations-list';
+
+    // Sort by priority: critical > high > medium
+    const priorityOrder = { critical: 0, high: 1, medium: 2 };
+    const sortedRecs = [...this.documentData.recommendations].sort((a, b) => {
+      return (priorityOrder[a.priority] || 3) - (priorityOrder[b.priority] || 3);
+    });
+
+    sortedRecs.forEach(rec => {
+      const item = document.createElement('div');
+      item.className = `recommendation-item priority-${rec.priority || 'medium'}`;
+
+      const badge = document.createElement('span');
+      badge.className = 'priority-badge';
+      badge.textContent = (rec.priority || 'medium').toUpperCase();
+      item.appendChild(badge);
+
+      const action = document.createElement('h3');
+      action.className = 'recommendation-action';
+      action.textContent = rec.action;
+      item.appendChild(action);
+
+      const rationale = document.createElement('p');
+      rationale.className = 'recommendation-rationale';
+      rationale.textContent = rec.rationale;
+      item.appendChild(rationale);
+
+      if (rec.timeframe) {
+        const timeframe = document.createElement('span');
+        timeframe.className = 'recommendation-timeframe';
+        timeframe.textContent = rec.timeframe;
+        item.appendChild(timeframe);
+      }
+
+      list.appendChild(item);
+    });
+
+    section.appendChild(list);
+    return section;
   }
 
   /**
@@ -244,6 +311,24 @@ export class DocumentView {
       header.appendChild(meta);
     }
 
+    // Executive Summary (TL;DR)
+    if (this.documentData.executiveSummary) {
+      const summary = document.createElement('div');
+      summary.className = 'executive-summary';
+
+      const label = document.createElement('span');
+      label.className = 'executive-summary-label';
+      label.textContent = 'TL;DR';
+      summary.appendChild(label);
+
+      const text = document.createElement('p');
+      text.className = 'executive-summary-text';
+      text.textContent = this.documentData.executiveSummary;
+      summary.appendChild(text);
+
+      header.appendChild(summary);
+    }
+
     return header;
   }
 
@@ -262,6 +347,14 @@ export class DocumentView {
                         section.level === 2 ? 'section-subheading' : 'section-subheading';
     heading.textContent = section.heading;
     sectionEl.appendChild(heading);
+
+    // Key insight (if present)
+    if (section.keyInsight) {
+      const insight = document.createElement('p');
+      insight.className = 'key-insight';
+      insight.textContent = section.keyInsight;
+      sectionEl.appendChild(insight);
+    }
 
     // Content blocks
     if (section.content && Array.isArray(section.content)) {
@@ -299,6 +392,8 @@ export class DocumentView {
         return this._renderTable(block);
       case 'quote':
         return this._renderQuote(block);
+      case 'evidence':
+        return this._renderEvidence(block);
       default:
         console.warn('Unknown block type:', block.type);
         return null;
@@ -398,6 +493,37 @@ export class DocumentView {
     }
 
     return quote;
+  }
+
+  /**
+   * Render evidence block - citation linking claim to source
+   */
+  _renderEvidence(block) {
+    const evidence = document.createElement('div');
+    evidence.className = 'evidence-block';
+
+    if (block.claim) {
+      const claim = document.createElement('p');
+      claim.className = 'evidence-claim';
+      claim.textContent = block.claim;
+      evidence.appendChild(claim);
+    }
+
+    if (block.text) {
+      const quote = document.createElement('blockquote');
+      quote.className = 'evidence-quote';
+      quote.textContent = block.text;
+      evidence.appendChild(quote);
+    }
+
+    if (block.source) {
+      const source = document.createElement('cite');
+      source.className = 'evidence-source';
+      source.textContent = `— ${block.source}`;
+      evidence.appendChild(source);
+    }
+
+    return evidence;
   }
 
   /**

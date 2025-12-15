@@ -1597,10 +1597,10 @@ select:focus-visible {
 .gantt-footer-svg {
   display: block !important;
   width: 100% !important;
-  height: 12px !important;
+  height: 16px !important;
   background-image: url('/horizontal-stripe.svg') !important;
   background-repeat: repeat-x !important;
-  background-size: auto 100% !important;
+  background-size: auto 16px !important;
   background-position: left top !important;
   background-color: transparent !important;
   margin: 0 !important;
@@ -3080,7 +3080,7 @@ body.dragging {
 }
 .icon-rail-nav {
   flex: 1;
-  padding: 16px 12px;
+  padding: 16px 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -3088,6 +3088,10 @@ body.dragging {
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--glass-white-15) transparent;
+}
+.icon-rail:hover .icon-rail-nav,
+.icon-rail.expanded .icon-rail-nav {
+  padding: 16px 12px;
 }
 .icon-rail-nav::-webkit-scrollbar {
   width: 4px;
@@ -3105,8 +3109,9 @@ body.dragging {
 .icon-rail-item {
   display: flex;
   align-items: center;
+  justify-content: center;
   height: var(--icon-rail-item-height);
-  padding: 0 14px;
+  padding: 0;
   border-radius: 14px;
   cursor: pointer;
   position: relative;
@@ -3116,6 +3121,11 @@ body.dragging {
   text-align: left;
   width: 100%;
   transition: all var(--icon-rail-transition-fast);
+}
+.icon-rail:hover .icon-rail-item,
+.icon-rail.expanded .icon-rail-item {
+  justify-content: flex-start;
+  padding: 0 14px;
 }
 .icon-rail-item:hover {
   background: var(--glass-white-8);

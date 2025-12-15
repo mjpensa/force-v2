@@ -742,7 +742,7 @@
   height: 16px !important;
   background-image: url('/horizontal-stripe.svg') !important;
   background-repeat: repeat-x !important;
-  background-size: auto 100% !important;
+  background-size: auto 16px !important;
   background-position: left top !important;
   background-color: transparent !important;
   margin: 0 !important;
