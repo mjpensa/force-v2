@@ -160,97 +160,6 @@
   color: var(--color-navy-deep);
   margin: 0;
 }
-.slide-three-column-layout {
-  display: flex;
-  gap: 32px;
-  flex: 1;
-  align-items: flex-start;
-  margin-top: 16px;
-}
-.slide-title-column {
-  flex: 0 0 28%;
-  max-width: 28%;
-}
-.slide-text-columns {
-  flex: 1;
-  display: flex;
-  gap: 24px;
-}
-.slide-text-column {
-  flex: 1;
-}
-.slide-text-column p {
-  font-size: clamp(11px, 1.2vw, 13px);
-  font-weight: 400;
-  font-family: 'Work Sans', Arial, sans-serif;
-  line-height: 1.6;
-  color: var(--color-navy-deep);
-  margin: 0;
-}
-.slide-cards-layout {
-  display: flex;
-  gap: 32px;
-  flex: 1;
-  align-items: flex-start;
-  margin-top: 16px;
-}
-.slide-cards-left {
-  flex: 0 0 38%;
-  max-width: 38%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.slide-body-text {
-  font-size: clamp(11px, 1.2vw, 13px);
-  font-weight: 400;
-  font-family: 'Work Sans', Arial, sans-serif;
-  line-height: 1.6;
-  color: var(--color-navy-deep);
-  margin: 0;
-}
-.slide-cards-grid {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 12px;
-}
-.slide-numbered-card {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.slide-card-number {
-  width: 24px;
-  height: 24px;
-  background: #DA291C;
-  color: var(--glass-text-primary);
-  font-size: 12px;
-  font-weight: 600;
-  font-family: 'Work Sans', Arial, sans-serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-.slide-card-title {
-  font-size: clamp(12px, 1.3vw, 14px);
-  font-weight: 600;
-  font-family: 'Work Sans', Arial, sans-serif;
-  color: var(--color-navy-deep);
-  margin: 0;
-  line-height: 1.2;
-}
-.slide-card-content {
-  font-size: clamp(10px, 1vw, 11px);
-  font-weight: 400;
-  font-family: 'Work Sans', Arial, sans-serif;
-  color: #6B7280;
-  margin: 0;
-  line-height: 1.4;
-}
 .slide-controls {
   display: flex;
   align-items: center;
@@ -459,25 +368,13 @@
   .slides-view {
     padding: var(--spacing-4);
   }
-  .slide-two-column-layout,
-  .slide-three-column-layout,
-  .slide-cards-layout {
+  .slide-two-column-layout {
     flex-direction: column;
     gap: 16px;
   }
-  .slide-left-column,
-  .slide-title-column,
-  .slide-cards-left {
+  .slide-left-column {
     flex: none;
     max-width: 100%;
-  }
-  .slide-text-columns {
-    flex-direction: column;
-    gap: 16px;
-  }
-  .slide-cards-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
   }
   .slide-large-title {
     font-size: 24px;
