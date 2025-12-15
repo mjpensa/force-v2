@@ -92,10 +92,10 @@ export const documentSchema = {
           paragraphs: {
             type: "array",
             items: { type: "string" },
-            description: "Legacy support - prefer using content array instead"
+            description: "DEPRECATED - use content array instead"
           }
         },
-        required: ["heading"]
+        required: ["heading", "keyInsight", "content"]
       },
       description: "Document sections with insights and rich content"
     },
@@ -127,7 +127,7 @@ export const documentSchema = {
       description: "Prioritized action items with rationale"
     }
   },
-  required: ["title", "sections"]
+  required: ["title", "executiveSummary", "sections", "recommendations"]
 };
 
 /**
@@ -176,20 +176,48 @@ ENGAGEMENT:
 4. **Recommended Actions**: Specific, prioritized next steps with rationale
 5. **Risks & Considerations**: What could go wrong, what's uncertain
 
-## OUTPUT FORMAT
+## OUTPUT FORMAT - MANDATORY STRUCTURE
 
-JSON with:
-- title: Compelling title that signals the core insight
-- executiveSummary: 2-3 sentences for the time-pressed reader
-- sections[]: Each with heading, keyInsight, and content array
-- recommendations[]: Prioritized actions with rationale
+You MUST include ALL of these fields:
 
-CONTENT BLOCKS - Use these types in the content array:
-- paragraph: { type: "paragraph", text: "..." }
-- list: { type: "list", items: ["..."], ordered: true/false }
-- table: { type: "table", headers: ["..."], rows: [["..."]] }
-- quote: { type: "quote", text: "...", source: "filename", attribution: "speaker" }
-- evidence: { type: "evidence", claim: "the assertion", text: "supporting quote", source: "filename" }`;
+{
+  "title": "Insight-driven title (not generic)",
+  "executiveSummary": "REQUIRED: 2-3 sentences summarizing the key finding and recommended action",
+  "sections": [
+    {
+      "heading": "Insight-led heading (not topic labels)",
+      "keyInsight": "REQUIRED: Single sentence - the most important takeaway",
+      "content": [
+        { "type": "paragraph", "text": "..." },
+        { "type": "evidence", "claim": "...", "text": "quote from source", "source": "filename" },
+        { "type": "list", "items": ["..."], "ordered": false },
+        { "type": "table", "headers": ["..."], "rows": [["..."]] }
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "action": "REQUIRED: Specific action to take",
+      "priority": "critical|high|medium",
+      "rationale": "Why this matters",
+      "timeframe": "immediate|short-term|long-term"
+    }
+  ]
+}
+
+CRITICAL RULES:
+- executiveSummary is REQUIRED - never omit it
+- Every section MUST have a keyInsight field
+- Use the "content" array with typed blocks - DO NOT use "paragraphs" array
+- recommendations array is REQUIRED with at least 2-3 items
+- Vary content types: mix paragraphs, evidence blocks, lists, and tables
+
+FORMATTING RULES:
+- Keep paragraphs SHORT (2-4 sentences max) - break up walls of text
+- Use lists for 3+ related items instead of long sentences
+- Use tables for comparisons or data with multiple attributes
+- Each section should have 3-6 content blocks, not 1-2 giant paragraphs
+- Total document: 4-6 sections maximum`;
 
 /**
  * Few-shot example demonstrating expected analytical rigor and narrative energy
@@ -253,5 +281,13 @@ ${researchContent}
 
 ---
 
-Now write the executive summary JSON. Match the analytical rigor and narrative energy of the example above. Use evidence blocks to cite specific sources. Include prioritized recommendations.`;
+Generate the executive summary JSON now.
+
+CHECKLIST - Your output MUST include:
+[ ] executiveSummary field (2-3 sentences)
+[ ] keyInsight field in EVERY section
+[ ] content array (NOT paragraphs array) with varied block types
+[ ] recommendations array with 2-4 prioritized actions
+
+Match the analytical rigor of the example. Cite sources with evidence blocks.`;
 }
