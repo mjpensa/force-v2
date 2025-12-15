@@ -777,10 +777,9 @@ body.view-roadmap .ambient-logo-container {
   /* Stronger border for edge definition */
   border: 1.5px solid var(--glass-white-30);
   border-radius: var(--radius-glass-md);
-  /* Layered glow effect */
+  /* Subtle shadow without glow */
   box-shadow:
-    0 0 20px rgba(218, 41, 28, 0.35),
-    0 4px 16px rgba(218, 41, 28, 0.25),
+    0 4px 12px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 var(--glass-white-25),
     inset 0 -1px 0 rgba(0, 0, 0, 0.1);
   color: var(--glass-text-primary);
@@ -789,8 +788,6 @@ body.view-roadmap .ambient-logo-container {
   padding: 8px 17px;
   transition: all 0.3s var(--ease-out-quad);
   cursor: pointer;
-  /* Pulsing glow animation */
-  animation: buttonGlowPulse 2.5s ease-in-out infinite;
   /* For shimmer effect */
   position: relative;
   overflow: hidden;
@@ -824,11 +821,9 @@ body.view-roadmap .ambient-logo-container {
   );
   border-color: var(--glass-white-40);
   box-shadow:
-    0 0 30px rgba(218, 41, 28, 0.45),
-    0 8px 24px rgba(218, 41, 28, 0.35),
+    0 8px 20px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 var(--glass-white-30),
     inset 0 -1px 0 rgba(0, 0, 0, 0.1);
-  animation: none;
 }
 .button-glass-primary:active {
   transform: translateY(0) scale(0.98);
@@ -838,35 +833,15 @@ body.view-roadmap .ambient-logo-container {
     rgba(184, 35, 23, 0.85) 100%
   );
   box-shadow:
-    0 0 15px rgba(218, 41, 28, 0.30),
-    0 2px 8px rgba(218, 41, 28, 0.20),
+    0 2px 8px rgba(0, 0, 0, 0.15),
     inset 0 2px 4px rgba(0, 0, 0, 0.15);
-  animation: none;
 }
 .button-glass-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
-  animation: none;
   backdrop-filter: blur(var(--blur-sm));
   -webkit-backdrop-filter: blur(var(--blur-sm));
-}
-/* Pulsing glow keyframes */
-@keyframes buttonGlowPulse {
-  0%, 100% {
-    box-shadow:
-      0 0 20px rgba(218, 41, 28, 0.35),
-      0 4px 16px rgba(218, 41, 28, 0.25),
-      inset 0 1px 0 var(--glass-white-25),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
-  }
-  50% {
-    box-shadow:
-      0 0 28px rgba(218, 41, 28, 0.50),
-      0 4px 20px rgba(218, 41, 28, 0.35),
-      inset 0 1px 0 var(--glass-white-25),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
-  }
 }
 .spinner-glass {
   width: 17px;
