@@ -5,7 +5,12 @@
  */
 
 import PptxGenJS from 'pptxgenjs';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SLIDE_SIZE, LAYOUTS, DEFAULT_METADATA } from './ppt-template-config.js';
+import { CONFIG } from '../config.js';
+
+// Initialize Gemini for title rewording
+const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
 // ============================================================================
 // HELPERS
@@ -14,6 +19,89 @@ import { SLIDE_SIZE, LAYOUTS, DEFAULT_METADATA } from './ppt-template-config.js'
 function getSectionLabel(slideData) {
   const label = slideData.section || slideData.sectionLabel || slideData.tagline;
   return label ? String(label).toUpperCase() : null;
+}
+
+function enforceExactlyFourLinesFallback(title) {
+  const titleText = title || '';
+  let lines = titleText.split('\n').map(l => l.trim()).filter(l => l);
+
+  // Merge lines until we have exactly 4
+  while (lines.length > 4) {
+    // Find the pair of adjacent lines with shortest combined length
+    let minCombinedLength = Infinity;
+    let mergeIndex = 0;
+
+    for (let i = 0; i < lines.length - 1; i++) {
+      const combinedLength = lines[i].length + lines[i + 1].length;
+      if (combinedLength < minCombinedLength) {
+        minCombinedLength = combinedLength;
+        mergeIndex = i;
+      }
+    }
+
+    // Merge the two shortest adjacent lines
+    lines[mergeIndex] = lines[mergeIndex] + ' ' + lines[mergeIndex + 1];
+    lines.splice(mergeIndex + 1, 1);
+  }
+
+  while (lines.length < 4) {
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Use AI to intelligently reword a title to fit exactly 4 lines
+ * Falls back to mechanical merge if AI fails
+ */
+async function rewordTitleToFourLines(title) {
+  const titleText = title || '';
+  const lines = titleText.split('\n').map(l => l.trim()).filter(l => l);
+
+  // If already 4 lines or fewer, use fallback (handles padding)
+  if (lines.length <= 4) {
+    return enforceExactlyFourLinesFallback(title);
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({
+      model: CONFIG.API.GEMINI_MODEL,
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 100
+      }
+    });
+
+    const prompt = `Reword this slide title to fit EXACTLY 4 lines while preserving the meaning.
+
+Current title (${lines.length} lines):
+${titleText}
+
+Rules:
+- Output EXACTLY 4 lines separated by newlines
+- Each line should be 1-2 words, max 10 characters
+- Preserve the core message and meaning
+- Use impactful, concise language
+
+Output ONLY the 4-line title, nothing else:`;
+
+    const result = await model.generateContent(prompt);
+    const rewordedTitle = result.response.text().trim();
+    const rewordedLines = rewordedTitle.split('\n').map(l => l.trim()).filter(l => l);
+
+    // Verify AI produced exactly 4 lines
+    if (rewordedLines.length === 4) {
+      console.log(`[PPT Export] AI reworded title from ${lines.length} to 4 lines`);
+      return rewordedLines.join('\n');
+    }
+
+    // AI didn't produce 4 lines, fall back
+    console.log(`[PPT Export] AI produced ${rewordedLines.length} lines, using fallback`);
+    return enforceExactlyFourLinesFallback(title);
+  } catch (error) {
+    console.log(`[PPT Export] AI rewording failed: ${error.message}, using fallback`);
+    return enforceExactlyFourLinesFallback(title);
+  }
 }
 
 function getParagraphText(slideData) {
@@ -47,8 +135,20 @@ export async function generatePptx(slidesData, options = {}) {
   pptx.defineLayout({ name: 'CUSTOM_16_9', width: SLIDE_SIZE.width, height: SLIDE_SIZE.height });
   pptx.layout = 'CUSTOM_16_9';
 
-  for (let i = 0; i < slidesData.slides.length; i++) {
-    const slideData = slidesData.slides[i];
+  // Pre-process titles that need rewording (more than 4 lines)
+  const processedSlides = await Promise.all(
+    slidesData.slides.map(async (slideData) => {
+      const titleLines = (slideData.title || '').split('\n').filter(l => l.trim()).length;
+      if (titleLines > 4) {
+        const rewordedTitle = await rewordTitleToFourLines(slideData.title);
+        return { ...slideData, title: rewordedTitle };
+      }
+      return slideData;
+    })
+  );
+
+  for (let i = 0; i < processedSlides.length; i++) {
+    const slideData = processedSlides[i];
     const layout = slideData.layout || 'twoColumn';
 
     if (layout === 'threeColumn') {
@@ -84,7 +184,7 @@ function addTextTwoColumnSlide(pptx, slideData, slideNumber) {
     });
   }
 
-  slide.addText(slideData.title || 'Slide Title', {
+  slide.addText(enforceExactlyFourLinesFallback(slideData.title), {
     x: layout.elements.title.x,
     y: layout.elements.title.y,
     w: layout.elements.title.w,
@@ -146,7 +246,7 @@ function addTextThreeColumnSlide(pptx, slideData, slideNumber) {
   }
 
   // Title (narrower, non-italic for this layout)
-  slide.addText(slideData.title || 'Slide Title', {
+  slide.addText(enforceExactlyFourLinesFallback(slideData.title), {
     x: layout.elements.title.x,
     y: layout.elements.title.y,
     w: layout.elements.title.w,

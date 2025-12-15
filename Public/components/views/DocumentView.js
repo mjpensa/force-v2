@@ -323,28 +323,52 @@ export class DocumentView {
 
       const execSummary = this.documentData.executiveSummary;
 
-      // Handle structured object format (new)
-      if (typeof execSummary === 'object' && execSummary.stakes) {
-        const stakesEl = document.createElement('p');
-        stakesEl.className = 'executive-summary-stakes';
-        stakesEl.textContent = execSummary.stakes;
-        summary.appendChild(stakesEl);
+      // Handle structured object format (new) - check for any of the expected properties
+      if (typeof execSummary === 'object' && execSummary !== null &&
+          (execSummary.stakes || execSummary.keyFinding || execSummary.recommendation)) {
+        if (execSummary.stakes) {
+          const stakesEl = document.createElement('p');
+          stakesEl.className = 'executive-summary-stakes';
+          stakesEl.textContent = execSummary.stakes;
+          summary.appendChild(stakesEl);
+        }
 
-        const findingEl = document.createElement('p');
-        findingEl.className = 'executive-summary-finding';
-        findingEl.textContent = execSummary.keyFinding;
-        summary.appendChild(findingEl);
+        if (execSummary.keyFinding) {
+          const findingEl = document.createElement('p');
+          findingEl.className = 'executive-summary-finding';
+          findingEl.textContent = execSummary.keyFinding;
+          summary.appendChild(findingEl);
+        }
 
-        const actionEl = document.createElement('p');
-        actionEl.className = 'executive-summary-action';
-        actionEl.textContent = execSummary.recommendation;
-        summary.appendChild(actionEl);
-      } else {
-        // Legacy string format fallback
+        if (execSummary.recommendation) {
+          const actionEl = document.createElement('p');
+          actionEl.className = 'executive-summary-action';
+          actionEl.textContent = execSummary.recommendation;
+          summary.appendChild(actionEl);
+        }
+      } else if (typeof execSummary === 'string') {
+        // Legacy string format
         const text = document.createElement('p');
         text.className = 'executive-summary-text';
-        text.textContent = typeof execSummary === 'string' ? execSummary : JSON.stringify(execSummary);
+        text.textContent = execSummary;
         summary.appendChild(text);
+      } else if (typeof execSummary === 'object' && execSummary !== null) {
+        // Unknown object format - render all string properties
+        const entries = Object.entries(execSummary).filter(([_, v]) => typeof v === 'string' && v);
+        if (entries.length > 0) {
+          entries.forEach(([key, value]) => {
+            const el = document.createElement('p');
+            el.className = 'executive-summary-text';
+            el.textContent = value;
+            summary.appendChild(el);
+          });
+        } else {
+          // Last resort: show as formatted JSON
+          const text = document.createElement('p');
+          text.className = 'executive-summary-text';
+          text.textContent = JSON.stringify(execSummary, null, 2);
+          summary.appendChild(text);
+        }
       }
 
       header.appendChild(summary);

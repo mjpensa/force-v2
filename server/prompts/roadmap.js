@@ -98,9 +98,15 @@ You MUST respond with *only* a valid JSON object matching the schema.
     - Check the user's prompt for an *explicitly requested* time range (e.g., "2020-2030", "2024-2026").
     - **IF USER SPECIFIES A TIME RANGE:** Use that range for the timeColumns array.
       * The timeColumns array MUST start at the user's specified start date and end at the user's specified end date.
-      * **INCLUDE ALL TASKS WITHIN THE RANGE:** You MUST include EVERY task, event, milestone, and activity from the research that falls within or overlaps with the user's specified time range. Do NOT skip any item that has a date within the range.
-      * **Only exclude tasks with dates DEFINITIVELY outside the range:** If a task has a specific date that is clearly before the start OR clearly after the end of the user's range, exclude it. Example: User says "2024-2026" and research mentions a 2022 event → exclude the 2022 event.
-      * **When dates are ambiguous or span the boundary:** If a task's timing is unclear, or if it spans into the user's range, INCLUDE it (err on the side of inclusion).
+      * **INCLUDE ALL TASKS THAT OVERLAP THE RANGE:** You MUST include EVERY task that has ANY portion within the user's time range:
+        - Tasks entirely within the range → INCLUDE
+        - Tasks that START BEFORE the range but END WITHIN or AFTER the range start → INCLUDE (set startCol=1 to clip to chart start)
+        - Tasks that START WITHIN the range but END AFTER the range → INCLUDE
+        - Example: User says "2015-2020" and research has a task from 2010-2018 → INCLUDE it (it overlaps 2015-2018), with startCol=1
+      * **Only exclude tasks ENTIRELY outside the range:** Exclude ONLY if the task's END date is before the range start, OR the task's START date is after the range end.
+        - Example: User says "2015-2020" and research mentions a 2022 event → exclude (starts after range ends)
+        - Example: User says "2015-2020" and research has a task from 2010-2012 → exclude (ends before range starts)
+      * **When dates are ambiguous:** If a task's timing is unclear, INCLUDE it (err on the side of inclusion).
     - **IF NO USER-SPECIFIED RANGE:** Scan ALL research files to identify EVERY date mentioned (past, present, and future). Use the EARLIEST date found as the start and the LATEST date as the end.
     - The timeColumns array MUST align with the determined time range (column 1 = first time period).
 2.  **TIME INTERVAL:** Based on the *total duration* of the time range, you MUST choose an interval using EXACTLY these thresholds:

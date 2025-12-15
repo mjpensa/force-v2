@@ -352,7 +352,7 @@
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
   line-height: var(--leading-relaxed);
-  color: var(--color-accent-red);
+  color: var(--glass-text-primary);
   margin: 0 0 var(--spacing-2) 0;
 }
 
