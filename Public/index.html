@@ -286,6 +286,17 @@
                     <input type="file" id="upload-input" multiple accept=".md, .txt, .docx, application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden">
                 </section>
 
+                <!-- Slide Layout Selector -->
+                <section class="mb-4">
+                    <label for="slide-layout" class="block text-xs md:text-sm font-medium text-glass-secondary mb-2">
+                        Slide Layout
+                    </label>
+                    <select id="slide-layout" class="select-glass text-xs md:text-sm">
+                        <option value="twoColumn">Two Column (Title + 2 paragraphs)</option>
+                        <option value="threeColumn">Three Column (Title + 3 columns)</option>
+                    </select>
+                </section>
+
                 <!-- Form Actions (Button & Loader) - Glassmorphic - scaled down ~30% -->
                 <div class="form-actions mt-5">
                     <div class="flex items-center gap-3">

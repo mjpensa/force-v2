@@ -101,10 +101,13 @@ ${researchText}
  * - taskName: string
  * - entity: string
  * - question: string
- * - researchText: string (the research content for context)
+ * - sessionId: string (optional - looks up research from session)
+ * - researchText: string (optional - direct research content)
+ *
+ * Either sessionId or researchText must be provided.
  */
 router.post('/ask-question', apiLimiter, async (req, res) => {
-  const { taskName, entity, question, researchText } = req.body;
+  const { taskName, entity, question, sessionId, researchText: directResearchText } = req.body;
 
   // Enhanced input validation
   if (!question || typeof question !== 'string' || !question.trim()) {
@@ -119,8 +122,20 @@ router.post('/ask-question', apiLimiter, async (req, res) => {
     return res.status(400).json({ error: CONFIG.ERRORS.TASK_NAME_REQUIRED });
   }
 
+  // Get research text from session or direct input
+  let researchText = directResearchText;
+
+  if (!researchText && sessionId) {
+    const session = sessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found or expired' });
+    }
+    touchSession(sessionId);
+    researchText = session.researchContent;
+  }
+
   if (!researchText) {
-    return res.status(400).json({ error: 'Research text is required for Q&A' });
+    return res.status(400).json({ error: 'Either sessionId or researchText is required for Q&A' });
   }
 
   // Limit question length to prevent abuse

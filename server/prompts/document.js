@@ -17,36 +17,28 @@ export const documentSchema = {
   properties: {
     title: {
       type: "string",
-      description: "Compelling document title that signals the core insight",
-      maxLength: 200
+      description: "Compelling document title that signals the core insight"
     },
     executiveSummary: {
       type: "string",
-      description: "2-3 sentence overview for time-pressed executives - the 30-second version",
-      maxLength: 500
+      description: "2-3 sentence overview for time-pressed executives - the 30-second version"
     },
     sections: {
       type: "array",
-      minItems: 4,
-      maxItems: 6,
       description: "Document sections - MUST have 4-6 sections covering different aspects",
       items: {
         type: "object",
         properties: {
           heading: {
             type: "string",
-            description: "Section heading - lead with insight, not topic label",
-            maxLength: 150
+            description: "Section heading - lead with insight, not topic label"
           },
           keyInsight: {
             type: "string",
-            description: "Single most important takeaway from this section",
-            maxLength: 300
+            description: "Single most important takeaway from this section"
           },
           content: {
             type: "array",
-            minItems: 2,
-            maxItems: 6,
             description: "Rich content blocks - MUST have 2-6 varied content blocks per section",
             items: {
               type: "object",
@@ -58,8 +50,7 @@ export const documentSchema = {
                 },
                 text: {
                   type: "string",
-                  description: "Text content for paragraph, quote, or evidence blocks",
-                  maxLength: 800
+                  description: "Text content for paragraph, quote, or evidence blocks"
                 },
                 items: {
                   type: "array",
@@ -85,23 +76,19 @@ export const documentSchema = {
                 },
                 claim: {
                   type: "string",
-                  description: "The claim being supported (for evidence blocks)",
-                  maxLength: 400
+                  description: "The claim being supported (for evidence blocks)"
                 },
                 source: {
                   type: "string",
-                  description: "Source filename or reference (for evidence/quote blocks)",
-                  maxLength: 200
+                  description: "Source filename or reference (for evidence/quote blocks)"
                 },
                 attribution: {
                   type: "string",
-                  description: "Attribution for quotes",
-                  maxLength: 200
+                  description: "Attribution for quotes"
                 }
               },
               required: ["type"]
-            },
-            description: "Rich content blocks (paragraph, list, table, quote, evidence)"
+            }
           },
           paragraphs: {
             type: "array",
@@ -110,21 +97,17 @@ export const documentSchema = {
           }
         },
         required: ["heading", "keyInsight", "content"]
-      },
-      description: "Document sections with insights and rich content"
+      }
     },
     recommendations: {
       type: "array",
-      minItems: 2,
-      maxItems: 4,
       description: "Prioritized action items with rationale - MUST have 2-4 recommendations",
       items: {
         type: "object",
         properties: {
           action: {
             type: "string",
-            description: "Specific recommended action",
-            maxLength: 300
+            description: "Specific recommended action"
           },
           priority: {
             type: "string",
@@ -133,13 +116,11 @@ export const documentSchema = {
           },
           rationale: {
             type: "string",
-            description: "Why this action matters - connect to evidence",
-            maxLength: 400
+            description: "Why this action matters - connect to evidence"
           },
           timeframe: {
             type: "string",
-            description: "When to act: immediate, short-term, or long-term",
-            maxLength: 50
+            description: "When to act: immediate, short-term, or long-term"
           }
         },
         required: ["action", "priority", "rationale"]

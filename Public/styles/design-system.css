@@ -586,6 +586,39 @@ body.view-roadmap .ambient-logo-container {
   border-color: rgba(208, 32, 16, 0.60);
   box-shadow: 0 0 0 3px rgba(208, 32, 16, 0.15);
 }
+.select-glass {
+  background: var(--glass-white-6);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  border: var(--border-glass);
+  border-radius: var(--radius-glass-md);
+  color: var(--glass-text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 8px 12px;
+  width: 100%;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+.select-glass:hover {
+  background-color: var(--glass-white-8);
+  border-color: var(--glass-white-25);
+}
+.select-glass:focus {
+  outline: none;
+  background-color: var(--glass-white-10);
+  border-color: rgba(208, 32, 16, 0.60);
+  box-shadow: 0 0 0 3px rgba(208, 32, 16, 0.15);
+}
+.select-glass option {
+  background: #1a1a2e;
+  color: #ffffff;
+  padding: 8px;
+}
 .dropzone-glass {
   background: var(--glass-white-5);
   backdrop-filter: blur(var(--blur-md));
