@@ -347,6 +347,33 @@
   margin: 0;
 }
 
+/* Structured Executive Summary Components */
+.executive-summary-stakes {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-relaxed);
+  color: var(--color-accent-red);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.executive-summary-finding {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--glass-text-primary);
+  margin: 0 0 var(--spacing-2) 0;
+  padding-left: var(--spacing-3);
+  border-left: 2px solid var(--glass-white-20);
+}
+
+.executive-summary-action {
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-relaxed);
+  color: var(--glass-text-secondary);
+  margin: 0;
+  font-style: italic;
+}
+
 /* ========== KEY INSIGHT ========== */
 
 .key-insight {
@@ -578,6 +605,15 @@
     font-size: var(--text-base);
   }
 
+  .executive-summary-stakes {
+    font-size: var(--text-base);
+  }
+
+  .executive-summary-finding,
+  .executive-summary-action {
+    font-size: var(--text-sm);
+  }
+
   /* Key insight mobile */
   .key-insight {
     font-size: var(--text-base);
@@ -648,6 +684,20 @@
 
   .executive-summary-text {
     color: black;
+  }
+
+  .executive-summary-stakes {
+    color: #333;
+    font-weight: bold;
+  }
+
+  .executive-summary-finding {
+    border-left-color: #666;
+    color: black;
+  }
+
+  .executive-summary-action {
+    color: #444;
   }
 
   .key-insight {

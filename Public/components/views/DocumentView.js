@@ -311,7 +311,7 @@ export class DocumentView {
       header.appendChild(meta);
     }
 
-    // Executive Summary (TL;DR)
+    // Executive Summary (TL;DR) - handles both structured object and legacy string formats
     if (this.documentData.executiveSummary) {
       const summary = document.createElement('div');
       summary.className = 'executive-summary';
@@ -321,10 +321,31 @@ export class DocumentView {
       label.textContent = 'At a Glance';
       summary.appendChild(label);
 
-      const text = document.createElement('p');
-      text.className = 'executive-summary-text';
-      text.textContent = this.documentData.executiveSummary;
-      summary.appendChild(text);
+      const execSummary = this.documentData.executiveSummary;
+
+      // Handle structured object format (new)
+      if (typeof execSummary === 'object' && execSummary.stakes) {
+        const stakesEl = document.createElement('p');
+        stakesEl.className = 'executive-summary-stakes';
+        stakesEl.textContent = execSummary.stakes;
+        summary.appendChild(stakesEl);
+
+        const findingEl = document.createElement('p');
+        findingEl.className = 'executive-summary-finding';
+        findingEl.textContent = execSummary.keyFinding;
+        summary.appendChild(findingEl);
+
+        const actionEl = document.createElement('p');
+        actionEl.className = 'executive-summary-action';
+        actionEl.textContent = execSummary.recommendation;
+        summary.appendChild(actionEl);
+      } else {
+        // Legacy string format fallback
+        const text = document.createElement('p');
+        text.className = 'executive-summary-text';
+        text.textContent = typeof execSummary === 'string' ? execSummary : JSON.stringify(execSummary);
+        summary.appendChild(text);
+      }
 
       header.appendChild(summary);
     }

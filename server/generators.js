@@ -52,9 +52,9 @@ const apiQueue = new APIQueue(4);
  * Generation config presets for different content types
  */
 const DOCUMENT_CONFIG = {
-  temperature: 0.35,     // Moderate: allows varied word choice and narrative energy
-  topP: 0.5,             // Balanced: enables creative phrasing while staying coherent
-  topK: 15,              // Broader vocabulary selection for richer prose
+  temperature: 0.4,      // Increased: more creative phrasing for narrative energy
+  topP: 0.55,            // Increased: slightly broader token selection for varied constructions
+  topK: 20,              // Increased: richer vocabulary for compelling, engaging prose
   thinkingBudget: 2048   // Extended reasoning for deeper analysis and evidence connections
 };
 const STRUCTURED_DEFAULT_CONFIG = {
@@ -78,6 +78,58 @@ const SLIDES_CONFIG = {
   topK: 5,
   thinkingBudget: 0   // Zero: no thinking needed for simple JSON
 };
+
+/**
+ * Validate executive summary quality
+ * Returns { valid: boolean, issues: string[] }
+ */
+function validateExecutiveSummary(execSummary) {
+  const issues = [];
+
+  // Handle both object and string formats
+  const text = typeof execSummary === 'object'
+    ? `${execSummary.stakes || ''} ${execSummary.keyFinding || ''} ${execSummary.recommendation || ''}`
+    : execSummary || '';
+
+  // Check for quantified data
+  const hasNumber = /\d+/.test(text);
+  if (!hasNumber) {
+    issues.push('Missing quantified data point');
+  }
+
+  // Check for action language
+  const hasAction = /(recommend|approve|launch|initiate|authorize|implement|hire|invest|prioritize|execute|deploy|expand|reduce|increase|allocate)/i.test(text);
+  if (!hasAction) {
+    issues.push('Missing actionable recommendation');
+  }
+
+  // Check minimum substance (not too short)
+  const minLength = typeof execSummary === 'object' ? 100 : 150;
+  if (text.length < minLength) {
+    issues.push(`Too short (${text.length} chars, need ${minLength}+)`);
+  }
+
+  // Check for weak openers (anti-patterns)
+  const weakOpeners = /^(this|the|our|in today|as we|it is|there (is|are|has|have))/i;
+  const firstSentence = typeof execSummary === 'object'
+    ? execSummary.stakes
+    : text.split(/[.!?]/)[0];
+  if (weakOpeners.test(firstSentence?.trim() || '')) {
+    issues.push('Weak opening detected');
+  }
+
+  // Check for weasel words
+  const weaselWords = /(significant|substantial|considerable|various|many|some|often|generally)/i;
+  if (weaselWords.test(text)) {
+    issues.push('Contains vague weasel words');
+  }
+
+  return {
+    valid: issues.length === 0,
+    issues
+  };
+}
+
 function withTimeout(promise, timeoutMs, operationName) {
   let timeoutId;
   const timeoutPromise = new Promise((_, reject) => {
@@ -170,13 +222,39 @@ async function generateSlides(userPrompt, researchFiles) {
  * Generate executive summary document
  */
 async function generateDocument(userPrompt, researchFiles) {
-  try {
-    const prompt = generateDocumentPrompt(userPrompt, researchFiles);
-    const data = await generateWithGemini(prompt, documentSchema, 'Document', DOCUMENT_CONFIG);
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: error.message };
+  const MAX_RETRIES = 2;
+  let lastResult = null;
+  let lastValidation = null;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const prompt = generateDocumentPrompt(userPrompt, researchFiles);
+      const data = await generateWithGemini(prompt, documentSchema, 'Document', DOCUMENT_CONFIG);
+
+      // Validate executive summary quality
+      const validation = validateExecutiveSummary(data.executiveSummary);
+      lastResult = data;
+      lastValidation = validation;
+
+      if (validation.valid) {
+        console.log(`[Document] Executive summary passed validation on attempt ${attempt + 1}`);
+        return { success: true, data };
+      }
+
+      console.log(`[Document] Validation issues on attempt ${attempt + 1}:`, validation.issues);
+
+      // Only retry if we have attempts left
+      if (attempt < MAX_RETRIES - 1) {
+        console.log(`[Document] Retrying generation...`);
+      }
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
+
+  // Return last result even if validation failed (don't block user)
+  console.log(`[Document] Returning result despite validation issues:`, lastValidation?.issues);
+  return { success: true, data: lastResult, validationIssues: lastValidation?.issues };
 }
 async function generateResearchAnalysis(userPrompt, researchFiles) {
   try {

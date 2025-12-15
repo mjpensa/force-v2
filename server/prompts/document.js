@@ -17,8 +17,23 @@ export const documentSchema = {
       description: "Compelling document title that signals the core insight"
     },
     executiveSummary: {
-      type: "string",
-      description: "2-3 sentence overview: key finding + recommended action for time-pressed executives"
+      type: "object",
+      properties: {
+        stakes: {
+          type: "string",
+          description: "What's at risk? Quantified impact statement (e.g., '$4M revenue at risk', '23% margin erosion'). Start with power verb."
+        },
+        keyFinding: {
+          type: "string",
+          description: "Core insight with specific data point from research. Must cite source: '[filename] reveals/shows...'"
+        },
+        recommendation: {
+          type: "string",
+          description: "Specific action + owner + timeline (e.g., 'CFO approve $2M pilot by Q2', 'Engineering hire 5 devs by March')"
+        }
+      },
+      required: ["stakes", "keyFinding", "recommendation"],
+      description: "Structured executive summary with stakes, key finding, and actionable recommendation"
     },
     sections: {
       type: "array",
@@ -100,8 +115,30 @@ ANTI-PATTERNS TO AVOID:
 - Topic-label headings ("Overview", "Background", "Analysis")
 - Concluding paragraphs that merely restate what was said
 
+EXECUTIVE SUMMARY FORMULA (mandatory):
+Sentence 1: Stakes + Tension - What's at risk if we do nothing? Include quantified impact.
+Sentence 2: Key finding with specific data point extracted from research (cite source)
+Sentence 3: Recommended action with specific owner/timeline
+
+EXECUTIVE SUMMARY EXAMPLES:
+
+BAD (generic, no data, passive):
+"This analysis examines market trends and provides recommendations for improving operational efficiency."
+
+GOOD (stakes, data, action):
+"A 23% cost advantage window closes in Q3 as competitors scale production—[competitor-analysis.pdf] shows first-mover margins erode 40% within 18 months. Authorize the $2M Vietnam pilot by March to lock in $12M annual savings before price parity."
+
+BAD (weasel words, no urgency):
+"There has been significant growth in the market, and various opportunities exist for substantial improvement."
+
+GOOD (specific, urgent, actionable):
+"Customer churn spiked to 18% in Q4—[support-data.xlsx] reveals 73% cite response time. Hire 12 support engineers by February or forfeit $4.2M ARR to competitors already offering 4-hour SLAs."
+
+POWER VERBS FOR OPENING (use one):
+Threatens, Reveals, Demands, Enables, Erodes, Accelerates, Undermines, Unlocks, Exposes, Validates
+
 STRUCTURE:
-- executiveSummary: 2-3 sentences - the 30-second version with key finding + recommended action
+- executiveSummary: Object with stakes (quantified risk), keyFinding (data + source), recommendation (action + owner + timeline)
 - 4-6 sections covering: situation analysis, implications, risks, recommendations
 - Each section: insight-driven heading, key takeaway, supporting evidence, 2-4 focused paragraphs
 - keyInsight: Single sentence with the most important point from that section
@@ -110,7 +147,11 @@ STRUCTURE:
 OUTPUT FORMAT:
 {
   "title": "Insight-driven title that signals the core finding",
-  "executiveSummary": "2-3 sentences: the 30-second version with key finding + recommended action",
+  "executiveSummary": {
+    "stakes": "Quantified risk/opportunity starting with power verb (e.g., 'Erodes $4M margin by Q3')",
+    "keyFinding": "Key insight with data point and [source.ext] citation",
+    "recommendation": "Specific action + owner + timeline (e.g., 'Board approve $2M by March')"
+  },
   "sections": [
     {
       "heading": "Insight-led heading (not topic label)",
@@ -124,6 +165,33 @@ OUTPUT FORMAT:
 }`;
 
 /**
+ * Extract key statistics from research content for prompt enhancement
+ * @param {string} content - Combined research content
+ * @returns {string} - Comma-separated list of key data points
+ */
+function extractKeyStats(content) {
+  if (!content) return '';
+
+  const patterns = [
+    /\d+\.?\d*\s*%/g,                          // Percentages: 23%, 4.5%
+    /\$\d[\d,]*\.?\d*\s*[MBK]?(?:illion)?/gi,  // Currency: $4M, $2.5 billion
+    /\d+x\b/gi,                                // Multipliers: 3x, 10x
+    /\d{1,3}(?:,\d{3})+/g,                     // Large numbers: 1,000,000
+    /Q[1-4]\s*20\d{2}/gi,                      // Quarters: Q3 2024
+    /20\d{2}/g                                 // Years: 2024, 2025
+  ];
+
+  const matches = new Set();
+  for (const pattern of patterns) {
+    const found = content.match(pattern) || [];
+    found.slice(0, 5).forEach(m => matches.add(m.trim()));
+  }
+
+  // Return top 15 unique stats
+  return Array.from(matches).slice(0, 15).join(', ');
+}
+
+/**
  * Generate prompt with research content
  */
 export function generateDocumentPrompt(userPrompt, researchFiles) {
@@ -131,12 +199,17 @@ export function generateDocumentPrompt(userPrompt, researchFiles) {
     .map(file => `=== ${file.filename} ===\n${file.content}`)
     .join('\n\n');
 
+  const keyStats = extractKeyStats(researchContent);
+
   return `${documentPrompt}
+
+KEY DATA POINTS EXTRACTED FROM RESEARCH (use at least one in executiveSummary.stakes or executiveSummary.keyFinding):
+${keyStats || 'No specific statistics found - extract key numbers from the research text'}
 
 REQUEST: ${userPrompt}
 
 RESEARCH:
 ${researchContent}
 
-Generate the executive summary JSON now. Include executiveSummary and keyInsight for each section.`;
+Generate the document JSON now. The executiveSummary MUST reference specific data from the research.`;
 }
