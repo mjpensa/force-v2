@@ -1,6 +1,6 @@
 /**
- * PPT Export Service - Simplified
- * Single slide type: textTwoColumn
+ * PPT Export Service
+ * Slide types: textTwoColumn, textThreeColumn
  * Text-only elements (no logos or graphics)
  */
 
@@ -48,7 +48,14 @@ export async function generatePptx(slidesData, options = {}) {
   pptx.layout = 'CUSTOM_16_9';
 
   for (let i = 0; i < slidesData.slides.length; i++) {
-    addTextTwoColumnSlide(pptx, slidesData.slides[i], i + 1);
+    const slideData = slidesData.slides[i];
+    const layout = slideData.layout || 'twoColumn';
+
+    if (layout === 'threeColumn') {
+      addTextThreeColumnSlide(pptx, slideData, i + 1);
+    } else {
+      addTextTwoColumnSlide(pptx, slideData, i + 1);
+    }
   }
 
   return await pptx.write({ outputType: 'nodebuffer' });
@@ -106,6 +113,80 @@ function addTextTwoColumnSlide(pptx, slideData, slideNumber) {
     });
   }
 
+  slide.addText(String(slideNumber), {
+    x: layout.elements.pageNumber.x,
+    y: layout.elements.pageNumber.y,
+    w: layout.elements.pageNumber.w,
+    h: layout.elements.pageNumber.h,
+    fontSize: layout.elements.pageNumber.fontSize,
+    fontFace: layout.elements.pageNumber.fontFace,
+    color: layout.elements.pageNumber.color,
+    align: layout.elements.pageNumber.align
+  });
+}
+
+function addTextThreeColumnSlide(pptx, slideData, slideNumber) {
+  const layout = LAYOUTS.textThreeColumn;
+  const slide = pptx.addSlide();
+  slide.background = { color: layout.background };
+
+  // Section label / tagline
+  const sectionLabel = getSectionLabel(slideData);
+  if (sectionLabel) {
+    slide.addText(sectionLabel, {
+      x: layout.elements.sectionLabel.x,
+      y: layout.elements.sectionLabel.y,
+      w: layout.elements.sectionLabel.w,
+      h: layout.elements.sectionLabel.h,
+      fontSize: layout.elements.sectionLabel.fontSize,
+      fontFace: layout.elements.sectionLabel.fontFace,
+      color: layout.elements.sectionLabel.color,
+      align: layout.elements.sectionLabel.align
+    });
+  }
+
+  // Title (narrower, non-italic for this layout)
+  slide.addText(slideData.title || 'Slide Title', {
+    x: layout.elements.title.x,
+    y: layout.elements.title.y,
+    w: layout.elements.title.w,
+    h: layout.elements.title.h,
+    fontSize: layout.elements.title.fontSize,
+    fontFace: layout.elements.title.fontFace,
+    color: layout.elements.title.color,
+    align: layout.elements.title.align,
+    italic: layout.elements.title.italic,
+    lineSpacing: layout.elements.title.lineSpacing
+  });
+
+  // Three columns - each as separate text box
+  const colConfig = layout.elements.threeColumns;
+  const colWidth = (colConfig.w - (colConfig.columnGap * 2)) / 3;
+  const columns = [
+    slideData.paragraph1 || '',
+    slideData.paragraph2 || '',
+    slideData.paragraph3 || ''
+  ];
+
+  columns.forEach((text, i) => {
+    if (text) {
+      const colX = colConfig.x + (i * (colWidth + colConfig.columnGap));
+      slide.addText(text.trim(), {
+        x: colX,
+        y: colConfig.y,
+        w: colWidth,
+        h: colConfig.h,
+        fontSize: colConfig.fontSize,
+        fontFace: colConfig.fontFace,
+        color: colConfig.color,
+        align: 'left',
+        valign: 'top',
+        lineSpacing: colConfig.lineSpacing
+      });
+    }
+  });
+
+  // Page number
   slide.addText(String(slideNumber), {
     x: layout.elements.pageNumber.x,
     y: layout.elements.pageNumber.y,

@@ -387,9 +387,11 @@ class ContentViewer {
       const handleTaskClick = (taskIdentifier) => {
         this.taskAnalyzer.showAnalysis(taskIdentifier);
       };
+      // Include sessionId in ganttData so task click handlers can access it
+      const ganttDataWithSession = { ...data, sessionId: this.sessionId };
       const ganttChart = new GanttChart(
         chartContainer,      // container element
-        data,                // ganttData object (with timeColumns and data)
+        ganttDataWithSession, // ganttData object (with timeColumns, data, and sessionId)
         this.footerSVG,      // footerSVG decoration (CRITICAL!)
         handleTaskClick      // onTaskClick callback
       );

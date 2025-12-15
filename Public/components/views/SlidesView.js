@@ -1,12 +1,21 @@
 /**
- * SlidesView - Single Template Only
- * EXACT measurements extracted from PPT Templates_SHORT3.pptx
+ * SlidesView - Two Templates: twoColumn, threeColumn
+ * EXACT measurements extracted from PPT XML
  *
  * Slide: 12192000 x 6858000 EMU (16:9)
  * All positions calculated as percentages from source XML
  */
 
+// Dispatcher - routes to correct renderer based on layout
 function renderSlide(slide, index) {
+  const layout = slide.layout || 'twoColumn';
+  if (layout === 'threeColumn') {
+    return renderThreeColumnSlide(slide, index);
+  }
+  return renderTwoColumnSlide(slide, index);
+}
+
+function renderTwoColumnSlide(slide, index) {
   const el = document.createElement('div');
   el.style.cssText = `
     width: 100%; height: 100%;
@@ -174,13 +183,173 @@ function renderSlide(slide, index) {
 }
 
 // ========================================
-// DEMO SLIDE - Exact content from template
+// THREE COLUMN LAYOUT RENDERER
+// Measurements from Slide Template 2 - Three Column.pptx
 // ========================================
-const DEMO_SLIDE = {
+function renderThreeColumnSlide(slide, index) {
+  const el = document.createElement('div');
+  el.style.cssText = `
+    width: 100%; height: 100%;
+    background: #FFFFFF;
+    position: relative;
+    font-family: 'Work Sans', sans-serif;
+    box-sizing: border-box;
+    overflow: hidden;
+  `;
+
+  // TAGLINE - x=257175/12192000=2.11%, y=235177/6858000=3.43%
+  const tagline = document.createElement('div');
+  tagline.style.cssText = `
+    position: absolute;
+    top: 3.43%;
+    left: 2.11%;
+    font-family: 'Work Sans', sans-serif;
+    font-size: clamp(8px, 1.3cqw, 16px);
+    font-weight: 600;
+    color: #DA291C;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  `;
+  tagline.textContent = slide.tagline || '';
+  el.appendChild(tagline);
+
+  // TITLE - x=228209/12192000=1.87%, y=613997/6858000=8.95%
+  // width=2519754/12192000=20.67%, height=2150574/6858000=31.36%
+  // Font: 44pt Work Sans Light (not italic), line-height 70%
+  const title = document.createElement('div');
+  title.style.cssText = `
+    position: absolute;
+    top: 8.95%;
+    left: 1.87%;
+    width: 20.67%;
+    height: 31.36%;
+    font-family: 'Work Sans', sans-serif;
+    font-size: clamp(16px, 6cqw, 72px);
+    font-weight: 300;
+    line-height: 0.70;
+    color: #0C2340;
+    white-space: pre-line;
+  `;
+
+  // Convert to sentence case and enforce exactly 4 lines
+  const titleText = slide.title || '';
+  const sentenceCase = titleText.charAt(0).toUpperCase() + titleText.slice(1).toLowerCase();
+  let lines = sentenceCase.split('\n').map(l => l.trim()).filter(l => l);
+  if (lines.length > 4) lines = lines.slice(0, 4);
+  while (lines.length < 4) lines.push('');
+  title.textContent = lines.join('\n');
+  el.appendChild(title);
+
+  // THREE COLUMN BODY - x=3251199/12192000=26.67%, y=3159889/6858000=46.08%
+  // width=8316914/12192000=68.22%, height=3221861/6858000=46.98%
+  // Column gap: 540000 EMU = 4.43% of slide width
+  const MAX_CHARS = 400;
+  const truncateToSentence = (text) => {
+    if (!text || text.length <= MAX_CHARS) return text || '';
+    const truncated = text.substring(0, MAX_CHARS);
+    const lastPeriod = truncated.lastIndexOf('.');
+    const lastQuestion = truncated.lastIndexOf('?');
+    const lastExclaim = truncated.lastIndexOf('!');
+    const lastSentenceEnd = Math.max(lastPeriod, lastQuestion, lastExclaim);
+    if (lastSentenceEnd > MAX_CHARS * 0.6) {
+      return text.substring(0, lastSentenceEnd + 1);
+    }
+    return truncated.replace(/\s+\S*$/, '') + '.';
+  };
+
+  const columnsContainer = document.createElement('div');
+  columnsContainer.style.cssText = `
+    position: absolute;
+    left: 26.67%;
+    top: 46.08%;
+    width: 68.22%;
+    height: 46.98%;
+    display: flex;
+    gap: 4.43%;
+  `;
+
+  const columnTexts = [
+    truncateToSentence(slide.paragraph1),
+    truncateToSentence(slide.paragraph2),
+    truncateToSentence(slide.paragraph3)
+  ];
+
+  columnTexts.forEach(text => {
+    const col = document.createElement('div');
+    col.style.cssText = `
+      flex: 1;
+      font-family: 'Work Sans', sans-serif;
+      font-size: clamp(7px, 1.1cqw, 13px);
+      font-weight: 400;
+      line-height: 1.2;
+      color: #0C2340;
+      overflow: hidden;
+    `;
+    col.textContent = text;
+    columnsContainer.appendChild(col);
+  });
+  el.appendChild(columnsContainer);
+
+  // CORNER GRAPHIC - top right
+  const cornerGraphic = document.createElement('img');
+  cornerGraphic.src = 'bip corner graphic.svg';
+  cornerGraphic.style.cssText = `
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 10.9%;
+    height: auto;
+  `;
+  el.appendChild(cornerGraphic);
+
+  // BIP LOGO - bottom right
+  const bipLogo = document.createElement('img');
+  bipLogo.src = 'Red BIP Logo.png';
+  bipLogo.style.cssText = `
+    position: absolute;
+    bottom: 3%;
+    right: 2%;
+    height: 4%;
+    width: auto;
+  `;
+  el.appendChild(bipLogo);
+
+  // SLIDE NUMBER - bottom left
+  const footer = document.createElement('div');
+  footer.style.cssText = `
+    position: absolute;
+    bottom: 3.43%;
+    left: 2.11%;
+    font-family: 'Work Sans', sans-serif;
+    font-size: clamp(6px, 1cqw, 12px);
+    font-weight: 400;
+    color: #0C2340;
+  `;
+  footer.textContent = index + 1;
+  el.appendChild(footer);
+
+  return el;
+}
+
+// ========================================
+// DEMO SLIDES - Template references
+// ========================================
+const DEMO_SLIDE_TWO_COL = {
+  layout: 'twoColumn',
   tagline: 'LOREM IPSUM',
   title: 'Lorem\nipsum sit\namet sit\nlorem',
   paragraph1: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur excepteur sint occaecat.',
   paragraph2: 'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit sed quia consequuntur magni dolores eos ratione voluptatem.'
+};
+
+const DEMO_SLIDE_THREE_COL = {
+  layout: 'threeColumn',
+  tagline: 'LOREM IPSUM',
+  title: 'Lorem\nipsum sit\namet sit\nlorem',
+  paragraph1: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna.',
+  paragraph2: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna.',
+  paragraph3: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna.'
 };
 
 // ========================================
@@ -189,11 +358,11 @@ const DEMO_SLIDE = {
 export class SlidesView {
   constructor(data, sessionId = null) {
     this.sessionId = sessionId;
-    
-    // ALWAYS show demo slide first for template reference
-    this.slides = [DEMO_SLIDE];
 
-    // Then add any provided slides after the demo
+    // ALWAYS show demo slides first for template reference
+    this.slides = [DEMO_SLIDE_TWO_COL, DEMO_SLIDE_THREE_COL];
+
+    // Then add any provided slides after the demos
     if (data?.slides?.length) {
       this.slides = this.slides.concat(data.slides);
     }
