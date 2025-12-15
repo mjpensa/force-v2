@@ -11,7 +11,7 @@ import mammoth from 'mammoth';
 import { CONFIG } from '../config.js';
 import { sanitizePrompt } from '../utils.js';
 import { callGeminiForJson } from '../gemini.js';
-import { CHART_GENERATION_SYSTEM_PROMPT, GANTT_CHART_SCHEMA } from '../prompts.js';
+import { roadmapPrompt, roadmapSchema } from '../prompts/roadmap.js';
 import { strictLimiter, uploadMiddleware } from '../middleware.js';
 
 const router = express.Router();
@@ -76,10 +76,10 @@ ${researchText}`;
     // Define the payload
     const payload = {
       contents: [{ parts: [{ text: geminiUserQuery }] }],
-      systemInstruction: { parts: [{ text: CHART_GENERATION_SYSTEM_PROMPT }] },
+      systemInstruction: { parts: [{ text: roadmapPrompt }] },
       generationConfig: {
         responseMimeType: "application/json",
-        responseSchema: GANTT_CHART_SCHEMA,
+        responseSchema: roadmapSchema,
         maxOutputTokens: CONFIG.API.MAX_OUTPUT_TOKENS_CHART,
         temperature: CONFIG.API.TEMPERATURE_STRUCTURED,
         topP: CONFIG.API.TOP_P,
