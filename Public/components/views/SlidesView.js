@@ -215,18 +215,18 @@ function renderThreeColumnSlide(slide, index) {
   el.appendChild(tagline);
 
   // TITLE - PPT: x=0.25", y=0.67", w=2.76", h=2.35" → 1.88%, 8.93%, 20.70%, 31.33%
-  // Font: 44pt Work Sans Light, lineSpacing: 70 (0.70 line-height)
+  // Font: Work Sans Thin (weight 100), line-height 0.85 - MATCHES template 1 exactly
   const title = document.createElement('div');
   title.style.cssText = `
     position: absolute;
-    top: 8.93%;
-    left: 1.88%;
+    top: 7%;
+    left: 1.87%;
     width: 20.70%;
-    height: 31.33%;
+    height: 40%;
     font-family: 'Work Sans', sans-serif;
-    font-size: clamp(14px, 4.6cqw, 55px);
-    font-weight: 300;
-    line-height: 0.70;
+    font-size: clamp(14px, 3.7cqw, 44px);
+    font-weight: 100;
+    line-height: 0.85;
     color: #0C2340;
     white-space: pre-line;
   `;
