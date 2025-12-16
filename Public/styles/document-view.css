@@ -494,11 +494,12 @@
 }
 
 .theme-description {
-  font-size: var(--text-base);
-  line-height: var(--leading-relaxed);
-  color: var(--glass-text-primary);
-  margin: 0 0 var(--spacing-4) 0;
-  opacity: 0.9;
+  display: block;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.95) !important;
+  margin: 0.5rem 0 1rem 0;
+  padding: 0;
 }
 
 .theme-topics {
@@ -1007,7 +1008,8 @@
   }
 
   .theme-description {
-    font-size: var(--text-xs);
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.95) !important;
   }
 
   .theme-topic-badge {
