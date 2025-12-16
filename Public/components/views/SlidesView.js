@@ -82,7 +82,7 @@ function renderSectionTitleSlide(slide, index) {
     font-family: 'Work Sans', sans-serif;
     font-size: clamp(10px, 1.5cqw, 18px);
     font-weight: 600;
-    color: #DA291C;
+    color: #FFFFFF;
     letter-spacing: 1px;
     text-transform: uppercase;
   `;
@@ -662,6 +662,10 @@ export class SlidesView {
     const container = document.createElement('div');
     container.className = 'slides-view-container';
 
+    // Add glassmorphic three-dot menu in upper right corner (above TOC)
+    const menu = this._createHeaderMenu();
+    container.appendChild(menu);
+
     // Main layout wrapper (slides area + TOC)
     const mainLayout = document.createElement('div');
     mainLayout.className = 'slides-main-layout';
@@ -669,21 +673,6 @@ export class SlidesView {
     // Slides area (wrapper + nav)
     const slidesArea = document.createElement('div');
     slidesArea.className = 'slides-area';
-
-    // Header with title and menu
-    const header = document.createElement('div');
-    header.className = 'slides-header';
-
-    const headerTitle = document.createElement('h2');
-    headerTitle.className = 'slides-header-title';
-    headerTitle.textContent = 'Presentation';
-
-    // Add glassmorphic three-dot menu
-    const menu = this._createHeaderMenu();
-
-    header.appendChild(headerTitle);
-    header.appendChild(menu);
-    slidesArea.appendChild(header);
 
     // Slide wrapper (centered, 16:9)
     const wrapper = document.createElement('div');

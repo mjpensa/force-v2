@@ -42,6 +42,12 @@ export class DocumentView {
       return this.container;
     }
 
+    // Add glassmorphic three-dot menu in upper right corner (above TOC)
+    if (this.sessionId) {
+      const menu = this._createDocumentMenu();
+      this.container.appendChild(menu);
+    }
+
     // Normalize sections - add id and level if missing
     this._normalizeSections();
 
@@ -497,43 +503,11 @@ export class DocumentView {
     const header = document.createElement('div');
     header.className = 'document-header';
 
-    // Title row with export button
-    const titleRow = document.createElement('div');
-    titleRow.className = 'document-title-row';
-    titleRow.style.cssText = 'display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;';
-
+    // Title
     const title = document.createElement('h1');
     title.className = 'document-title';
     title.textContent = this.documentData.title;
-    titleRow.appendChild(title);
-
-    // Export button (only show if sessionId is available)
-    if (this.sessionId) {
-      const exportBtn = document.createElement('button');
-      exportBtn.className = 'document-export-btn';
-      exportBtn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        Export to Word
-      `;
-      exportBtn.style.cssText = `
-        display: inline-flex; align-items: center;
-        padding: 8px 16px; cursor: pointer;
-        background: #DA291C; color: white;
-        border: none; border-radius: 4px; font-size: 13px;
-        font-weight: 500; white-space: nowrap;
-        transition: background 0.2s;
-      `;
-      exportBtn.onmouseover = () => exportBtn.style.background = '#b8231a';
-      exportBtn.onmouseout = () => exportBtn.style.background = '#DA291C';
-      exportBtn.onclick = () => this._exportToDocx();
-      titleRow.appendChild(exportBtn);
-    }
-
-    header.appendChild(titleRow);
+    header.appendChild(title);
 
     if (this.documentData.subtitle) {
       const subtitle = document.createElement('p');
@@ -563,7 +537,7 @@ export class DocumentView {
       const summary = document.createElement('div');
       summary.className = 'executive-summary';
 
-      // Header row with label, source badge, and menu
+      // Header row with label and source badge
       const headerRow = document.createElement('div');
       headerRow.className = 'executive-summary-header';
 
@@ -572,27 +546,9 @@ export class DocumentView {
       label.textContent = 'At a Glance';
       headerRow.appendChild(label);
 
-      // Right side container for source badge and menu
-      const headerRight = document.createElement('div');
-      headerRight.className = 'executive-summary-header-right';
+      summary.appendChild(headerRow);
 
       const execSummary = this.documentData.executiveSummary;
-
-      // Add source badge if present (new format)
-      if (typeof execSummary === 'object' && execSummary !== null && execSummary.source) {
-        const sourceBadge = document.createElement('span');
-        sourceBadge.className = 'executive-summary-source';
-        sourceBadge.textContent = execSummary.source;
-        sourceBadge.title = `Primary source: ${execSummary.source}`;
-        headerRight.appendChild(sourceBadge);
-      }
-
-      // Add glassmorphic three-dot menu
-      const menu = this._createExecSummaryMenu();
-      headerRight.appendChild(menu);
-
-      headerRow.appendChild(headerRight);
-      summary.appendChild(headerRow);
 
       // Handle NEW structured format (situation, insight, action)
       if (typeof execSummary === 'object' && execSummary !== null &&
@@ -667,6 +623,15 @@ export class DocumentView {
         }
       }
 
+      // Add source badge at END of executive summary (after content)
+      if (typeof execSummary === 'object' && execSummary !== null && execSummary.source) {
+        const sourceBadge = document.createElement('span');
+        sourceBadge.className = 'executive-summary-source';
+        sourceBadge.textContent = execSummary.source;
+        sourceBadge.title = `Primary source: ${execSummary.source}`;
+        summary.appendChild(sourceBadge);
+      }
+
       header.appendChild(summary);
     }
 
@@ -681,15 +646,6 @@ export class DocumentView {
     sectionEl.className = 'document-section';
     sectionEl.id = section.id;
 
-    // Swimlane topic badge (if present) - shows alignment with Gantt chart topic
-    if (section.swimlaneTopic) {
-      const topicBadge = document.createElement('span');
-      topicBadge.className = 'swimlane-topic-badge';
-      topicBadge.textContent = section.swimlaneTopic;
-      topicBadge.title = `This section covers the "${section.swimlaneTopic}" topic from the roadmap`;
-      sectionEl.appendChild(topicBadge);
-    }
-
     // Section heading
     const headingLevel = Math.min(section.level + 1, 6); // h2-h4 (level 1-3 maps to h2-h4)
     const heading = document.createElement(`h${headingLevel}`);
@@ -697,6 +653,37 @@ export class DocumentView {
                         section.level === 2 ? 'section-subheading' : 'section-subheading';
     heading.textContent = section.heading;
     sectionEl.appendChild(heading);
+
+    // TEXT CONTENT FIRST (paragraphs and content blocks)
+    // Paragraphs array
+    if (section.paragraphs && Array.isArray(section.paragraphs)) {
+      section.paragraphs.forEach(text => {
+        const p = document.createElement('p');
+        p.className = 'section-paragraph';
+        p.textContent = text;
+        sectionEl.appendChild(p);
+      });
+    }
+
+    // Content blocks
+    if (section.content && Array.isArray(section.content)) {
+      section.content.forEach(block => {
+        const blockEl = this._renderContentBlock(block);
+        if (blockEl) {
+          sectionEl.appendChild(blockEl);
+        }
+      });
+    }
+
+    // CARDS, BADGES, AND HIGHLIGHTS AT END
+    // Swimlane topic badge (shows alignment with Gantt chart topic)
+    if (section.swimlaneTopic) {
+      const topicBadge = document.createElement('span');
+      topicBadge.className = 'swimlane-topic-badge';
+      topicBadge.textContent = section.swimlaneTopic;
+      topicBadge.title = `This section covers the "${section.swimlaneTopic}" topic from the roadmap`;
+      sectionEl.appendChild(topicBadge);
+    }
 
     // Key insight (if present)
     if (section.keyInsight) {
@@ -752,26 +739,6 @@ export class DocumentView {
           source: evidence.source
         });
         sectionEl.appendChild(evidenceBlock);
-      });
-    }
-
-    // Content blocks
-    if (section.content && Array.isArray(section.content)) {
-      section.content.forEach(block => {
-        const blockEl = this._renderContentBlock(block);
-        if (blockEl) {
-          sectionEl.appendChild(blockEl);
-        }
-      });
-    }
-
-    // Legacy support for paragraphs array
-    if (section.paragraphs && Array.isArray(section.paragraphs)) {
-      section.paragraphs.forEach(text => {
-        const p = document.createElement('p');
-        p.className = 'section-paragraph';
-        p.textContent = text;
-        sectionEl.appendChild(p);
       });
     }
 
@@ -1081,16 +1048,16 @@ export class DocumentView {
   }
 
   /**
-   * Create the glassmorphic three-dot menu for the executive summary
+   * Create the glassmorphic three-dot menu for the document (upper right corner)
    * @returns {HTMLElement} The menu container
    */
-  _createExecSummaryMenu() {
+  _createDocumentMenu() {
     const menuContainer = document.createElement('div');
-    menuContainer.className = 'exec-summary-menu';
+    menuContainer.className = 'document-header-menu';
 
     // Three-dot trigger button
     const triggerBtn = document.createElement('button');
-    triggerBtn.className = 'exec-summary-menu-trigger';
+    triggerBtn.className = 'document-menu-trigger';
     triggerBtn.setAttribute('aria-label', 'Open document menu');
     triggerBtn.setAttribute('aria-haspopup', 'true');
     triggerBtn.setAttribute('aria-expanded', 'false');
@@ -1102,11 +1069,11 @@ export class DocumentView {
 
     // Dropdown menu
     const dropdown = document.createElement('div');
-    dropdown.className = 'exec-summary-menu-dropdown';
+    dropdown.className = 'document-menu-dropdown';
     dropdown.setAttribute('role', 'menu');
 
     // Export to Word
-    const exportWordItem = this._createExecMenuItem({
+    const exportWordItem = this._createDocMenuItem({
       id: 'export-word-btn',
       icon: '📄',
       text: 'Export to Word',
@@ -1119,15 +1086,15 @@ export class DocumentView {
     menuContainer.appendChild(dropdown);
 
     // Setup menu toggle behavior
-    this._setupExecMenuBehavior(triggerBtn, dropdown);
+    this._setupDocMenuBehavior(triggerBtn, dropdown);
 
     return menuContainer;
   }
 
   /**
-   * Create a menu item element for exec summary menu
+   * Create a menu item element for document menu
    */
-  _createExecMenuItem({ id, icon, text, ariaLabel }) {
+  _createDocMenuItem({ id, icon, text, ariaLabel }) {
     const item = document.createElement('button');
     item.id = id;
     item.className = 'menu-item';
@@ -1141,9 +1108,9 @@ export class DocumentView {
   }
 
   /**
-   * Setup menu open/close behavior for exec summary menu
+   * Setup menu open/close behavior for document menu
    */
-  _setupExecMenuBehavior(trigger, dropdown) {
+  _setupDocMenuBehavior(trigger, dropdown) {
     let isOpen = false;
 
     const openMenu = () => {

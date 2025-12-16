@@ -111,41 +111,59 @@ export class GanttExporter {
       try {
         await new Promise(resolve => requestAnimationFrame(resolve));
 
-        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+        // Store original container scroll position
+        const originalScrollTop = this.chartContainer.scrollTop;
+        const originalScrollLeft = this.chartContainer.scrollLeft;
 
         // Store original styles that constrain the container
         const originalMaxHeight = this.chartContainer.style.maxHeight;
         const originalOverflow = this.chartContainer.style.overflow;
+        const originalOverflowX = this.chartContainer.style.overflowX;
         const originalOverflowY = this.chartContainer.style.overflowY;
+
+        // Reset container scroll to top-left
+        this.chartContainer.scrollTop = 0;
+        this.chartContainer.scrollLeft = 0;
 
         // Temporarily remove constraints to capture full content
         this.chartContainer.style.maxHeight = 'none';
         this.chartContainer.style.overflow = 'visible';
+        this.chartContainer.style.overflowX = 'visible';
         this.chartContainer.style.overflowY = 'visible';
 
         // Force reflow to apply style changes
         await new Promise(resolve => requestAnimationFrame(resolve));
 
-        // Capture the chart at its natural size
+        // Get the full content dimensions after removing constraints
+        const fullWidth = this.chartContainer.scrollWidth;
+        const fullHeight = this.chartContainer.scrollHeight;
+
+        // Capture the chart at its full natural size
         const sourceCanvas = await html2canvas(this.chartContainer, {
           useCORS: true,
           logging: false,
           scale: CONFIG.EXPORT.SCALE,
           allowTaint: false,
           backgroundColor: CONFIG.EXPORT.BACKGROUND_COLOR,
-          scrollY: -scrollY,
-          scrollX: -scrollX,
-          windowWidth: this.chartContainer.scrollWidth,
-          windowHeight: this.chartContainer.scrollHeight,
-          width: this.chartContainer.scrollWidth,
-          height: this.chartContainer.scrollHeight
+          width: fullWidth,
+          height: fullHeight,
+          windowWidth: fullWidth,
+          windowHeight: fullHeight,
+          x: 0,
+          y: 0,
+          scrollX: 0,
+          scrollY: 0
         });
 
         // Restore original styles
         this.chartContainer.style.maxHeight = originalMaxHeight;
         this.chartContainer.style.overflow = originalOverflow;
+        this.chartContainer.style.overflowX = originalOverflowX;
         this.chartContainer.style.overflowY = originalOverflowY;
+
+        // Restore original scroll position
+        this.chartContainer.scrollTop = originalScrollTop;
+        this.chartContainer.scrollLeft = originalScrollLeft;
 
         // Apply 9:16 aspect ratio scaling
         const aspectRatioCanvas = this._createAspectRatioCanvas(sourceCanvas);
@@ -189,41 +207,59 @@ export class GanttExporter {
       try {
         await new Promise(resolve => requestAnimationFrame(resolve));
 
-        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+        // Store original container scroll position
+        const originalScrollTop = this.chartContainer.scrollTop;
+        const originalScrollLeft = this.chartContainer.scrollLeft;
 
         // Store original styles that constrain the container
         const originalMaxHeight = this.chartContainer.style.maxHeight;
         const originalOverflow = this.chartContainer.style.overflow;
+        const originalOverflowX = this.chartContainer.style.overflowX;
         const originalOverflowY = this.chartContainer.style.overflowY;
+
+        // Reset container scroll to top-left
+        this.chartContainer.scrollTop = 0;
+        this.chartContainer.scrollLeft = 0;
 
         // Temporarily remove constraints to capture full content
         this.chartContainer.style.maxHeight = 'none';
         this.chartContainer.style.overflow = 'visible';
+        this.chartContainer.style.overflowX = 'visible';
         this.chartContainer.style.overflowY = 'visible';
 
         // Force reflow to apply style changes
         await new Promise(resolve => requestAnimationFrame(resolve));
 
-        // Capture the chart at its natural size
+        // Get the full content dimensions after removing constraints
+        const fullWidth = this.chartContainer.scrollWidth;
+        const fullHeight = this.chartContainer.scrollHeight;
+
+        // Capture the chart at its full natural size
         const sourceCanvas = await html2canvas(this.chartContainer, {
           useCORS: true,
           logging: false,
           scale: CONFIG.EXPORT.SCALE,
           allowTaint: false,
           backgroundColor: CONFIG.EXPORT.BACKGROUND_COLOR,
-          scrollY: -scrollY,
-          scrollX: -scrollX,
-          windowWidth: this.chartContainer.scrollWidth,
-          windowHeight: this.chartContainer.scrollHeight,
-          width: this.chartContainer.scrollWidth,
-          height: this.chartContainer.scrollHeight
+          width: fullWidth,
+          height: fullHeight,
+          windowWidth: fullWidth,
+          windowHeight: fullHeight,
+          x: 0,
+          y: 0,
+          scrollX: 0,
+          scrollY: 0
         });
 
         // Restore original styles
         this.chartContainer.style.maxHeight = originalMaxHeight;
         this.chartContainer.style.overflow = originalOverflow;
+        this.chartContainer.style.overflowX = originalOverflowX;
         this.chartContainer.style.overflowY = originalOverflowY;
+
+        // Restore original scroll position
+        this.chartContainer.scrollTop = originalScrollTop;
+        this.chartContainer.scrollLeft = originalScrollLeft;
 
         // Apply 9:16 aspect ratio scaling
         const aspectRatioCanvas = this._createAspectRatioCanvas(sourceCanvas);

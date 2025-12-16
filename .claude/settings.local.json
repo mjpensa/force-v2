@@ -15,7 +15,8 @@
       "Bash(rm:*)",
       "Bash(git -C \"c:\\FORCE\" diff server/prompts/roadmap.js)",
       "Bash(git -C \"c:\\FORCE\" status --short)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git -C \"c:\\FORCE\" diff Public/components/views/DocumentView.js)"
     ],
     "deny": [],
     "ask": []

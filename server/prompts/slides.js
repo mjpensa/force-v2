@@ -21,7 +21,7 @@ const contentSlideSchema = {
     },
     title: {
       type: "string",
-      description: "3 or 4 lines separated by \\n. Format: 'Line1\\nLine2\\nLine3' or 'Line1\\nLine2\\nLine3\\nLine4'. Each line max 10 chars. MUST have 2 or 3 newline characters.",
+      description: "A coherent phrase split across 3-4 lines with \\n. MUST read naturally as complete thought. NEVER split words. twoColumn: max 10 chars/line. threeColumn: max 18 chars/line (longer words OK).",
       nullable: false
     },
     paragraph1: {
@@ -197,13 +197,17 @@ COMMON RULES FOR ALL CONTENT SLIDES:
 
 TAGLINE: 2-word uppercase label, MAX 21 characters. Example: "MARGIN EROSION"
 
-TITLE RULES (CRITICAL - MUST BE 3 OR 4 LINES):
-- Pattern: "Line1\\nLine2\\nLine3" (3 lines) or "Line1\\nLine2\\nLine3\\nLine4" (4 lines)
-- Use 2 or 3 newline characters depending on line count
-- Each line: 1-2 words, MAX 10 characters per line
+TITLE RULES (CRITICAL - MUST BE COHERENT 3 OR 4 LINE PHRASE):
+- MUST form a coherent phrase or sentence that reads naturally when lines are combined
+- Pattern: "Word1\\nWord2\\nWord3" (3 lines) or "Word1\\nWord2\\nWord3\\nWord4" (4 lines)
+- Think: "What is the slide saying?" then split that phrase across lines
+- NEVER split a word across lines - keep whole words together
+- twoColumn layout: Each line MAX 10 characters (1-2 short words)
+- threeColumn layout: Each line MAX 18 characters (longer words OK, e.g., "Multijurisdictional")
 - AVOID letters g, y, p, q, j on lines 1-2 for 3-line titles, lines 1-3 for 4-line titles (descenders overlap next line)
 - Last line can use any letters
-- Examples: "Driving\\nModern\\nForward" (3 lines) or "Driving\\nModern\\nBusiness\\nForward" (4 lines)
+- GOOD examples: "Driving\\nModern\\nGrowth", "Data\\nFuels\\nDecisions", "Global\\nCompliance\\nPressure"
+- BAD examples: "REG\\nFINES\\nFORCE\\nmodern", "Multi\\njuris\\ndictional" (split word)
 
 PARAGRAPH REQUIREMENTS (CRITICAL):
 - Each paragraph must be a complete thought ending with a period

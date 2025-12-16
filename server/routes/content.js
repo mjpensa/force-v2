@@ -16,7 +16,7 @@ import mammoth from 'mammoth';
 import crypto from 'crypto';
 import { generateAllContent, regenerateContent } from '../generators.js';
 import { uploadMiddleware, handleUploadErrors } from '../middleware.js';
-import { generatePptx } from '../templates/ppt-export-service.js';
+import { generatePptx } from '../templates/ppt-export-service-v2.js';
 import { generateDocx } from '../templates/docx-export-service.js';
 
 const router = express.Router();
