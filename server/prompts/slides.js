@@ -337,9 +337,14 @@ export function generateSlidesOutlinePrompt(userPrompt, researchFiles, swimlanes
   // Get current temporal context
   const dateContext = getCurrentDateContext();
 
-  // Format swimlanes for the prompt
+  // Format swimlanes for the prompt (including fixed Overview and Conclusion sections)
   const swimlaneList = swimlanes.length > 0
-    ? swimlanes.map((s, i) => `${i + 1}. "${s.name}" (${s.taskCount} related tasks)`).join('\n')
+    ? swimlanes.map((s, i) => {
+        if (s.isFixed) {
+          return `${i + 1}. "${s.name}" (FIXED SECTION - 4-8 slides required)`;
+        }
+        return `${i + 1}. "${s.name}" (${s.taskCount} related tasks)`;
+      }).join('\n')
     : null;
 
   const swimlaneInstructions = swimlanes.length > 0
@@ -349,6 +354,33 @@ ${swimlaneList}
 `
     : `
 SECTIONS: Identify 3-6 major themes from the research and create one section per theme.
+`;
+
+  // Fixed section instructions for Overview and Conclusion
+  const fixedSectionInstructions = `
+FIXED SECTION REQUIREMENTS:
+
+OVERVIEW SECTION (FIRST SECTION - REQUIRED):
+- swimlane: "Overview"
+- Purpose: Set the stage, introduce key themes, establish urgency
+- Generate 4-8 slides covering:
+  1-2. CONTEXT: What is the landscape/situation? Frame the problem/opportunity
+  3-4. KEY THEMES: What are the 2-3 major topics this presentation covers? Preview without deep diving
+  5-6. DATA ANCHOR: Key statistics that frame the opportunity/challenge from research
+  7-8. BRIDGE: Why this matters now, transition to detailed analysis
+- narrativeArc: "Current situation creates urgency → key themes preview → sets up deep dive"
+- Tagline examples: "MARKET INFLECTION", "3 CRITICAL PRESSURES", "ADOPTION SURGE", "TIMELINE IMPERATIVE"
+
+CONCLUSION SECTION (LAST SECTION - REQUIRED):
+- swimlane: "Conclusion"
+- Purpose: Synthesize insights, provide recommendations, call to action
+- Generate 4-8 slides covering:
+  1-2. SYNTHESIS: Key insights across all sections (not repetition - true synthesis of interconnections)
+  3-4. IMPLICATIONS: What do these findings mean collectively? Strategic impact
+  5-6. RECOMMENDATIONS: Specific actions with timelines and ownership
+  7-8. CALL TO ACTION: Next steps, decision points, urgency, cost of inaction
+- narrativeArc: "Evidence synthesis → strategic implications → actionable path forward"
+- Tagline examples: "3 CONVERGING FORCES", "DECISION FRAMEWORK", "Q2 ADOPTION TARGETS", "COST OF DELAY"
 `;
 
   return `You are creating a NARRATIVE OUTLINE for a presentation. This outline will guide full slide content generation.
@@ -380,6 +412,7 @@ You MUST complete the 'reasoning' object FIRST, before creating any sections. Th
 ONLY AFTER completing reasoning should you define sections and slides.
 
 ${swimlaneInstructions}
+${fixedSectionInstructions}
 
 FOR EACH SECTION, provide:
 
@@ -519,11 +552,11 @@ export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = [], 
     throw new Error('At least one research file with content is required for slide generation');
   }
 
-  // Validate swimlane objects if provided
+  // Validate swimlane objects if provided (allowing isFixed property for Overview/Conclusion)
   if (swimlanes && swimlanes.length > 0) {
-    const invalidSwimlane = swimlanes.find(s => !s || typeof s.name !== 'string' || typeof s.taskCount !== 'number');
+    const invalidSwimlane = swimlanes.find(s => !s || typeof s.name !== 'string' || (typeof s.taskCount !== 'number' && !s.isFixed));
     if (invalidSwimlane) {
-      throw new Error('Swimlane objects must have "name" (string) and "taskCount" (number) properties');
+      throw new Error('Swimlane objects must have "name" (string) and "taskCount" (number) properties (or isFixed: true)');
     }
   }
 
@@ -537,20 +570,50 @@ export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = [], 
   // Get current temporal context
   const dateContext = getCurrentDateContext();
 
-  // Format swimlanes for the prompt
+  // Format swimlanes for the prompt (including fixed Overview and Conclusion sections)
   const swimlaneList = swimlanes.length > 0
-    ? swimlanes.map((s, i) => `${i + 1}. "${s.name}" (${s.taskCount} related tasks in roadmap)`).join('\n')
+    ? swimlanes.map((s, i) => {
+        if (s.isFixed) {
+          return `${i + 1}. "${s.name}" (FIXED SECTION - 4-8 slides required)`;
+        }
+        return `${i + 1}. "${s.name}" (${s.taskCount} related tasks in roadmap)`;
+      }).join('\n')
     : null;
+
+  // Fixed section content generation instructions
+  const fixedSectionContentInstructions = `
+FIXED SECTION CONTENT REQUIREMENTS:
+
+OVERVIEW SECTION (FIRST SECTION - 4-8 slides):
+Generate content that sets the stage for the entire presentation:
+- Slides 1-2 (CONTEXT): Frame the landscape/situation. What problem or opportunity exists? Use compelling statistics from research to establish urgency. Layout: twoColumn for authoritative opening.
+- Slides 3-4 (KEY THEMES): Preview the 2-3 major topics the presentation will cover. Tease insights without deep diving. Give audience a roadmap of what's coming.
+- Slides 5-6 (DATA ANCHOR): Present key statistics that frame the overall challenge/opportunity. These should be the most impactful numbers from the research that justify attention.
+- Slides 7-8 (BRIDGE): Explain why this matters NOW. Create tension that leads into the first content section. End with forward momentum.
+- Tagline style: Situational ("MARKET INFLECTION", "3 CRITICAL PRESSURES", "ADOPTION IMPERATIVE")
+- DO NOT deep dive into any single topic - save that for content sections
+
+CONCLUSION SECTION (LAST SECTION - 4-8 slides):
+Generate content that synthesizes and drives action:
+- Slides 1-2 (SYNTHESIS): Synthesize key insights across ALL previous sections. NOT a summary/repetition - show how insights CONNECT and COMPOUND each other.
+- Slides 3-4 (IMPLICATIONS): What do these findings mean collectively? Strategic impact, competitive positioning, risk/opportunity assessment.
+- Slides 5-6 (RECOMMENDATIONS): Specific, actionable recommendations with timelines. Who does what by when? Prioritized action items.
+- Slides 7-8 (CALL TO ACTION): Clear next steps, decision points required, urgency/cost of inaction. End with compelling forward momentum.
+- Tagline style: Action-oriented ("DECISION FRAMEWORK", "Q2 ADOPTION TARGETS", "COST OF DELAY", "STRATEGIC IMPERATIVE")
+- Reference specific evidence from earlier sections to support recommendations
+`;
 
   // Build section-specific instructions if swimlanes are provided
   const sectionInstructions = swimlanes.length > 0
     ? `
 SECTION STRUCTURE (CRITICAL - FOLLOW EXACTLY):
 You MUST create one section for each swimlane topic listed below, IN THE SAME ORDER.
-Each section represents a key topic from the project roadmap.
+The first section (Overview) and last section (Conclusion) are FIXED sections with specific requirements.
+Middle sections represent key topics from the project roadmap.
 
 SWIMLANE TOPICS (create sections in this exact order):
 ${swimlaneList}
+${fixedSectionContentInstructions}
 
 FOR EACH SECTION:
 1. "swimlane": Use the EXACT swimlane name from the list above

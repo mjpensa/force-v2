@@ -532,9 +532,11 @@ function validateSlideQuality(slidesData) {
   let slideIndex = 0;
   for (const section of slidesData.sections) {
     const sectionName = section.swimlane || 'Unknown Section';
+    const isFixedSection = sectionName === 'Overview' || sectionName === 'Conclusion';
+    const minSlides = isFixedSection ? 4 : 1;
 
-    if (!section.slides || section.slides.length === 0) {
-      issues.push(`Section "${sectionName}": No slides generated (minimum 1-2 required)`);
+    if (!section.slides || section.slides.length < minSlides) {
+      issues.push(`Section "${sectionName}": ${section.slides?.length || 0} slides generated (minimum ${minSlides} required)`);
       continue;
     }
 
@@ -873,16 +875,24 @@ async function generateSlides(userPrompt, researchFiles, swimlanes = []) {
       console.log(`[Slides] Two-pass generation (will auto-detect topics)`);
     }
 
+    // Create augmented swimlanes with fixed Overview and Conclusion sections
+    const augmentedSwimlanes = [
+      { name: "Overview", taskCount: 0, isFixed: true },
+      ...swimlanes,
+      { name: "Conclusion", taskCount: 0, isFixed: true }
+    ];
+    console.log(`[Slides] Augmented swimlanes: ${augmentedSwimlanes.length} sections (including Overview and Conclusion)`);
+
     // Pass 1: Generate narrative outline (fast, structured)
     console.log(`[Slides] Pass 1: Generating narrative outline...`);
-    const outlinePrompt = generateSlidesOutlinePrompt(userPrompt, researchFiles, swimlanes);
+    const outlinePrompt = generateSlidesOutlinePrompt(userPrompt, researchFiles, augmentedSwimlanes);
     const outline = await generateWithGemini(outlinePrompt, slidesOutlineSchema, 'SlideOutline', SLIDES_OUTLINE_CONFIG);
 
     const totalOutlineSlides = outline.sections?.reduce((sum, s) => sum + (s.slides?.length || 0), 0) || 0;
     console.log(`[Slides] Outline generated: ${outline.sections?.length || 0} sections, ${totalOutlineSlides} slide blueprints`);
 
     // Validate outline structure before proceeding to Pass 2
-    const outlineValidation = validateOutlineStructure(outline, swimlanes);
+    const outlineValidation = validateOutlineStructure(outline, augmentedSwimlanes);
     if (!outlineValidation.valid) {
       console.warn('[Slides] Outline validation issues:', outlineValidation.errors);
     } else {
@@ -891,7 +901,7 @@ async function generateSlides(userPrompt, researchFiles, swimlanes = []) {
 
     // Pass 2: Generate full slides with outline as constraint
     console.log(`[Slides] Pass 2: Generating full slides with outline constraint...`);
-    const fullPrompt = generateSlidesPrompt(userPrompt, researchFiles, swimlanes, outline);
+    const fullPrompt = generateSlidesPrompt(userPrompt, researchFiles, augmentedSwimlanes, outline);
     const data = await generateWithGemini(fullPrompt, slidesSchema, 'Slides', SLIDES_CONFIG);
 
     // Validate quality (logging only - don't block user)
