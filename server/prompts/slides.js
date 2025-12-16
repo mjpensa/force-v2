@@ -202,12 +202,16 @@ TITLE RULES (CRITICAL - MUST BE COHERENT 3 OR 4 LINE PHRASE):
 - Pattern: "Word1\\nWord2\\nWord3" (3 lines) or "Word1\\nWord2\\nWord3\\nWord4" (4 lines)
 - Think: "What is the slide saying?" then split that phrase across lines
 - NEVER split a word across lines - keep whole words together
+- NEVER put short connector words alone on a line (to, a, an, in, on, of, for, the, and, or, is, as, by, at)
+  * BAD: "Fpml\\nto\\nsmart\\ncontracts" - "to" alone looks awkward
+  * GOOD: "Fpml to\\nsmart\\ncontracts" - combine short word with adjacent word
+  * GOOD: "From Fpml\\nto smart\\ncontracts" - restructure the phrase
 - twoColumn layout: Each line MAX 10 characters (1-2 short words)
 - threeColumn layout: Each line MAX 18 characters (longer words OK, e.g., "Multijurisdictional")
 - AVOID letters g, y, p, q, j on lines 1-2 for 3-line titles, lines 1-3 for 4-line titles (descenders overlap next line)
 - Last line can use any letters
 - GOOD examples: "Driving\\nModern\\nGrowth", "Data\\nFuels\\nDecisions", "Global\\nCompliance\\nPressure"
-- BAD examples: "REG\\nFINES\\nFORCE\\nmodern", "Multi\\njuris\\ndictional" (split word)
+- BAD examples: "REG\\nFINES\\nFORCE\\nmodern", "Multi\\njuris\\ndictional" (split word), "Fpml\\nto\\nsmart" (isolated connector)
 
 PARAGRAPH REQUIREMENTS (CRITICAL):
 - Each paragraph must be a complete thought ending with a period
