@@ -554,50 +554,121 @@ export class DocumentView {
       if (typeof execSummary === 'object' && execSummary !== null &&
           (execSummary.situation || execSummary.insight || execSummary.action)) {
 
+        const glanceGrid = document.createElement('div');
+        glanceGrid.className = 'glance-grid';
+
         if (execSummary.situation) {
-          const situationEl = document.createElement('p');
-          situationEl.className = 'executive-summary-situation';
-          situationEl.textContent = execSummary.situation;
-          summary.appendChild(situationEl);
+          const situationBlock = document.createElement('div');
+          situationBlock.className = 'glance-block glance-context';
+
+          const situationLabel = document.createElement('span');
+          situationLabel.className = 'glance-label';
+          situationLabel.textContent = 'CONTEXT';
+          situationBlock.appendChild(situationLabel);
+
+          const situationText = document.createElement('p');
+          situationText.className = 'glance-text';
+          situationText.textContent = execSummary.situation;
+          situationBlock.appendChild(situationText);
+
+          glanceGrid.appendChild(situationBlock);
         }
 
         if (execSummary.insight) {
-          const insightEl = document.createElement('p');
-          insightEl.className = 'executive-summary-insight';
-          insightEl.textContent = execSummary.insight;
-          summary.appendChild(insightEl);
+          const insightBlock = document.createElement('div');
+          insightBlock.className = 'glance-block glance-insight';
+
+          const insightLabel = document.createElement('span');
+          insightLabel.className = 'glance-label';
+          insightLabel.textContent = 'KEY INSIGHT';
+          insightBlock.appendChild(insightLabel);
+
+          const insightText = document.createElement('p');
+          insightText.className = 'glance-text';
+          insightText.textContent = execSummary.insight;
+          insightBlock.appendChild(insightText);
+
+          glanceGrid.appendChild(insightBlock);
         }
 
         if (execSummary.action) {
-          const actionEl = document.createElement('p');
-          actionEl.className = 'executive-summary-action';
-          actionEl.textContent = execSummary.action;
-          summary.appendChild(actionEl);
+          const actionBlock = document.createElement('div');
+          actionBlock.className = 'glance-block glance-action';
+
+          const actionLabel = document.createElement('span');
+          actionLabel.className = 'glance-label';
+          actionLabel.textContent = 'RECOMMENDED ACTION';
+          actionBlock.appendChild(actionLabel);
+
+          const actionText = document.createElement('p');
+          actionText.className = 'glance-text';
+          actionText.textContent = execSummary.action;
+          actionBlock.appendChild(actionText);
+
+          glanceGrid.appendChild(actionBlock);
         }
+
+        summary.appendChild(glanceGrid);
       }
       // Handle LEGACY structured format (stakes, keyFinding, recommendation)
       else if (typeof execSummary === 'object' && execSummary !== null &&
           (execSummary.stakes || execSummary.keyFinding || execSummary.recommendation)) {
+
+        const glanceGrid = document.createElement('div');
+        glanceGrid.className = 'glance-grid';
+
         if (execSummary.stakes) {
-          const stakesEl = document.createElement('p');
-          stakesEl.className = 'executive-summary-situation'; // Map to new class
-          stakesEl.textContent = execSummary.stakes;
-          summary.appendChild(stakesEl);
+          const stakesBlock = document.createElement('div');
+          stakesBlock.className = 'glance-block glance-context';
+
+          const stakesLabel = document.createElement('span');
+          stakesLabel.className = 'glance-label';
+          stakesLabel.textContent = 'CONTEXT';
+          stakesBlock.appendChild(stakesLabel);
+
+          const stakesText = document.createElement('p');
+          stakesText.className = 'glance-text';
+          stakesText.textContent = execSummary.stakes;
+          stakesBlock.appendChild(stakesText);
+
+          glanceGrid.appendChild(stakesBlock);
         }
 
         if (execSummary.keyFinding) {
-          const findingEl = document.createElement('p');
-          findingEl.className = 'executive-summary-insight'; // Map to new class
-          findingEl.textContent = execSummary.keyFinding;
-          summary.appendChild(findingEl);
+          const findingBlock = document.createElement('div');
+          findingBlock.className = 'glance-block glance-insight';
+
+          const findingLabel = document.createElement('span');
+          findingLabel.className = 'glance-label';
+          findingLabel.textContent = 'KEY INSIGHT';
+          findingBlock.appendChild(findingLabel);
+
+          const findingText = document.createElement('p');
+          findingText.className = 'glance-text';
+          findingText.textContent = execSummary.keyFinding;
+          findingBlock.appendChild(findingText);
+
+          glanceGrid.appendChild(findingBlock);
         }
 
         if (execSummary.recommendation) {
-          const actionEl = document.createElement('p');
-          actionEl.className = 'executive-summary-action';
-          actionEl.textContent = execSummary.recommendation;
-          summary.appendChild(actionEl);
+          const actionBlock = document.createElement('div');
+          actionBlock.className = 'glance-block glance-action';
+
+          const actionLabel = document.createElement('span');
+          actionLabel.className = 'glance-label';
+          actionLabel.textContent = 'RECOMMENDED ACTION';
+          actionBlock.appendChild(actionLabel);
+
+          const actionText = document.createElement('p');
+          actionText.className = 'glance-text';
+          actionText.textContent = execSummary.recommendation;
+          actionBlock.appendChild(actionText);
+
+          glanceGrid.appendChild(actionBlock);
         }
+
+        summary.appendChild(glanceGrid);
       } else if (typeof execSummary === 'string') {
         // Legacy string format
         const text = document.createElement('p');

@@ -499,7 +499,7 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
   // Navy background
   slide.background = { color: COLORS.navy };
 
-  // Swimlane label (white on dark - per updated browser CSS)
+  // Swimlane label (white on dark, semi-bold - weight 600)
   if (data.swimlane) {
     const swimlaneText = formatSectionTitle(data.swimlane).toUpperCase();
     slide.addText(swimlaneText, {
@@ -508,23 +508,24 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
       w: L.swimlaneLabel.w,
       h: L.swimlaneLabel.h,
       fontSize: 14,
-      fontFace: 'Work Sans',
-      bold: true,
+      fontFace: 'Work Sans SemiBold',
+      bold: false,
       color: COLORS.white,
       align: 'left',
       charSpacing: 1
     });
   }
 
-  // Main section title (centered, large, thin font)
+  // Main section title (centered, large, thin font - weight 100)
+  // Font: 72pt Work Sans Thin per browser CSS (font-weight: 100)
   const titleText = formatSectionTitle(data.sectionTitle || data.swimlane || '');
   slide.addText(titleText, {
     x: L.title.x,
     y: L.title.y,
     w: L.title.w,
     h: L.title.h,
-    fontSize: 60,
-    fontFace: 'Work Sans',
+    fontSize: 72,
+    fontFace: 'Work Sans Thin',
     bold: false,
     color: COLORS.white,
     align: 'center',
@@ -580,7 +581,7 @@ function addTwoColumnSlide(pptx, data, slideNumber) {
   // White background
   slide.background = { color: COLORS.white };
 
-  // Tagline (red, uppercase, semi-bold)
+  // Tagline (red, uppercase, semi-bold - weight 600)
   const tagline = getSectionLabel(data);
   if (tagline) {
     slide.addText(tagline, {
@@ -589,8 +590,8 @@ function addTwoColumnSlide(pptx, data, slideNumber) {
       w: L.tagline.w,
       h: L.tagline.h,
       fontSize: 12,
-      fontFace: 'Work Sans',
-      bold: true,
+      fontFace: 'Work Sans SemiBold',
+      bold: false,
       color: COLORS.red,
       align: 'left',
       charSpacing: 0.5
@@ -599,14 +600,15 @@ function addTwoColumnSlide(pptx, data, slideNumber) {
 
   // Title (navy, large, thin font, 4 lines)
   // twoColumn layout: max 10 characters per line
+  // Font: 72pt Work Sans Thin (weight 100) per original PPT template
   const titleText = formatTitle(data.title, 10);
   slide.addText(titleText, {
     x: L.title.x,
     y: L.title.y,
     w: L.title.w,
     h: L.title.h,
-    fontSize: 54,
-    fontFace: 'Work Sans',
+    fontSize: 72,
+    fontFace: 'Work Sans Thin',
     bold: false,
     color: COLORS.navy,
     align: 'left',
@@ -671,7 +673,7 @@ function addThreeColumnSlide(pptx, data, slideNumber) {
   // White background
   slide.background = { color: COLORS.white };
 
-  // Tagline
+  // Tagline (red, uppercase, semi-bold - weight 600)
   const tagline = getSectionLabel(data);
   if (tagline) {
     slide.addText(tagline, {
@@ -680,16 +682,17 @@ function addThreeColumnSlide(pptx, data, slideNumber) {
       w: L.tagline.w,
       h: L.tagline.h,
       fontSize: 12,
-      fontFace: 'Work Sans',
-      bold: true,
+      fontFace: 'Work Sans SemiBold',
+      bold: false,
       color: COLORS.red,
       align: 'left',
       charSpacing: 0.5
     });
   }
 
-  // Title (narrower, lighter weight than two-column)
+  // Title (narrower, light weight - 300)
   // threeColumn layout: max 18 characters per line
+  // Font: Work Sans Light per browser CSS (font-weight: 300)
   const titleText = formatTitle(data.title, 18);
   slide.addText(titleText, {
     x: L.title.x,
@@ -697,7 +700,7 @@ function addThreeColumnSlide(pptx, data, slideNumber) {
     w: L.title.w,
     h: L.title.h,
     fontSize: 33,
-    fontFace: 'Work Sans',
+    fontFace: 'Work Sans Light',
     bold: false,
     color: COLORS.navy,
     align: 'left',

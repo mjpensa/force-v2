@@ -203,50 +203,77 @@ function buildExecutiveSummary(execSummary) {
     }));
   }
 
-  // Situation
+  // Context (formerly Situation)
   if (execSummary.situation) {
     elements.push(new Paragraph({
       spacing: { before: 200, after: 150 },
+      border: { left: { style: BorderStyle.SINGLE, size: 18, color: '4A9EFF' } },
+      indent: { left: 200 },
       children: [
-        styledText('SITUATION: ', { ...STYLES.body, bold: true, color: COLORS.red }),
+        styledText('CONTEXT: ', { ...STYLES.body, bold: true, color: '4A9EFF' }),
         styledText(execSummary.situation, STYLES.body)
       ]
     }));
   }
 
-  // Insight
+  // Key Insight (formerly Insight)
   if (execSummary.insight) {
     elements.push(new Paragraph({
       spacing: { before: 150, after: 150 },
+      border: { left: { style: BorderStyle.SINGLE, size: 18, color: 'FFBB33' } },
+      indent: { left: 200 },
       children: [
-        styledText('INSIGHT: ', { ...STYLES.body, bold: true, color: COLORS.red }),
+        styledText('KEY INSIGHT: ', { ...STYLES.body, bold: true, color: 'D97706' }),
         styledText(execSummary.insight, STYLES.body)
       ]
     }));
   }
 
-  // Action (highlighted)
+  // Recommended Action (formerly Action)
   if (execSummary.action) {
     elements.push(new Paragraph({
       spacing: { before: 150, after: 300 },
-      shading: { type: ShadingType.SOLID, color: hexColor(COLORS.lightGray) },
+      border: { left: { style: BorderStyle.SINGLE, size: 18, color: '4CAF50' } },
+      indent: { left: 200 },
       children: [
-        styledText('ACTION: ', { ...STYLES.body, bold: true, color: COLORS.red }),
-        styledText(execSummary.action, { ...STYLES.body, bold: true })
+        styledText('RECOMMENDED ACTION: ', { ...STYLES.body, bold: true, color: '16A34A' }),
+        styledText(execSummary.action, { ...STYLES.body, italics: true })
       ]
     }));
   }
 
   // Legacy format support (stakes, keyFinding, recommendation)
   if (!execSummary.situation && execSummary.stakes) {
-    elements.push(createParagraph(execSummary.stakes));
+    elements.push(new Paragraph({
+      spacing: { before: 200, after: 150 },
+      border: { left: { style: BorderStyle.SINGLE, size: 18, color: '4A9EFF' } },
+      indent: { left: 200 },
+      children: [
+        styledText('CONTEXT: ', { ...STYLES.body, bold: true, color: '4A9EFF' }),
+        styledText(execSummary.stakes, STYLES.body)
+      ]
+    }));
   }
   if (!execSummary.insight && execSummary.keyFinding) {
-    elements.push(createParagraph(execSummary.keyFinding));
+    elements.push(new Paragraph({
+      spacing: { before: 150, after: 150 },
+      border: { left: { style: BorderStyle.SINGLE, size: 18, color: 'FFBB33' } },
+      indent: { left: 200 },
+      children: [
+        styledText('KEY INSIGHT: ', { ...STYLES.body, bold: true, color: 'D97706' }),
+        styledText(execSummary.keyFinding, STYLES.body)
+      ]
+    }));
   }
   if (!execSummary.action && execSummary.recommendation) {
-    elements.push(createParagraph(execSummary.recommendation, {
-      style: { ...STYLES.body, bold: true }
+    elements.push(new Paragraph({
+      spacing: { before: 150, after: 300 },
+      border: { left: { style: BorderStyle.SINGLE, size: 18, color: '4CAF50' } },
+      indent: { left: 200 },
+      children: [
+        styledText('RECOMMENDED ACTION: ', { ...STYLES.body, bold: true, color: '16A34A' }),
+        styledText(execSummary.recommendation, { ...STYLES.body, italics: true })
+      ]
     }));
   }
 

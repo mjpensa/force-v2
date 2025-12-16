@@ -522,7 +522,86 @@
   margin: 0;
 }
 
-/* Structured Executive Summary Components - New Format */
+/* ========== AT A GLANCE - IMPROVED LAYOUT ========== */
+.glance-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-3);
+}
+
+.glance-block {
+  position: relative;
+  padding: var(--spacing-3) var(--spacing-4);
+  padding-left: var(--spacing-5);
+  border-left: 3px solid;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  transition: background 0.2s ease;
+}
+
+.glance-block:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.glance-label {
+  display: inline-block;
+  font-family: 'Work Sans', sans-serif;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: var(--spacing-2);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.glance-text {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: #FFFFFF;
+  margin: 0;
+}
+
+/* Context Block - Blue */
+.glance-context {
+  border-left-color: #4A9EFF;
+}
+
+.glance-context .glance-label {
+  color: #4A9EFF;
+  background: rgba(74, 158, 255, 0.12);
+}
+
+/* Insight Block - Amber/Gold */
+.glance-insight {
+  border-left-color: #FFBB33;
+}
+
+.glance-insight .glance-label {
+  color: #FFBB33;
+  background: rgba(255, 187, 51, 0.12);
+}
+
+.glance-insight .glance-text {
+  font-weight: var(--weight-medium);
+}
+
+/* Action Block - Green */
+.glance-action {
+  border-left-color: #4CAF50;
+}
+
+.glance-action .glance-label {
+  color: #4CAF50;
+  background: rgba(76, 175, 80, 0.12);
+}
+
+.glance-action .glance-text {
+  font-style: italic;
+}
+
+/* Legacy Structured Executive Summary Components (kept for backwards compatibility) */
 .executive-summary-situation {
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
@@ -1134,6 +1213,25 @@
     font-size: var(--text-base);
   }
 
+  /* At a Glance mobile */
+  .glance-grid {
+    gap: var(--spacing-3);
+  }
+
+  .glance-block {
+    padding: var(--spacing-2) var(--spacing-3);
+    padding-left: var(--spacing-4);
+  }
+
+  .glance-label {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+
+  .glance-text {
+    font-size: var(--text-sm);
+  }
+
   .executive-summary-situation {
     font-size: var(--text-sm);
   }
@@ -1351,6 +1449,37 @@
 
   .executive-summary-action {
     color: #FFFFFF;
+  }
+
+  /* At a Glance print styles */
+  .glance-grid {
+    gap: 12px;
+  }
+
+  .glance-block {
+    background: #f8f8f8;
+    page-break-inside: avoid;
+  }
+
+  .glance-label {
+    color: #333;
+    background: #e8e8e8;
+  }
+
+  .glance-text {
+    color: #000;
+  }
+
+  .glance-context {
+    border-left-color: #2563eb;
+  }
+
+  .glance-insight {
+    border-left-color: #d97706;
+  }
+
+  .glance-action {
+    border-left-color: #16a34a;
   }
 
   /* Analysis overview print */
