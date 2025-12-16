@@ -1,6 +1,7 @@
 /**
  * DOCX Export Service
  * Generates Word documents from document data
+ * Matches v19 template format (Arial, black bold headings)
  * Supports executive summary, analysis overview, and content sections
  */
 
@@ -16,7 +17,10 @@ import {
   TableRow,
   TableCell,
   WidthType,
-  ShadingType
+  ShadingType,
+  Header,
+  VerticalAlign,
+  TableLayoutType
 } from 'docx';
 import { COLORS, FONTS, STYLES, PAGE, SPACING, DEFAULT_METADATA } from './docx-template-config.js';
 
@@ -39,7 +43,7 @@ function styledText(text, style = {}) {
     text: text || '',
     font: style.font || FONTS.body,
     size: style.size || STYLES.body.size,
-    color: hexColor(style.color || COLORS.navy),
+    color: hexColor(style.color || COLORS.black),
     bold: style.bold || false,
     italics: style.italics || false,
     allCaps: style.allCaps || false
@@ -47,7 +51,7 @@ function styledText(text, style = {}) {
 }
 
 /**
- * Create a heading paragraph
+ * Create a heading paragraph (v19 format - black bold)
  */
 function createHeading(text, level = 1) {
   const headingStyles = {
@@ -58,9 +62,12 @@ function createHeading(text, level = 1) {
 
   const style = headingStyles[level] || headingStyles[2];
 
+  // Larger spacing before major sections
+  const spaceBefore = level === 1 ? SPACING.sectionGap * 1.5 : SPACING.sectionGap;
+
   return new Paragraph({
     heading: style.level,
-    spacing: { before: SPACING.sectionGap, after: SPACING.paragraphAfter },
+    spacing: { before: spaceBefore, after: SPACING.paragraphAfter },
     children: [styledText(text, style)]
   });
 }
@@ -81,7 +88,7 @@ function createParagraph(text, options = {}) {
 }
 
 /**
- * Create a label paragraph (red, uppercase)
+ * Create a label paragraph (black bold, uppercase - v19)
  */
 function createLabel(text) {
   return new Paragraph({
@@ -91,13 +98,13 @@ function createLabel(text) {
 }
 
 /**
- * Create a key insight callout
+ * Create a key insight callout (v19 format)
  */
 function createKeyInsight(text) {
   return new Paragraph({
     spacing: { before: 200, after: 200 },
     border: {
-      left: { style: BorderStyle.SINGLE, size: 24, color: hexColor(COLORS.red) }
+      left: { style: BorderStyle.SINGLE, size: 24, color: hexColor(COLORS.navy) }
     },
     indent: { left: 200 },
     children: [styledText(text, STYLES.keyInsight)]
@@ -158,39 +165,111 @@ function splitIntoParagraphs(text) {
 // ============================================================================
 
 /**
- * Build the title section
+ * Build the title section (v19 format - centered, black bold)
  */
-function buildTitleSection(title) {
-  return [
-    new Paragraph({
-      spacing: { after: 400 },
-      alignment: AlignmentType.CENTER,
-      children: [styledText(title, STYLES.title)]
-    }),
-    new Paragraph({
+function buildTitleSection(title, subtitle) {
+  const elements = [];
+
+  // Main title - black bold, centered (v19)
+  elements.push(new Paragraph({
+    spacing: { before: 400, after: 200 },
+    alignment: AlignmentType.CENTER,
+    children: [styledText(title, STYLES.title)]
+  }));
+
+  // Subtitle if provided - gray italic
+  if (subtitle) {
+    elements.push(new Paragraph({
       spacing: { after: 600 },
       alignment: AlignmentType.CENTER,
-      border: {
-        bottom: { style: BorderStyle.SINGLE, size: 12, color: hexColor(COLORS.red) }
-      },
+      children: [styledText(subtitle, STYLES.subtitle)]
+    }));
+  } else {
+    elements.push(new Paragraph({
+      spacing: { after: 400 },
       children: []
-    })
-  ];
+    }));
+  }
+
+  return elements;
 }
 
 /**
- * Build the executive summary section
+ * Create header with bip. logo (v19 format - right aligned)
+ * Note: v19 uses an actual image, this is a text fallback
+ */
+function createBipHeader() {
+  return new Header({
+    children: [
+      new Paragraph({
+        alignment: AlignmentType.RIGHT,
+        children: [
+          styledText('bip', {
+            font: FONTS.heading,
+            size: 28,
+            color: 'C54B4B',  // BIP coral red for logo
+            bold: true
+          }),
+          styledText('.', {
+            font: FONTS.heading,
+            size: 28,
+            color: 'C54B4B',
+            bold: true
+          })
+        ]
+      })
+    ]
+  });
+}
+
+/**
+ * Create a styled table with navy headers (v19 format)
+ */
+function createStyledTable(headers, rows) {
+  const tableRows = [];
+
+  // Header row with navy background
+  tableRows.push(new TableRow({
+    tableHeader: true,
+    children: headers.map(header => new TableCell({
+      shading: { fill: hexColor(COLORS.navy), type: ShadingType.CLEAR },
+      verticalAlign: VerticalAlign.CENTER,
+      children: [new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [styledText(header, STYLES.tableHeader)]
+      })]
+    }))
+  }));
+
+  // Data rows
+  rows.forEach(row => {
+    tableRows.push(new TableRow({
+      children: row.map(cell => new TableCell({
+        verticalAlign: VerticalAlign.CENTER,
+        children: [new Paragraph({
+          children: [styledText(cell, STYLES.tableCell)]
+        })]
+      }))
+    }));
+  });
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    layout: TableLayoutType.FIXED,
+    rows: tableRows
+  });
+}
+
+/**
+ * Build the executive summary section (v19 format)
  */
 function buildExecutiveSummary(execSummary) {
   if (!execSummary) return [];
 
   const elements = [];
 
-  // Section label
-  elements.push(createLabel('Executive Summary'));
-
-  // At a Glance heading
-  elements.push(createHeading('At a Glance', 2));
+  // Section heading - black bold (v19)
+  elements.push(createHeading('Executive Summary', 1));
 
   // Source badge if present
   if (execSummary.source) {
@@ -203,94 +282,53 @@ function buildExecutiveSummary(execSummary) {
     }));
   }
 
-  // Context (formerly Situation)
+  // Main narrative paragraphs (clean BIP format)
+  if (execSummary.narrative) {
+    const paragraphs = splitIntoParagraphs(execSummary.narrative);
+    paragraphs.forEach(p => {
+      elements.push(createParagraph(p));
+    });
+  }
+
+  // Context/Situation as clean paragraph
   if (execSummary.situation) {
-    elements.push(new Paragraph({
-      spacing: { before: 200, after: 150 },
-      border: { left: { style: BorderStyle.SINGLE, size: 18, color: '4A9EFF' } },
-      indent: { left: 200 },
-      children: [
-        styledText('CONTEXT: ', { ...STYLES.body, bold: true, color: '4A9EFF' }),
-        styledText(execSummary.situation, STYLES.body)
-      ]
-    }));
+    elements.push(createParagraph(execSummary.situation));
   }
 
-  // Key Insight (formerly Insight)
+  // Key Insight as clean paragraph
   if (execSummary.insight) {
-    elements.push(new Paragraph({
-      spacing: { before: 150, after: 150 },
-      border: { left: { style: BorderStyle.SINGLE, size: 18, color: 'FFBB33' } },
-      indent: { left: 200 },
-      children: [
-        styledText('KEY INSIGHT: ', { ...STYLES.body, bold: true, color: 'D97706' }),
-        styledText(execSummary.insight, STYLES.body)
-      ]
-    }));
+    elements.push(createParagraph(execSummary.insight));
   }
 
-  // Recommended Action (formerly Action)
+  // Recommended Action
   if (execSummary.action) {
-    elements.push(new Paragraph({
-      spacing: { before: 150, after: 300 },
-      border: { left: { style: BorderStyle.SINGLE, size: 18, color: '4CAF50' } },
-      indent: { left: 200 },
-      children: [
-        styledText('RECOMMENDED ACTION: ', { ...STYLES.body, bold: true, color: '16A34A' }),
-        styledText(execSummary.action, { ...STYLES.body, italics: true })
-      ]
-    }));
+    elements.push(createParagraph(execSummary.action));
   }
 
-  // Legacy format support (stakes, keyFinding, recommendation)
+  // Legacy format support
   if (!execSummary.situation && execSummary.stakes) {
-    elements.push(new Paragraph({
-      spacing: { before: 200, after: 150 },
-      border: { left: { style: BorderStyle.SINGLE, size: 18, color: '4A9EFF' } },
-      indent: { left: 200 },
-      children: [
-        styledText('CONTEXT: ', { ...STYLES.body, bold: true, color: '4A9EFF' }),
-        styledText(execSummary.stakes, STYLES.body)
-      ]
-    }));
+    elements.push(createParagraph(execSummary.stakes));
   }
   if (!execSummary.insight && execSummary.keyFinding) {
-    elements.push(new Paragraph({
-      spacing: { before: 150, after: 150 },
-      border: { left: { style: BorderStyle.SINGLE, size: 18, color: 'FFBB33' } },
-      indent: { left: 200 },
-      children: [
-        styledText('KEY INSIGHT: ', { ...STYLES.body, bold: true, color: 'D97706' }),
-        styledText(execSummary.keyFinding, STYLES.body)
-      ]
-    }));
+    elements.push(createParagraph(execSummary.keyFinding));
   }
   if (!execSummary.action && execSummary.recommendation) {
-    elements.push(new Paragraph({
-      spacing: { before: 150, after: 300 },
-      border: { left: { style: BorderStyle.SINGLE, size: 18, color: '4CAF50' } },
-      indent: { left: 200 },
-      children: [
-        styledText('RECOMMENDED ACTION: ', { ...STYLES.body, bold: true, color: '16A34A' }),
-        styledText(execSummary.recommendation, { ...STYLES.body, italics: true })
-      ]
-    }));
+    elements.push(createParagraph(execSummary.recommendation));
   }
 
   return elements;
 }
 
 /**
- * Build the analysis overview section
+ * Build the analysis overview section (v19 format)
  */
 function buildAnalysisOverview(overview) {
   if (!overview) return [];
 
   const elements = [];
 
-  // Section label and heading
-  elements.push(createLabel('Strategic Analysis'));
-  elements.push(createHeading('Analysis Overview', 2));
+  // Section heading - black bold (v19)
+  elements.push(createHeading('Analysis Overview', 1));
 
   // Narrative paragraphs
   if (overview.narrative) {
@@ -302,13 +340,13 @@ function buildAnalysisOverview(overview) {
 
   // Key Themes
   if (overview.keyThemes && overview.keyThemes.length > 0) {
-    elements.push(createHeading('Key Themes', 3));
+    elements.push(createHeading('Key Themes', 2));
 
     overview.keyThemes.forEach(theme => {
-      // Theme name
+      // Theme name - bold black
       elements.push(new Paragraph({
         spacing: { before: 200, after: 100 },
-        children: [styledText(theme.theme, { ...STYLES.body, bold: true, color: COLORS.navy })]
+        children: [styledText(theme.theme, { ...STYLES.body, bold: true })]
       }));
 
       // Theme description
@@ -353,25 +391,26 @@ function buildAnalysisOverview(overview) {
 }
 
 /**
- * Build a content section
+ * Build a content section (v19 format)
  */
 function buildContentSection(section, index) {
   const elements = [];
 
-  // Swimlane topic label
-  if (section.swimlaneTopic) {
-    elements.push(new Paragraph({
-      spacing: { before: SPACING.sectionGap, after: 100 },
-      children: [styledText(section.swimlaneTopic.toUpperCase(), STYLES.label)]
-    }));
-  }
+  // Section heading with number prefix (BIP format: "Section 1: Title")
+  const sectionNumber = index + 1;
+  const sectionTitle = section.heading || `Section ${sectionNumber}`;
+  const formattedTitle = section.swimlaneTopic
+    ? `Section ${sectionNumber}: ${sectionTitle}`
+    : sectionTitle;
 
-  // Section heading
-  elements.push(createHeading(section.heading || `Section ${index + 1}`, 2));
+  elements.push(createHeading(formattedTitle, 1));
 
-  // Key insight callout
+  // Key insight as emphasized paragraph
   if (section.keyInsight) {
-    elements.push(createKeyInsight(section.keyInsight));
+    elements.push(new Paragraph({
+      spacing: { before: 200, after: 200 },
+      children: [styledText(section.keyInsight, { ...STYLES.body, bold: true })]
+    }));
   }
 
   // Research summary
@@ -407,7 +446,7 @@ function buildContentSection(section, index) {
 
   // Supporting evidence
   if (section.supportingEvidence && section.supportingEvidence.length > 0) {
-    elements.push(createHeading('Supporting Evidence', 3));
+    elements.push(createHeading('Supporting Evidence', 2));
 
     section.supportingEvidence.forEach(evidence => {
       // Claim
@@ -425,6 +464,17 @@ function buildContentSection(section, index) {
     });
   }
 
+  // Subsection/spotlight if present (BIP format: "Implementation Spotlight: ...")
+  if (section.spotlight) {
+    elements.push(createHeading(section.spotlight.title || 'Implementation Spotlight', 2));
+    if (section.spotlight.content) {
+      const paragraphs = splitIntoParagraphs(section.spotlight.content);
+      paragraphs.forEach(p => {
+        elements.push(createParagraph(p));
+      });
+    }
+  }
+
   return elements;
 }
 
@@ -433,7 +483,7 @@ function buildContentSection(section, index) {
 // ============================================================================
 
 /**
- * Generate a Word document from document data
+ * Generate a Word document from document data (v19 format)
  * @param {Object} documentData - Document content object
  * @param {Object} options - Export options
  * @returns {Promise<Buffer>} - Document buffer
@@ -441,9 +491,9 @@ function buildContentSection(section, index) {
 export async function generateDocx(documentData, options = {}) {
   const children = [];
 
-  // Title
+  // Title with optional subtitle
   if (documentData.title) {
-    children.push(...buildTitleSection(documentData.title));
+    children.push(...buildTitleSection(documentData.title, documentData.subtitle));
   }
 
   // Executive Summary
@@ -463,7 +513,18 @@ export async function generateDocx(documentData, options = {}) {
     });
   }
 
-  // Create the document
+  // Tables if provided
+  if (documentData.tables && documentData.tables.length > 0) {
+    documentData.tables.forEach(tableData => {
+      if (tableData.title) {
+        children.push(createHeading(tableData.title, 3));
+      }
+      children.push(createStyledTable(tableData.headers, tableData.rows));
+      children.push(new Paragraph({ spacing: { after: 300 }, children: [] }));
+    });
+  }
+
+  // Create the document with BIP header
   const doc = new Document({
     creator: options.creator || DEFAULT_METADATA.creator,
     title: documentData.title || DEFAULT_METADATA.title,
@@ -489,6 +550,9 @@ export async function generateDocx(documentData, options = {}) {
           }
         }
       },
+      headers: {
+        default: createBipHeader()
+      },
       children
     }]
   });
@@ -500,4 +564,4 @@ export async function generateDocx(documentData, options = {}) {
   return buffer;
 }
 
-export default { generateDocx };
+export default { generateDocx, createStyledTable };

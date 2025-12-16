@@ -1,22 +1,24 @@
 /**
  * DOCX Template Configuration
  * Document styles and formatting for Word export
- * Matches PPT branding (navy, red, white)
+ * Matches v19 template format
  */
 
 // Brand colors (hex without #)
 export const COLORS = {
-  navy: '0C2340',
-  red: 'DA291C',
+  black: '000000',        // Headings and body text
+  navy: '1E3A5F',         // Navy for table headers
+  blue: '1F4D78',         // Heading3 color
   white: 'FFFFFF',
-  darkGray: '6B7280',
-  lightGray: 'F3F4F6'
+  darkGray: '6B7280',     // Subtitles, captions
+  lightGray: 'F3F4F6',
+  linkBlue: '0563C1'      // Hyperlinks
 };
 
-// Brand fonts
+// Brand fonts (v19 uses Arial)
 export const FONTS = {
-  heading: 'Work Sans',
-  body: 'Work Sans',
+  heading: 'Arial',
+  body: 'Arial',
   mono: 'Consolas'
 };
 
@@ -51,50 +53,56 @@ export const SPACING = {
   sectionGap: 400
 };
 
-// Style definitions for document elements
+// Style definitions for document elements (v19 format)
 export const STYLES = {
   title: {
     font: FONTS.heading,
-    size: FONT_SIZES.title,
-    color: COLORS.navy,
+    size: FONT_SIZES.title,        // 24pt
+    color: COLORS.black,
     bold: true
+  },
+  subtitle: {
+    font: FONTS.body,
+    size: FONT_SIZES.body,
+    color: COLORS.darkGray,
+    italics: true
   },
   heading1: {
     font: FONTS.heading,
-    size: FONT_SIZES.heading1,
-    color: COLORS.navy,
+    size: 28,                       // 14pt (v19)
+    color: COLORS.black,
     bold: true
   },
   heading2: {
     font: FONTS.heading,
-    size: FONT_SIZES.heading2,
-    color: COLORS.navy,
+    size: 24,                       // 12pt (v19)
+    color: COLORS.black,
     bold: true
   },
   heading3: {
     font: FONTS.heading,
-    size: FONT_SIZES.heading3,
-    color: COLORS.navy,
-    bold: true
+    size: 24,                       // 12pt (v19)
+    color: COLORS.blue,            // Blue for heading3
+    bold: false
   },
   body: {
     font: FONTS.body,
-    size: FONT_SIZES.body,
-    color: COLORS.navy
+    size: FONT_SIZES.body,         // 11pt
+    color: COLORS.black
   },
   label: {
     font: FONTS.body,
     size: FONT_SIZES.small,
-    color: COLORS.red,
+    color: COLORS.black,
     bold: true,
     allCaps: true
   },
   keyInsight: {
     font: FONTS.body,
     size: FONT_SIZES.body,
-    color: COLORS.navy,
+    color: COLORS.black,
     bold: true,
-    italics: true
+    italics: false
   },
   quote: {
     font: FONTS.body,
@@ -106,6 +114,17 @@ export const STYLES = {
     font: FONTS.body,
     size: FONT_SIZES.caption,
     color: COLORS.darkGray
+  },
+  tableHeader: {
+    font: FONTS.body,
+    size: FONT_SIZES.small,
+    color: COLORS.white,
+    bold: true
+  },
+  tableCell: {
+    font: FONTS.body,
+    size: FONT_SIZES.small,
+    color: COLORS.black
   }
 };
 
