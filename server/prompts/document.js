@@ -175,7 +175,7 @@ export const documentSchema = {
           },
           synthesisNote: {
             type: "string",
-            description: "How this section connects to or builds on other sections - creates narrative flow and coherence"
+            description: "REQUIRED connection statement showing how this section relates to others. Format: '[CONNECTION_TYPE]: [explanation]' where CONNECTION_TYPE is one of: BUILDS_ON (extends previous section's point), DEEPENS (adds nuance to earlier claim), CHALLENGES (presents counterpoint), PIVOTS (shifts focus with clear bridge), RESOLVES (synthesizes prior tensions). Example: 'DEEPENS: The cost implications outlined above become acute when we examine implementation timelines.'"
           },
           supportingEvidence: {
             type: "array",
@@ -205,7 +205,7 @@ export const documentSchema = {
             description: "Section paragraphs - keep each paragraph 2-4 sentences, evidence-backed"
           }
         },
-        required: ["heading", "keyInsight", "paragraphs"]
+        required: ["heading", "keyInsight", "paragraphs", "synthesisNote"]
       },
       description: "One section per swimlane topic, covering research findings and strategic implications"
     }
@@ -425,11 +425,38 @@ evidenceChain: [
 
 WHY IT'S GOOD: Situation states a specific fact. Insight quantifies THIS firm's disadvantage in dollars. Action is 6 words with clear owner/deadline. Source is the ACTUAL authoritative source. TensionPoint captures the conflict. EvidenceChain traces claims to sources.
 
+SYNTHESIS NOTE REQUIREMENTS (MANDATORY for each section):
+The synthesisNote field is REQUIRED. Format: "[CONNECTION_TYPE]: [explanation]"
+
+CONNECTION TYPES (choose the most accurate):
+- BUILDS_ON: Extends or expands the previous section's main point
+- DEEPENS: Adds nuance, detail, or complexity to an earlier claim
+- CHALLENGES: Presents a counterpoint, tension, or complication
+- PIVOTS: Shifts focus to a new dimension with explicit bridge
+- RESOLVES: Synthesizes or reconciles tensions from prior sections
+
+SECTION-SPECIFIC FORMATS:
+- First section: "ESTABLISHES: [what foundation this section lays for the document]"
+- Middle sections: "[CONNECTION_TYPE]: [how this connects to section X and advances the argument]"
+- Final section: "RESOLVES: [how this synthesizes the preceding analysis into actionable conclusion]"
+
+GOOD EXAMPLES:
+- "BUILDS_ON: The cost pressures identified in Market Analysis become acute when we examine implementation timelines."
+- "CHALLENGES: While the efficiency gains above appear compelling, regulatory constraints introduce significant friction."
+- "PIVOTS: Having established the competitive landscape, we now examine the internal capabilities required to respond."
+- "RESOLVES: The technology, cost, and competitive factors above converge on a single strategic imperative."
+
+ANTI-PATTERNS (DO NOT USE):
+- ❌ "This section discusses..." (describes, doesn't connect)
+- ❌ "Moving on to..." (transition word without connection logic)
+- ❌ "Another important topic..." (no relationship to prior content)
+- ❌ "See above" or "As mentioned" (vague back-references)
+- ❌ Empty or generic statements that could apply to any document
+
 TRANSITIONS & FLOW:
 - Connect sections with forward references: "This cost pressure intensifies when we examine..."
 - Use bridge sentences that link evidence to next topic
 - Avoid abrupt topic shifts - each paragraph should flow from the previous
-- Fill the synthesisNote field to show how each section builds on others
 - Patterns: "Building on this...", "This dynamic compounds in...", "The implications extend to..."
 
 NARRATIVE ENERGY (Quality Driver):
@@ -471,9 +498,9 @@ Structure your sections to build momentum:
 - Middle Sections: DEEPEN STAKES - Compound the implications, show interconnections
 - Final Section: CONVERGE TO ACTION - The path forward, with clear urgency
 
-Each section's synthesisNote must explicitly reference findings from previous sections:
-- BAD: "This section covers technology implications"
-- GOOD: "Building on the $2.3M quarterly cost gap identified above, technology modernization becomes not optional but existential"
+Each section's synthesisNote must use the CONNECTION_TYPE format and reference specific findings:
+- BAD: "This section covers technology implications" (no connection type, vague)
+- GOOD: "BUILDS_ON: The $2.3M quarterly cost gap identified above makes technology modernization not optional but existential"
 
 ANALYTICAL RIGOR (Highest Priority - Apply to ALL Content):
 

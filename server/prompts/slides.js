@@ -187,15 +187,41 @@ export const slidesOutlineSchema = {
 };
 
 /**
- * Extract key statistics from research content for prompt enhancement
- * Forces AI to use real data points from research
+ * Get current date context for time-aware recommendations
+ * Enables temporally-aware framing in slide content
+ * @returns {object} Object with formatted date strings and fiscal quarter info
+ */
+function getCurrentDateContext() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1; // 0-indexed
+  const quarter = Math.ceil(month / 3);
+  const nextQuarter = quarter === 4 ? 1 : quarter + 1;
+  const nextQuarterYear = quarter === 4 ? year + 1 : year;
+
+  return {
+    fullDate: now.toISOString().split('T')[0], // YYYY-MM-DD
+    month: now.toLocaleString('en-US', { month: 'long' }),
+    year,
+    currentQuarter: `Q${quarter} ${year}`,
+    nextQuarter: `Q${nextQuarter} ${nextQuarterYear}`,
+    quarterPlusTwo: `Q${((quarter + 1) % 4) + 1} ${quarter >= 3 ? year + 1 : year}`,
+    endOfYear: `Q4 ${year}`,
+    nextYear: year + 1
+  };
+}
+
+/**
+ * Extract key statistics, contextual sentences, and sources from research content
+ * Enhanced version with source extraction for better citation support
  * @param {string} content - Combined research content
- * @returns {string} - Comma-separated list of key data points
+ * @returns {object} - Object with stats string, contextual stats array, and sources array
  */
 function extractKeyStats(content) {
-  if (!content) return '';
+  if (!content) return { stats: '', sources: [], contextualStats: [] };
 
-  const patterns = [
+  // Statistical patterns (unchanged)
+  const statPatterns = [
     /\d+\.?\d*\s*%/g,                          // Percentages: 23%, 4.5%
     /\$\d[\d,]*\.?\d*\s*[MBK]?(?:illion)?/gi,  // Currency: $4M, $2.5 billion
     /\d+x\b/gi,                                // Multipliers: 3x, 10x
@@ -204,17 +230,72 @@ function extractKeyStats(content) {
     /Q[1-4]\s*20\d{2}/gi,                      // Quarters: Q3 2024
     /\b20\d{2}\b/g,                            // Years: 2024, 2025 (word boundary)
     /\d+\s*bps\b/gi,                           // Basis points: 150 bps, 25bps
-    /\b\d+:1\b/g,                               // Ratios: 3:1, 10:1 (X:1 format only, avoids times)
+    /\b\d+:1\b/g,                              // Ratios: 3:1, 10:1
     /\d+\s*(?:months?|years?|days?|weeks?)\b/gi // Durations: 18 months, 3 years
   ];
 
-  const matches = new Set();
-  for (const pattern of patterns) {
-    const found = content.match(pattern) || [];
-    found.slice(0, 5).forEach(m => matches.add(m.trim()));
+  // Source extraction patterns (NEW)
+  const sourcePatterns = [
+    /according to ([^,.\n]+)/gi,
+    /per ([^,.\n]+(?:report|study|analysis|survey|data)[^,.\n]*)/gi,
+    /([A-Z][a-zA-Z]+ (?:Q[1-4] )?\d{4} (?:Annual |Quarterly )?Report)/g,
+    /((?:Gartner|McKinsey|Forrester|Deloitte|BCG|Bain|Bloomberg|Reuters|ISDA|Federal Reserve)[^,.\n]{0,50})/gi,
+    /\[([^\]]+(?:Report|Study|Analysis|Survey|Data)[^\]]*)\]/gi,
+    /(?:published by|released by) ([^,.\n]+)/gi
+  ];
+
+  // Extract contextual stats (sentences containing numbers) - NEW
+  const sentences = content.split(/(?<=[.!?])\s+/);
+  const contextualStats = [];
+  const seenSentences = new Set();
+
+  for (const sentence of sentences) {
+    if (seenSentences.has(sentence) || sentence.length < 20 || sentence.length > 300) continue;
+
+    for (const pattern of statPatterns) {
+      pattern.lastIndex = 0; // Reset regex state
+      if (pattern.test(sentence)) {
+        contextualStats.push(sentence.trim());
+        seenSentences.add(sentence);
+        break;
+      }
+    }
+    if (contextualStats.length >= 15) break;
   }
 
-  return Array.from(matches).slice(0, 15).join(', ');
+  // Extract raw stats (original behavior)
+  const rawMatches = new Set();
+  for (const pattern of statPatterns) {
+    pattern.lastIndex = 0;
+    const found = content.match(pattern) || [];
+    found.slice(0, 5).forEach(m => rawMatches.add(m.trim()));
+  }
+
+  // Extract sources - NEW
+  const sources = new Set();
+  for (const pattern of sourcePatterns) {
+    pattern.lastIndex = 0;
+    let match;
+    while ((match = pattern.exec(content)) !== null && sources.size < 12) {
+      const source = match[1]?.trim();
+      if (source && source.length > 5 && source.length < 100) {
+        // Filter out common false positives
+        const lowerSource = source.toLowerCase();
+        if (!lowerSource.includes('this') &&
+            !lowerSource.includes('that') &&
+            !lowerSource.includes('which') &&
+            !lowerSource.startsWith('the ')) {
+          sources.add(source);
+        }
+      }
+    }
+  }
+
+  return {
+    stats: Array.from(rawMatches).slice(0, 15).join(', '),
+    sources: Array.from(sources),
+    contextualStats: contextualStats.slice(0, 12)
+  };
 }
 
 /**
@@ -252,7 +333,9 @@ export function generateSlidesOutlinePrompt(userPrompt, researchFiles, swimlanes
     .join('\n\n');
 
   // Extract key statistics
-  const keyStats = extractKeyStats(researchContent);
+  const { stats, sources, contextualStats } = extractKeyStats(researchContent);
+  // Get current temporal context
+  const dateContext = getCurrentDateContext();
 
   // Format swimlanes for the prompt
   const swimlaneList = swimlanes.length > 0
@@ -327,8 +410,28 @@ FOR EACH SECTION, provide:
 
    d) "connectsTo": How this slide's IMPLICATION leads to the next slide's EVIDENCE
       This creates narrative threading between slides.
-      EXAMPLE: "Cost pressure from delayed adoption → leads to → competitive disadvantage analysis"
+
+      GOOD EXAMPLES (specific, actionable connections):
+      - "$2.3M cost gap from Section 1 → compounds into → competitive market share loss analyzed here"
+      - "60% efficiency gain established above → enables → the pricing strategy examined next"
+      - "Regulatory deadline pressure → forces → accelerated implementation timeline in next slide"
+
+      CONNECTSTO ANTI-PATTERNS (DO NOT USE):
+      - ❌ "Relates to next slide" (vague, no logical connection)
+      - ❌ "Continues the analysis" (describes, doesn't connect)
+      - ❌ "See next slide for more" (defers, doesn't link)
+      - ❌ "Another important point" (no causal relationship)
+      - ❌ "Moving on to..." (transition word without logic)
+      - ❌ "" or omitted (breaks narrative thread entirely)
+      - ❌ "Related to [topic]" (topic label, not logical connection)
+
+      CONNECTSTO REQUIREMENTS:
+      1. Must reference SPECIFIC content from current slide (data point, insight, or implication)
+      2. Must specify WHAT in the next slide this connects to
+      3. Must show LOGICAL RELATIONSHIP (causes, enables, compounds, challenges, resolves)
+
       For the last slide in a section: "Section conclusion → creates tension for → next section's opening"
+      TEST: If you can't explain WHY slide N+1 follows slide N, your connectsTo is too weak.
 
 NARRATIVE FLOW REQUIREMENTS:
 
@@ -346,8 +449,20 @@ NARRATIVE FLOW REQUIREMENTS:
    - Each section's ending should create tension
    - The next section's opening should resolve or build on that tension
 
-KEY DATA POINTS FROM RESEARCH (use these in your outlines):
-${keyStats || 'Extract specific numbers, percentages, and dates from the research'}
+TEMPORAL CONTEXT (for time-aware framing):
+- Today's date: ${dateContext.fullDate}
+- Current quarter: ${dateContext.currentQuarter}
+- Next quarter: ${dateContext.nextQuarter}
+- Planning horizon: ${dateContext.quarterPlusTwo}
+
+KEY DATA POINTS FROM RESEARCH (use at least 2-3 per slide):
+${stats || 'Extract specific numbers, percentages, and dates from the research text'}
+
+EXTRACTED SOURCES (cite these in your content):
+${sources.length > 0 ? sources.map((s, i) => `${i + 1}. ${s}`).join('\n') : 'No explicit sources identified - extract source names from the research content'}
+
+EVIDENCE SENTENCES (use these for supporting claims):
+${contextualStats.length > 0 ? contextualStats.map((s, i) => `${i + 1}. "${s}"`).join('\n') : 'No contextual statistics extracted - use specific data points from research'}
 
 USER REQUEST: "${userPrompt}"
 
@@ -418,7 +533,9 @@ export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = [], 
     .join('\n\n');
 
   // Extract key statistics to force AI to use real data
-  const keyStats = extractKeyStats(researchContent);
+  const { stats, sources, contextualStats } = extractKeyStats(researchContent);
+  // Get current temporal context
+  const dateContext = getCurrentDateContext();
 
   // Format swimlanes for the prompt
   const swimlaneList = swimlanes.length > 0
@@ -518,6 +635,12 @@ You have been given a pre-planned narrative structure. You MUST follow it exactl
 
 ${JSON.stringify(outline, null, 2)}
 
+OUTLINE FIELD REFERENCE (use these to verify compliance):
+- Total sections: ${outline.sections?.length || 0}
+- Slides per section: ${outline.sections?.map((s, i) => `Section ${i+1}: ${s.slides?.length || 0} slides`).join(', ') || 'See outline'}
+- Primary framework: ${outline.reasoning?.primaryFramework || 'See outline'}
+- Evidence chains to include: ${outline.reasoning?.keyEvidenceChains?.length || 0}
+
 PRIMARY FRAMEWORK ENFORCEMENT:
 The outline specifies "${primaryFramework}" as the dominant analytical lens.
 - EVERY analytical slide MUST use this framework's signature patterns
@@ -547,6 +670,24 @@ CROSS-SLIDE NARRATIVE THREADING (CRITICAL FOR COHERENCE):
 - Use forward-referencing language: "This creates the foundation for...", "Building on this...", "This pressure directly..."
 - Section endings must create tension that the next section resolves
 - ANTI-PATTERN: Isolated "islands" of analysis with no connection between slides
+
+NARRATIVE THREADING VALIDATION (apply to every connectsTo field):
+
+SPECIFICITY TEST:
+- ❌ FAIL: "Leads to next topic" (could apply to any presentation)
+- ✓ PASS: "The $2.3M quarterly gap → compounds into → 15% annual market share erosion"
+
+BIDIRECTIONAL TEST:
+- From slide N: Can you identify exactly which element connects forward?
+- From slide N+1: Can you trace back to the specific trigger from slide N?
+- If either fails, the connection is too weak.
+
+LOGICAL RELATIONSHIP TEST - connectsTo must express one of:
+- CAUSES: "X directly causes Y" (cost pressure → margin compression)
+- ENABLES: "X makes Y possible" (automation → speed advantage)
+- COMPOUNDS: "X amplifies Y" (delay cost + opportunity cost → accelerating gap)
+- CHALLENGES: "X creates tension with Y" (efficiency gains vs. implementation risk)
+- RESOLVES: "X addresses tension from Y" (mitigation strategy → risk from Section 2)
 
 TRANSITION PATTERNS (use in paragraph endings to connect slides):
 - Cause-effect: "This cost pressure directly impacts..." → next slide explores the impact
@@ -776,14 +917,58 @@ EXAMPLE - GOOD SLIDE (do this):
 }
 WHY IT WORKS: Insight-driven tagline, sourced data points, complete evidence-insight-implication chains, specific numbers, power verbs ("slashed", "hemorrhage", "exposing"), forward momentum
 
+TEMPORAL CONTEXT (for time-aware framing):
+- Today's date: ${dateContext.fullDate}
+- Current quarter: ${dateContext.currentQuarter}
+- Next quarter: ${dateContext.nextQuarter}
+- Planning horizon: ${dateContext.quarterPlusTwo}
+
 KEY DATA POINTS FROM RESEARCH (use at least one per slide):
-${keyStats || 'Extract specific numbers, percentages, and dates from the research text'}
+${stats || 'Extract specific numbers, percentages, and dates from the research text'}
+
+EXTRACTED SOURCES (cite these in your content):
+${sources.length > 0 ? sources.map((s, i) => `${i + 1}. ${s}`).join('\n') : 'No explicit sources identified - extract source names from the research content'}
+
+EVIDENCE SENTENCES (use these for supporting claims):
+${contextualStats.length > 0 ? contextualStats.map((s, i) => `${i + 1}. "${s}"`).join('\n') : 'No contextual statistics extracted - use specific data points from research'}
 
 USER REQUEST: "${userPrompt}"
 
 RESEARCH CONTENT:
 ${researchContent}
 
+${outline ? `
+═══════════════════════════════════════════════════════════════════════════════
+                        OUTLINE FIDELITY CHECKLIST
+        Before generating output, verify each checkpoint against the outline
+═══════════════════════════════════════════════════════════════════════════════
+
+CHECKPOINT 1: TAGLINE FIDELITY
+Each slide MUST use the EXACT tagline from the outline (or minor rewording for impact only).
+Outline specifies these taglines - verify each appears in your output.
+
+CHECKPOINT 2: KEY DATA POINT INCLUSION
+Each slide specifies a keyDataPoint that MUST appear as PRIMARY evidence.
+Verify these data points are prominently featured (not buried or paraphrased away).
+
+CHECKPOINT 3: ANALYTICAL LENS CONSISTENCY
+Primary framework: ${outline.reasoning?.primaryFramework || 'Not specified'}
+At least 50% of slides must use this framework's signal phrases.
+
+CHECKPOINT 4: CONNECTION THREADING
+Each slide's connectsTo field defines how it leads to the next slide.
+Your content must create this logical flow - verify paragraph endings match connectsTo.
+
+CHECKPOINT 5: SECTION ARC COMPLIANCE
+Each section must follow its narrativeArc. Verify:
+- Phase 1 slides (1-2): CONTEXT - what IS happening
+- Phase 2 slides (3-5): ANALYSIS - why it matters
+- Phase 3 slides (final): IMPLICATIONS - what to DO
+
+═══════════════════════════════════════════════════════════════════════════════
+                          END CHECKLIST - NOW GENERATE
+═══════════════════════════════════════════════════════════════════════════════
+` : ''}
 OUTPUT FORMAT (CRITICAL):
 - Output ONLY valid JSON - no markdown code fences, no explanatory text before or after
 - The response must start with { and end with }
