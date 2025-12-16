@@ -27,8 +27,8 @@ export const roadmapSchema = {
           bar: {
             type: "object",
             properties: {
-              startCol: { type: ["number", "null"], description: "1-based column index, or null if date unknown" },
-              endCol: { type: ["number", "null"], description: "1-based column index + 1, or null if date unknown" },
+              startCol: { type: "number", nullable: true, description: "1-based column index, or null if date unknown" },
+              endCol: { type: "number", nullable: true, description: "1-based column index + 1, or null if date unknown" },
               color: { type: "string" }
             },
           },
