@@ -94,6 +94,42 @@ export const slidesOutlineSchema = {
   description: "Narrative outline for slide presentation - defines structure before full content generation",
   type: "object",
   properties: {
+    reasoning: {
+      type: "object",
+      description: "Chain-of-thought reasoning completed BEFORE structuring sections. Forces analytical rigor.",
+      properties: {
+        overallNarrativeArc: {
+          type: "string",
+          description: "Complete story arc: [Opening Tension] -> [Deepening Stakes] -> [Resolution/Action]. What is the single narrative thread?",
+          nullable: false
+        },
+        primaryFramework: {
+          type: "string",
+          enum: ["SECOND_ORDER_EFFECTS", "CONTRARIAN", "COMPETITIVE_DYNAMICS", "TEMPORAL_ARBITRAGE", "RISK_ASYMMETRY"],
+          description: "Dominant analytical lens for this presentation. Which framework best reveals the core insight?",
+          nullable: false
+        },
+        keyEvidenceChains: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              evidence: { type: "string", description: "Specific data point from research with source", nullable: false },
+              insight: { type: "string", description: "What this evidence means - the 'so what'", nullable: false },
+              implication: { type: "string", description: "Action or decision this drives", nullable: false }
+            },
+            required: ["evidence", "insight", "implication"]
+          },
+          description: "3-5 anchor evidence-insight-implication chains that will drive the presentation"
+        },
+        crossSectionConnections: {
+          type: "array",
+          items: { type: "string" },
+          description: "How each section's ending creates tension for the next section's opening"
+        }
+      },
+      required: ["overallNarrativeArc", "primaryFramework", "keyEvidenceChains"]
+    },
     sections: {
       type: "array",
       description: "Section outlines with narrative arcs and slide blueprints",
@@ -126,9 +162,10 @@ export const slidesOutlineSchema = {
                   description: "The primary quantified data point this slide will feature",
                   nullable: false
                 },
-                insightAngle: {
+                analyticalLens: {
                   type: "string",
-                  description: "The analytical lens: second-order effect, contrarian view, competitive dynamic, etc.",
+                  enum: ["SECOND_ORDER_EFFECTS", "CONTRARIAN", "COMPETITIVE_DYNAMICS", "TEMPORAL_ARBITRAGE", "RISK_ASYMMETRY", "CAUSAL_CHAIN"],
+                  description: "The specific analytical framework applied to this slide. Must explicitly name which lens drives the insight.",
                   nullable: false
                 },
                 connectsTo: {
@@ -137,7 +174,7 @@ export const slidesOutlineSchema = {
                   nullable: false
                 }
               },
-              required: ["tagline", "keyDataPoint", "insightAngle", "connectsTo"]
+              required: ["tagline", "keyDataPoint", "analyticalLens", "connectsTo"]
             },
             minItems: 1
           }
@@ -146,7 +183,7 @@ export const slidesOutlineSchema = {
       }
     }
   },
-  required: ["sections"]
+  required: ["reasoning", "sections"]
 };
 
 /**
@@ -235,6 +272,30 @@ SECTIONS: Identify 3-6 major themes from the research and create one section per
 
 Your goal: Define the STRUCTURE and NARRATIVE FLOW before any detailed content is written.
 
+## CHAIN OF THOUGHT: REASON BEFORE STRUCTURING
+
+You MUST complete the 'reasoning' object FIRST, before creating any sections. This forces analytical rigor.
+
+1. OVERALL NARRATIVE ARC: What is the complete story?
+   - Opening Tension: What problem/opportunity creates urgency?
+   - Deepening Stakes: How does evidence compound the urgency?
+   - Resolution: What action resolves the tension?
+   Format: "[Opening Tension] -> [Deepening Stakes] -> [Resolution/Action]"
+
+2. PRIMARY FRAMEWORK: Name ONE dominant analytical lens from the enum:
+   - SECOND_ORDER_EFFECTS: Trace consequences 2-3 steps deep (If X → Y → Z)
+   - CONTRARIAN: Challenge the obvious conclusion with evidence
+   - COMPETITIVE_DYNAMICS: Frame decisions in competitive context
+   - TEMPORAL_ARBITRAGE: Connect short-term pain to long-term gain
+   - RISK_ASYMMETRY: Show bounded downside vs. unbounded upside
+
+3. KEY EVIDENCE CHAINS: Identify 3-5 anchor chains from the research:
+   For each: Evidence (specific data with source) -> Insight (what it means) -> Implication (action it drives)
+
+4. CROSS-SECTION CONNECTIONS: How does each section's ending hook into the next?
+
+ONLY AFTER completing reasoning should you define sections and slides.
+
 ${swimlaneInstructions}
 
 FOR EACH SECTION, provide:
@@ -256,13 +317,13 @@ FOR EACH SECTION, provide:
       Extract REAL numbers from research: percentages, dollar amounts, timeframes, ratios
       EXAMPLE: "50% reconciliation cost reduction at JPMorgan Q4 2024"
 
-   c) "insightAngle": The ANALYTICAL LENS for this slide. Use one of:
-      - "SECOND-ORDER EFFECT": If X happens → Y follows → Z results
-      - "CONTRARIAN VIEW": Obvious conclusion is X, but evidence shows Y
-      - "COMPETITIVE DYNAMIC": While we do X, competitors gain/lose Y
-      - "TEMPORAL ARBITRAGE": Short-term cost X enables long-term advantage Y
-      - "RISK ASYMMETRY": Downside capped at X, upside extends to Y
-      - "CAUSAL CHAIN": A causes B which triggers C
+   c) "analyticalLens": The ANALYTICAL FRAMEWORK for this slide. MUST be one of the enum values:
+      - "SECOND_ORDER_EFFECTS": If X happens → Y follows → Z results
+      - "CONTRARIAN": Obvious conclusion is X, but evidence shows Y
+      - "COMPETITIVE_DYNAMICS": While we do X, competitors gain/lose Y
+      - "TEMPORAL_ARBITRAGE": Short-term cost X enables long-term advantage Y
+      - "RISK_ASYMMETRY": Downside capped at X, upside extends to Y
+      - "CAUSAL_CHAIN": A causes B which triggers C
 
    d) "connectsTo": How this slide's IMPLICATION leads to the next slide's EVIDENCE
       This creates narrative threading between slides.
@@ -295,6 +356,22 @@ ${researchContent}
 
 OUTPUT: Valid JSON matching the outline schema. Start with { and end with }
 `;
+}
+/**
+ * Get framework signal phrases for enforcement in Pass 2
+ * @param {string} framework - The primary framework from outline reasoning
+ * @returns {string} Signal phrases for the specified framework
+ */
+function getFrameworkSignalPhrases(framework) {
+  const phrases = {
+    'SECOND_ORDER_EFFECTS': '"This triggers...", "Which in turn...", "The downstream effect...", "If X → Y → Z"',
+    'CONTRARIAN': '"Conventional wisdom suggests...", "However, data reveals...", "Counter to expectations..."',
+    'COMPETITIVE_DYNAMICS': '"Market positioning shifts...", "First-mover advantage...", "The competitive gap..."',
+    'TEMPORAL_ARBITRAGE': '"Front-loading investment...", "Compounds over time...", "Short-term X enables long-term Y"',
+    'RISK_ASYMMETRY': '"Bounded risk of...", "Unlimited potential for...", "Asymmetric opportunity..."',
+    'CAUSAL_CHAIN': '"Because...", "Root cause...", "This leads directly to..."'
+  };
+  return phrases[framework] || 'Use explicit analytical language that signals your reasoning';
 }
 
 /**
@@ -432,16 +509,30 @@ SUB-TOPIC FIELD (REQUIRED FOR EVERY SLIDE):
 `;
 
   // Build outline constraint if outline is provided (Pass 2 of two-pass generation)
+  const primaryFramework = outline?.reasoning?.primaryFramework;
+  const keyEvidenceChains = outline?.reasoning?.keyEvidenceChains || [];
+
   const outlineConstraint = outline ? `
-NARRATIVE OUTLINE (FOLLOW THIS STRUCTURE - FROM PASS 1):
-You have been given a pre-planned narrative structure. You MUST follow it closely.
+NARRATIVE OUTLINE (STRICT CONSTRAINT - FROM PASS 1):
+You have been given a pre-planned narrative structure. You MUST follow it exactly.
 
 ${JSON.stringify(outline, null, 2)}
 
-OUTLINE REQUIREMENTS:
-- Use the taglines from the outline (you may refine wording slightly for impact)
-- Feature the keyDataPoint identified for each slide as your primary evidence
-- Apply the insightAngle specified (second-order effect, contrarian view, etc.)
+PRIMARY FRAMEWORK ENFORCEMENT:
+The outline specifies "${primaryFramework}" as the dominant analytical lens.
+- EVERY analytical slide MUST use this framework's signature patterns
+- At least 50% of slides must explicitly signal this framework
+- Use phrases from: ${getFrameworkSignalPhrases(primaryFramework)}
+
+KEY EVIDENCE CHAINS (MUST APPEAR IN SLIDES):
+${keyEvidenceChains.map((c, i) =>
+  `${i + 1}. Evidence: "${c.evidence?.substring(0, 80)}${c.evidence?.length > 80 ? '...' : ''}" -> Must appear in at least one slide`
+).join('\n') || 'No key evidence chains specified'}
+
+OUTLINE REQUIREMENTS (HARD CONSTRAINTS):
+- Use the EXACT taglines from the outline (minor rewording only for impact)
+- Feature the keyDataPoint identified for each slide as PRIMARY evidence
+- Apply the analyticalLens specified - use the EXACT framework from the outline
 - Honor the connectsTo field - ensure your slide's conclusion leads logically to the next slide
 - Maintain the narrativeArc for each section (tension → insight → resolution)
 
@@ -464,28 +555,41 @@ TRANSITION PATTERNS (use in paragraph endings to connect slides):
 - Timeline progression: "Having established X, the Q3 deadline forces..." → next slide addresses timeline
 - Evidence stacking: "Combined with [previous point], this data shows..." → builds cumulative case
 
-ANALYTICAL DEPTH FRAMEWORKS (apply at least 2 per section):
-Go beyond surface-level observations. For each analytical slide, apply one of these lenses:
+ANALYTICAL DEPTH FRAMEWORKS (MANDATORY - NAME YOUR FRAMEWORK):
+Go beyond surface-level observations. For EVERY analytical slide, you MUST:
+1. Apply one framework explicitly
+2. Use the framework's signature language patterns so readers can identify which lens drives the analysis
 
-1. SECOND-ORDER EFFECTS: "If X happens → Y follows → which means Z..."
+FRAMEWORK SIGNATURE PATTERNS (use these phrases to signal your framework):
+
+1. SECOND_ORDER_EFFECTS: "If X happens → Y follows → which means Z..."
+   Signal phrases: "This triggers...", "Which in turn...", "The downstream effect..."
    Don't just state the fact; trace its downstream consequences
    Example: "50% cost reduction → competitors lose pricing power → industry consolidation accelerates"
 
-2. CONTRARIAN LENS: "The obvious conclusion is X, but evidence suggests Y..."
+2. CONTRARIAN: "The obvious conclusion is X, but evidence suggests Y..."
+   Signal phrases: "Conventional wisdom suggests...", "However, data reveals...", "Counter to expectations..."
    Challenge the expected interpretation with data
    Example: "While CDM appears costly, the $2.3M quarterly loss from NOT adopting exceeds implementation cost"
 
-3. COMPETITIVE DYNAMICS: "While we consider X, competitors gain/lose Y..."
+3. COMPETITIVE_DYNAMICS: "While we consider X, competitors gain/lose Y..."
+   Signal phrases: "Market positioning shifts as...", "First-mover advantage...", "The competitive gap..."
    Frame decisions in competitive context, not isolation
    Example: "Each quarter of delay shifts market share; early adopters capture sticky client relationships"
 
-4. TEMPORAL ARBITRAGE: "Short-term cost X enables long-term advantage Y..."
+4. TEMPORAL_ARBITRAGE: "Short-term cost X enables long-term advantage Y..."
+   Signal phrases: "Front-loading investment...", "Compounds over time...", "Delayed gratification..."
    Connect present pain to future gain (or present inaction to future loss)
    Example: "18-month implementation investment yields 10-year operational moat"
 
-5. RISK ASYMMETRY: "Downside is capped at X, but upside extends to Y..."
+5. RISK_ASYMMETRY: "Downside is capped at X, but upside extends to Y..."
+   Signal phrases: "Bounded risk of...", "Unlimited potential for...", "Asymmetric opportunity..."
    Frame decisions in terms of bounded downside vs. unbounded upside
    Example: "$4M pilot risk vs. $40M annual savings potential = asymmetric opportunity"
+
+6. CAUSAL_CHAIN: "A causes B which triggers C..."
+   Signal phrases: "Because of...", "This leads to...", "The root cause..."
+   Trace the causal links explicitly
 
 TAGLINE INSIGHT PATTERNS (use these, NOT topic labels):
 Your tagline must signal INSIGHT, TENSION, or STAKES - never just name the topic.

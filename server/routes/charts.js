@@ -42,7 +42,7 @@ router.post('/generate-chart', uploadMiddleware.array('researchFiles'), strictLi
         let content = '';
 
         if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-          const result = await mammoth.convertToHtml({ buffer: file.buffer });
+          const result = await mammoth.extractRawText({ buffer: file.buffer });
           content = result.value;
         } else {
           content = file.buffer.toString('utf8');

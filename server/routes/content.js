@@ -149,9 +149,9 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
     const fileProcessingPromises = sortedFiles.map(async (file) => {
       let content = '';
 
-      // Handle DOCX files with mammoth
+      // Handle DOCX files with mammoth - extract plain text to avoid HTML artifacts
       if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        const result = await mammoth.convertToHtml({ buffer: file.buffer });
+        const result = await mammoth.extractRawText({ buffer: file.buffer });
         content = result.value;
       } else {
         // Handle text-based files (TXT, MD, etc.)
@@ -267,7 +267,7 @@ router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), as
     const fileProcessingPromises = sortedFiles.map(async (file) => {
       let content = '';
       if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        const result = await mammoth.convertToHtml({ buffer: file.buffer });
+        const result = await mammoth.extractRawText({ buffer: file.buffer });
         content = result.value;
       } else {
         content = file.buffer.toString('utf8');

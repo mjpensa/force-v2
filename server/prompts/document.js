@@ -12,6 +12,42 @@
 export const documentSchema = {
   type: "object",
   properties: {
+    reasoning: {
+      type: "object",
+      description: "Chain-of-thought reasoning that MUST be completed BEFORE generating any content. Forces analytical rigor.",
+      properties: {
+        coreInsight: {
+          type: "string",
+          description: "What is the single most important finding that changes how the reader should act? Not a summary - the insight that changes decisions."
+        },
+        tensionAnalysis: {
+          type: "string",
+          description: "What competing forces create urgency? Identify the central conflict (e.g., cost of action vs. cost of inaction, competitive pressure vs. resource constraints)."
+        },
+        stakesQuantified: {
+          type: "string",
+          description: "What specific dollar amount, percentage, or timeline is at risk? If not explicit in research, estimate based on available data."
+        },
+        keyDataPoints: {
+          type: "array",
+          items: { type: "string" },
+          description: "The 3-5 most compelling statistics from the research that support the core insight."
+        },
+        counterargument: {
+          type: "string",
+          description: "What would a skeptical CFO or executive challenge about this analysis? Steel-man the strongest objection."
+        },
+        counterResponse: {
+          type: "string",
+          description: "How would you address the counterargument? What evidence or logic rebuts it?"
+        },
+        narrativeThread: {
+          type: "string",
+          description: "How do the research topics connect into a single compelling story? What's the arc from problem → insight → action?"
+        }
+      },
+      required: ["coreInsight", "tensionAnalysis", "stakesQuantified", "keyDataPoints", "counterargument", "counterResponse", "narrativeThread"]
+    },
     title: {
       type: "string",
       description: "Compelling document title that signals the core insight"
@@ -174,7 +210,7 @@ export const documentSchema = {
       description: "One section per swimlane topic, covering research findings and strategic implications"
     }
   },
-  required: ["title", "executiveSummary", "analysisOverview", "sections"]
+  required: ["reasoning", "title", "executiveSummary", "analysisOverview", "sections"]
 };
 
 /**
@@ -199,6 +235,49 @@ SOURCE EXTRACTION (Reference Material):
 - If a research document doesn't cite a specific source, use the document's apparent origin (e.g., "Internal Market Analysis" or "Competitive Intelligence Brief")
 - NEVER use the uploaded filename (like "research.md" or "data.pdf") as the source
 
+CHAIN-OF-THOUGHT REASONING PROCESS (CRITICAL - Complete FIRST):
+
+You MUST populate the "reasoning" object BEFORE writing any other content. This forces analytical rigor and ensures coherent output.
+
+STEP 1 - CORE INSIGHT: Read ALL research files completely. Ask yourself:
+"What single finding would make an executive stop and pay attention?"
+Not a summary - identify the insight that CHANGES DECISIONS. Look for surprises, competitive threats, or hidden opportunities.
+
+STEP 2 - TENSION ANALYSIS: Every compelling brief has tension. Identify the central conflict:
+- Cost of action vs. cost of inaction
+- Short-term pain vs. long-term gain
+- Competitive pressure vs. resource constraints
+- Regulatory compliance vs. business priorities
+- Speed vs. quality tradeoffs
+Ask: "What forces are pulling in opposite directions?"
+
+STEP 3 - STAKES QUANTIFIED: Find or calculate the specific number at risk.
+- If research says "significant cost savings" → dig deeper for the actual dollar figure
+- If not explicit, ESTIMATE based on available data (e.g., "Based on the 50% cost reduction at JPMorgan and our $4.6M annual reconciliation spend, the opportunity is approximately $2.3M")
+- Acceptable formats: dollar amounts, percentages, timeframes, risk levels
+
+STEP 4 - KEY DATA POINTS: Extract the 3-5 most compelling statistics that support your core insight.
+- Prioritize numbers that quantify impact
+- Include source attribution for each
+- Focus on data that drives decisions, not background facts
+
+STEP 5 - COUNTERARGUMENT: Steel-man the opposition. Ask:
+"What's the strongest objection a skeptical executive would raise?"
+- Not a weak strawman ("implementation might be hard")
+- A real challenge ("the $2.3M savings assumes 100% adoption—historical rollouts achieve 60%")
+
+STEP 6 - COUNTER-RESPONSE: Address the counterargument directly:
+"How would I respond to that objection with evidence?"
+- Use data from the research to rebut
+- Acknowledge valid concerns while showing they're manageable
+
+STEP 7 - NARRATIVE THREAD: Map out how the topics connect:
+"What's the story arc from problem → insight → action?"
+- How does each section build on the previous?
+- What's the logical flow that leads to your recommended action?
+
+ONLY AFTER completing all 7 reasoning steps, generate the title, executiveSummary, and sections. Your reasoning should directly inform the content.
+
 STRUCTURE & OUTPUT FORMAT (Mechanics):
 - executiveSummary: Object with situation (fact), insight ($ impact), action (directive), source, tensionPoint, evidenceChain
 - analysisOverview: Object with narrative, keyThemes, criticalFindings, strategicContext
@@ -209,6 +288,15 @@ STRUCTURE & OUTPUT FORMAT (Mechanics):
 
 OUTPUT JSON:
 {
+  "reasoning": {
+    "coreInsight": "The single most important finding that changes decisions",
+    "tensionAnalysis": "The central conflict creating urgency (force A vs. force B)",
+    "stakesQuantified": "Specific dollar amount, percentage, or timeline at risk",
+    "keyDataPoints": ["Statistic 1 with source", "Statistic 2 with source", "Statistic 3 with source"],
+    "counterargument": "The strongest objection a skeptical executive would raise",
+    "counterResponse": "How the counterargument is addressed with evidence",
+    "narrativeThread": "How the topics connect: problem → insight → action arc"
+  },
   "title": "Insight-driven title that signals the core finding",
   "executiveSummary": {
     "situation": "Specific fact about what has happened or is happening (with numbers)",
@@ -468,7 +556,7 @@ function extractKeyStats(content) {
         break;
       }
     }
-    if (contextualStats.length >= 12) break;
+    if (contextualStats.length >= 25) break;  // Increased for richer context
   }
 
   // Extract raw stats for backward compatibility
@@ -492,7 +580,7 @@ function extractKeyStats(content) {
   for (const pattern of sourcePatterns) {
     pattern.lastIndex = 0;
     let match;
-    while ((match = pattern.exec(content)) !== null && sources.size < 8) {
+    while ((match = pattern.exec(content)) !== null && sources.size < 15) {  // Increased for multi-source research
       const source = match[1]?.trim();
       if (source && source.length > 5 && source.length < 100) {
         sources.add(source);
@@ -502,8 +590,8 @@ function extractKeyStats(content) {
 
   return {
     stats: Array.from(rawMatches).slice(0, 15).join(', '),
-    contextualStats: contextualStats.slice(0, 10),
-    sources: Array.from(sources).slice(0, 8)
+    contextualStats: contextualStats.slice(0, 15),  // Increased from 10
+    sources: Array.from(sources).slice(0, 15)       // Increased from 8
   };
 }
 
@@ -558,7 +646,7 @@ function extractCausalRelationships(content) {
   for (const pattern of causalPatterns) {
     pattern.lastIndex = 0;
     let match;
-    while ((match = pattern.exec(content)) !== null && relationships.length < 5) {
+    while ((match = pattern.exec(content)) !== null && relationships.length < 10) {  // Increased from 5
       const key = `rel:${match[1].substring(0, 30)}|${match[2].substring(0, 30)}`;
       if (!seen.has(key)) {
         seen.add(key);
@@ -574,7 +662,7 @@ function extractCausalRelationships(content) {
   for (const pattern of comparisonPatterns) {
     pattern.lastIndex = 0;
     let match;
-    while ((match = pattern.exec(content)) !== null && comparisons.length < 4) {
+    while ((match = pattern.exec(content)) !== null && comparisons.length < 8) {  // Increased from 4
       const key = `comp:${match[0].substring(0, 40)}`;
       if (!seen.has(key)) {
         seen.add(key);
@@ -587,7 +675,7 @@ function extractCausalRelationships(content) {
   for (const pattern of trajectoryPatterns) {
     pattern.lastIndex = 0;
     let match;
-    while ((match = pattern.exec(content)) !== null && trajectories.length < 4) {
+    while ((match = pattern.exec(content)) !== null && trajectories.length < 8) {  // Increased from 4
       const key = `traj:${match[0].substring(0, 40)}`;
       if (!seen.has(key)) {
         seen.add(key);
@@ -600,7 +688,7 @@ function extractCausalRelationships(content) {
   for (const pattern of windowPatterns) {
     pattern.lastIndex = 0;
     let match;
-    while ((match = pattern.exec(content)) !== null && windows.length < 4) {
+    while ((match = pattern.exec(content)) !== null && windows.length < 8) {  // Increased from 4
       const key = `win:${match[0].substring(0, 40)}`;
       if (!seen.has(key)) {
         seen.add(key);
@@ -784,12 +872,30 @@ REQUEST: ${userPrompt}
 RESEARCH:
 ${researchContent}
 
-BEFORE GENERATING, CONSIDER:
-1. What is the single most compelling data point in this research?
-2. What tension or conflict creates urgency for the reader?
-3. What would a skeptical executive challenge about these findings?
-4. How do the different topics interconnect - what's the narrative thread?
-5. What specific dollar amount or percentage is at stake?
+GENERATION SEQUENCE (Follow this order strictly):
 
-Generate the document JSON now. The executiveSummary MUST reference specific data from the research and use authoritative sources (not filenames).${swimlanes.length > 0 ? ` You MUST create exactly ${swimlanes.length} sections, one for each swimlane topic listed above.` : ''}`;
+1. FIRST - Complete the "reasoning" object by working through all 7 steps:
+   - coreInsight: What single finding changes decisions?
+   - tensionAnalysis: What forces are in conflict?
+   - stakesQuantified: What specific amount is at risk?
+   - keyDataPoints: What are the 3-5 most compelling statistics?
+   - counterargument: What would a skeptic challenge?
+   - counterResponse: How do you rebut with evidence?
+   - narrativeThread: What's the story arc?
+
+2. THEN - Use your reasoning to generate the title (reflecting your coreInsight)
+
+3. THEN - Generate executiveSummary (situation from keyDataPoints, insight from stakesQuantified, action from narrativeThread)
+
+4. THEN - Generate analysisOverview (themes from narrativeThread, findings from keyDataPoints)
+
+5. FINALLY - Generate sections (each building on the narrativeThread, addressing counterarguments)
+
+QUALITY CHECK before finalizing:
+- Does executiveSummary.insight match reasoning.stakesQuantified?
+- Does executiveSummary.tensionPoint match reasoning.tensionAnalysis?
+- Do section counterarguments relate to reasoning.counterargument?
+- Does the narrative flow match reasoning.narrativeThread?
+
+Generate the document JSON now. The "reasoning" object MUST be completed FIRST. The executiveSummary MUST reference specific data from the research and use authoritative sources (not filenames).${swimlanes.length > 0 ? ` You MUST create exactly ${swimlanes.length} sections, one for each swimlane topic listed above.` : ''}`;
 }
