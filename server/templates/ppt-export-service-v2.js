@@ -68,18 +68,21 @@ const LAYOUTS = {
       h: 0.04
     },
     // Corner graphic: top: 0, right: 0, width: 10.9%
+    // SVG actual dimensions: 312x313 (essentially square, ~1:1 ratio)
     cornerGraphic: {
       x: SLIDE.WIDTH - pctX(10.9),
       y: 0,
       w: pctX(10.9),
-      h: pctX(10.9) * 0.75  // Maintain aspect ratio
+      h: pctX(10.9)  // Square aspect ratio (312:313 ≈ 1:1)
     },
     // Logo: bottom: 3%, right: 2%, height: 4%
+    // Logo actual dimensions: 816x569 (aspect ratio ~1.434:1)
+    // Using height-based sizing to maintain aspect ratio
     logo: {
-      x: SLIDE.WIDTH - 1.3,
+      x: SLIDE.WIDTH - 0.85,
       y: SLIDE.HEIGHT - 0.55,
-      w: 1.0,
-      h: 0.3
+      w: 0.35 * (816 / 569),  // ~0.50 inches (calculated from aspect ratio)
+      h: 0.35
     },
     // Page number: bottom: 3.43%, left: 2.11%
     pageNumber: {
@@ -114,18 +117,20 @@ const LAYOUTS = {
       h: pctY(37)  // 100% - 57% - 6%
     },
     // Corner graphic: top: 0, right: 0, width: 10.9%
+    // SVG actual dimensions: 312x313 (essentially square, ~1:1 ratio)
     cornerGraphic: {
       x: SLIDE.WIDTH - pctX(10.9),
       y: 0,
       w: pctX(10.9),
-      h: pctX(10.9) * 0.75
+      h: pctX(10.9)  // Square aspect ratio
     },
     // Logo: bottom: 3%, right: 2%
+    // Logo actual dimensions: 816x569 (aspect ratio ~1.434:1)
     logo: {
-      x: SLIDE.WIDTH - 1.3,
+      x: SLIDE.WIDTH - 0.85,
       y: SLIDE.HEIGHT - 0.55,
-      w: 1.0,
-      h: 0.3
+      w: 0.35 * (816 / 569),  // ~0.50 inches
+      h: 0.35
     },
     // Page number: bottom: 3.43%, left: 2.11%
     pageNumber: {
@@ -161,19 +166,19 @@ const LAYOUTS = {
     },
     // Column gap: 4.43%
     columnGap: pctX(4.43),
-    // Corner graphic
+    // Corner graphic - SVG actual dimensions: 312x313 (essentially square)
     cornerGraphic: {
       x: SLIDE.WIDTH - pctX(10.9),
       y: 0,
       w: pctX(10.9),
-      h: pctX(10.9) * 0.75
+      h: pctX(10.9)  // Square aspect ratio
     },
-    // Logo
+    // Logo - actual dimensions: 816x569 (aspect ratio ~1.434:1)
     logo: {
-      x: SLIDE.WIDTH - 1.3,
+      x: SLIDE.WIDTH - 0.85,
       y: SLIDE.HEIGHT - 0.55,
-      w: 1.0,
-      h: 0.3
+      w: 0.35 * (816 / 569),  // ~0.50 inches
+      h: 0.35
     },
     // Page number
     pageNumber: {
@@ -338,8 +343,10 @@ function toSentenceCase(text) {
 /**
  * Enforce 3-4 lines for title (merge if >4, keep as-is if 3-4)
  * Does NOT pad to 4 lines - allows clean 3-line titles
+ * @param {string} title - The title text with \n separators
+ * @param {number} maxCharsPerLine - Maximum characters per line (10 for twoColumn, 18 for threeColumn)
  */
-function enforceTitleLineCount(title) {
+function enforceTitleLineCount(title, maxCharsPerLine = 10) {
   if (!title) return '';
 
   let lines = title.split('\n').map(l => l.trim()).filter(l => l);
@@ -354,21 +361,30 @@ function enforceTitleLineCount(title) {
     return lines.join('\n');
   }
 
-  // Merge lines if more than 4
+  // Merge lines if more than 4, respecting character limits
   while (lines.length > 4) {
-    let minCombinedLength = Infinity;
-    let mergeIndex = 0;
+    // Find the shortest pair that won't exceed character limit
+    let bestMergeIndex = -1;
+    let bestCombinedLength = Infinity;
 
     for (let i = 0; i < lines.length - 1; i++) {
-      const combinedLength = lines[i].length + lines[i + 1].length;
-      if (combinedLength < minCombinedLength) {
-        minCombinedLength = combinedLength;
-        mergeIndex = i;
+      const combinedLength = lines[i].length + lines[i + 1].length + 1; // +1 for space
+      // Only consider merges that stay within character limit
+      if (combinedLength <= maxCharsPerLine && combinedLength < bestCombinedLength) {
+        bestCombinedLength = combinedLength;
+        bestMergeIndex = i;
       }
     }
 
-    lines[mergeIndex] = lines[mergeIndex] + ' ' + lines[mergeIndex + 1];
-    lines.splice(mergeIndex + 1, 1);
+    if (bestMergeIndex === -1) {
+      // No valid merge possible without exceeding char limit - truncate to 4 lines
+      console.warn(`[PPT Export] Title has ${lines.length} lines, cannot merge within ${maxCharsPerLine} char limit. Truncating to 4 lines. Original: "${lines.join(' | ')}"`);
+      lines = lines.slice(0, 4);
+      break;
+    }
+
+    lines[bestMergeIndex] = lines[bestMergeIndex] + ' ' + lines[bestMergeIndex + 1];
+    lines.splice(bestMergeIndex + 1, 1);
   }
 
   return lines.join('\n');
@@ -376,10 +392,12 @@ function enforceTitleLineCount(title) {
 
 /**
  * Format title: sentence case + enforce 3-4 lines
+ * @param {string} title - The title text
+ * @param {number} maxCharsPerLine - Maximum characters per line (10 for twoColumn, 18 for threeColumn)
  */
-function formatTitle(title) {
+function formatTitle(title, maxCharsPerLine = 10) {
   const sentenceCase = toSentenceCase(title);
-  return enforceTitleLineCount(sentenceCase);
+  return enforceTitleLineCount(sentenceCase, maxCharsPerLine);
 }
 
 /**
@@ -580,7 +598,8 @@ function addTwoColumnSlide(pptx, data, slideNumber) {
   }
 
   // Title (navy, large, thin font, 4 lines)
-  const titleText = formatTitle(data.title);
+  // twoColumn layout: max 10 characters per line
+  const titleText = formatTitle(data.title, 10);
   slide.addText(titleText, {
     x: L.title.x,
     y: L.title.y,
@@ -670,7 +689,8 @@ function addThreeColumnSlide(pptx, data, slideNumber) {
   }
 
   // Title (narrower, lighter weight than two-column)
-  const titleText = formatTitle(data.title);
+  // threeColumn layout: max 18 characters per line
+  const titleText = formatTitle(data.title, 18);
   slide.addText(titleText, {
     x: L.title.x,
     y: L.title.y,

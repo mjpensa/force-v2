@@ -38,9 +38,14 @@ const contentSlideSchema = {
       type: "string",
       description: "Third paragraph (threeColumn only). 370-390 characters.",
       nullable: true
+    },
+    subTopic: {
+      type: "string",
+      description: "A 2-5 word sub-topic identifier for this slide within the section (e.g., 'Cost Analysis', 'Implementation Timeline', 'Risk Assessment'). Used for TOC navigation. Must be distinct within each section - NO DUPLICATES.",
+      nullable: false
     }
   },
-  required: ["layout", "tagline", "title", "paragraph1", "paragraph2"]
+  required: ["layout", "tagline", "title", "paragraph1", "paragraph2", "subTopic"]
 };
 
 // Main schema with sections structure
@@ -180,11 +185,29 @@ FOR EACH SECTION:
 2. "sectionTitle": Create a compelling 2-4 word title (max 30 characters) for the section title slide (can be more engaging than the swimlane name)
 3. "slides": Generate content slides summarizing research findings for this topic
 
-SLIDES PER SECTION:
-- Analyze research depth for each topic
-- Generate MORE slides (3-5) for topics with rich research content
-- Generate FEWER slides (1-2 minimum) for topics with limited research content
-- Every section MUST have at least 1-2 content slides
+SLIDES PER SECTION (EXPANDED COVERAGE - CRITICAL):
+- Generate 5-10 slides per section for comprehensive topic coverage
+- Each slide MUST focus on a DISTINCT sub-topic within the section
+- Sub-topics should form a logical narrative progression:
+  * Opening: Context/Background (1-2 slides)
+  * Core Analysis: Key findings, data, comparisons (3-5 slides)
+  * Implications: Recommendations, next steps, risks (2-3 slides)
+- Minimum 5 slides per section with substantial research content
+- Maximum 10 slides to maintain focus and avoid repetition
+
+SUB-TOPIC FIELD (REQUIRED FOR EVERY SLIDE):
+- The "subTopic" field identifies the specific focus of each slide
+- Sub-topics must be distinct within a section - NO DUPLICATES
+- Format: 2-5 words, title case (e.g., "Cost Benefit Analysis", "Q3 Timeline", "Vendor Comparison")
+- Sub-topics enable slide-level TOC navigation
+- Example sub-topics for a "Digital Transformation" section:
+  1. "Current State Assessment"
+  2. "Technology Gap Analysis"
+  3. "Implementation Roadmap"
+  4. "Cost Projections"
+  5. "Risk Mitigation Strategy"
+  6. "Success Metrics"
+  7. "Vendor Evaluation"
 
 CONTENT FOCUS:
 - Summarize key findings, insights, and implications from research for each topic
@@ -195,13 +218,18 @@ CONTENT FOCUS:
     : `
 SLIDE GENERATION:
 Generate a logical sequence of slides covering the key topics from the research.
-Aim for 6-12 slides total, organized by theme.
+Aim for 15-30 slides total, organized by theme (5-10 slides per section).
 
 Create sections based on major themes you identify in the research.
 Each section should have:
 - "swimlane": A topic name you identify from the research
 - "sectionTitle": A compelling 2-4 word title (max 30 characters) for that topic
-- "slides": 1-4 content slides per section
+- "slides": 5-10 content slides per section, each with a distinct sub-topic
+
+SUB-TOPIC FIELD (REQUIRED FOR EVERY SLIDE):
+- The "subTopic" field identifies the specific focus of each slide
+- Sub-topics must be distinct within a section - NO DUPLICATES
+- Format: 2-5 words, title case (e.g., "Cost Benefit Analysis", "Risk Assessment")
 `;
 
   return `You are creating presentation slides organized into SECTIONS, with STRICT formatting requirements.
@@ -256,27 +284,32 @@ FALLBACK RULE: For acronyms not listed above, preserve capitalization exactly as
 TAGLINE: 2-word uppercase label, MAX 21 characters. Example: "MARGIN EROSION"
 
 TITLE RULES (CRITICAL - HARD LIMIT: 3 OR 4 LINES ONLY):
-- HARD LIMIT: Titles MUST have EXACTLY 3 or 4 lines - THIS IS NON-NEGOTIABLE
-- Count your \\n separators: 2 separators = 3 lines, 3 separators = 4 lines
-- 5+ LINES WILL BREAK THE SLIDE LAYOUT - the text will overflow and be cut off
-- If your title has 5+ short words, COMBINE them: put 2-3 short words on one line
-- twoColumn titles especially prone to overflow - aggressively combine words
-- Pattern: "Word1\\nWord2\\nWord3" (3 lines) or "Line1\\nLine2\\nLine3\\nLine4" (4 lines)
-- BAD 5-line: "Unknown\\nstatus\\nwidening\\ntechnology\\ngap" - WILL OVERFLOW, REJECTED
-- GOOD 4-line: "Unknown status\\nwidening\\ntech gap\\nrisk" - combined "Unknown status" and "tech gap"
-- GOOD 3-line: "Unknown status\\nwidens tech\\ngap risk" - even more compact
-- Before finalizing: COUNT YOUR \\n CHARACTERS - if more than 3, rewrite to combine words
-- NEVER split a word across lines - keep whole words together
-- NEVER put short connector words alone on a line (to, a, an, in, on, of, for, the, and, or, is, as, by, at)
-  * BAD: "CDM\\nto\\nsmart\\ncontracts" - "to" alone looks awkward
-  * GOOD: "CDM to\\nsmart\\ncontracts" - combine short word with adjacent word
-  * GOOD: "From CDM\\nto smart\\ncontracts" - restructure the phrase
-- twoColumn layout: Each line MAX 10 characters (1-2 short words)
-- threeColumn layout: Each line MAX 18 characters (longer words OK, e.g., "Multijurisdictional")
-- AVOID letters g, y, p, q, j on lines 1-2 for 3-line titles, lines 1-3 for 4-line titles (descenders overlap next line)
+!!! STOP AND COUNT: Every title MUST have EXACTLY 2 or 3 \\n separators. NO EXCEPTIONS !!!
+- MANDATORY: Count \\n separators BEFORE writing each title. 2 = 3 lines, 3 = 4 lines. NEVER 4+ separators.
+- 5+ LINES = REJECTED. 6+ LINES = REJECTED. 7+ LINES = REJECTED. The slide WILL break.
+- If your concept has 5+ words, you MUST combine words onto shared lines
+- REWRITE titles that are too long - use shorter synonyms, remove unnecessary words
+- twoColumn layout: Each line MAX 10 characters - this means 1-2 SHORT words per line only!
+- threeColumn layout: Each line MAX 18 characters
+
+TITLE FAILURE EXAMPLES (NEVER DO THIS):
+- BAD 7-line: "BSA/AML\\norder\\ndelays\\nstrategic\\ntech\\nadoption\\nroadmap" = 6 separators = BROKEN
+  FIXED 4-line: "BSA/AML order\\ndelays tech\\nadoption\\nroadmap" = 3 separators = OK
+- BAD 5-line: "Multi-\\njurisdiction\\nDRR rollout\\naccelerates\\nadoption" = 4 separators = BROKEN
+  FIXED 4-line: "Global DRR\\nrollout\\naccelerates\\nadoption" = 3 separators = OK
+- BAD 5-line: "Unknown\\nstatus\\nwidening\\ntechnology\\ngap" = 4 separators = BROKEN
+  FIXED 3-line: "Unknown status\\nwidens tech\\ngap" = 2 separators = OK
+
+TITLE SUCCESS PATTERN:
+- 3-line: "Word1\\nWord2\\nWord3" (exactly 2 \\n)
+- 4-line: "Line1\\nLine2\\nLine3\\nLine4" (exactly 3 \\n)
+- GOOD: "Data\\nFuels\\nDecisions", "Market\\nShare\\nErosion", "CDM cuts\\ncosts by\\n60%"
+
+OTHER TITLE RULES:
+- NEVER split a word across lines
+- NEVER put short connector words alone (to, a, in, of, for, the, and, or) - combine with adjacent words
+- AVOID letters g, y, p, q, j on lines 1-2 for 3-line titles (descenders overlap)
 - Last line can use any letters
-- GOOD examples: "Data\\nFuels\\nDecisions", "Market\\nShare\\nErosion", "Revenue\\nAt\\nRisk"
-- BAD examples: "Driving\\nModern\\nGrowth" (line 1 has 'g' descender), "Multi\\njuris\\ndictional" (split word), "FpML\\nto\\nsmart" (isolated connector)
 
 PARAGRAPH REQUIREMENTS (CRITICAL):
 - Each paragraph must be a complete thought ending with a period
@@ -342,15 +375,17 @@ JSON STRUCTURE:
   - "sectionTitle": Compelling section title, max 30 characters (string)
   - "slides": Array of content slides (minimum 1 per section)
 
-Content slide format (layout is REQUIRED for all slides):
-- twoColumn: {layout: "twoColumn", tagline, title, paragraph1, paragraph2}
-- threeColumn: {layout: "threeColumn", tagline, title, paragraph1, paragraph2, paragraph3}
+Content slide format (layout and subTopic are REQUIRED for all slides):
+- twoColumn: {layout: "twoColumn", tagline, title, paragraph1, paragraph2, subTopic}
+- threeColumn: {layout: "threeColumn", tagline, title, paragraph1, paragraph2, paragraph3, subTopic}
 
 REMEMBER: Use BOTH layouts - aim for ~40-50% threeColumn slides for visual variety.
 
-FINAL VALIDATION (DO THIS BEFORE OUTPUTTING):
-- For EVERY title field, count the \\n characters
-- If any title has MORE than 3 \\n separators (which would create 5+ lines), REWRITE IT
-- Combine short words together until you have exactly 2 or 3 \\n separators (3 or 4 lines)
+FINAL VALIDATION (DO THIS BEFORE OUTPUTTING - MANDATORY):
+1. For EVERY title field in your output, COUNT the \\n characters
+2. If count > 3, that title has 5+ lines and WILL BREAK the slide - REWRITE IT NOW
+3. Rewrite strategy: combine short words, use synonyms, drop unnecessary words
+4. VERIFY: Every title must have exactly 2 or 3 \\n separators (3 or 4 lines)
+5. Double-check twoColumn titles: each line must be ≤10 characters
 `;
 }

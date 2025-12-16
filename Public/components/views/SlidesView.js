@@ -530,6 +530,10 @@ export class SlidesView {
     this.sectionStartIndices = new Map();
     this.sectionStartIndices.set('demo', 0); // Demo slides start at index 0
 
+    // NEW: Track individual slides for sub-topic navigation (two-level TOC)
+    this.slideIndices = new Map();      // slideId -> global index
+    this.sectionSlides = new Map();     // sectionId -> [{slideId, subTopic, index}]
+
     // Handle sections structure (aligned with Gantt swimlanes)
     if (this.sections.length) {
       const flattenedSlides = this._flattenSections(this.sections);
@@ -548,6 +552,7 @@ export class SlidesView {
   /**
    * Flatten sections structure into a linear array of slides
    * Inserts a section title slide at the start of each section
+   * Tracks sub-topic metadata for two-level TOC navigation
    * @param {Array} sections - Array of section objects with swimlane and slides
    * @returns {Array} Flattened array of slides
    */
@@ -561,6 +566,9 @@ export class SlidesView {
       const sectionId = section.swimlane.toLowerCase().replace(/\s+/g, '-');
       this.sectionStartIndices.set(sectionId, currentIndex);
 
+      // Initialize section slides array for two-level TOC sub-items
+      this.sectionSlides.set(sectionId, []);
+
       // Add section title slide
       flatSlides.push({
         layout: 'sectionTitle',
@@ -570,13 +578,29 @@ export class SlidesView {
       });
       currentIndex++;
 
-      // Add all content slides for this section
+      // Add all content slides for this section with sub-topic tracking
       if (section.slides?.length) {
-        flatSlides.push(...section.slides.map(slide => ({
-          ...slide,
-          _sectionId: sectionId
-        })));
-        currentIndex += section.slides.length;
+        section.slides.forEach((slide, slideIdx) => {
+          const slideId = `${sectionId}-slide-${slideIdx}`;
+          // Fallback: subTopic → tagline → generic label
+          const subTopic = slide.subTopic || slide.tagline || `Slide ${slideIdx + 1}`;
+
+          // Track for TOC navigation
+          this.slideIndices.set(slideId, currentIndex);
+          this.sectionSlides.get(sectionId).push({
+            slideId,
+            subTopic,
+            index: currentIndex
+          });
+
+          flatSlides.push({
+            ...slide,
+            _sectionId: sectionId,
+            _slideId: slideId,
+            _subTopic: subTopic
+          });
+          currentIndex++;
+        });
       }
     }
 
@@ -585,7 +609,7 @@ export class SlidesView {
 
   /**
    * Render the Table of Contents sidebar
-   * Mirrors the DocumentView TOC implementation
+   * Two-level structure: Sections + Sub-topics (slides)
    */
   _renderTableOfContents() {
     const tocContainer = document.createElement('div');
@@ -616,24 +640,55 @@ export class SlidesView {
     demoLi.appendChild(demoLink);
     tocList.appendChild(demoLi);
 
-    // 2. Section links from data
+    // 2. Section links with nested sub-topic (slide) lists
     this.sections.forEach(section => {
       const sectionId = section.swimlane.toLowerCase().replace(/\s+/g, '-');
 
       const li = document.createElement('li');
-      const link = document.createElement('a');
-      link.className = 'toc-link';
-      link.href = `#${sectionId}`;
-      link.textContent = section.swimlane;
-      link.setAttribute('data-section-id', sectionId);
 
-      link.addEventListener('click', (e) => {
+      // Section header link
+      const sectionLink = document.createElement('a');
+      sectionLink.className = 'toc-link toc-section-link';
+      sectionLink.href = `#${sectionId}`;
+      sectionLink.textContent = section.swimlane;
+      sectionLink.setAttribute('data-section-id', sectionId);
+
+      sectionLink.addEventListener('click', (e) => {
         e.preventDefault();
         this._goToSection(sectionId);
       });
 
-      this.tocLinks.set(sectionId, link);
-      li.appendChild(link);
+      this.tocLinks.set(sectionId, sectionLink);
+      li.appendChild(sectionLink);
+
+      // Sub-topic nested list (slides within section)
+      const sectionSlideData = this.sectionSlides.get(sectionId) || [];
+      if (sectionSlideData.length > 0) {
+        const subList = document.createElement('ul');
+        subList.className = 'toc-sublist';
+
+        sectionSlideData.forEach(({ slideId, subTopic }) => {
+          const subLi = document.createElement('li');
+          const subLink = document.createElement('a');
+          subLink.className = 'toc-link toc-slide-link';
+          subLink.href = `#${slideId}`;
+          subLink.textContent = subTopic;
+          subLink.setAttribute('data-slide-id', slideId);
+          subLink.setAttribute('data-section-id', sectionId);
+
+          subLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            this._goToSlide(slideId);
+          });
+
+          this.tocLinks.set(slideId, subLink);
+          subLi.appendChild(subLink);
+          subList.appendChild(subLi);
+        });
+
+        li.appendChild(subList);
+      }
+
       tocList.appendChild(li);
     });
 
@@ -654,28 +709,53 @@ export class SlidesView {
   }
 
   /**
-   * Update active section in TOC based on current slide
+   * Navigate to a specific slide by its ID
+   */
+  _goToSlide(slideId) {
+    const targetIndex = this.slideIndices.get(slideId);
+    if (targetIndex !== undefined) {
+      this.index = targetIndex;
+      this._update();
+    }
+  }
+
+  /**
+   * Update active section and slide in TOC based on current slide
+   * Supports two-level highlighting: section + sub-topic
    */
   _updateActiveTocSection() {
     const currentSlide = this.slides[this.index];
     let activeSectionId = 'demo';
+    let activeSlideId = null;
 
-    // Determine which section the current slide belongs to
+    // Determine which section and slide the current position belongs to
     if (this.index < 2) {
       activeSectionId = 'demo';
-    } else if (currentSlide?._sectionId) {
-      activeSectionId = currentSlide._sectionId;
+    } else if (currentSlide) {
+      activeSectionId = currentSlide._sectionId || 'demo';
+      activeSlideId = currentSlide._slideId || null;
     }
 
-    // Remove active class from all links
+    // Remove all active classes
     this.tocLinks.forEach(link => {
-      link.classList.remove('active');
+      link.classList.remove('active', 'active-section');
     });
 
-    // Add active class to current section link
-    const activeLink = this.tocLinks.get(activeSectionId);
-    if (activeLink) {
-      activeLink.classList.add('active');
+    // Highlight active section
+    const activeSectionLink = this.tocLinks.get(activeSectionId);
+    if (activeSectionLink) {
+      activeSectionLink.classList.add('active-section');
+    }
+
+    // Highlight active slide (sub-topic)
+    if (activeSlideId) {
+      const activeSlideLink = this.tocLinks.get(activeSlideId);
+      if (activeSlideLink) {
+        activeSlideLink.classList.add('active');
+      }
+    } else if (activeSectionLink) {
+      // If on section title slide, highlight section itself as active
+      activeSectionLink.classList.add('active');
     }
   }
 

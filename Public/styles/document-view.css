@@ -220,12 +220,12 @@
 }
 
 /* Section title - matches TOC entry (e.g., "Citi", "Bank of America") */
-.section-title {
+.document-section .section-title {
   font-family: 'Work Sans', sans-serif;
   font-size: var(--text-3xl);
   font-weight: var(--weight-medium);
   line-height: var(--leading-tight);
-  color: var(--color-accent-red);
+  color: var(--color-accent-red, #da291c);
   margin: 0 0 var(--spacing-2) 0;
   scroll-margin-top: var(--spacing-8);
   text-transform: none;

@@ -297,6 +297,54 @@
   border-left-color: var(--color-glass-success);
 }
 
+/* ========== TWO-LEVEL TOC: Sub-topic (slide) list styling ========== */
+
+.slides-toc .toc-sublist {
+  list-style: none;
+  margin: var(--spacing-1) 0 var(--spacing-2) var(--spacing-4);
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.slides-toc .toc-sublist li {
+  margin-bottom: var(--spacing-1);
+}
+
+.slides-toc .toc-slide-link {
+  font-size: var(--text-xs);
+  padding: var(--spacing-1) var(--spacing-2);
+  padding-left: var(--spacing-3);
+  color: var(--glass-text-muted);
+  border-left: 1px solid var(--glass-white-15);
+}
+
+.slides-toc .toc-slide-link:hover {
+  color: var(--glass-text-secondary);
+  border-left-color: var(--glass-white-30);
+}
+
+.slides-toc .toc-slide-link.active {
+  background: rgba(80, 175, 123, 0.15);
+  color: var(--color-glass-success);
+  border-left-color: var(--color-glass-success);
+  font-weight: var(--weight-medium);
+}
+
+/* Section link styling when active or has active child */
+.slides-toc .toc-section-link.active-section {
+  color: var(--glass-text-primary);
+  font-weight: var(--weight-medium);
+}
+
+/* Expand sub-list on hover, when section is active, or when a child slide is active */
+.slides-toc li:hover > .toc-sublist,
+.slides-toc .toc-section-link.active-section + .toc-sublist,
+.slides-toc .toc-sublist:has(.active) {
+  max-height: 500px;
+}
+
 /* ========== RESPONSIVE: TOC behavior on smaller screens ========== */
 @media (max-width: 1023px) {
   .slides-main-layout {
@@ -326,6 +374,11 @@
   /* Move menu to right edge when TOC is inline */
   .slides-header-menu {
     right: var(--spacing-4);
+  }
+
+  /* Show all sub-lists on tablet (no hover required) */
+  .slides-toc .toc-sublist {
+    max-height: none;
   }
 }
 
