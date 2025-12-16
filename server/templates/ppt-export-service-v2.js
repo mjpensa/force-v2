@@ -455,7 +455,8 @@ function formatBody(p1, p2, maxChars = 415) {
   const parts = [];
   if (p1) parts.push(truncateToSentence(p1, maxChars));
   if (p2) parts.push(truncateToSentence(p2, maxChars));
-  return parts.join('\n\n');
+  // Single \n creates paragraph break; paraSpaceAfter handles the spacing
+  return parts.join('\n');
 }
 
 /**
@@ -467,51 +468,25 @@ function getSectionLabel(slideData) {
 }
 
 // ============================================================================
-// CORNER GRAPHIC - Shape-based alternative (more reliable than SVG)
+// CORNER GRAPHIC - Uses actual SVG file from repo
 // ============================================================================
 
 /**
- * Draw corner graphic using shapes (triangle overlays)
- * This replicates the visual appearance without needing external images
+ * Add corner graphic image to slide
+ * Uses the actual SVG file loaded as base64
  */
 function addCornerGraphic(pptx, slide, layout, isDarkBackground = false) {
   const pos = layout.cornerGraphic;
 
-  // Main red triangle (bottom-left to top-right diagonal)
-  slide.addShape(pptx.ShapeType.rtTriangle, {
-    x: pos.x + pos.w * 0.1,
-    y: pos.y,
-    w: pos.w * 0.9,
-    h: pos.h * 0.8,
-    fill: { color: isDarkBackground ? '4A5568' : COLORS.red },
-    line: { color: isDarkBackground ? '4A5568' : COLORS.red, width: 0 },
-    rotate: 180,
-    flipH: true
-  });
-
-  // Navy overlay triangle (smaller, creates layered effect)
-  slide.addShape(pptx.ShapeType.rtTriangle, {
-    x: pos.x + pos.w * 0.35,
-    y: pos.y,
-    w: pos.w * 0.65,
-    h: pos.h * 0.55,
-    fill: { color: isDarkBackground ? '2D3748' : COLORS.navy },
-    line: { color: isDarkBackground ? '2D3748' : COLORS.navy, width: 0 },
-    rotate: 180,
-    flipH: true
-  });
-
-  // Gray accent triangle (topmost)
-  slide.addShape(pptx.ShapeType.rtTriangle, {
-    x: pos.x + pos.w * 0.55,
-    y: pos.y,
-    w: pos.w * 0.45,
-    h: pos.h * 0.35,
-    fill: { color: isDarkBackground ? '1A202C' : COLORS.darkGray },
-    line: { color: isDarkBackground ? '1A202C' : COLORS.darkGray, width: 0 },
-    rotate: 180,
-    flipH: true
-  });
+  if (ASSETS.cornerGraphic) {
+    slide.addImage({
+      data: ASSETS.cornerGraphic,
+      x: pos.x,
+      y: pos.y,
+      w: pos.w,
+      h: pos.h
+    });
+  }
 }
 
 // ============================================================================
