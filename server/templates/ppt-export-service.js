@@ -134,12 +134,12 @@ function getParagraphText(slideData) {
     const parts = [];
     if (slideData.paragraph1) parts.push(slideData.paragraph1.trim());
     if (slideData.paragraph2) parts.push(slideData.paragraph2.trim());
-    // Use single newline - PPT handles paragraph spacing via lineSpacing
-    return parts.join('\n');
+    // Double newline creates paragraph break in PPT
+    return parts.join('\n\n');
   }
   // Legacy: body field with double-newline separated paragraphs
   if (slideData.body) {
-    return slideData.body.trim().replace(/\n\n+/g, '\n');
+    return slideData.body.trim();
   }
   return '';
 }

@@ -697,11 +697,11 @@ export class SlidesView {
     slidesArea.appendChild(wrapper);
     slidesArea.appendChild(nav);
 
-    mainLayout.appendChild(slidesArea);
-
-    // Add TOC sidebar (right side)
+    // Add TOC sidebar first (for proper DOM order on tablets when static)
     const toc = this._renderTableOfContents();
     mainLayout.appendChild(toc);
+
+    mainLayout.appendChild(slidesArea);
 
     container.appendChild(mainLayout);
 
