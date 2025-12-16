@@ -619,7 +619,7 @@
 .theme-name {
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
-  color: var(--glass-text-primary);
+  color: #FFFFFF;
   margin: 0 0 var(--spacing-2) 0;
   line-height: var(--leading-tight);
 }
@@ -628,7 +628,7 @@
   display: block;
   font-size: var(--text-base);
   line-height: var(--leading-relaxed);
-  color: var(--glass-text-primary);
+  color: #FFFFFF;
   margin: 0 0 var(--spacing-2) 0;
   padding: 0;
 }
