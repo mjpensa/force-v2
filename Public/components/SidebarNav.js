@@ -38,29 +38,25 @@ export class SidebarNav {
         id: 'roadmap',
         title: 'Roadmap',
         subtitle: 'Gantt Chart View',
-        icon: this._getRoadmapIcon(),
-        shortcut: '1'
+        icon: this._getRoadmapIcon()
       },
       {
         id: 'document',
         title: 'Document',
         subtitle: 'Article View',
-        icon: this._getDocumentIcon(),
-        shortcut: '2'
+        icon: this._getDocumentIcon()
       },
       {
         id: 'slides',
         title: 'Slides',
         subtitle: 'Presentation View',
-        icon: this._getSlidesIcon(),
-        shortcut: '3'
+        icon: this._getSlidesIcon()
       },
       {
         id: 'research-analysis',
         title: 'Research QA',
         subtitle: 'Research Quality',
-        icon: this._getAnalysisIcon(),
-        shortcut: '4'
+        icon: this._getAnalysisIcon()
       }
     ];
 
@@ -71,7 +67,6 @@ export class SidebarNav {
     });
 
     // Bind methods
-    this._handleKeyDown = this._handleKeyDown.bind(this);
     this._handleMouseLeave = this._handleMouseLeave.bind(this);
   }
 
@@ -113,11 +108,6 @@ export class SidebarNav {
       <button class="icon-rail-toggle" title="Pin sidebar" aria-label="Toggle sidebar">
         ${this._getChevronIcon()}
       </button>
-
-      <!-- Keyboard Shortcut Hint -->
-      <div class="icon-rail-shortcut">
-        Press <kbd>M</kbd> to toggle
-      </div>
     `;
 
     // Create tooltip element
@@ -193,9 +183,6 @@ export class SidebarNav {
     if (toggleBtn) {
       toggleBtn.addEventListener('click', () => this._togglePinned());
     }
-
-    // Keyboard navigation
-    document.addEventListener('keydown', this._handleKeyDown);
 
     // Track hover state for pinning behavior
     this.container.addEventListener('mouseleave', this._handleMouseLeave);
@@ -346,40 +333,9 @@ export class SidebarNav {
   }
 
   /**
-   * Handle keyboard shortcuts
-   * @private
-   */
-  _handleKeyDown(e) {
-    // Don't trigger if user is typing in an input
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-      return;
-    }
-
-    // Toggle sidebar with 'M' key
-    if (e.key.toLowerCase() === 'm' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      e.preventDefault();
-      this._togglePinned();
-      return;
-    }
-
-    // Number keys for navigation
-    const numKey = parseInt(e.key);
-    if (numKey >= 1 && numKey <= this.navItems.length && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      e.preventDefault();
-      const item = this.navItems[numKey - 1];
-      if (item) {
-        this._handleNavClick(item.id);
-      }
-    }
-  }
-
-  /**
    * Destroy the sidebar and clean up
    */
   destroy() {
-    // Remove event listeners
-    document.removeEventListener('keydown', this._handleKeyDown);
-
     // Remove tooltip
     if (this.tooltip && this.tooltip.parentNode) {
       this.tooltip.parentNode.removeChild(this.tooltip);

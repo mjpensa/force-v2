@@ -518,7 +518,6 @@ export class SlidesView {
     this.index = 0;
     this.slideEl = null;
     this.counter = null;
-    this._keyHandler = null;
 
     // TOC management
     this.tocLinks = new Map();
@@ -706,13 +705,6 @@ export class SlidesView {
 
     container.appendChild(mainLayout);
 
-    // Keyboard navigation
-    this._keyHandler = e => {
-      if (e.key === 'ArrowLeft') this.go(-1);
-      if (e.key === 'ArrowRight') this.go(1);
-    };
-    document.addEventListener('keydown', this._keyHandler);
-
     this._update();
     return container;
   }
@@ -785,9 +777,6 @@ export class SlidesView {
   }
 
   destroy() {
-    if (this._keyHandler) {
-      document.removeEventListener('keydown', this._keyHandler);
-      this._keyHandler = null;
-    }
+    // Cleanup if needed
   }
 }

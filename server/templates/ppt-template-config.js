@@ -32,18 +32,18 @@ export const LAYOUTS = {
     background: COLORS.white,
     elements: {
       sectionLabel: {
-        x: 0.28, y: 0.26, w: 2.23, h: 0.3,
+        x: 0.28, y: 0.2, w: 2.5, h: 0.25,
         fontSize: 10, fontFace: FONTS.workSansSemiBold, color: COLORS.red, align: 'left'
       },
       title: {
-        x: 0.25, y: 0.67, w: 5.94, h: 2.5,
+        x: 0.25, y: 0.55, w: 5.94, h: 2.8,
         fontSize: 54, fontFace: FONTS.workSansThin, color: COLORS.navy,
         align: 'left', italic: false, lineSpacing: 70
       },
       paragraphs: {
-        x: 6.74, y: 4.28, w: 5.91, h: 2.78,
-        fontSize: 11, fontFace: FONTS.workSansRegular, color: COLORS.navy,
-        lineSpacing: 120, paragraphSpacing: 12
+        x: 6.5, y: 0.55, w: 6.2, h: 6.5,
+        fontSize: 10, fontFace: FONTS.workSansRegular, color: COLORS.navy,
+        lineSpacing: 115, paragraphSpacing: 8
       },
       pageNumber: {
         x: 0.28, y: 7.15, w: 0.5, h: 0.2,
@@ -56,18 +56,18 @@ export const LAYOUTS = {
     background: COLORS.white,
     elements: {
       sectionLabel: {
-        x: 0.28, y: 0.26, w: 2.23, h: 0.3,
+        x: 0.28, y: 0.2, w: 2.5, h: 0.25,
         fontSize: 10, fontFace: FONTS.workSansSemiBold, color: COLORS.red, align: 'left'
       },
       title: {
-        x: 0.25, y: 0.67, w: 2.76, h: 2.35,
+        x: 0.25, y: 0.55, w: 2.76, h: 2.5,
         fontSize: 33, fontFace: FONTS.workSansThin, color: COLORS.navy,
         align: 'left', italic: false, lineSpacing: 70
       },
       threeColumns: {
-        x: 3.56, y: 3.46, w: 9.10, h: 3.52,
-        fontSize: 11, fontFace: FONTS.workSansRegular, color: COLORS.navy,
-        lineSpacing: 120, columnGap: 0.59
+        x: 3.4, y: 3.2, w: 9.5, h: 4.0,
+        fontSize: 10, fontFace: FONTS.workSansRegular, color: COLORS.navy,
+        lineSpacing: 115, columnGap: 0.4
       },
       pageNumber: {
         x: 0.28, y: 7.15, w: 0.5, h: 0.2,

@@ -11,8 +11,7 @@ import {
 } from './components/shared/Performance.js';
 import {
   initAccessibility,
-  announceToScreenReader,
-  addKeyboardShortcuts
+  announceToScreenReader
 } from './components/shared/Accessibility.js';
 import {
   showErrorNotification,
@@ -131,7 +130,6 @@ class ContentViewer {
         validateImages: true,
         focusManagement: true
       });
-      this._setupKeyboardShortcuts();
       if (window.location.search.includes('debug=true')) {
         reportWebVitals((vital) => {
         });
@@ -180,80 +178,6 @@ class ContentViewer {
   }
   _setupRouting() {
     window.addEventListener('hashchange', () => this._handleRouteChange());
-  }
-  _setupKeyboardShortcuts() {
-    this.removeShortcuts = addKeyboardShortcuts({
-      '1': () => window.location.hash = 'roadmap',
-      '2': () => window.location.hash = 'slides',
-      '3': () => window.location.hash = 'document',
-      '4': () => window.location.hash = 'research-analysis',
-      'ArrowLeft': () => this._navigateToPreviousView(),
-      'ArrowRight': () => this._navigateToNextView(),
-      '?': () => this._showKeyboardShortcutsHelp(),
-      'Escape': () => {
-        const activeElement = document.activeElement;
-        if (activeElement && activeElement !== document.body) {
-          activeElement.blur();
-        }
-      }
-    });
-  }
-  _navigateToPreviousView() {
-    const views = ['roadmap', 'slides', 'document', 'research-analysis'];
-    const currentIndex = views.indexOf(this.currentView);
-    const previousIndex = (currentIndex - 1 + views.length) % views.length;
-    window.location.hash = views[previousIndex];
-    announceToScreenReader(`Navigated to ${views[previousIndex]} view`);
-  }
-  _navigateToNextView() {
-    const views = ['roadmap', 'slides', 'document', 'research-analysis'];
-    const currentIndex = views.indexOf(this.currentView);
-    const nextIndex = (currentIndex + 1) % views.length;
-    window.location.hash = views[nextIndex];
-    announceToScreenReader(`Navigated to ${views[nextIndex]} view`);
-  }
-  _showKeyboardShortcutsHelp() {
-    const helpHtml = `
-      <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px;">
-        <h2 style="margin-top: 0;">Keyboard Shortcuts</h2>
-        <dl style="line-height: 2;">
-          <dt style="font-weight: 600;">1, 2, 3, 4</dt>
-          <dd style="margin-left: 2rem; color: #666;">Navigate to Roadmap, Slides, Document, or Research QA view</dd>
-          <dt style="font-weight: 600;">← →</dt>
-          <dd style="margin-left: 2rem; color: #666;">Navigate between views</dd>
-          <dt style="font-weight: 600;">?</dt>
-          <dd style="margin-left: 2rem; color: #666;">Show this help dialog</dd>
-          <dt style="font-weight: 600;">Esc</dt>
-          <dd style="margin-left: 2rem; color: #666;">Close dialog or clear focus</dd>
-        </dl>
-        <button onclick="this.closest('.modal-overlay').remove()"
-                style="margin-top: 1.5rem; padding: 0.5rem 1.5rem; background: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer;">
-          Close
-        </button>
-      </div>
-    `;
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-    `;
-    overlay.innerHTML = helpHtml;
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) {
-        overlay.remove();
-      }
-    });
-    document.body.appendChild(overlay);
-    announceToScreenReader('Keyboard shortcuts dialog opened');
   }
   async _handleRouteChange() {
     const hash = window.location.hash.slice(1); // Remove '#'
@@ -802,9 +726,6 @@ class ContentViewer {
     }
     if (this._processingStartTimes) {
       this._processingStartTimes = {};
-    }
-    if (this.removeShortcuts) {
-      this.removeShortcuts();
     }
     if (this.sidebarNav) {
       this.sidebarNav.destroy();

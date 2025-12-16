@@ -41,15 +41,6 @@ export function addSkipLink(targetId, label = 'Skip to main content') {
   });
   document.body.insertBefore(link, document.body.firstChild);
 }
-export function addKeyboardShortcuts(shortcuts) {
-  function handleKey(e) {
-    const combo = [e.ctrlKey && 'Control', e.altKey && 'Alt', e.shiftKey && 'Shift', e.key].filter(Boolean).join('+');
-    if (shortcuts[e.key]) shortcuts[e.key](e);
-    else if (shortcuts[combo]) shortcuts[combo](e);
-  }
-  document.addEventListener('keydown', handleKey);
-  return () => document.removeEventListener('keydown', handleKey);
-}
 export function initAccessibility(options = {}) {
   const config = { skipLink: true, skipLinkTarget: 'main-content', announceRouteChanges: true, focusManagement: true, ...options };
   if (config.skipLink) addSkipLink(config.skipLinkTarget);
@@ -66,4 +57,4 @@ export function initAccessibility(options = {}) {
     }).observe(document.body, { childList: true, subtree: true });
   }
 }
-export default { announceToScreenReader, trapFocus, addSkipLink, addKeyboardShortcuts, initAccessibility };
+export default { announceToScreenReader, trapFocus, addSkipLink, initAccessibility };

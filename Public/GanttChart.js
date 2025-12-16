@@ -46,7 +46,6 @@ export class GanttChart {
     this.editor = null;
 
     // Event handler references for cleanup
-    this._keyboardHandler = null;
     this._cursorFeedbackHandler = null;
     this._lastGridElement = null;
   }
@@ -105,7 +104,6 @@ export class GanttChart {
     // Initialize handlers
     this._initializeExporter();
     this._initializeEditor();
-    this._addKeyboardShortcuts();
 
     // Add today line
     const today = new Date();
@@ -268,37 +266,6 @@ export class GanttChart {
   }
 
   /**
-   * Add keyboard shortcuts
-   */
-  _addKeyboardShortcuts() {
-    if (this._keyboardHandler) {
-      document.removeEventListener('keydown', this._keyboardHandler);
-    }
-
-    this._keyboardHandler = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
-        return;
-      }
-      if (e.ctrlKey || e.altKey || e.metaKey) {
-        return;
-      }
-
-      const key = e.key.toLowerCase();
-      switch (key) {
-        case 't':
-          if (this.router) {
-            this.router.navigate('roadmap');
-          }
-          break;
-        default:
-          break;
-      }
-    };
-
-    document.addEventListener('keydown', this._keyboardHandler);
-  }
-
-  /**
    * Announce message to screen readers
    */
   _announceToScreenReader(message) {
@@ -451,12 +418,6 @@ export class GanttChart {
 
     // Cleanup interaction handlers
     this._cleanupInteractionHandlers();
-
-    // Cleanup keyboard shortcuts listener
-    if (this._keyboardHandler) {
-      document.removeEventListener('keydown', this._keyboardHandler);
-      this._keyboardHandler = null;
-    }
 
     // Cleanup exporter
     if (this.exporter) {

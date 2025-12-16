@@ -395,14 +395,6 @@ export class GanttComponents {
       }
     });
 
-    // Close when pressing Escape
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && isOpen) {
-        closeMenu();
-        trigger.focus();
-      }
-    });
-
     // Close menu when a menu item is clicked
     dropdown.addEventListener('click', (e) => {
       const menuItem = e.target.closest('.menu-item');
