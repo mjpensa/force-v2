@@ -32,18 +32,18 @@ export const LAYOUTS = {
     background: COLORS.white,
     elements: {
       sectionLabel: {
-        x: 0.28, y: 0.26, w: 2.23, h: 0.26,
-        fontSize: 12, fontFace: FONTS.workSansSemiBold, color: COLORS.red, align: 'left'
+        x: 0.28, y: 0.26, w: 2.23, h: 0.3,
+        fontSize: 10, fontFace: FONTS.workSansSemiBold, color: COLORS.red, align: 'left'
       },
       title: {
-        x: 0.25, y: 0.52, w: 5.94, h: 3.0,
-        fontSize: 72, fontFace: FONTS.workSansThin, color: COLORS.navy,
+        x: 0.25, y: 0.67, w: 5.94, h: 2.5,
+        fontSize: 54, fontFace: FONTS.workSansThin, color: COLORS.navy,
         align: 'left', italic: false, lineSpacing: 70
       },
       paragraphs: {
         x: 6.74, y: 4.28, w: 5.91, h: 2.78,
-        fontSize: 12, fontFace: FONTS.workSansRegular, color: COLORS.navy,
-        lineSpacing: 135, paragraphSpacing: 12
+        fontSize: 11, fontFace: FONTS.workSansRegular, color: COLORS.navy,
+        lineSpacing: 120, paragraphSpacing: 12
       },
       pageNumber: {
         x: 0.28, y: 7.15, w: 0.5, h: 0.2,
@@ -56,18 +56,18 @@ export const LAYOUTS = {
     background: COLORS.white,
     elements: {
       sectionLabel: {
-        x: 0.28, y: 0.26, w: 2.23, h: 0.26,
-        fontSize: 12, fontFace: FONTS.workSansSemiBold, color: COLORS.red, align: 'left'
+        x: 0.28, y: 0.26, w: 2.23, h: 0.3,
+        fontSize: 10, fontFace: FONTS.workSansSemiBold, color: COLORS.red, align: 'left'
       },
       title: {
-        x: 0.25, y: 0.52, w: 2.76, h: 3.0,
-        fontSize: 44, fontFace: FONTS.workSansThin, color: COLORS.navy,
+        x: 0.25, y: 0.67, w: 2.76, h: 2.35,
+        fontSize: 33, fontFace: FONTS.workSansThin, color: COLORS.navy,
         align: 'left', italic: false, lineSpacing: 70
       },
       threeColumns: {
         x: 3.56, y: 3.46, w: 9.10, h: 3.52,
-        fontSize: 12, fontFace: FONTS.workSansRegular, color: COLORS.navy,
-        lineSpacing: 130, columnGap: 0.59
+        fontSize: 11, fontFace: FONTS.workSansRegular, color: COLORS.navy,
+        lineSpacing: 120, columnGap: 0.59
       },
       pageNumber: {
         x: 0.28, y: 7.15, w: 0.5, h: 0.2,

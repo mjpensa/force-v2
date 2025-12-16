@@ -39,7 +39,7 @@
 
 .slides-main-layout {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 1fr 200px;
   gap: var(--spacing-4);
   width: 100%;
   height: 100%;

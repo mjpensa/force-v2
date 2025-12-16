@@ -663,13 +663,9 @@ export class SlidesView {
     const container = document.createElement('div');
     container.className = 'slides-view-container';
 
-    // Main layout wrapper (TOC + slides area)
+    // Main layout wrapper (slides area + TOC)
     const mainLayout = document.createElement('div');
     mainLayout.className = 'slides-main-layout';
-
-    // Add TOC sidebar
-    const toc = this._renderTableOfContents();
-    mainLayout.appendChild(toc);
 
     // Slides area (wrapper + nav)
     const slidesArea = document.createElement('div');
@@ -703,6 +699,11 @@ export class SlidesView {
     slidesArea.appendChild(nav);
 
     mainLayout.appendChild(slidesArea);
+
+    // Add TOC sidebar (right side)
+    const toc = this._renderTableOfContents();
+    mainLayout.appendChild(toc);
+
     container.appendChild(mainLayout);
 
     // Keyboard navigation

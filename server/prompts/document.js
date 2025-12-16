@@ -33,7 +33,7 @@ export const documentSchema = {
         },
         source: {
           type: "string",
-          description: "Primary source filename for the key data point (e.g., 'jpm-analysis.md')"
+          description: "The actual authoritative source cited in the research (e.g., 'JPMorgan Q4 2024 Annual Report', 'Federal Reserve Economic Data', 'Gartner Market Analysis 2024'). Extract the real source name from within the research content, NOT the filename."
         }
       },
       required: ["situation", "insight", "action", "source"],
@@ -122,7 +122,7 @@ export const documentSchema = {
                 },
                 source: {
                   type: "string",
-                  description: "Source filename (e.g., 'market-analysis.pdf')"
+                  description: "The actual authoritative source cited in the research (e.g., 'McKinsey Global Institute Report 2024', 'SEC Filing 10-K', 'Bloomberg Terminal Data'). Extract the real source name from within the research content, NOT the filename."
                 }
               },
               required: ["claim", "quote", "source"]
@@ -151,11 +151,23 @@ export const documentPrompt = `You are a senior strategy consultant writing an e
 ANALYTICAL RIGOR:
 - Follow the Evidence → Insight → Implication chain for every major claim
 - Each section must contain at least 2 specific data points extracted from research
-- Explicitly cite sources: "According to [filename]..." or "[filename] reveals..."
 - Quantify impact: use percentages, dollar amounts, timeframes - never "significant" or "substantial"
 - Address the strongest counterargument or risk in your recommendations
 - Distinguish between correlation and causation
 - Every claim must trace directly to provided research
+
+SOURCE EXTRACTION (CRITICAL):
+- Research documents contain references to actual authoritative sources (reports, filings, publications)
+- You MUST extract and use these REAL source names, NOT the uploaded filenames
+- Look for patterns like: "According to [Source]", "per [Report Name]", "[Organization] reports", citations, footnotes
+- Examples of authoritative sources to extract:
+  * Official reports: "JPMorgan 2024 Annual Report", "Federal Reserve Economic Data Q3 2024"
+  * Research firms: "Gartner Magic Quadrant 2024", "McKinsey Global Institute Study"
+  * Regulatory filings: "SEC Form 10-K", "CFTC Rule 17a-4 Guidance"
+  * Industry publications: "Risk.net Analysis", "Bloomberg Terminal Data"
+  * Academic/standards: "ISDA CDM Specification v3.0", "Basel III Framework"
+- If a research document doesn't cite a specific source, use the document's apparent origin (e.g., "Internal Market Analysis" or "Competitive Intelligence Brief")
+- NEVER use the uploaded filename (like "research.md" or "data.pdf") as the source
 
 NARRATIVE ENERGY:
 - Open with tension, paradox, or high-stakes framing - NEVER "This report analyzes..." or "This document provides..."
@@ -214,9 +226,9 @@ GOOD:
 situation: "JPMorgan deployed ISDA CDM for derivatives reporting in Q4 2024, cutting reconciliation time 60% and positioning for automated DRR compliance."
 insight: "Bank of America's manual processes now cost $2.3M more per quarter than JPMorgan's, with the gap widening 15% annually."
 action: "CTO approve CDM pilot by Q2 2025."
-source: "jpm-competitive-analysis.md"
+source: "JPMorgan Chase Q4 2024 Investor Presentation"
 
-WHY IT'S GOOD: Situation states a specific fact. Insight quantifies THIS firm's disadvantage in dollars. Action is 6 words with clear owner/deadline.
+WHY IT'S GOOD: Situation states a specific fact. Insight quantifies THIS firm's disadvantage in dollars. Action is 6 words with clear owner/deadline. Source is the ACTUAL authoritative source extracted from the research, not the filename.
 
 ANALYSIS OVERVIEW - COMPREHENSIVE STRATEGIC SYNTHESIS:
 
@@ -269,7 +281,7 @@ OUTPUT FORMAT:
     "situation": "Specific fact about what has happened or is happening (with numbers)",
     "insight": "Quantified impact to THIS organization in dollars or percentage",
     "action": "[Role] [verb] [object] by [date] - max 12 words",
-    "source": "primary-source-filename.ext"
+    "source": "Actual Authoritative Source Name (e.g., 'Goldman Sachs 2024 Annual Report')"
   },
   "analysisOverview": {
     "narrative": "2-3 compelling paragraphs setting strategic context...",
@@ -284,7 +296,7 @@ OUTPUT FORMAT:
       "heading": "Insight-led heading (not topic label)",
       "keyInsight": "Single most important takeaway from this section",
       "supportingEvidence": [
-        {"claim": "Specific assertion made", "quote": "Direct quote from research", "source": "filename.ext"}
+        {"claim": "Specific assertion made", "quote": "Direct quote from research", "source": "Actual Source Name (e.g., 'Gartner IT Spending Forecast 2024')"}
       ],
       "paragraphs": ["paragraph 1", "paragraph 2"]
     }

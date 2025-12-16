@@ -212,10 +212,21 @@ PARAGRAPH REQUIREMENTS (CRITICAL):
 
 ANALYTICAL RIGOR (CRITICAL):
 - Each paragraph MUST contain at least ONE specific data point from research
-- Cite sources explicitly: "[filename] reveals..." or "According to [filename]..."
 - Quantify all claims: use percentages, dollar amounts, timeframes
 - NEVER use vague terms: "significant", "substantial", "considerable", "various"
 - Follow the chain: Evidence → Insight → Implication
+
+SOURCE EXTRACTION (CRITICAL):
+- Research documents contain references to actual authoritative sources (reports, filings, publications)
+- You MUST extract and cite these REAL source names in paragraphs, NOT the uploaded filenames
+- Cite sources explicitly: "According to the [Actual Source Name]..." or "The [Report Name] reveals..."
+- Look for patterns in research: "According to [Source]", "per [Report]", citations, footnotes
+- Examples of proper citations:
+  * "The Federal Reserve Q3 2024 Report reveals margin compression of 23%..."
+  * "According to Gartner's Magic Quadrant 2024, cloud adoption reached..."
+  * "JPMorgan's Annual Investor Presentation shows CDM reduced costs by 60%..."
+- If research doesn't cite a specific source, reference the apparent origin (e.g., "Internal competitive analysis indicates...")
+- NEVER cite uploaded filenames like "research.md" or "data.pdf" in paragraph text
 
 NARRATIVE ENERGY (CRITICAL):
 - Lead each paragraph with tension, insight, or stakes - not topic introduction
