@@ -20,7 +20,8 @@
       "Bash(git -C \"c:\\FORCE\" add server/prompts/roadmap.js)",
       "Bash(git -C \"c:\\FORCE\" commit -m \"$(cat <<''EOF''\nFix Gemini API schema error for nullable types\n\nChange bar.startCol and bar.endCol from array-style union types\n[\"number\", \"null\"] to Gemini-compatible format using nullable: true\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git -C \"c:\\FORCE\" push)",
-      "Bash(comm:*)"
+      "Bash(comm:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

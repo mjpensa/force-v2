@@ -219,6 +219,29 @@
   line-height: var(--leading-tight);
 }
 
+/* Section title - matches TOC entry (e.g., "Citi", "Bank of America") */
+.section-title {
+  font-family: 'Work Sans', sans-serif;
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  color: var(--color-accent-red);
+  margin: 0 0 var(--spacing-2) 0;
+  scroll-margin-top: var(--spacing-8);
+  position: relative;
+}
+
+/* Section subtitle - insight-driven heading below title */
+.section-subtitle {
+  font-family: 'Work Sans', sans-serif;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-normal);
+  font-style: italic;
+  color: var(--glass-text-secondary);
+  margin: 0 0 var(--spacing-6) 0;
+  line-height: var(--leading-snug);
+}
+
 /* ========== CONTENT BLOCKS ========== */
 
 .section-paragraph {

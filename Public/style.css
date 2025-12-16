@@ -80,33 +80,13 @@ select:focus-visible {
   max-width: calc(100vw - 32px);
   border: 2px solid var(--color-navy-brand, #002040);
   border-radius: 8px;
-  background-color: transparent; 
+  background-color: transparent;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  overflow-x: auto; 
-  overflow-y: auto; 
-  max-height: 80vh; 
-  margin-top: 0; 
-  font-family: 'Work Sans', sans-serif; 
-  position: relative; 
-  box-sizing: border-box; 
-}
-#gantt-chart-container::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-#gantt-chart-container::-webkit-scrollbar-track {
-  background: var(--glass-white-5, rgba(255, 255, 255, 0.05));
-  border-radius: 9999px;
-}
-#gantt-chart-container::-webkit-scrollbar-thumb {
-  background: var(--glass-white-20, rgba(255, 255, 255, 0.20));
-  border-radius: 9999px;
-}
-#gantt-chart-container::-webkit-scrollbar-thumb:hover {
-  background: var(--glass-white-30, rgba(255, 255, 255, 0.30));
-}
-#gantt-chart-container::-webkit-scrollbar-corner {
-  background: transparent;
+  overflow: visible;
+  margin-top: 0;
+  font-family: 'Work Sans', sans-serif;
+  position: relative;
+  box-sizing: border-box;
 }
 .gantt-title-container {
   transition: all 0.2s;
@@ -2795,13 +2775,18 @@ body.dragging {
   opacity: 1;
 }
 .icon-rail-header {
-  padding: 20px 16px;
+  padding: 16px 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-bottom: 1px solid var(--glass-white-8);
-  min-height: 80px;
+  min-height: 72px;
   position: relative;
+}
+.icon-rail:hover .icon-rail-header,
+.icon-rail.expanded .icon-rail-header {
+  padding: 16px;
+  justify-content: flex-start;
 }
 .icon-rail-logo {
   width: 40px;
@@ -4014,24 +3999,9 @@ body.dragging {
 }
 #gantt-chart {
   width: 100%;
-  overflow-x: auto;
-  overflow-y: visible;
+  overflow: visible;
   margin-top: var(--spacing-6);
   border-radius: var(--radius-glass-md);
-}
-#gantt-chart::-webkit-scrollbar {
-  height: 6px;
-}
-#gantt-chart::-webkit-scrollbar-track {
-  background: var(--glass-white-5);
-  border-radius: var(--radius-full);
-}
-#gantt-chart::-webkit-scrollbar-thumb {
-  background: var(--glass-white-20);
-  border-radius: var(--radius-full);
-}
-#gantt-chart::-webkit-scrollbar-thumb:hover {
-  background: var(--glass-white-30);
 }
 .gantt-container {
   font-family: var(--font-primary);

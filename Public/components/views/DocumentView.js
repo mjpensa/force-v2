@@ -646,11 +646,20 @@ export class DocumentView {
     sectionEl.className = 'document-section';
     sectionEl.id = section.id;
 
-    // Section heading
-    const headingLevel = Math.min(section.level + 1, 6); // h2-h4 (level 1-3 maps to h2-h4)
+    // Section title (swimlaneTopic) - matches TOC entry exactly
+    if (section.swimlaneTopic) {
+      const sectionTitle = document.createElement('h2');
+      sectionTitle.className = 'section-title';
+      sectionTitle.textContent = section.swimlaneTopic;
+      sectionEl.appendChild(sectionTitle);
+    }
+
+    // Section heading (insight-driven subtitle)
+    const headingLevel = section.swimlaneTopic ? 3 : Math.min(section.level + 1, 6);
     const heading = document.createElement(`h${headingLevel}`);
-    heading.className = section.level === 1 ? 'section-heading' :
-                        section.level === 2 ? 'section-subheading' : 'section-subheading';
+    heading.className = section.swimlaneTopic ? 'section-subtitle' :
+                        (section.level === 1 ? 'section-heading' :
+                        section.level === 2 ? 'section-subheading' : 'section-subheading');
     heading.textContent = section.heading;
     sectionEl.appendChild(heading);
 
