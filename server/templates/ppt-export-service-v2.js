@@ -257,10 +257,10 @@ const ACRONYMS_MIXED = {
 };
 
 /**
- * Get the correct form of an acronym
+ * Check if a single word (no slashes) is an acronym
  * Returns: { isAcronym: boolean, value: string }
  */
-function getAcronymForm(word) {
+function checkSingleAcronym(word) {
   if (!word) return { isAcronym: false, value: word };
 
   const lowerWord = word.toLowerCase();
@@ -282,6 +282,28 @@ function getAcronymForm(word) {
   }
 
   return { isAcronym: false, value: word };
+}
+
+/**
+ * Get the correct form of an acronym, handling compound forms like "CDM/DRR"
+ * Returns: { isAcronym: boolean, value: string }
+ */
+function getAcronymForm(word) {
+  if (!word) return { isAcronym: false, value: word };
+
+  // Handle slashed compound acronyms like "CDM/DRR"
+  if (word.includes('/')) {
+    const parts = word.split('/');
+    const results = parts.map(part => checkSingleAcronym(part));
+    const allAcronyms = results.every(r => r.isAcronym);
+
+    if (allAcronyms) {
+      return { isAcronym: true, value: results.map(r => r.value).join('/') };
+    }
+    return { isAcronym: false, value: word };
+  }
+
+  return checkSingleAcronym(word);
 }
 
 /**

@@ -9,7 +9,42 @@
  */
 
 /**
+ * Check if a single word (no slashes) is an acronym
+ * @param {string} word - Word to check
+ * @returns {boolean} - True if the word is an acronym
+ */
+function isAcronymWord(word) {
+  if (!word) return false;
+  // Check if word is an acronym (2-5 uppercase letters, optionally with numbers)
+  return /^[A-Z][A-Z0-9]{1,4}$/.test(word);
+}
+
+/**
+ * Check if a word (possibly compound with slashes) is an acronym
+ * Handles compound forms like "CDM/DRR"
+ * @param {string} word - Word to check
+ * @returns {{ isAcronym: boolean, value: string }}
+ */
+function checkAcronym(word) {
+  if (!word) return { isAcronym: false, value: word };
+
+  // Handle slashed compound acronyms like "CDM/DRR"
+  if (word.includes('/')) {
+    const parts = word.split('/');
+    const allAcronyms = parts.every(part => isAcronymWord(part));
+
+    if (allAcronyms) {
+      return { isAcronym: true, value: parts.map(p => p.toUpperCase()).join('/') };
+    }
+    return { isAcronym: false, value: word };
+  }
+
+  return { isAcronym: isAcronymWord(word), value: word };
+}
+
+/**
  * Convert text to sentence case while preserving acronyms (all-caps words like CDM, API, ROI)
+ * Also handles compound acronyms like "CDM/DRR"
  * @param {string} text - Text to convert
  * @returns {string} - Sentence case text with acronyms preserved
  */
@@ -25,12 +60,12 @@ function toSentenceCasePreservingAcronyms(text) {
       // Skip whitespace
       if (/^\s*$/.test(word)) return word;
 
-      // Check if word is an acronym (2-5 uppercase letters, optionally with numbers)
-      const isAcronym = /^[A-Z][A-Z0-9]{1,4}$/.test(word);
+      // Check if word is an acronym (handles compound forms like CDM/DRR)
+      const acronymCheck = checkAcronym(word);
 
-      if (isAcronym) {
+      if (acronymCheck.isAcronym) {
         // Keep acronyms uppercase
-        return word;
+        return acronymCheck.value;
       } else if (lineIndex === 0 && wordIndex === 0) {
         // First word of first line: capitalize first letter, lowercase rest
         return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
@@ -113,20 +148,6 @@ function renderSectionTitleSlide(slide, index) {
     margin-top: 3%;
   `;
   el.appendChild(line);
-
-  // CORNER GRAPHIC - top right (inverted for dark background)
-  const cornerGraphic = document.createElement('img');
-  cornerGraphic.src = 'bip corner graphic.svg';
-  cornerGraphic.style.cssText = `
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 10.9%;
-    height: auto;
-    filter: brightness(0) invert(1);
-    opacity: 0.3;
-  `;
-  el.appendChild(cornerGraphic);
 
   // BIP LOGO - bottom right (white version or filtered)
   const bipLogo = document.createElement('img');

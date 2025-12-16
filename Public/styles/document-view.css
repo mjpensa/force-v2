@@ -182,10 +182,11 @@
 }
 
 .section-heading {
+  font-family: 'Work Sans', sans-serif;
   font-size: var(--text-3xl);
   font-weight: var(--weight-medium);
   line-height: var(--leading-tight);
-  color: var(--glass-text-primary);
+  color: var(--color-accent-red);
   margin: 0 0 var(--spacing-6) 0;
   scroll-margin-top: var(--spacing-8); /* Relative to scroll container (app-main), not body */
   position: relative;
@@ -210,9 +211,10 @@
 }
 
 .section-subheading {
+  font-family: 'Work Sans', sans-serif;
   font-size: var(--text-xl);
   font-weight: var(--weight-medium);
-  color: var(--glass-text-primary);
+  color: var(--color-accent-red);
   margin: var(--spacing-8) 0 var(--spacing-4) 0;
   line-height: var(--leading-tight);
 }
@@ -308,9 +310,10 @@
 }
 
 .appendix-title {
+  font-family: 'Work Sans', sans-serif;
   font-size: var(--text-xl);
   font-weight: var(--weight-medium);
-  color: var(--glass-text-primary);
+  color: var(--color-accent-red);
   margin: 0 0 var(--spacing-4) 0;
 }
 
@@ -467,11 +470,12 @@
 }
 
 .executive-summary-label {
+  font-family: 'Work Sans', sans-serif;
   font-size: var(--text-sm);
   font-weight: var(--weight-bold);
   text-transform: none;
   letter-spacing: normal;
-  color: #FFFFFF;
+  color: var(--color-accent-red);
 }
 
 .executive-summary-source {
@@ -563,9 +567,10 @@
 }
 
 .analysis-overview-label {
+  font-family: 'Work Sans', sans-serif;
   font-size: var(--text-xl);
   font-weight: var(--weight-medium);
-  color: #FFFFFF;
+  color: var(--color-accent-red);
   text-transform: none;
   letter-spacing: normal;
 }
@@ -589,9 +594,10 @@
 
 /* Overview Section Labels */
 .overview-section-label {
+  font-family: 'Work Sans', sans-serif;
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
-  color: #FFFFFF;
+  color: var(--color-accent-red);
   text-transform: none;
   letter-spacing: normal;
   margin: var(--spacing-6) 0 var(--spacing-3) 0;
@@ -619,7 +625,7 @@
 .theme-name {
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
-  color: #FFFFFF;
+  color: #FFFFFF !important;
   margin: 0 0 var(--spacing-2) 0;
   line-height: var(--leading-tight);
 }
@@ -628,7 +634,7 @@
   display: block;
   font-size: var(--text-base);
   line-height: var(--leading-relaxed);
-  color: #FFFFFF;
+  color: #FFFFFF !important;
   margin: 0 0 var(--spacing-2) 0;
   padding: 0;
 }
@@ -714,7 +720,8 @@
 }
 
 .closing-heading {
-  color: var(--glass-text-primary);
+  font-family: 'Work Sans', sans-serif;
+  color: var(--color-accent-red);
   margin-bottom: var(--spacing-6);
 }
 

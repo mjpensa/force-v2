@@ -6,8 +6,7 @@ import {
   GanttExporter,
   GanttEditor,
   GanttRenderer,
-  GanttComponents,
-  GanttAnalysis
+  GanttComponents
 } from './gantt/index.js';
 
 /**
@@ -17,7 +16,6 @@ import {
  * specialized modules:
  * - GanttRenderer: Grid, rows, bars, virtualization
  * - GanttComponents: Header, title, logo, footer, legend
- * - GanttAnalysis: Research analysis display
  */
 export class GanttChart {
   constructor(container, ganttData, footerSVG, onTaskClick) {
@@ -36,7 +34,6 @@ export class GanttChart {
     // Module instances
     this.renderer = new GanttRenderer(this);
     this.components = new GanttComponents(this);
-    this.analysis = new GanttAnalysis();
 
     // Interaction handlers
     this.draggableGantt = null;
@@ -97,9 +94,6 @@ export class GanttChart {
     this.components.addFooterSVG(this.chartWrapper, this.footerSVG);
 
     this.container.appendChild(this.chartWrapper);
-
-    // Add research analysis
-    this.analysis.addResearchAnalysis(this.container, this.ganttData);
 
     // Initialize handlers
     this._initializeExporter();

@@ -83,25 +83,18 @@ export class SidebarNav {
 
     // Build inner HTML
     this.container.innerHTML = `
-      <!-- Header with Logo -->
+      <!-- Header with Home Link -->
       <div class="icon-rail-header">
-        <div class="icon-rail-logo" title="Content Viewer">
-          ${this._getLogoIcon()}
-        </div>
+        <a href="/" class="icon-rail-home" title="Create New Roadmap">
+          ${this._getHomeIcon()}
+          <span class="icon-rail-home-text">New Roadmap</span>
+        </a>
       </div>
 
       <!-- Navigation Items -->
       <div class="icon-rail-nav" role="menu">
         <div class="icon-rail-section-label">Views</div>
         ${this._renderNavItems()}
-      </div>
-
-      <!-- Footer with Home Link -->
-      <div class="icon-rail-footer">
-        <a href="/" class="icon-rail-home" title="Create New Roadmap">
-          ${this._getHomeIcon()}
-          <span class="icon-rail-home-text">New Roadmap</span>
-        </a>
       </div>
 
       <!-- Toggle Button -->
@@ -354,16 +347,6 @@ export class SidebarNav {
   }
 
   // ========== SVG ICONS ==========
-
-  _getLogoIcon() {
-    return `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-        <path d="M2 17l10 5 10-5"></path>
-        <path d="M2 12l10 5 10-5"></path>
-      </svg>
-    `;
-  }
 
   _getRoadmapIcon() {
     return `

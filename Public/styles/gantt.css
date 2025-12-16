@@ -275,7 +275,7 @@
 /* Gantt Bar */
 .gantt-bar {
   position: relative;
-  height: 10px;
+  height: 12px;
   margin: 3px 1px;
   border-radius: 2px;
   color: white;
@@ -669,7 +669,7 @@
   }
 
   .gantt-bar {
-    height: 8px;
+    height: 10px;
     margin: 2px 1px;
   }
 

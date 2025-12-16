@@ -6,7 +6,6 @@
  * Core Rendering:
  * - renderer.js: Grid rendering, rows, bars, and virtualization
  * - components.js: UI components (header, title, logo, footer, legend)
- * - analysis.js: Research analysis display
  *
  * Interaction Handlers:
  * - InteractiveGanttHandler.js: Base class for interactive behaviors
@@ -22,7 +21,6 @@
 // Core rendering modules
 export { GanttRenderer } from './renderer.js';
 export { GanttComponents } from './components.js';
-export { GanttAnalysis } from './analysis.js';
 
 // Interaction handlers
 export { InteractiveGanttHandler } from './InteractiveGanttHandler.js';
