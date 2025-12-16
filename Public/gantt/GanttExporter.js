@@ -114,6 +114,19 @@ export class GanttExporter {
         const scrollY = window.pageYOffset || document.documentElement.scrollTop;
         const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
 
+        // Store original styles that constrain the container
+        const originalMaxHeight = this.chartContainer.style.maxHeight;
+        const originalOverflow = this.chartContainer.style.overflow;
+        const originalOverflowY = this.chartContainer.style.overflowY;
+
+        // Temporarily remove constraints to capture full content
+        this.chartContainer.style.maxHeight = 'none';
+        this.chartContainer.style.overflow = 'visible';
+        this.chartContainer.style.overflowY = 'visible';
+
+        // Force reflow to apply style changes
+        await new Promise(resolve => requestAnimationFrame(resolve));
+
         // Capture the chart at its natural size
         const sourceCanvas = await html2canvas(this.chartContainer, {
           useCORS: true,
@@ -128,6 +141,11 @@ export class GanttExporter {
           width: this.chartContainer.scrollWidth,
           height: this.chartContainer.scrollHeight
         });
+
+        // Restore original styles
+        this.chartContainer.style.maxHeight = originalMaxHeight;
+        this.chartContainer.style.overflow = originalOverflow;
+        this.chartContainer.style.overflowY = originalOverflowY;
 
         // Apply 9:16 aspect ratio scaling
         const aspectRatioCanvas = this._createAspectRatioCanvas(sourceCanvas);
@@ -174,6 +192,19 @@ export class GanttExporter {
         const scrollY = window.pageYOffset || document.documentElement.scrollTop;
         const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
 
+        // Store original styles that constrain the container
+        const originalMaxHeight = this.chartContainer.style.maxHeight;
+        const originalOverflow = this.chartContainer.style.overflow;
+        const originalOverflowY = this.chartContainer.style.overflowY;
+
+        // Temporarily remove constraints to capture full content
+        this.chartContainer.style.maxHeight = 'none';
+        this.chartContainer.style.overflow = 'visible';
+        this.chartContainer.style.overflowY = 'visible';
+
+        // Force reflow to apply style changes
+        await new Promise(resolve => requestAnimationFrame(resolve));
+
         // Capture the chart at its natural size
         const sourceCanvas = await html2canvas(this.chartContainer, {
           useCORS: true,
@@ -188,6 +219,11 @@ export class GanttExporter {
           width: this.chartContainer.scrollWidth,
           height: this.chartContainer.scrollHeight
         });
+
+        // Restore original styles
+        this.chartContainer.style.maxHeight = originalMaxHeight;
+        this.chartContainer.style.overflow = originalOverflow;
+        this.chartContainer.style.overflowY = originalOverflowY;
 
         // Apply 9:16 aspect ratio scaling
         const aspectRatioCanvas = this._createAspectRatioCanvas(sourceCanvas);

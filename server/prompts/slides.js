@@ -21,7 +21,7 @@ const contentSlideSchema = {
     },
     title: {
       type: "string",
-      description: "EXACTLY 4 lines separated by \\n. Format: 'Line1\\nLine2\\nLine3\\nLine4'. Each line max 10 chars. MUST have exactly 3 newline characters.",
+      description: "3 or 4 lines separated by \\n. Format: 'Line1\\nLine2\\nLine3' or 'Line1\\nLine2\\nLine3\\nLine4'. Each line max 10 chars. MUST have 2 or 3 newline characters.",
       nullable: false
     },
     paragraph1: {
@@ -197,12 +197,13 @@ COMMON RULES FOR ALL CONTENT SLIDES:
 
 TAGLINE: 2-word uppercase label, MAX 21 characters. Example: "MARGIN EROSION"
 
-TITLE RULES (CRITICAL - MUST BE EXACTLY 4 LINES):
-- Pattern: "Line1\\nLine2\\nLine3\\nLine4" - exactly 3 newlines, 4 lines
+TITLE RULES (CRITICAL - MUST BE 3 OR 4 LINES):
+- Pattern: "Line1\\nLine2\\nLine3" (3 lines) or "Line1\\nLine2\\nLine3\\nLine4" (4 lines)
+- Use 2 or 3 newline characters depending on line count
 - Each line: 1-2 words, MAX 10 characters per line
-- AVOID letters g, y, p, q, j on lines 1-3 (descenders overlap next line)
-- Line 4 can use any letters
-- Example: "Driving\\nModern\\nBusiness\\nForward"
+- AVOID letters g, y, p, q, j on lines 1-2 for 3-line titles, lines 1-3 for 4-line titles (descenders overlap next line)
+- Last line can use any letters
+- Examples: "Driving\\nModern\\nForward" (3 lines) or "Driving\\nModern\\nBusiness\\nForward" (4 lines)
 
 PARAGRAPH REQUIREMENTS (CRITICAL):
 - Each paragraph must be a complete thought ending with a period

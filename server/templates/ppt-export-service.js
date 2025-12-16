@@ -237,13 +237,13 @@ export async function generatePptx(slidesData, options = {}) {
 // ============================================================================
 
 /**
- * Add a section title slide (full-bleed red background with centered title)
+ * Add a section title slide (full-bleed navy background with centered title)
  */
 function addSectionTitleSlide(pptx, slideData, slideNumber) {
   const slide = pptx.addSlide();
-  slide.background = { color: COLORS.red };
+  slide.background = { color: COLORS.navy };
 
-  // Swimlane label (top left, navy)
+  // Swimlane label (top left, red for contrast on navy background)
   if (slideData.swimlane) {
     slide.addText(slideData.swimlane.toUpperCase(), {
       x: 0.5,
@@ -252,7 +252,7 @@ function addSectionTitleSlide(pptx, slideData, slideNumber) {
       h: 0.4,
       fontSize: 14,
       fontFace: FONTS.workSansSemiBold,
-      color: COLORS.navy,
+      color: COLORS.red,
       align: 'left'
     });
   }
@@ -270,14 +270,14 @@ function addSectionTitleSlide(pptx, slideData, slideNumber) {
     valign: 'middle'
   });
 
-  // Decorative navy line under title
+  // Decorative red line under title (for contrast on navy background)
   slide.addShape(pptx.ShapeType.rect, {
     x: (SLIDE_SIZE.width - 2) / 2,
     y: 4.7,
     w: 2,
     h: 0.04,
-    fill: { color: COLORS.navy },
-    line: { color: COLORS.navy, width: 0 }
+    fill: { color: COLORS.red },
+    line: { color: COLORS.red, width: 0 }
   });
 
   // White BIP logo (bottom right)

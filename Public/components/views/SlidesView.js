@@ -670,6 +670,21 @@ export class SlidesView {
     const slidesArea = document.createElement('div');
     slidesArea.className = 'slides-area';
 
+    // Header with title and menu
+    const header = document.createElement('div');
+    header.className = 'slides-header';
+
+    const headerTitle = document.createElement('h2');
+    headerTitle.className = 'slides-header-title';
+    headerTitle.textContent = 'Presentation';
+
+    // Add glassmorphic three-dot menu
+    const menu = this._createHeaderMenu();
+
+    header.appendChild(headerTitle);
+    header.appendChild(menu);
+    slidesArea.appendChild(header);
+
     // Slide wrapper (centered, 16:9)
     const wrapper = document.createElement('div');
     wrapper.className = 'slides-wrapper';
@@ -678,13 +693,12 @@ export class SlidesView {
     this.slideEl.className = 'slide-viewport';
     wrapper.appendChild(this.slideEl);
 
-    // Navigation bar
+    // Navigation bar (without export button - moved to menu)
     const nav = document.createElement('div');
     nav.className = 'slides-nav';
 
     const prevBtn = this._btn('← Prev', () => this.go(-1));
     const nextBtn = this._btn('Next →', () => this.go(1));
-    const exportBtn = this._btn('Export to PPT', () => this._exportToPPT(), '#DA291C');
 
     this.counter = document.createElement('span');
     this.counter.style.cssText = 'color: white; font-size: 14px; min-width: 60px; text-align: center;';
@@ -692,7 +706,6 @@ export class SlidesView {
     nav.appendChild(prevBtn);
     nav.appendChild(this.counter);
     nav.appendChild(nextBtn);
-    nav.appendChild(exportBtn);
 
     slidesArea.appendChild(wrapper);
     slidesArea.appendChild(nav);
@@ -707,6 +720,109 @@ export class SlidesView {
 
     this._update();
     return container;
+  }
+
+  /**
+   * Create the glassmorphic three-dot menu for the header
+   * @returns {HTMLElement} The menu container
+   */
+  _createHeaderMenu() {
+    const menuContainer = document.createElement('div');
+    menuContainer.className = 'slides-header-menu';
+
+    // Three-dot trigger button
+    const triggerBtn = document.createElement('button');
+    triggerBtn.className = 'slides-menu-trigger';
+    triggerBtn.setAttribute('aria-label', 'Open slides menu');
+    triggerBtn.setAttribute('aria-haspopup', 'true');
+    triggerBtn.setAttribute('aria-expanded', 'false');
+    triggerBtn.innerHTML = `
+      <span class="menu-dot"></span>
+      <span class="menu-dot"></span>
+      <span class="menu-dot"></span>
+    `;
+
+    // Dropdown menu
+    const dropdown = document.createElement('div');
+    dropdown.className = 'slides-menu-dropdown';
+    dropdown.setAttribute('role', 'menu');
+
+    // Export to PowerPoint
+    const exportPptItem = this._createMenuItem({
+      id: 'export-ppt-btn',
+      icon: '📊',
+      text: 'Export to PowerPoint',
+      ariaLabel: 'Export slides as PowerPoint presentation'
+    });
+    exportPptItem.addEventListener('click', () => this._exportToPPT());
+    dropdown.appendChild(exportPptItem);
+
+    menuContainer.appendChild(triggerBtn);
+    menuContainer.appendChild(dropdown);
+
+    // Setup menu toggle behavior
+    this._setupMenuBehavior(triggerBtn, dropdown);
+
+    return menuContainer;
+  }
+
+  /**
+   * Create a menu item element
+   */
+  _createMenuItem({ id, icon, text, ariaLabel }) {
+    const item = document.createElement('button');
+    item.id = id;
+    item.className = 'menu-item';
+    item.setAttribute('role', 'menuitem');
+    item.setAttribute('aria-label', ariaLabel);
+    item.innerHTML = `
+      <span class="menu-item-icon">${icon}</span>
+      <span class="menu-item-text">${text}</span>
+    `;
+    return item;
+  }
+
+  /**
+   * Setup menu open/close behavior
+   */
+  _setupMenuBehavior(trigger, dropdown) {
+    let isOpen = false;
+
+    const openMenu = () => {
+      isOpen = true;
+      dropdown.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+    };
+
+    const closeMenu = () => {
+      isOpen = false;
+      dropdown.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+    };
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (isOpen) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+      if (isOpen && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
+        closeMenu();
+      }
+    });
+
+    // Close menu when a menu item is clicked
+    dropdown.addEventListener('click', (e) => {
+      const menuItem = e.target.closest('.menu-item');
+      if (menuItem) {
+        closeMenu();
+      }
+    });
   }
 
   _btn(text, onClick, bgColor = '#444') {

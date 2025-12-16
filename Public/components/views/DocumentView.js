@@ -563,7 +563,7 @@ export class DocumentView {
       const summary = document.createElement('div');
       summary.className = 'executive-summary';
 
-      // Header row with label and source badge
+      // Header row with label, source badge, and menu
       const headerRow = document.createElement('div');
       headerRow.className = 'executive-summary-header';
 
@@ -571,6 +571,10 @@ export class DocumentView {
       label.className = 'executive-summary-label';
       label.textContent = 'At a Glance';
       headerRow.appendChild(label);
+
+      // Right side container for source badge and menu
+      const headerRight = document.createElement('div');
+      headerRight.className = 'executive-summary-header-right';
 
       const execSummary = this.documentData.executiveSummary;
 
@@ -580,9 +584,14 @@ export class DocumentView {
         sourceBadge.className = 'executive-summary-source';
         sourceBadge.textContent = execSummary.source;
         sourceBadge.title = `Primary source: ${execSummary.source}`;
-        headerRow.appendChild(sourceBadge);
+        headerRight.appendChild(sourceBadge);
       }
 
+      // Add glassmorphic three-dot menu
+      const menu = this._createExecSummaryMenu();
+      headerRight.appendChild(menu);
+
+      headerRow.appendChild(headerRight);
       summary.appendChild(headerRow);
 
       // Handle NEW structured format (situation, insight, action)
@@ -1069,6 +1078,109 @@ export class DocumentView {
       console.error('DOCX export failed:', error);
       alert(`Export failed: ${error.message}`);
     }
+  }
+
+  /**
+   * Create the glassmorphic three-dot menu for the executive summary
+   * @returns {HTMLElement} The menu container
+   */
+  _createExecSummaryMenu() {
+    const menuContainer = document.createElement('div');
+    menuContainer.className = 'exec-summary-menu';
+
+    // Three-dot trigger button
+    const triggerBtn = document.createElement('button');
+    triggerBtn.className = 'exec-summary-menu-trigger';
+    triggerBtn.setAttribute('aria-label', 'Open document menu');
+    triggerBtn.setAttribute('aria-haspopup', 'true');
+    triggerBtn.setAttribute('aria-expanded', 'false');
+    triggerBtn.innerHTML = `
+      <span class="menu-dot"></span>
+      <span class="menu-dot"></span>
+      <span class="menu-dot"></span>
+    `;
+
+    // Dropdown menu
+    const dropdown = document.createElement('div');
+    dropdown.className = 'exec-summary-menu-dropdown';
+    dropdown.setAttribute('role', 'menu');
+
+    // Export to Word
+    const exportWordItem = this._createExecMenuItem({
+      id: 'export-word-btn',
+      icon: '📄',
+      text: 'Export to Word',
+      ariaLabel: 'Export document as Word file'
+    });
+    exportWordItem.addEventListener('click', () => this._exportToDocx());
+    dropdown.appendChild(exportWordItem);
+
+    menuContainer.appendChild(triggerBtn);
+    menuContainer.appendChild(dropdown);
+
+    // Setup menu toggle behavior
+    this._setupExecMenuBehavior(triggerBtn, dropdown);
+
+    return menuContainer;
+  }
+
+  /**
+   * Create a menu item element for exec summary menu
+   */
+  _createExecMenuItem({ id, icon, text, ariaLabel }) {
+    const item = document.createElement('button');
+    item.id = id;
+    item.className = 'menu-item';
+    item.setAttribute('role', 'menuitem');
+    item.setAttribute('aria-label', ariaLabel);
+    item.innerHTML = `
+      <span class="menu-item-icon">${icon}</span>
+      <span class="menu-item-text">${text}</span>
+    `;
+    return item;
+  }
+
+  /**
+   * Setup menu open/close behavior for exec summary menu
+   */
+  _setupExecMenuBehavior(trigger, dropdown) {
+    let isOpen = false;
+
+    const openMenu = () => {
+      isOpen = true;
+      dropdown.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+    };
+
+    const closeMenu = () => {
+      isOpen = false;
+      dropdown.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+    };
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (isOpen) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+      if (isOpen && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
+        closeMenu();
+      }
+    });
+
+    // Close menu when a menu item is clicked
+    dropdown.addEventListener('click', (e) => {
+      const menuItem = e.target.closest('.menu-item');
+      if (menuItem) {
+        closeMenu();
+      }
+    });
   }
 
   /**
