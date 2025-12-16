@@ -676,15 +676,6 @@ export class DocumentView {
     }
 
     // CARDS, BADGES, AND HIGHLIGHTS AT END
-    // Swimlane topic badge (shows alignment with Gantt chart topic)
-    if (section.swimlaneTopic) {
-      const topicBadge = document.createElement('span');
-      topicBadge.className = 'swimlane-topic-badge';
-      topicBadge.textContent = section.swimlaneTopic;
-      topicBadge.title = `This section covers the "${section.swimlaneTopic}" topic from the roadmap`;
-      sectionEl.appendChild(topicBadge);
-    }
-
     // Key insight (if present)
     if (section.keyInsight) {
       const insight = document.createElement('p');

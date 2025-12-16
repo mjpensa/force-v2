@@ -21,7 +21,7 @@ const contentSlideSchema = {
     },
     title: {
       type: "string",
-      description: "A coherent phrase split across EXACTLY 3 or 4 lines (NEVER 2, NEVER 5+) with \\n. MUST read naturally as complete thought. NEVER split words. twoColumn: max 10 chars/line. threeColumn: max 18 chars/line.",
+      description: "STRICT: EXACTLY 3 or 4 lines total (count the \\n separators - must be 2 or 3). FORBIDDEN: 5+ lines will break layout. Combine short words to reduce line count. twoColumn: max 10 chars/line. threeColumn: max 18 chars/line.",
       nullable: false
     },
     paragraph1: {
@@ -255,15 +255,17 @@ FALLBACK RULE: For acronyms not listed above, preserve capitalization exactly as
 
 TAGLINE: 2-word uppercase label, MAX 21 characters. Example: "MARGIN EROSION"
 
-TITLE RULES (CRITICAL - MUST BE EXACTLY 3 OR 4 LINES):
-- MUST be EXACTLY 3 or 4 lines - NEVER 2 lines, NEVER 5+ lines
-- Count your lines: if you have 5+ words, combine shorter words on the same line
-- MUST form a coherent phrase or sentence that reads naturally when lines are combined
-- Pattern: "Word1\\nWord2\\nWord3" (3 lines) or "Word1\\nWord2\\nWord3\\nWord4" (4 lines)
-- BAD 5-line example: "Unknown\\nstatus\\nwidening\\ntechnology\\ngap" - TOO MANY LINES
-- GOOD 4-line fix (twoColumn): "Unknown\\nstatus\\ntech\\ngap widens" - each line under 10 chars
-- GOOD 3-line fix (threeColumn): "Unknown status\\nwidens the\\ntechnology divide" - each line under 18 chars, no descenders on lines 1-2
-- Think: "What is the slide saying?" then split that phrase across 3-4 lines MAXIMUM
+TITLE RULES (CRITICAL - HARD LIMIT: 3 OR 4 LINES ONLY):
+- HARD LIMIT: Titles MUST have EXACTLY 3 or 4 lines - THIS IS NON-NEGOTIABLE
+- Count your \\n separators: 2 separators = 3 lines, 3 separators = 4 lines
+- 5+ LINES WILL BREAK THE SLIDE LAYOUT - the text will overflow and be cut off
+- If your title has 5+ short words, COMBINE them: put 2-3 short words on one line
+- twoColumn titles especially prone to overflow - aggressively combine words
+- Pattern: "Word1\\nWord2\\nWord3" (3 lines) or "Line1\\nLine2\\nLine3\\nLine4" (4 lines)
+- BAD 5-line: "Unknown\\nstatus\\nwidening\\ntechnology\\ngap" - WILL OVERFLOW, REJECTED
+- GOOD 4-line: "Unknown status\\nwidening\\ntech gap\\nrisk" - combined "Unknown status" and "tech gap"
+- GOOD 3-line: "Unknown status\\nwidens tech\\ngap risk" - even more compact
+- Before finalizing: COUNT YOUR \\n CHARACTERS - if more than 3, rewrite to combine words
 - NEVER split a word across lines - keep whole words together
 - NEVER put short connector words alone on a line (to, a, an, in, on, of, for, the, and, or, is, as, by, at)
   * BAD: "CDM\\nto\\nsmart\\ncontracts" - "to" alone looks awkward
@@ -345,5 +347,10 @@ Content slide format (layout is REQUIRED for all slides):
 - threeColumn: {layout: "threeColumn", tagline, title, paragraph1, paragraph2, paragraph3}
 
 REMEMBER: Use BOTH layouts - aim for ~40-50% threeColumn slides for visual variety.
+
+FINAL VALIDATION (DO THIS BEFORE OUTPUTTING):
+- For EVERY title field, count the \\n characters
+- If any title has MORE than 3 \\n separators (which would create 5+ lines), REWRITE IT
+- Combine short words together until you have exactly 2 or 3 \\n separators (3 or 4 lines)
 `;
 }
