@@ -14,7 +14,7 @@
   max-width: var(--container-lg);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-columns: 1fr var(--sidebar-width);
   gap: var(--spacing-8);
   padding: var(--spacing-8);
   align-items: start;
@@ -36,6 +36,7 @@
   border: var(--border-glass);
   border-radius: var(--radius-glass-lg);
   box-shadow: var(--shadow-glass-2);
+  order: 2; /* Move TOC to right side */
 }
 
 /* Custom scrollbar for TOC */
@@ -123,6 +124,7 @@
   box-shadow: var(--shadow-glass-3);
   padding: var(--spacing-12);
   max-width: var(--content-width);
+  order: 1; /* Keep content on left side */
 }
 
 /* Document Header */
@@ -909,6 +911,11 @@
     border: var(--border-glass);
     border-radius: var(--radius-glass-lg);
     box-shadow: var(--shadow-glass-2);
+    order: 1; /* Reset to top on mobile */
+  }
+
+  .document-content {
+    order: 2; /* Content below TOC on mobile */
   }
 }
 

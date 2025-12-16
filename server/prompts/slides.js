@@ -40,7 +40,7 @@ const contentSlideSchema = {
       nullable: true
     }
   },
-  required: ["tagline", "title", "paragraph1", "paragraph2"]
+  required: ["layout", "tagline", "title", "paragraph1", "paragraph2"]
 };
 
 // Main schema with sections structure
@@ -174,21 +174,24 @@ Each section should have:
 
 ${sectionInstructions}
 
-TWO LAYOUT OPTIONS - Choose the best layout for each content slide:
+TWO LAYOUT OPTIONS - You MUST explicitly specify layout for EVERY content slide:
 
-LAYOUT 1: "twoColumn" (default) - Use for focused topics, executive summaries, key findings
-- Fields: tagline, title, paragraph1, paragraph2
+LAYOUT 1: "twoColumn" - Use for focused topics, executive summaries, key findings
+- MUST include: layout: "twoColumn"
+- Fields: layout, tagline, title, paragraph1, paragraph2
 - paragraph1 and paragraph2: EXACTLY 380-410 characters each
-- Omit the "layout" field (defaults to twoColumn)
 
 LAYOUT 2: "threeColumn" - Use for comparisons, multiple related points, detailed breakdowns
-- Fields: layout, tagline, title, paragraph1, paragraph2, paragraph3
 - MUST include: layout: "threeColumn"
+- Fields: layout, tagline, title, paragraph1, paragraph2, paragraph3
 - paragraph1, paragraph2, paragraph3: EXACTLY 370-390 characters each
 
-WHEN TO USE EACH LAYOUT:
-- twoColumn: Introduction, conclusion, single-topic deep dives, executive summaries
-- threeColumn: Comparing options, listing multiple benefits/features, process steps, before/during/after
+LAYOUT SELECTION RULES (CRITICAL - MUST VARY LAYOUTS):
+- You MUST use BOTH layouts throughout the presentation for visual variety
+- Aim for approximately 40-50% threeColumn slides
+- NEVER create a presentation with only one layout type
+- twoColumn: Opening slides, conclusions, single-topic deep dives, executive summaries
+- threeColumn: Comparisons, multiple benefits/features, process steps, detailed breakdowns, data-heavy topics
 
 COMMON RULES FOR ALL CONTENT SLIDES:
 
@@ -250,8 +253,10 @@ Generate JSON with:
   - "sectionTitle": Compelling section title for title slide (string)
   - "slides": Array of content slides for this section
 
-Content slide format:
-- twoColumn: {tagline, title, paragraph1, paragraph2}
+Content slide format (layout is REQUIRED for all slides):
+- twoColumn: {layout: "twoColumn", tagline, title, paragraph1, paragraph2}
 - threeColumn: {layout: "threeColumn", tagline, title, paragraph1, paragraph2, paragraph3}
+
+REMEMBER: Use BOTH layouts - aim for ~40-50% threeColumn slides for visual variety.
 `;
 }

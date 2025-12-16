@@ -13,11 +13,12 @@
   gap: var(--spacing-6);
 }
 .slide-display {
-  background: var(--glass-white-5);
-  backdrop-filter: blur(var(--blur-sm));
-  -webkit-backdrop-filter: blur(var(--blur-sm));
+  background: var(--glass-white-8);
+  backdrop-filter: blur(var(--blur-xl));
+  -webkit-backdrop-filter: blur(var(--blur-xl));
   border: var(--border-glass);
   border-radius: var(--radius-glass-xl);
+  box-shadow: var(--shadow-glass-3);
   padding: var(--spacing-6);
 }
 .slide {
