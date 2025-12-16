@@ -21,7 +21,7 @@ const contentSlideSchema = {
     },
     title: {
       type: "string",
-      description: "A coherent phrase split across 3-4 lines with \\n. MUST read naturally as complete thought. NEVER split words. twoColumn: max 10 chars/line. threeColumn: max 18 chars/line (longer words OK).",
+      description: "A coherent phrase split across EXACTLY 3 or 4 lines (NEVER 2, NEVER 5+) with \\n. MUST read naturally as complete thought. NEVER split words. twoColumn: max 10 chars/line. threeColumn: max 18 chars/line.",
       nullable: false
     },
     paragraph1: {
@@ -56,6 +56,7 @@ export const slidesSchema = {
     sections: {
       type: "array",
       description: "Array of sections, each aligned with a Gantt chart swimlane topic",
+      minItems: 1,
       items: {
         type: "object",
         properties: {
@@ -66,13 +67,14 @@ export const slidesSchema = {
           },
           sectionTitle: {
             type: "string",
-            description: "A compelling 2-4 word section title for the title slide (can differ from swimlane name)",
+            description: "A compelling 2-4 word section title for the title slide, max 30 characters (can differ from swimlane name)",
             nullable: false
           },
           slides: {
             type: "array",
-            description: "Content slides for this section (minimum 1-2 slides per section)",
-            items: contentSlideSchema
+            description: "Content slides for this section (minimum 1 slide per section)",
+            items: contentSlideSchema,
+            minItems: 1
           }
         },
         required: ["swimlane", "sectionTitle", "slides"]
@@ -95,9 +97,13 @@ function extractKeyStats(content) {
     /\d+\.?\d*\s*%/g,                          // Percentages: 23%, 4.5%
     /\$\d[\d,]*\.?\d*\s*[MBK]?(?:illion)?/gi,  // Currency: $4M, $2.5 billion
     /\d+x\b/gi,                                // Multipliers: 3x, 10x
-    /\d{1,3}(?:,\d{3})+/g,                     // Large numbers: 1,000,000
+    /\d{1,3}(?:,\d{3})+/g,                     // Large numbers with commas: 1,000,000
+    /\b\d{4,}\b/g,                             // Plain large numbers: 50000, 100000
     /Q[1-4]\s*20\d{2}/gi,                      // Quarters: Q3 2024
-    /20\d{2}/g                                 // Years: 2024, 2025
+    /\b20\d{2}\b/g,                            // Years: 2024, 2025 (word boundary)
+    /\d+\s*bps\b/gi,                           // Basis points: 150 bps, 25bps
+    /\b\d+:1\b/g,                               // Ratios: 3:1, 10:1 (X:1 format only, avoids times)
+    /\d+\s*(?:months?|years?|days?|weeks?)\b/gi // Durations: 18 months, 3 years
   ];
 
   const matches = new Set();
@@ -118,8 +124,36 @@ function extractKeyStats(content) {
  * @returns {string} Complete prompt for AI
  */
 export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = []) {
+  // Validate inputs
+  if (!userPrompt || userPrompt.trim() === '') {
+    throw new Error('userPrompt is required for slide generation');
+  }
+  if (!researchFiles || researchFiles.length === 0) {
+    throw new Error('At least one research file is required for slide generation');
+  }
+
+  // Validate and filter research files
+  const validFiles = researchFiles.filter(file => {
+    if (!file || typeof file.filename !== 'string' || typeof file.content !== 'string') {
+      return false; // Skip malformed file objects
+    }
+    return file.content.trim().length > 0; // Skip empty content
+  });
+
+  if (validFiles.length === 0) {
+    throw new Error('At least one research file with content is required for slide generation');
+  }
+
+  // Validate swimlane objects if provided
+  if (swimlanes && swimlanes.length > 0) {
+    const invalidSwimlane = swimlanes.find(s => !s || typeof s.name !== 'string' || typeof s.taskCount !== 'number');
+    if (invalidSwimlane) {
+      throw new Error('Swimlane objects must have "name" (string) and "taskCount" (number) properties');
+    }
+  }
+
   // Convert array to formatted string (consistent with other generators)
-  const researchContent = researchFiles
+  const researchContent = validFiles
     .map(file => `=== ${file.filename} ===\n${file.content}`)
     .join('\n\n');
 
@@ -143,7 +177,7 @@ ${swimlaneList}
 
 FOR EACH SECTION:
 1. "swimlane": Use the EXACT swimlane name from the list above
-2. "sectionTitle": Create a compelling 2-4 word title for the section title slide (can be more engaging than the swimlane name)
+2. "sectionTitle": Create a compelling 2-4 word title (max 30 characters) for the section title slide (can be more engaging than the swimlane name)
 3. "slides": Generate content slides summarizing research findings for this topic
 
 SLIDES PER SECTION:
@@ -166,7 +200,7 @@ Aim for 6-12 slides total, organized by theme.
 Create sections based on major themes you identify in the research.
 Each section should have:
 - "swimlane": A topic name you identify from the research
-- "sectionTitle": A compelling 2-4 word title for that topic
+- "sectionTitle": A compelling 2-4 word title (max 30 characters) for that topic
 - "slides": 1-4 content slides per section
 `;
 
@@ -195,23 +229,52 @@ LAYOUT SELECTION RULES (CRITICAL - MUST VARY LAYOUTS):
 
 COMMON RULES FOR ALL CONTENT SLIDES:
 
+ACRONYMS (CRITICAL - USE EXACT STANDARD CAPITALIZATION IN ALL FIELDS):
+Applies to: title, sectionTitle, tagline, paragraph1, paragraph2, paragraph3
+
+ALL CAPS acronyms:
+- Tech: API, SDK, UI, UX, AI, ML, REST, SQL, JSON, XML, ETL, AWS, GCP, DLT, NFT, DAO, LLM
+- Finance: CDM, CRM, DRR, ROI, KPI, ESG, AML, KYC, OTC, ISDA, EMIR, MiFID, CFTC, SEC, FCA, GDPR
+- General: B2B, P2P, M&A, IPO
+
+MIXED CASE acronyms (preserve exact capitalization):
+- FpML, SaaS, PaaS, IaaS, RegTech, FinTech, InsurTech, SupTech, PropTech, DeFi, TradFi, DevOps, GenAI
+
+CAPITALIZATION RULES:
+- NEVER alter acronym capitalization: "fpml" or "Fpml" is WRONG, "FpML" is CORRECT
+- "saas" or "SAAS" is WRONG, "SaaS" is CORRECT
+- "cdm" or "Cdm" is WRONG, "CDM" is CORRECT
+- NEVER split acronyms across lines in titles
+
+TAGLINE EXCEPTION: In taglines, mixed-case acronyms keep their standard form even though surrounding text is uppercase
+- WRONG: "SAAS MIGRATION" - SAAS is incorrect
+- CORRECT: "SaaS MIGRATION" - SaaS keeps standard capitalization
+- CORRECT: "CDM ADOPTION" - CDM is already all caps
+
+FALLBACK RULE: For acronyms not listed above, preserve capitalization exactly as found in research documents
+
 TAGLINE: 2-word uppercase label, MAX 21 characters. Example: "MARGIN EROSION"
 
-TITLE RULES (CRITICAL - MUST BE COHERENT 3 OR 4 LINE PHRASE):
+TITLE RULES (CRITICAL - MUST BE EXACTLY 3 OR 4 LINES):
+- MUST be EXACTLY 3 or 4 lines - NEVER 2 lines, NEVER 5+ lines
+- Count your lines: if you have 5+ words, combine shorter words on the same line
 - MUST form a coherent phrase or sentence that reads naturally when lines are combined
 - Pattern: "Word1\\nWord2\\nWord3" (3 lines) or "Word1\\nWord2\\nWord3\\nWord4" (4 lines)
-- Think: "What is the slide saying?" then split that phrase across lines
+- BAD 5-line example: "Unknown\\nstatus\\nwidening\\ntechnology\\ngap" - TOO MANY LINES
+- GOOD 4-line fix (twoColumn): "Unknown\\nstatus\\ntech\\ngap widens" - each line under 10 chars
+- GOOD 3-line fix (threeColumn): "Unknown status\\nwidens the\\ntechnology divide" - each line under 18 chars, no descenders on lines 1-2
+- Think: "What is the slide saying?" then split that phrase across 3-4 lines MAXIMUM
 - NEVER split a word across lines - keep whole words together
 - NEVER put short connector words alone on a line (to, a, an, in, on, of, for, the, and, or, is, as, by, at)
-  * BAD: "Fpml\\nto\\nsmart\\ncontracts" - "to" alone looks awkward
-  * GOOD: "Fpml to\\nsmart\\ncontracts" - combine short word with adjacent word
-  * GOOD: "From Fpml\\nto smart\\ncontracts" - restructure the phrase
+  * BAD: "CDM\\nto\\nsmart\\ncontracts" - "to" alone looks awkward
+  * GOOD: "CDM to\\nsmart\\ncontracts" - combine short word with adjacent word
+  * GOOD: "From CDM\\nto smart\\ncontracts" - restructure the phrase
 - twoColumn layout: Each line MAX 10 characters (1-2 short words)
 - threeColumn layout: Each line MAX 18 characters (longer words OK, e.g., "Multijurisdictional")
 - AVOID letters g, y, p, q, j on lines 1-2 for 3-line titles, lines 1-3 for 4-line titles (descenders overlap next line)
 - Last line can use any letters
-- GOOD examples: "Driving\\nModern\\nGrowth", "Data\\nFuels\\nDecisions", "Global\\nCompliance\\nPressure"
-- BAD examples: "REG\\nFINES\\nFORCE\\nmodern", "Multi\\njuris\\ndictional" (split word), "Fpml\\nto\\nsmart" (isolated connector)
+- GOOD examples: "Data\\nFuels\\nDecisions", "Market\\nShare\\nErosion", "Revenue\\nAt\\nRisk"
+- BAD examples: "Driving\\nModern\\nGrowth" (line 1 has 'g' descender), "Multi\\njuris\\ndictional" (split word), "FpML\\nto\\nsmart" (isolated connector)
 
 PARAGRAPH REQUIREMENTS (CRITICAL):
 - Each paragraph must be a complete thought ending with a period
@@ -266,12 +329,16 @@ USER REQUEST: "${userPrompt}"
 RESEARCH CONTENT:
 ${researchContent}
 
-Generate JSON with:
+OUTPUT FORMAT (CRITICAL):
+- Output ONLY valid JSON - no markdown code fences, no explanatory text before or after
+- The response must start with { and end with }
+
+JSON STRUCTURE:
 - "title": Presentation title (string)
 - "sections": Array of section objects, each with:
   - "swimlane": Topic name (string)
-  - "sectionTitle": Compelling section title for title slide (string)
-  - "slides": Array of content slides for this section
+  - "sectionTitle": Compelling section title, max 30 characters (string)
+  - "slides": Array of content slides (minimum 1 per section)
 
 Content slide format (layout is REQUIRED for all slides):
 - twoColumn: {layout: "twoColumn", tagline, title, paragraph1, paragraph2}

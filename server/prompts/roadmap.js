@@ -27,8 +27,8 @@ export const roadmapSchema = {
           bar: {
             type: "object",
             properties: {
-              startCol: { type: "number" },
-              endCol: { type: "number" },
+              startCol: { type: ["number", "null"], description: "1-based column index, or null if date unknown" },
+              endCol: { type: ["number", "null"], description: "1-based column index + 1, or null if date unknown" },
               color: { type: "string" }
             },
           },
@@ -101,7 +101,12 @@ You MUST respond with *only* a valid JSON object matching the schema.
       * **OVERLAP CHECK ALGORITHM (MUST FOLLOW FOR EVERY TASK - CRITICAL):**
         For each task found in the research, apply this test:
         - Let TASK_START = the task's start date (or start year)
-        - Let TASK_END = the task's end date (or end year). If single-date event, TASK_END = TASK_START
+        - Let TASK_END = the task's end date (or end year), determined as follows:
+          * If an explicit end date is given → use that date
+          * If described as "ongoing", "in progress", "continues", "still running" → TASK_END = RANGE_END (assume it continues through the visible range)
+          * If described as "completed", "finished", "ended", "concluded" WITHOUT a specific end date → estimate TASK_END based on context, or if unclear, assume it ended 1 year after start (conservative estimate to avoid false exclusion)
+          * If only a start date is given with NO end date and NO completion language → TASK_END = RANGE_END (assume ongoing)
+          * If a single-date event (conference, announcement, deadline) → TASK_END = TASK_START
         - Let RANGE_START = user's requested start (e.g., 2015)
         - Let RANGE_END = user's requested end (e.g., 2020)
 
@@ -116,6 +121,40 @@ You MUST respond with *only* a valid JSON object matching the schema.
         - Task 2018-2025 on range 2015-2020: INCLUDE (starts within range, ends after)
         - Task 2022-2024 on range 2015-2020: EXCLUDE (starts AFTER range ends)
         - Task 2010-2012 on range 2015-2020: EXCLUDE (ends BEFORE range starts)
+
+        **CRITICAL EXAMPLES - ONGOING TASKS (NO END DATE):**
+        - "Project started 2018" (no end date) on range 2020-2025: INCLUDE - treat as ongoing (TASK_END = 2025), startCol=1
+        - "Initiative launched 2019" (no end date) on range 2020-2025: INCLUDE - treat as ongoing, startCol=1
+        - "Program began 2026" (no end date) on range 2020-2025: EXCLUDE - starts after range ends
+
+        **CRITICAL EXAMPLES - COMPLETED TASKS (NO SPECIFIC END DATE):**
+        - "Project started 2018, now completed" on range 2020-2025: estimate end ~2019, so 2019 < 2020 → EXCLUDE (likely ended before range)
+        - "Project started 2022, recently completed" on range 2020-2025: estimate end ~2023-2024 → INCLUDE (ended within range)
+        - When in doubt about completed tasks, err toward INCLUSION
+
+        **EDGE CASE - TASK STARTS AT RANGE END:**
+        - Task starts 2025 on range 2020-2025: INCLUDE (2025 <= 2025) - place in last column
+        - Task starts 2020 on range 2020-2025: INCLUDE (2020 >= 2020) - place in first column
+
+        **RELATIVE DATES:** Convert relative time references to absolute dates:
+        - "3 years ago", "last year", "recently" → calculate from current year
+        - "next quarter", "in 6 months", "upcoming" → calculate from current year
+        - "multi-year initiative" → assume spans several years from mentioned start
+        - If current year context is unclear, use the latest year mentioned in research as reference
+
+        **DATE FORMAT CONVERSION:** Normalize dates to match timeColumns interval:
+        - "Q1 2024", "early 2024", "first half 2024" → map to 2024 (if using Years interval)
+        - "January 2024", "Jan 2024", "01/2024" → map to Q1 2024 (if using Quarters) or 2024 (if using Years)
+        - "mid-2024", "summer 2024" → map to Q2-Q3 2024 or middle of 2024
+        - "late 2024", "end of 2024", "Q4 2024" → map to end of 2024
+        - "H1 2024" (first half) → Q1-Q2 2024; "H2 2024" (second half) → Q3-Q4 2024
+
+        **MULTI-EVENT TASKS:** When research describes multiple phases of the same activity:
+        - "Project X: announced 2018, launched 2019, completed 2021" → create SEPARATE task rows:
+          * "Project X - Announcement" (2018)
+          * "Project X - Launch" (2019)
+          * "Project X - Completion" (2021)
+        - Each distinct event/phase gets its own row with appropriate taskType (milestone for launch/completion, task for others)
 
         **KEY INSIGHT:** A task that STARTED BEFORE the user's range but is STILL ONGOING or ENDS WITHIN the range MUST BE INCLUDED. The start date being before the range is NOT a reason to exclude - only exclude if the task ENDED before the range started.
 
@@ -145,9 +184,13 @@ You MUST respond with *only* a valid JSON object matching the schema.
         2. **Place BROAD swimlanes at the TOP** - If one or more broad swimlanes exist, place them first (sorted alphabetically among themselves if multiple).
         3. **Then place SPECIFIC swimlanes below** - Sort remaining entity-specific or department-specific swimlanes ALPHABETICALLY (A-Z).
         Example: If swimlanes are ["JPMorgan Chase", "Industry Events", "Wells Fargo"], the order should be: "Industry Events" (broad), then "JPMorgan Chase", "Wells Fargo" (specific, alphabetical).
-    d.  **Minimum Task Threshold (CRITICAL):** You MUST include ALL swimlanes for which you can identify AT LEAST 3 TASKS from the research content. If a potential swimlane has 3 or more tasks, it MUST be included in the final output - do not skip, omit, or overlook any qualifying swimlanes. Carefully review the research to ensure every distinct topic, entity, or category with 3+ tasks gets its own swimlane. Only exclude swimlanes with fewer than 3 tasks. When excluding a swimlane with fewer than 3 tasks, exclude both the swimlane AND its tasks from the final chart entirely. Do not redistribute excluded tasks to other swimlanes.
+    d.  **Minimum Task Threshold:** Include ALL swimlanes that have AT LEAST 1 TASK. Every task must appear in the chart - never discard tasks.
+        - If a swimlane has only 1-2 tasks, still include that swimlane and its tasks
+        - The goal is COMPREHENSIVENESS - no task should be excluded just because its swimlane is small
+        - Only exclude a swimlane if it has ZERO tasks that overlap with the time range
 4.  **CHART DATA STRUCTURE:**
-    - Add an object for each swimlane: \`{ "title": "Swimlane Name", "isSwimlane": true, "entity": "Swimlane Name" }\`
+    - Add an object for each swimlane: \`{ "title": "Swimlane Name", "isSwimlane": true, "entity": "Swimlane Name", "taskType": "task" }\`
+    - Note: Swimlanes use taskType "task" as a placeholder (the value is ignored for swimlanes but required by schema)
     - Immediately after each swimlane, add all tasks belonging to it
     - **Task Ordering Within Swimlanes (DETERMINISTIC):** Sort tasks within each swimlane by:
       1. First by startCol (ascending, null values last)
@@ -217,7 +260,7 @@ You MUST respond with *only* a valid JSON object matching the schema.
     - **COUNT CHECK:** Before finalizing, count the total number of distinct activities/events/tasks mentioned in the research. Your output should have approximately that many task rows. If your output has significantly fewer rows than activities mentioned, you are consolidating too aggressively.
     - **VERIFY TIME RANGE COVERAGE:** After extraction, review ALL items and confirm that EVERY event that OVERLAPS with the user's specified time range is included. This includes tasks that start before OR end after the range - if any portion falls within the range, include it.
     - **VERIFY EARLY DATES:** After extraction, confirm that events from the BEGINNING of the timeline are included with correct startCol values (startCol=1 for the earliest events).
-    - **VERIFY SWIMLANE COMPLETENESS:** After identifying all tasks, review to ensure EVERY distinct topic, entity, organization, or category that has 3 or more tasks is represented as its own swimlane. Do not merge or consolidate distinct topics into broader categories if they independently qualify for their own swimlane.
+    - **VERIFY SWIMLANE COMPLETENESS:** After identifying all tasks, review to ensure EVERY distinct topic, entity, organization, or category that has tasks is represented as its own swimlane. Do not merge or consolidate distinct topics into broader categories. Every task must have a swimlane home.
     - **FINAL VERIFICATION:** Re-read the research one more time and confirm you have not missed ANY event, task, milestone, deadline, or activity. Missing items is a critical failure.
     - **VERIFY TASKS STARTING BEFORE RANGE:** Specifically check for tasks/events that STARTED BEFORE the user's time range but EXTEND INTO IT. These are commonly missed. If research mentions a project starting in 2018 and the user requests 2020-2025, that project MUST be included with startCol=1 if it's still ongoing or ended after 2020.
 10. **RESEARCH ANALYSIS (REQUIRED):** You MUST generate a comprehensive analysis of the research quality in the "researchAnalysis" object. This helps users understand if their research inputs are fit for purpose.
@@ -233,7 +276,7 @@ You MUST respond with *only* a valid JSON object matching the schema.
         - "No milestones or deadlines identified"
         - "Only narrative discussion, no event-based data"
         - "Dates are too vague (e.g., 'sometime next year')"
-        - "Fewer than 3 tasks could be extracted"
+        - "Very few tasks could be extracted"
         - "No clear timeline or sequencing information"
     d.  **Recommendations:** Provide actionable suggestions for improving research, such as:
         - "Add specific dates for [topic] activities"
@@ -242,7 +285,7 @@ You MUST respond with *only* a valid JSON object matching the schema.
         - "Consider adding regulatory deadline information"
     e.  **Overall Score:** Calculate an overall fitness score (weighted average, with topics having more potential tasks weighted higher).
     f.  **Summary:** Write a 1-2 sentence summary explaining the overall research quality and key recommendations.
-    g.  **IMPORTANT:** Topics that were NOT included as swimlanes (due to <3 tasks or lack of date data) MUST still appear in this analysis with includedinChart=false and explanation of why.`;
+    g.  **IMPORTANT:** Topics that were NOT included as swimlanes (due to zero overlapping tasks or lack of date data) MUST still appear in this analysis with includedinChart=false and explanation of why.`;
 
 /**
  * Generate the complete roadmap prompt with user context

@@ -84,7 +84,7 @@ const LAYOUTS = {
     // Page number: bottom: 3.43%, left: 2.11%
     pageNumber: {
       x: pctX(2.11),
-      y: SLIDE.HEIGHT - pctY(3.43) - 0.2,
+      y: SLIDE.HEIGHT - pctY(3.43) - 0.3,  // bottom position - element height
       w: 0.5,
       h: 0.3
     }
@@ -130,7 +130,7 @@ const LAYOUTS = {
     // Page number: bottom: 3.43%, left: 2.11%
     pageNumber: {
       x: pctX(2.11),
-      y: SLIDE.HEIGHT - pctY(3.43) - 0.2,
+      y: SLIDE.HEIGHT - pctY(3.43) - 0.3,  // bottom position - element height
       w: 0.5,
       h: 0.3
     }
@@ -178,7 +178,7 @@ const LAYOUTS = {
     // Page number
     pageNumber: {
       x: pctX(2.10),
-      y: SLIDE.HEIGHT - pctY(3.43) - 0.2,
+      y: SLIDE.HEIGHT - pctY(3.43) - 0.3,  // bottom position - element height
       w: 0.5,
       h: 0.3
     }
@@ -233,14 +233,56 @@ function loadAssets() {
 // TEXT FORMATTING HELPERS
 // ============================================================================
 
-// Common acronyms to preserve in uppercase
-const ACRONYMS = [
-  'DRR', 'CDM', 'API', 'ROI', 'KPI', 'CEO', 'CTO', 'CFO', 'COO', 'CIO',
+// ALL CAPS acronyms - these get uppercased
+const ACRONYMS_UPPER = [
+  'DRR', 'CDM', 'API', 'APIS', 'ROI', 'KPI', 'KPIS', 'CEO', 'CTO', 'CFO', 'COO', 'CIO',
   'AI', 'ML', 'US', 'UK', 'EU', 'UN', 'CFTC', 'SEC', 'FDA', 'EPA',
-  'UTI', 'UPI', 'ESG', 'DEI', 'M&A', 'IPO', 'ETF', 'GDP', 'B2B', 'B2C',
-  'SaaS', 'PaaS', 'IaaS', 'AWS', 'GCP', 'IT', 'HR', 'PR', 'R&D', 'P&L',
-  'CPMI', 'IOSCO', 'OTC', 'FX', 'USD', 'EUR', 'GBP'
+  'UTI', 'UPI', 'ESG', 'DEI', 'M&A', 'IPO', 'ETF', 'ETL', 'GDP', 'B2B', 'B2C', 'P2P',
+  'AWS', 'GCP', 'IT', 'HR', 'PR', 'R&D', 'P&L',
+  'CPMI', 'IOSCO', 'OTC', 'FX', 'USD', 'EUR', 'GBP',
+  'CRM', 'ERP', 'ISDA', 'LEI', 'EMIR', 'SFTR', 'NFA',  // Note: MiFID handled in ACRONYMS_MIXED
+  'FINRA', 'OCC', 'DTCC', 'SWIFT', 'ISO', 'XML', 'JSON', 'REST', 'SDK'
 ];
+
+// MIXED CASE acronyms - preserve exact capitalization
+const ACRONYMS_MIXED = {
+  'fpml': 'FpML',
+  'saas': 'SaaS',
+  'paas': 'PaaS',
+  'iaas': 'IaaS',
+  'regtech': 'RegTech',
+  'fintech': 'FinTech',
+  'devops': 'DevOps',
+  'mifid': 'MiFID'  // Can be MiFID or MIFID depending on context
+};
+
+/**
+ * Get the correct form of an acronym
+ * Returns: { isAcronym: boolean, value: string }
+ */
+function getAcronymForm(word) {
+  if (!word) return { isAcronym: false, value: word };
+
+  const lowerWord = word.toLowerCase();
+  const upperWord = word.toUpperCase();
+
+  // Check mixed-case acronyms first (exact match needed)
+  if (ACRONYMS_MIXED[lowerWord]) {
+    return { isAcronym: true, value: ACRONYMS_MIXED[lowerWord] };
+  }
+
+  // Check ALL CAPS acronyms
+  if (ACRONYMS_UPPER.includes(upperWord)) {
+    return { isAcronym: true, value: upperWord };
+  }
+
+  // Dynamic check: 2-5 uppercase letters/numbers (already uppercase = acronym)
+  if (/^[A-Z][A-Z0-9]{1,4}$/.test(word)) {
+    return { isAcronym: true, value: word };
+  }
+
+  return { isAcronym: false, value: word };
+}
 
 /**
  * Convert text to sentence case while preserving acronyms
@@ -254,10 +296,10 @@ function toSentenceCase(text) {
     return words.map((word, wordIndex) => {
       if (/^\s*$/.test(word)) return word;
 
-      // Check if word is an acronym
-      const upperWord = word.toUpperCase();
-      if (ACRONYMS.includes(upperWord)) {
-        return upperWord;
+      // Check if word is an acronym and get correct form
+      const acronymResult = getAcronymForm(word);
+      if (acronymResult.isAcronym) {
+        return acronymResult.value;
       }
 
       // First word of first line: capitalize
@@ -272,12 +314,23 @@ function toSentenceCase(text) {
 }
 
 /**
- * Enforce exactly 4 lines for title (pad or merge as needed)
+ * Enforce 3-4 lines for title (merge if >4, keep as-is if 3-4)
+ * Does NOT pad to 4 lines - allows clean 3-line titles
  */
-function enforceExactlyFourLines(title) {
-  if (!title) return '\n\n\n';
+function enforceTitleLineCount(title) {
+  if (!title) return '';
 
   let lines = title.split('\n').map(l => l.trim()).filter(l => l);
+
+  // If already 3 or 4 lines, keep as-is
+  if (lines.length >= 3 && lines.length <= 4) {
+    return lines.join('\n');
+  }
+
+  // If fewer than 3 lines, just return what we have (don't pad)
+  if (lines.length < 3) {
+    return lines.join('\n');
+  }
 
   // Merge lines if more than 4
   while (lines.length > 4) {
@@ -296,20 +349,33 @@ function enforceExactlyFourLines(title) {
     lines.splice(mergeIndex + 1, 1);
   }
 
-  // Pad if fewer than 4 lines
-  while (lines.length < 4) {
-    lines.push('');
-  }
-
   return lines.join('\n');
 }
 
 /**
- * Format title: sentence case + enforce 4 lines
+ * Format title: sentence case + enforce 3-4 lines
  */
 function formatTitle(title) {
   const sentenceCase = toSentenceCase(title);
-  return enforceExactlyFourLines(sentenceCase);
+  return enforceTitleLineCount(sentenceCase);
+}
+
+/**
+ * Format section title: preserve acronyms but don't apply full sentence case
+ * (Section titles are typically title case, not sentence case)
+ */
+function formatSectionTitle(title) {
+  if (!title) return '';
+
+  // Apply acronym corrections to each word
+  return title.split(/(\s+)/).map(word => {
+    if (/^\s*$/.test(word)) return word;
+    const acronymResult = getAcronymForm(word);
+    if (acronymResult.isAcronym) {
+      return acronymResult.value;
+    }
+    return word;
+  }).join('');
 }
 
 /**
@@ -395,7 +461,8 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
 
   // Swimlane label (white on dark - per updated browser CSS)
   if (data.swimlane) {
-    slide.addText(data.swimlane.toUpperCase(), {
+    const swimlaneText = formatSectionTitle(data.swimlane).toUpperCase();
+    slide.addText(swimlaneText, {
       x: L.swimlaneLabel.x,
       y: L.swimlaneLabel.y,
       w: L.swimlaneLabel.w,
@@ -410,7 +477,7 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
   }
 
   // Main section title (centered, large, thin font)
-  const titleText = data.sectionTitle || data.swimlane || '';
+  const titleText = formatSectionTitle(data.sectionTitle || data.swimlane || '');
   slide.addText(titleText, {
     x: L.title.x,
     y: L.title.y,
@@ -665,6 +732,12 @@ function flattenSections(sections) {
   const flatSlides = [];
 
   for (const section of sections) {
+    // Skip sections without valid swimlane
+    if (!section.swimlane) {
+      console.warn('[PPT Export v2] Skipping section with no swimlane');
+      continue;
+    }
+
     // Add section title slide
     flatSlides.push({
       layout: 'sectionTitle',
@@ -673,8 +746,10 @@ function flattenSections(sections) {
     });
 
     // Add all content slides for this section
-    if (section.slides?.length) {
+    if (section.slides && Array.isArray(section.slides) && section.slides.length > 0) {
       flatSlides.push(...section.slides);
+    } else {
+      console.warn(`[PPT Export v2] Section "${section.swimlane}" has no content slides`);
     }
   }
 
@@ -692,6 +767,11 @@ function flattenSections(sections) {
  * @returns {Promise<Buffer>} PowerPoint file as Node buffer
  */
 export async function generatePptx(slidesData, options = {}) {
+  // Validate input
+  if (!slidesData || typeof slidesData !== 'object') {
+    throw new Error('Invalid slides data: expected object');
+  }
+
   // Load assets on first call
   loadAssets();
 
@@ -714,11 +794,16 @@ export async function generatePptx(slidesData, options = {}) {
 
   // Get slides array from sections
   let slidesArray = [];
-  if (slidesData.sections?.length) {
+  if (slidesData.sections && Array.isArray(slidesData.sections) && slidesData.sections.length > 0) {
     console.log(`[PPT Export v2] Processing ${slidesData.sections.length} sections`);
     slidesArray = flattenSections(slidesData.sections);
   } else {
-    console.log('[PPT Export v2] No sections found in slides data');
+    console.warn('[PPT Export v2] No sections found in slides data - generating empty presentation');
+  }
+
+  // Warn if no slides
+  if (slidesArray.length === 0) {
+    console.warn('[PPT Export v2] Warning: No slides to render');
   }
 
   // Render each slide

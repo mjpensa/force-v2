@@ -4,6 +4,7 @@ export class ResearchAnalysisView {
     this.sessionId = sessionId;
     this.container = null;
     this.expandedThemes = new Set(); // Track expanded theme cards
+    this.themeClickHandlers = new Map(); // Store event handlers for cleanup
   }
   render() {
     this.container = document.createElement('div');
@@ -54,7 +55,14 @@ export class ResearchAnalysisView {
     if (this.analysisData.generatedAt) {
       const timestamp = document.createElement('span');
       timestamp.className = 'analysis-timestamp';
-      timestamp.textContent = `Generated: ${new Date(this.analysisData.generatedAt).toLocaleString()}`;
+      try {
+        const date = new Date(this.analysisData.generatedAt);
+        timestamp.textContent = isNaN(date.getTime())
+          ? 'Generated: Unknown date'
+          : `Generated: ${date.toLocaleString()}`;
+      } catch {
+        timestamp.textContent = 'Generated: Unknown date';
+      }
       titleSection.appendChild(timestamp);
     }
     header.appendChild(titleSection);
@@ -124,9 +132,13 @@ export class ResearchAnalysisView {
     section.appendChild(verdictContainer);
     const statsGrid = document.createElement('div');
     statsGrid.className = 'readiness-stats-grid';
-    statsGrid.appendChild(this._createStatCard('Ready Themes', `${readiness.readyThemes}/${readiness.totalThemes}`, 'themes'));
-    statsGrid.appendChild(this._createStatCard('Estimated Tasks', readiness.estimatedTasks, 'tasks'));
-    statsGrid.appendChild(this._createStatCard('Recommended Interval', this._formatInterval(readiness.recommendedTimeInterval), 'interval'));
+    const readyThemes = readiness.readyThemes ?? 0;
+    const totalThemes = readiness.totalThemes ?? 0;
+    const estimatedTasks = readiness.estimatedTasks ?? '—';
+    const interval = this._formatInterval(readiness.recommendedTimeInterval);
+    statsGrid.appendChild(this._createStatCard('Ready Themes', `${readyThemes}/${totalThemes}`, 'themes'));
+    statsGrid.appendChild(this._createStatCard('Estimated Tasks', estimatedTasks, 'tasks'));
+    statsGrid.appendChild(this._createStatCard('Recommended Interval', interval, 'interval'));
     section.appendChild(statsGrid);
     return section;
   }
@@ -166,6 +178,11 @@ export class ResearchAnalysisView {
       this.analysisData.themes.forEach((theme, index) => {
         themesContainer.appendChild(this._renderThemeCard(theme, index));
       });
+    } else {
+      const emptyMsg = document.createElement('p');
+      emptyMsg.className = 'themes-empty-message';
+      emptyMsg.textContent = 'No themes have been analyzed yet.';
+      themesContainer.appendChild(emptyMsg);
     }
     section.appendChild(themesContainer);
     return section;
@@ -229,7 +246,8 @@ export class ResearchAnalysisView {
       content.appendChild(this._renderSampleEventsTable(theme.sampleEvents));
     }
     card.appendChild(content);
-    header.addEventListener('click', () => {
+    // Click handler for expand/collapse
+    const clickHandler = () => {
       const isExpanded = header.getAttribute('aria-expanded') === 'true';
       header.setAttribute('aria-expanded', !isExpanded);
       content.classList.toggle('collapsed');
@@ -239,7 +257,18 @@ export class ResearchAnalysisView {
       } else {
         this.expandedThemes.delete(index);
       }
-    });
+    };
+    // Keyboard handler for accessibility (Enter/Space)
+    const keydownHandler = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        clickHandler();
+      }
+    };
+    header.addEventListener('click', clickHandler);
+    header.addEventListener('keydown', keydownHandler);
+    // Store handlers for cleanup
+    this.themeClickHandlers.set(header, { click: clickHandler, keydown: keydownHandler });
     return card;
   }
   _renderSampleEventsTable(events) {
@@ -276,7 +305,19 @@ export class ResearchAnalysisView {
   }
   _renderDataCompleteness() {
     const data = this.analysisData.dataCompleteness;
-    if (!data) return document.createElement('div');
+    if (!data) {
+      const section = document.createElement('section');
+      section.className = 'analysis-section data-completeness-section';
+      const sectionTitle = document.createElement('h2');
+      sectionTitle.className = 'section-title';
+      sectionTitle.textContent = 'Data Completeness';
+      section.appendChild(sectionTitle);
+      const emptyMsg = document.createElement('p');
+      emptyMsg.className = 'completeness-empty-message';
+      emptyMsg.textContent = 'Data completeness information is not available.';
+      section.appendChild(emptyMsg);
+      return section;
+    }
     const section = document.createElement('section');
     section.className = 'analysis-section data-completeness-section';
     const sectionTitle = document.createElement('h2');
@@ -322,9 +363,12 @@ export class ResearchAnalysisView {
       { key: 'relative', label: 'Relative', color: '#ef4444' },
       { key: 'vague', label: 'Vague', color: '#dc2626' }
     ];
-    const total = Object.values(breakdown).reduce((a, b) => a + b, 0) || 1;
+    const total = Object.values(breakdown)
+      .filter(v => typeof v === 'number' && !isNaN(v))
+      .reduce((a, b) => a + b, 0) || 1;
     categories.forEach(cat => {
-      const value = breakdown[cat.key] || 0;
+      const rawValue = breakdown[cat.key];
+      const value = (typeof rawValue === 'number' && !isNaN(rawValue)) ? rawValue : 0;
       const percent = Math.round((value / total) * 100);
       const barContainer = document.createElement('div');
       barContainer.className = 'bar-container';
@@ -394,28 +438,31 @@ export class ResearchAnalysisView {
     return section;
   }
   _createScoreBadge(score, rating, size = 'medium') {
+    const safeScore = (typeof score === 'number' && !isNaN(score)) ? score : '—';
     const badge = document.createElement('div');
     badge.className = `score-badge score-${this._getRatingClass(rating || this._scoreToRating(score))} size-${size}`;
     badge.innerHTML = `
-      <span class="score-value">${score}</span>
+      <span class="score-value">${safeScore}</span>
       <span class="score-max">/10</span>
     `;
     return badge;
   }
   _createStatCard(label, value, type) {
+    const safeValue = value ?? '—';
     const card = document.createElement('div');
     card.className = `stat-card stat-${type}`;
     card.innerHTML = `
-      <div class="stat-value">${value}</div>
+      <div class="stat-value">${safeValue}</div>
       <div class="stat-label">${label}</div>
     `;
     return card;
   }
   _createMetricCard(label, value) {
+    const safeValue = value ?? '—';
     const card = document.createElement('div');
     card.className = 'metric-card';
     card.innerHTML = `
-      <div class="metric-value">${value}</div>
+      <div class="metric-value">${safeValue}</div>
       <div class="metric-label">${label}</div>
     `;
     return card;
@@ -477,10 +524,14 @@ export class ResearchAnalysisView {
     return formats[quality] || quality;
   }
   _scoreToRating(score) {
-    if (score >= 9) return 'excellent';
-    if (score >= 7) return 'good';
-    if (score >= 5) return 'adequate';
-    if (score >= 3) return 'poor';
+    // Validate score is a valid number
+    if (typeof score !== 'number' || isNaN(score)) return 'adequate';
+    // Clamp to valid range
+    const clampedScore = Math.max(0, Math.min(10, score));
+    if (clampedScore >= 9) return 'excellent';
+    if (clampedScore >= 7) return 'good';
+    if (clampedScore >= 5) return 'adequate';
+    if (clampedScore >= 3) return 'poor';
     return 'inadequate';
   }
   _getRatingClass(rating) {
@@ -493,6 +544,12 @@ export class ResearchAnalysisView {
     return div.innerHTML;
   }
   destroy() {
+    // Remove theme click and keydown handlers
+    this.themeClickHandlers.forEach((handlers, element) => {
+      element.removeEventListener('click', handlers.click);
+      element.removeEventListener('keydown', handlers.keydown);
+    });
+    this.themeClickHandlers.clear();
     this.expandedThemes.clear();
     if (this.container) {
       this.container.innerHTML = '';

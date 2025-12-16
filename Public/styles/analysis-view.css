@@ -1061,6 +1061,16 @@
   margin: 0 0 var(--spacing-2) 0;
   max-width: 400px;
 }
+/* Empty state messages for sections */
+.themes-empty-message,
+.completeness-empty-message {
+  font-size: var(--text-base);
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  text-align: center;
+  padding: var(--spacing-6) var(--spacing-4);
+  margin: 0;
+}
 @media (max-width: 639px) {
   .research-analysis-view {
     padding: var(--spacing-4);
