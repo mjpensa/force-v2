@@ -17,6 +17,7 @@ import crypto from 'crypto';
 import { generateAllContent, regenerateContent } from '../generators.js';
 import { uploadMiddleware, handleUploadErrors } from '../middleware.js';
 import { generatePptx } from '../templates/ppt-export-service.js';
+import { generateDocx } from '../templates/docx-export-service.js';
 
 const router = express.Router();
 
@@ -354,6 +355,65 @@ router.get('/:sessionId/slides/export', async (req, res) => {
 });
 
 /**
+ * GET /api/content/:sessionId/document/export
+ * Exports document from a session as a Word file (.docx)
+ *
+ * NOTE: This route MUST be defined before /:sessionId/:viewType to avoid being shadowed
+ *
+ * URL params:
+ * - sessionId: string - Session ID
+ *
+ * Response: Word document file (.docx) download
+ */
+router.get('/:sessionId/document/export', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    // Check if session exists
+    const session = sessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        error: 'Session not found',
+        message: 'Session may have expired. Please generate new content.'
+      });
+    }
+
+    const documentResult = session.content.document;
+    if (!documentResult || !documentResult.success || !documentResult.data) {
+      return res.status(404).json({
+        error: 'Document not available',
+        message: documentResult?.error || 'Document generation failed or not yet complete'
+      });
+    }
+
+    const documentData = documentResult.data;
+
+    // Generate the Word document
+    const docxBuffer = await generateDocx(documentData, {
+      creator: 'BIP'
+    });
+
+    // Create filename from document title
+    const title = documentData.title || 'Executive_Summary';
+    const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
+    const filename = `${safeTitle}.docx`;
+
+    // Set headers for file download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', docxBuffer.length);
+
+    res.send(docxBuffer);
+
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to generate Word document',
+      details: error.message
+    });
+  }
+});
+
+/**
  * GET /api/content/:sessionId/:viewType
  * Retrieves content for a specific view type from a session
  *
@@ -476,6 +536,51 @@ router.post('/slides/export', express.json({ limit: '50mb' }), async (req, res) 
   } catch (error) {
     res.status(500).json({
       error: 'Failed to generate PowerPoint file',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/content/document/export
+ * Exports document as a Word file (direct POST, no session)
+ *
+ * Request body:
+ * - document: object (document data to export)
+ *
+ * Response: Word document file (.docx) download
+ */
+router.post('/document/export', express.json({ limit: '50mb' }), async (req, res) => {
+  try {
+    const { document } = req.body;
+
+    if (!document || !document.title) {
+      return res.status(400).json({
+        error: 'Invalid document data',
+        message: 'Request must include document object with at least a title'
+      });
+    }
+
+    // Generate the Word document
+    const docxBuffer = await generateDocx(document, {
+      creator: 'BIP'
+    });
+
+    // Create filename from document title
+    const title = document.title || 'Executive_Summary';
+    const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
+    const filename = `${safeTitle}.docx`;
+
+    // Set headers for file download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', docxBuffer.length);
+
+    res.send(docxBuffer);
+
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to generate Word document',
       details: error.message
     });
   }

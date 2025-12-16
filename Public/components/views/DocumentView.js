@@ -497,10 +497,43 @@ export class DocumentView {
     const header = document.createElement('div');
     header.className = 'document-header';
 
+    // Title row with export button
+    const titleRow = document.createElement('div');
+    titleRow.className = 'document-title-row';
+    titleRow.style.cssText = 'display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;';
+
     const title = document.createElement('h1');
     title.className = 'document-title';
     title.textContent = this.documentData.title;
-    header.appendChild(title);
+    titleRow.appendChild(title);
+
+    // Export button (only show if sessionId is available)
+    if (this.sessionId) {
+      const exportBtn = document.createElement('button');
+      exportBtn.className = 'document-export-btn';
+      exportBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export to Word
+      `;
+      exportBtn.style.cssText = `
+        display: inline-flex; align-items: center;
+        padding: 8px 16px; cursor: pointer;
+        background: #DA291C; color: white;
+        border: none; border-radius: 4px; font-size: 13px;
+        font-weight: 500; white-space: nowrap;
+        transition: background 0.2s;
+      `;
+      exportBtn.onmouseover = () => exportBtn.style.background = '#b8231a';
+      exportBtn.onmouseout = () => exportBtn.style.background = '#DA291C';
+      exportBtn.onclick = () => this._exportToDocx();
+      titleRow.appendChild(exportBtn);
+    }
+
+    header.appendChild(titleRow);
 
     if (this.documentData.subtitle) {
       const subtitle = document.createElement('p');
@@ -994,6 +1027,47 @@ export class DocumentView {
     const activeLink = this.tocLinks.get(sectionId);
     if (activeLink) {
       activeLink.classList.add('active');
+    }
+  }
+
+  /**
+   * Export document to Word (.docx) file
+   */
+  async _exportToDocx() {
+    if (!this.sessionId) {
+      alert('Export requires a valid session. Please regenerate the document.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/content/${this.sessionId}/document/export`);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Export failed');
+      }
+
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'Executive_Summary.docx';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/);
+        if (match) filename = match[1];
+      }
+
+      // Download the file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('DOCX export failed:', error);
+      alert(`Export failed: ${error.message}`);
     }
   }
 
