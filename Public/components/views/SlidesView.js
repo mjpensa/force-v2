@@ -502,9 +502,16 @@ export class SlidesView {
     // ALWAYS show demo slides first for template reference
     this.slides = [DEMO_SLIDE_TWO_COL, DEMO_SLIDE_THREE_COL];
 
+    // Store sections for TOC generation
+    this.sections = data?.sections || [];
+
+    // Track section start indices for TOC navigation
+    this.sectionStartIndices = new Map();
+    this.sectionStartIndices.set('demo', 0); // Demo slides start at index 0
+
     // Handle sections structure (aligned with Gantt swimlanes)
-    if (data?.sections?.length) {
-      const flattenedSlides = this._flattenSections(data.sections);
+    if (this.sections.length) {
+      const flattenedSlides = this._flattenSections(this.sections);
       this.slides = this.slides.concat(flattenedSlides);
     }
 
@@ -512,6 +519,10 @@ export class SlidesView {
     this.slideEl = null;
     this.counter = null;
     this._keyHandler = null;
+
+    // TOC management
+    this.tocLinks = new Map();
+    this.tocContainer = null;
   }
 
   /**
@@ -522,58 +533,159 @@ export class SlidesView {
    */
   _flattenSections(sections) {
     const flatSlides = [];
+    // Start after demo slides (2 demo slides at indices 0 and 1)
+    let currentIndex = 2;
 
     for (const section of sections) {
+      // Track section start index for TOC navigation
+      const sectionId = section.swimlane.toLowerCase().replace(/\s+/g, '-');
+      this.sectionStartIndices.set(sectionId, currentIndex);
+
       // Add section title slide
       flatSlides.push({
         layout: 'sectionTitle',
         swimlane: section.swimlane,
-        sectionTitle: section.sectionTitle || section.swimlane
+        sectionTitle: section.sectionTitle || section.swimlane,
+        _sectionId: sectionId
       });
+      currentIndex++;
 
       // Add all content slides for this section
       if (section.slides?.length) {
-        flatSlides.push(...section.slides);
+        flatSlides.push(...section.slides.map(slide => ({
+          ...slide,
+          _sectionId: sectionId
+        })));
+        currentIndex += section.slides.length;
       }
     }
 
     return flatSlides;
   }
 
+  /**
+   * Render the Table of Contents sidebar
+   * Mirrors the DocumentView TOC implementation
+   */
+  _renderTableOfContents() {
+    const tocContainer = document.createElement('div');
+    tocContainer.className = 'slides-toc';
+
+    const tocTitle = document.createElement('h3');
+    tocTitle.className = 'toc-title';
+    tocTitle.textContent = 'Contents';
+    tocContainer.appendChild(tocTitle);
+
+    const tocList = document.createElement('ul');
+    tocList.className = 'toc-list';
+
+    // 1. Demo templates link
+    const demoLi = document.createElement('li');
+    const demoLink = document.createElement('a');
+    demoLink.className = 'toc-link';
+    demoLink.href = '#demo';
+    demoLink.textContent = 'Templates';
+    demoLink.setAttribute('data-section-id', 'demo');
+
+    demoLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      this._goToSection('demo');
+    });
+
+    this.tocLinks.set('demo', demoLink);
+    demoLi.appendChild(demoLink);
+    tocList.appendChild(demoLi);
+
+    // 2. Section links from data
+    this.sections.forEach(section => {
+      const sectionId = section.swimlane.toLowerCase().replace(/\s+/g, '-');
+
+      const li = document.createElement('li');
+      const link = document.createElement('a');
+      link.className = 'toc-link';
+      link.href = `#${sectionId}`;
+      link.textContent = section.swimlane;
+      link.setAttribute('data-section-id', sectionId);
+
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        this._goToSection(sectionId);
+      });
+
+      this.tocLinks.set(sectionId, link);
+      li.appendChild(link);
+      tocList.appendChild(li);
+    });
+
+    tocContainer.appendChild(tocList);
+    this.tocContainer = tocContainer;
+    return tocContainer;
+  }
+
+  /**
+   * Navigate to a section by its ID
+   */
+  _goToSection(sectionId) {
+    const targetIndex = this.sectionStartIndices.get(sectionId);
+    if (targetIndex !== undefined) {
+      this.index = targetIndex;
+      this._update();
+    }
+  }
+
+  /**
+   * Update active section in TOC based on current slide
+   */
+  _updateActiveTocSection() {
+    const currentSlide = this.slides[this.index];
+    let activeSectionId = 'demo';
+
+    // Determine which section the current slide belongs to
+    if (this.index < 2) {
+      activeSectionId = 'demo';
+    } else if (currentSlide?._sectionId) {
+      activeSectionId = currentSlide._sectionId;
+    }
+
+    // Remove active class from all links
+    this.tocLinks.forEach(link => {
+      link.classList.remove('active');
+    });
+
+    // Add active class to current section link
+    const activeLink = this.tocLinks.get(activeSectionId);
+    if (activeLink) {
+      activeLink.classList.add('active');
+    }
+  }
+
   render() {
     const container = document.createElement('div');
-    container.style.cssText = `
-      width: 100%; height: 100%;
-      display: flex; flex-direction: column;
-      background: #1a1a1a;
-    `;
+    container.className = 'slides-view-container';
+
+    // Main layout wrapper (TOC + slides area)
+    const mainLayout = document.createElement('div');
+    mainLayout.className = 'slides-main-layout';
+
+    // Add TOC sidebar
+    const toc = this._renderTableOfContents();
+    mainLayout.appendChild(toc);
+
+    // Slides area (wrapper + nav)
+    const slidesArea = document.createElement('div');
+    slidesArea.className = 'slides-area';
 
     // Slide wrapper (centered, 16:9)
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = `
-      flex: 1; display: flex;
-      justify-content: center; align-items: center;
-      padding: 20px;
-    `;
+    wrapper.className = 'slides-wrapper';
 
     this.slideEl = document.createElement('div');
-    this.slideEl.style.cssText = `
-      width: 100%; max-width: 1200px;
-      aspect-ratio: 16 / 9;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      overflow: hidden; position: relative;
-      background: white;
-      container-type: inline-size;
-    `;
+    this.slideEl.className = 'slide-viewport';
     wrapper.appendChild(this.slideEl);
 
     // Navigation bar
     const nav = document.createElement('div');
-    nav.style.cssText = `
-      padding: 16px; display: flex;
-      justify-content: center; align-items: center;
-      gap: 24px; background: #2a2a2a;
-    `;
+    nav.className = 'slides-nav';
 
     const prevBtn = this._btn('← Prev', () => this.go(-1));
     const nextBtn = this._btn('Next →', () => this.go(1));
@@ -587,8 +699,11 @@ export class SlidesView {
     nav.appendChild(nextBtn);
     nav.appendChild(exportBtn);
 
-    container.appendChild(wrapper);
-    container.appendChild(nav);
+    slidesArea.appendChild(wrapper);
+    slidesArea.appendChild(nav);
+
+    mainLayout.appendChild(slidesArea);
+    container.appendChild(mainLayout);
 
     // Keyboard navigation
     this._keyHandler = e => {
@@ -664,6 +779,8 @@ export class SlidesView {
     this.slideEl.innerHTML = '';
     const content = renderSlide(this.slides[this.index], this.index);
     this.slideEl.appendChild(content);
+    // Update TOC active state
+    this._updateActiveTocSection();
   }
 
   destroy() {
