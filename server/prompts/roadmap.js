@@ -98,7 +98,7 @@ You MUST respond with *only* a valid JSON object matching the schema.
     - Check the user's prompt for an *explicitly requested* time range (e.g., "2020-2030", "2024-2026").
     - **IF USER SPECIFIES A TIME RANGE:** Use that range for the timeColumns array.
       * The timeColumns array MUST start at the user's specified start date and end at the user's specified end date.
-      * **OVERLAP CHECK ALGORITHM (MUST FOLLOW FOR EVERY TASK):**
+      * **OVERLAP CHECK ALGORITHM (MUST FOLLOW FOR EVERY TASK - CRITICAL):**
         For each task found in the research, apply this test:
         - Let TASK_START = the task's start date (or start year)
         - Let TASK_END = the task's end date (or end year). If single-date event, TASK_END = TASK_START
@@ -108,17 +108,22 @@ You MUST respond with *only* a valid JSON object matching the schema.
         **INCLUDE the task if:** TASK_END >= RANGE_START AND TASK_START <= RANGE_END
         **EXCLUDE the task if:** TASK_END < RANGE_START OR TASK_START > RANGE_END
 
-        This means:
-        - Task 2010-2018 on range 2015-2020: 2018 >= 2015 AND 2010 <= 2020 → TRUE → INCLUDE
-        - Task 2018-2025 on range 2015-2020: 2025 >= 2015 AND 2018 <= 2020 → TRUE → INCLUDE
-        - Task 2010-2025 on range 2015-2020: 2025 >= 2015 AND 2010 <= 2020 → TRUE → INCLUDE
-        - Task 2022-2024 on range 2015-2020: 2024 >= 2015 AND 2022 <= 2020 → FALSE → EXCLUDE
-        - Task 2010-2012 on range 2015-2020: 2012 >= 2015 → FALSE → EXCLUDE
+        **CRITICAL EXAMPLES - TASKS STARTING BEFORE THE RANGE:**
+        - Task 2010-2018 on range 2015-2020: INCLUDE (starts before range but ENDS WITHIN IT at 2018)
+        - Task 2010-2016 on range 2015-2020: INCLUDE (starts before range but ENDS WITHIN IT at 2016)
+        - Task 2010-2015 on range 2015-2020: INCLUDE (starts before range but ENDS AT range start)
+        - Task 2010-2025 on range 2015-2020: INCLUDE (starts before AND ends after - spans entire range)
+        - Task 2018-2025 on range 2015-2020: INCLUDE (starts within range, ends after)
+        - Task 2022-2024 on range 2015-2020: EXCLUDE (starts AFTER range ends)
+        - Task 2010-2012 on range 2015-2020: EXCLUDE (ends BEFORE range starts)
+
+        **KEY INSIGHT:** A task that STARTED BEFORE the user's range but is STILL ONGOING or ENDS WITHIN the range MUST BE INCLUDED. The start date being before the range is NOT a reason to exclude - only exclude if the task ENDED before the range started.
 
       * **CLIPPING RULES for included tasks:**
-        - If TASK_START < RANGE_START → set startCol=1 (clip to chart start)
+        - If TASK_START < RANGE_START → set startCol=1 (clip to chart start, task bar begins at first column)
         - If TASK_END > RANGE_END → set endCol to (number of timeColumns + 1) (clip to chart end)
-        - If both → clip both ends
+        - If both → clip both ends (task spans entire visible chart)
+        - **IMPORTANT:** Clipping means the task IS INCLUDED but its bar is truncated to fit the visible range. A clipped task at startCol=1 indicates it began before the chart's time range.
       * **When dates are ambiguous:** If a task's timing is unclear, INCLUDE it (err on the side of inclusion).
     - **IF NO USER-SPECIFIED RANGE:** Scan ALL research files to identify EVERY date mentioned (past, present, and future). Use the EARLIEST date found as the start and the LATEST date as the end.
     - The timeColumns array MUST align with the determined time range (column 1 = first time period).
@@ -188,7 +193,7 @@ You MUST respond with *only* a valid JSON object matching the schema.
     - **Priority:** If a task matches both "decision" and "milestone" keywords, classify as "decision"
     - **IMPORTANT:** Executive View will only show tasks where taskType is "milestone" or "decision"
 8.  **SANITIZATION:** All string values MUST be valid JSON strings. You MUST properly escape any characters that would break JSON, such as double quotes (\\") and newlines (\\\\n), within the string value itself.
-9.  **COMPREHENSIVENESS (CRITICAL - EXTRACT EVERYTHING):** You MUST extract ALL events from the research. This is the most important rule. Scan the research files exhaustively and include:
+9.  **COMPREHENSIVENESS (CRITICAL - EXTRACT EVERYTHING - THIS IS THE MOST IMPORTANT RULE):** You MUST extract ALL events from the research. Scan the research files exhaustively and include:
     - **Tasks:** Any work item, activity, implementation, development, testing, or operational task
     - **Milestones:** Any deliverable, phase completion, launch, go-live, release, or achievement
     - **Decisions:** Any approval, gate, review, sign-off, or decision point
@@ -197,19 +202,24 @@ You MUST respond with *only* a valid JSON object matching the schema.
     - **Dependencies:** Any prerequisite, blocker, or sequential requirement mentioned
     - **Phases:** Any project phase, stage, sprint, or iteration
     - **Historical Events:** Any PAST or COMPLETED activities - these provide essential context
-    **EXTRACTION RULES:**
-    - Do NOT summarize or consolidate similar items - include each one separately
-    - Do NOT skip items because they seem minor - include everything mentioned
+    **EXTRACTION RULES (MANDATORY - DO NOT VIOLATE):**
+    - Do NOT summarize or consolidate similar items - include each one separately with its own row
+    - Do NOT skip items because they seem minor or redundant - include everything mentioned
     - Do NOT skip items because they are in the PAST - use the OVERLAP CHECK ALGORITHM from section 1 to decide inclusion
     - Do NOT skip items because they START BEFORE the time range - if the task ENDS within or after the range start, INCLUDE it
     - Do NOT skip items because they EXTEND BEYOND the time range - if the task STARTS within or before the range end, INCLUDE it
+    - Do NOT skip items because they lack precise dates - use reasonable estimates or null for bar values
+    - Do NOT skip items because similar tasks already exist - each distinct activity gets its own row
     - **REMINDER: Apply the OVERLAP CHECK ALGORITHM:** TASK_END >= RANGE_START AND TASK_START <= RANGE_END → INCLUDE
     - If an item appears in multiple places, include it once with the most complete information
     - If dates are mentioned for ANY activity, that activity MUST appear in the chart (if it overlaps with the time range)
     - Err on the side of INCLUSION - when in doubt, add it to the chart
+    - **COUNT CHECK:** Before finalizing, count the total number of distinct activities/events/tasks mentioned in the research. Your output should have approximately that many task rows. If your output has significantly fewer rows than activities mentioned, you are consolidating too aggressively.
     - **VERIFY TIME RANGE COVERAGE:** After extraction, review ALL items and confirm that EVERY event that OVERLAPS with the user's specified time range is included. This includes tasks that start before OR end after the range - if any portion falls within the range, include it.
     - **VERIFY EARLY DATES:** After extraction, confirm that events from the BEGINNING of the timeline are included with correct startCol values (startCol=1 for the earliest events).
     - **VERIFY SWIMLANE COMPLETENESS:** After identifying all tasks, review to ensure EVERY distinct topic, entity, organization, or category that has 3 or more tasks is represented as its own swimlane. Do not merge or consolidate distinct topics into broader categories if they independently qualify for their own swimlane.
+    - **FINAL VERIFICATION:** Re-read the research one more time and confirm you have not missed ANY event, task, milestone, deadline, or activity. Missing items is a critical failure.
+    - **VERIFY TASKS STARTING BEFORE RANGE:** Specifically check for tasks/events that STARTED BEFORE the user's time range but EXTEND INTO IT. These are commonly missed. If research mentions a project starting in 2018 and the user requests 2020-2025, that project MUST be included with startCol=1 if it's still ongoing or ended after 2020.
 10. **RESEARCH ANALYSIS (REQUIRED):** You MUST generate a comprehensive analysis of the research quality in the "researchAnalysis" object. This helps users understand if their research inputs are fit for purpose.
     a.  **Topic Identification:** Identify ALL major topics, themes, entities, or focus areas discussed in the research, whether or not they were included as swimlanes.
     b.  **Fitness Scoring (1-10 scale):** For each topic, rate how well the research supports Gantt chart creation:
