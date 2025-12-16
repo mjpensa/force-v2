@@ -86,7 +86,9 @@ export class SidebarNav {
       <!-- Header with Home Link -->
       <div class="icon-rail-header">
         <a href="/" class="icon-rail-home" title="Create New Roadmap">
-          ${this._getHomeIcon()}
+          <div class="icon-rail-home-icon">
+            ${this._getHomeIcon()}
+          </div>
           <span class="icon-rail-home-text">New Roadmap</span>
         </a>
       </div>

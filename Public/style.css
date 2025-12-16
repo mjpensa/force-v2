@@ -3129,12 +3129,23 @@ body.dragging {
   display: flex;
   align-items: center;
   justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--icon-rail-transition);
+}
+.icon-rail:hover .icon-rail-home,
+.icon-rail.expanded .icon-rail-home {
+  justify-content: flex-start;
+}
+.icon-rail-home-icon {
   width: 40px;
   height: 40px;
-  padding: 0;
+  min-width: 40px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 12px;
-  cursor: pointer;
-  text-decoration: none;
   background: linear-gradient(
     135deg,
     var(--glass-white-15) 0%,
@@ -3147,44 +3158,37 @@ body.dragging {
   transition: all var(--icon-rail-transition);
   flex-shrink: 0;
 }
-.icon-rail:hover .icon-rail-home,
-.icon-rail.expanded .icon-rail-home {
-  width: auto;
-  padding: 0 16px;
-  height: 44px;
-}
-.icon-rail-home:hover {
+.icon-rail-home:hover .icon-rail-home-icon {
   background: var(--glass-white-12);
   border-color: var(--glass-white-20);
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
-.icon-rail-home svg {
+.icon-rail-home-icon svg {
+  display: block;
   width: 22px;
   height: 22px;
   color: var(--glass-text-secondary);
-  flex-shrink: 0;
   transition: all var(--icon-rail-transition);
 }
-.icon-rail-home:hover svg,
-.icon-rail:hover .icon-rail-home svg,
-.icon-rail.expanded .icon-rail-home svg {
+.icon-rail-home:hover .icon-rail-home-icon svg {
   color: var(--glass-text-primary);
 }
 .icon-rail-home-text {
-  margin-left: 12px;
   font-size: 13px;
   font-weight: 500;
   color: var(--glass-text-secondary);
   opacity: 0;
-  transform: translateX(-10px);
+  width: 0;
+  overflow: hidden;
   transition: all var(--icon-rail-transition);
   white-space: nowrap;
 }
 .icon-rail:hover .icon-rail-home-text,
 .icon-rail.expanded .icon-rail-home-text {
   opacity: 1;
-  transform: translateX(0);
+  width: auto;
+  margin-left: 12px;
 }
 .icon-rail-toggle {
   position: absolute;

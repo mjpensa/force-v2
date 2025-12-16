@@ -222,13 +222,14 @@
 /* Section title - matches TOC entry (e.g., "Citi", "Bank of America") */
 .section-title {
   font-family: 'Work Sans', sans-serif;
-  font-size: var(--text-4xl);
-  font-weight: var(--weight-semibold);
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-medium);
   line-height: var(--leading-tight);
   color: var(--color-accent-red);
   margin: 0 0 var(--spacing-2) 0;
   scroll-margin-top: var(--spacing-8);
-  position: relative;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 /* Section subtitle - insight-driven heading below title */
