@@ -379,6 +379,30 @@ ANTI-PATTERNS FOR SWIMLANE SECTIONS:
 }
 
 /**
+ * Get current date context for time-aware recommendations
+ * @returns {object} Object with formatted date strings and fiscal quarter info
+ */
+function getCurrentDateContext() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1; // 0-indexed
+  const quarter = Math.ceil(month / 3);
+  const nextQuarter = quarter === 4 ? 1 : quarter + 1;
+  const nextQuarterYear = quarter === 4 ? year + 1 : year;
+
+  return {
+    fullDate: now.toISOString().split('T')[0], // YYYY-MM-DD
+    month: now.toLocaleString('en-US', { month: 'long' }),
+    year,
+    currentQuarter: `Q${quarter} ${year}`,
+    nextQuarter: `Q${nextQuarter} ${nextQuarterYear}`,
+    quarterPlusTwo: `Q${((quarter + 1) % 4) + 1} ${quarter >= 3 ? year + 1 : year}`,
+    endOfYear: `Q4 ${year}`,
+    nextYear: year + 1
+  };
+}
+
+/**
  * Generate prompt with research content and optional swimlane alignment
  * @param {string} userPrompt - User's analysis request
  * @param {Array} researchFiles - Research files to analyze
@@ -391,9 +415,23 @@ export function generateDocumentPrompt(userPrompt, researchFiles, swimlanes = []
 
   const keyStats = extractKeyStats(researchContent);
   const swimlaneInstructions = generateSwimlaneSectionInstructions(swimlanes);
+  const dateContext = getCurrentDateContext();
 
   return `${documentPrompt}
 ${swimlaneInstructions}
+
+CURRENT DATE CONTEXT (use for time-appropriate recommendations):
+- Today's date: ${dateContext.fullDate} (${dateContext.month} ${dateContext.year})
+- Current quarter: ${dateContext.currentQuarter}
+- Next quarter: ${dateContext.nextQuarter}
+- Next year: ${dateContext.nextYear}
+
+When setting action deadlines in the executiveSummary:
+- Use realistic future dates based on today's date
+- Near-term actions: ${dateContext.nextQuarter} or ${dateContext.quarterPlusTwo}
+- Medium-term milestones: ${dateContext.endOfYear} or Q1-Q2 ${dateContext.nextYear}
+- NEVER use past dates or dates that have already occurred
+- Ensure deadlines are achievable given the current date
 
 KEY DATA POINTS EXTRACTED FROM RESEARCH (use at least one in executiveSummary.situation or executiveSummary.insight):
 ${keyStats || 'No specific statistics found - extract key numbers from the research text'}

@@ -8,6 +8,40 @@
  * Sections structure aligned with Gantt chart swimlanes
  */
 
+/**
+ * Convert text to sentence case while preserving acronyms (all-caps words like CDM, API, ROI)
+ * @param {string} text - Text to convert
+ * @returns {string} - Sentence case text with acronyms preserved
+ */
+function toSentenceCasePreservingAcronyms(text) {
+  if (!text) return '';
+
+  // Split into lines first to handle multi-line titles
+  return text.split('\n').map((line, lineIndex) => {
+    // Split line into words
+    const words = line.split(/(\s+)/); // Keep whitespace as separate elements
+
+    return words.map((word, wordIndex) => {
+      // Skip whitespace
+      if (/^\s*$/.test(word)) return word;
+
+      // Check if word is an acronym (2-5 uppercase letters, optionally with numbers)
+      const isAcronym = /^[A-Z][A-Z0-9]{1,4}$/.test(word);
+
+      if (isAcronym) {
+        // Keep acronyms uppercase
+        return word;
+      } else if (lineIndex === 0 && wordIndex === 0) {
+        // First word of first line: capitalize first letter, lowercase rest
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      } else {
+        // All other words: lowercase
+        return word.toLowerCase();
+      }
+    }).join('');
+  }).join('\n');
+}
+
 // Dispatcher - routes to correct renderer based on layout
 function renderSlide(slide, index) {
   const layout = slide.layout || 'twoColumn';
@@ -176,9 +210,9 @@ function renderTwoColumnSlide(slide, index) {
     color: #0C2340;
     white-space: pre-line;
   `;
-  // Convert to sentence case and enforce exactly 4 lines
+  // Convert to sentence case (preserving acronyms) and enforce exactly 4 lines
   const titleText = slide.title || '';
-  const sentenceCase = titleText.charAt(0).toUpperCase() + titleText.slice(1).toLowerCase();
+  const sentenceCase = toSentenceCasePreservingAcronyms(titleText);
   let lines = sentenceCase.split('\n').map(l => l.trim()).filter(l => l);
 
   // Enforce exactly 4 lines
@@ -339,9 +373,9 @@ function renderThreeColumnSlide(slide, index) {
     white-space: pre-line;
   `;
 
-  // Convert to sentence case and enforce exactly 4 lines
+  // Convert to sentence case (preserving acronyms) and enforce exactly 4 lines
   const titleText = slide.title || '';
-  const sentenceCase = titleText.charAt(0).toUpperCase() + titleText.slice(1).toLowerCase();
+  const sentenceCase = toSentenceCasePreservingAcronyms(titleText);
   let lines = sentenceCase.split('\n').map(l => l.trim()).filter(l => l);
   if (lines.length > 4) lines = lines.slice(0, 4);
   while (lines.length < 4) lines.push('');

@@ -240,7 +240,7 @@ export async function generatePptx(slidesData, options = {}) {
  */
 function addSectionTitleSlide(pptx, slideData, slideNumber) {
   const slide = pptx.addSlide();
-  slide.background = { color: COLORS.navy.replace('#', '') };
+  slide.background = { color: COLORS.navy };
 
   // Swimlane label (top left, red)
   if (slideData.swimlane) {
@@ -251,7 +251,7 @@ function addSectionTitleSlide(pptx, slideData, slideNumber) {
       h: 0.4,
       fontSize: 14,
       fontFace: FONTS.workSansSemiBold,
-      color: COLORS.red.replace('#', ''),
+      color: COLORS.red,
       align: 'left'
     });
   }
@@ -264,7 +264,7 @@ function addSectionTitleSlide(pptx, slideData, slideNumber) {
     h: 2,
     fontSize: 60,
     fontFace: FONTS.workSansThin,
-    color: COLORS.white.replace('#', ''),
+    color: COLORS.white,
     align: 'center',
     valign: 'middle'
   });
@@ -275,8 +275,8 @@ function addSectionTitleSlide(pptx, slideData, slideNumber) {
     y: 4.7,
     w: 2,
     h: 0.04,
-    fill: { color: COLORS.red.replace('#', '') },
-    line: { color: COLORS.red.replace('#', ''), width: 0 }
+    fill: { color: COLORS.red },
+    line: { color: COLORS.red, width: 0 }
   });
 
   // Page number (bottom left, muted white)

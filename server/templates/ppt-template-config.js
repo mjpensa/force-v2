@@ -14,9 +14,9 @@ export const COLORS = {
 
 // Brand fonts (only used fonts)
 export const FONTS = {
-  thin: 'Work Sans Thin',
-  regular: 'Work Sans',
-  semibold: 'Work Sans SemiBold'
+  workSansThin: 'Work Sans Thin',
+  workSansRegular: 'Work Sans',
+  workSansSemiBold: 'Work Sans SemiBold'
 };
 
 // Slide dimensions (16:9)
@@ -33,21 +33,21 @@ export const LAYOUTS = {
     elements: {
       sectionLabel: {
         x: 0.33, y: 0.17, w: 3, h: 0.25,
-        fontSize: 10, fontFace: FONTS.semibold, color: COLORS.red, align: 'left'
+        fontSize: 10, fontFace: FONTS.workSansSemiBold, color: COLORS.red, align: 'left'
       },
       title: {
         x: 0.33, y: 0.5, w: 4.5, h: 2.5,
-        fontSize: 48, fontFace: FONTS.thin, color: COLORS.navy,
+        fontSize: 48, fontFace: FONTS.workSansThin, color: COLORS.navy,
         align: 'left', italic: true, lineSpacing: 85
       },
       paragraphs: {
         x: 5.5, y: 0.8, w: 7.5, h: 5.5,
-        fontSize: 11, fontFace: FONTS.regular, color: COLORS.navy,
+        fontSize: 11, fontFace: FONTS.workSansRegular, color: COLORS.navy,
         lineSpacing: 160, paragraphSpacing: 20
       },
       pageNumber: {
         x: 0.33, y: 7.15, w: 0.5, h: 0.2,
-        fontSize: 8, fontFace: FONTS.regular, color: COLORS.darkGray, align: 'left'
+        fontSize: 8, fontFace: FONTS.workSansRegular, color: COLORS.darkGray, align: 'left'
       }
     }
   },
@@ -57,21 +57,21 @@ export const LAYOUTS = {
     elements: {
       sectionLabel: {
         x: 0.28, y: 0.26, w: 2.23, h: 0.22,
-        fontSize: 10, fontFace: FONTS.semibold, color: COLORS.red, align: 'left'
+        fontSize: 10, fontFace: FONTS.workSansSemiBold, color: COLORS.red, align: 'left'
       },
       title: {
         x: 0.25, y: 0.67, w: 2.76, h: 2.35,
-        fontSize: 44, fontFace: FONTS.thin, color: COLORS.navy,
+        fontSize: 44, fontFace: FONTS.workSansThin, color: COLORS.navy,
         align: 'left', italic: false, lineSpacing: 70
       },
       threeColumns: {
         x: 3.56, y: 3.46, w: 9.10, h: 3.52,
-        fontSize: 11, fontFace: FONTS.regular, color: COLORS.navy,
+        fontSize: 11, fontFace: FONTS.workSansRegular, color: COLORS.navy,
         lineSpacing: 130, columnGap: 0.59
       },
       pageNumber: {
         x: 0.33, y: 7.15, w: 0.5, h: 0.2,
-        fontSize: 8, fontFace: FONTS.regular, color: COLORS.darkGray, align: 'left'
+        fontSize: 8, fontFace: FONTS.workSansRegular, color: COLORS.darkGray, align: 'left'
       }
     }
   }
