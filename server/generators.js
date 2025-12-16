@@ -55,9 +55,8 @@ const DOCUMENT_CONFIG = {
   temperature: 0.45,       // Increased: more narrative variety and creative phrasing
   topP: 0.55,              // Balanced: good token selection for varied constructions
   topK: 20,                // Richer vocabulary for compelling, engaging prose
-  thinkingBudget: 2048,    // Extended reasoning for deeper analysis and evidence connections
-  frequencyPenalty: 0.3,   // NEW: reduce repetitive phrasing patterns
-  presencePenalty: 0.2     // NEW: encourage broader vocabulary usage
+  thinkingBudget: 2048     // Extended reasoning for deeper analysis and evidence connections
+  // Note: frequencyPenalty/presencePenalty not supported by Gemini Flash
 };
 const STRUCTURED_DEFAULT_CONFIG = {
   thinkingBudget: 0  // Disabled for speed
@@ -78,9 +77,8 @@ const SLIDES_CONFIG = {
   temperature: 0.25,      // Increased for narrative variety
   topP: 0.5,              // Broader vocabulary selection
   topK: 15,               // Richer word choices
-  thinkingBudget: 512,    // Deeper reasoning for coherence
-  frequencyPenalty: 0.2,  // Reduce repetitive phrasing
-  presencePenalty: 0.15   // Encourage vocabulary breadth
+  thinkingBudget: 512     // Deeper reasoning for coherence
+  // Note: frequencyPenalty/presencePenalty not supported by Gemini Flash
 };
 
 const SLIDES_OUTLINE_CONFIG = {
