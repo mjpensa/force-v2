@@ -12,7 +12,8 @@
       "Bash(find:*)",
       "Bash(dir:*)",
       "Bash(powershell -Command:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git -C \"c:\\FORCE\" diff server/prompts/roadmap.js)"
     ],
     "deny": [],
     "ask": []

@@ -478,40 +478,55 @@
 }
 
 .theme-item {
-  background: var(--glass-white-8);
+  background: var(--glass-white-12);
   border-radius: var(--radius-glass-md);
-  padding: var(--spacing-4);
-  border-left: 3px solid var(--color-accent-red);
+  padding: var(--spacing-5);
+  border: 1px solid var(--glass-white-15);
+  border-left: 4px solid var(--color-accent-red);
 }
 
 .theme-name {
-  font-size: var(--text-base);
+  font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
   color: var(--glass-text-primary);
-  margin: 0 0 var(--spacing-2) 0;
+  margin: 0 0 var(--spacing-3) 0;
+  line-height: var(--leading-tight);
 }
 
 .theme-description {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   line-height: var(--leading-relaxed);
-  color: var(--glass-text-secondary);
-  margin: 0 0 var(--spacing-3) 0;
+  color: var(--glass-text-primary);
+  margin: 0 0 var(--spacing-4) 0;
+  opacity: 0.9;
 }
 
 .theme-topics {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-2);
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--glass-white-10);
+}
+
+.theme-topics-label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--glass-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-right: var(--spacing-2);
+  align-self: center;
 }
 
 .theme-topic-badge {
   font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--glass-text-muted);
-  background: var(--glass-white-10);
-  padding: var(--spacing-1) var(--spacing-2);
+  font-weight: var(--weight-semibold);
+  color: var(--color-accent-red);
+  background: rgba(211, 47, 47, 0.12);
+  padding: var(--spacing-1) var(--spacing-3);
   border-radius: var(--radius-full);
-  border: 1px solid var(--glass-white-15);
+  border: 1px solid rgba(211, 47, 47, 0.25);
 }
 
 /* Critical Findings Section */
