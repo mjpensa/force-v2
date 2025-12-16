@@ -419,12 +419,42 @@ function formatSectionTitle(title) {
 }
 
 /**
- * Format body paragraphs with proper spacing
+ * Truncate text to a character limit at sentence boundary
+ * Matches browser behavior in SlidesView.js
+ * @param {string} text - Text to truncate
+ * @param {number} maxChars - Maximum characters allowed
+ * @returns {string} Truncated text
  */
-function formatBody(p1, p2) {
+function truncateToSentence(text, maxChars = 415) {
+  if (!text) return '';
+  text = text.trim().replace(/\n/g, ' '); // Normalize whitespace
+  if (text.length <= maxChars) return text;
+
+  // Find last sentence end before the limit
+  const truncated = text.substring(0, maxChars);
+  const lastPeriod = truncated.lastIndexOf('.');
+  const lastQuestion = truncated.lastIndexOf('?');
+  const lastExclaim = truncated.lastIndexOf('!');
+  const lastSentenceEnd = Math.max(lastPeriod, lastQuestion, lastExclaim);
+
+  if (lastSentenceEnd > maxChars * 0.6) {
+    // Found a sentence end in the last 40% of allowed text
+    return text.substring(0, lastSentenceEnd + 1);
+  }
+  // No good sentence break, cut at word boundary
+  return truncated.replace(/\s+\S*$/, '') + '.';
+}
+
+/**
+ * Format body paragraphs with proper spacing and truncation
+ * @param {string} p1 - First paragraph
+ * @param {string} p2 - Second paragraph
+ * @param {number} maxChars - Max chars per paragraph (default 415 for two-column)
+ */
+function formatBody(p1, p2, maxChars = 415) {
   const parts = [];
-  if (p1) parts.push(p1.trim());
-  if (p2) parts.push(p2.trim());
+  if (p1) parts.push(truncateToSentence(p1, maxChars));
+  if (p2) parts.push(truncateToSentence(p2, maxChars));
   return parts.join('\n\n');
 }
 
@@ -616,22 +646,25 @@ function addTwoColumnSlide(pptx, data, slideNumber) {
     lineSpacingMultiple: 0.85
   });
 
-  // Body text (two paragraphs)
-  const bodyText = formatBody(data.paragraph1, data.paragraph2);
+  // Body text (two paragraphs) - truncated to 415 chars each
+  // Browser: font-size: clamp(7px, 1.15cqw, 14px), line-height: 1.35, margin-bottom: 0.8em
+  // 14px = 10.5pt, 0.8em at 14px = 11.2px ≈ 8pt
+  const bodyText = formatBody(data.paragraph1, data.paragraph2, 415);
   if (bodyText) {
     slide.addText(bodyText, {
       x: L.body.x,
       y: L.body.y,
       w: L.body.w,
       h: L.body.h,
-      fontSize: 11,
+      fontSize: 10.5,
       fontFace: 'Work Sans',
       bold: false,
       color: COLORS.navy,
       align: 'left',
       valign: 'top',
       lineSpacingMultiple: 1.35,
-      paraSpaceAfter: 12
+      paraSpaceAfter: 8,
+      charSpacing: 0.3  // Approximate letter-spacing: 0.02em
     });
   }
 
@@ -713,21 +746,24 @@ function addThreeColumnSlide(pptx, data, slideNumber) {
   const gapWidth = L.columnGap;
   const columnWidth = (totalWidth - (2 * gapWidth)) / 3;
 
+  // Truncate column text to 400 chars (matches browser SlidesView.js)
+  // Browser: font-size: clamp(7px, 1.15cqw, 14px), line-height: 1.3
+  // 14px = 10.5pt
   const columnTexts = [
-    data.paragraph1 || '',
-    data.paragraph2 || '',
-    data.paragraph3 || ''
+    truncateToSentence(data.paragraph1, 400),
+    truncateToSentence(data.paragraph2, 400),
+    truncateToSentence(data.paragraph3, 400)
   ];
 
   columnTexts.forEach((text, index) => {
     if (text) {
       const columnX = L.columns.x + (index * (columnWidth + gapWidth));
-      slide.addText(text.trim(), {
+      slide.addText(text, {
         x: columnX,
         y: L.columns.y,
         w: columnWidth,
         h: L.columns.h,
-        fontSize: 11,
+        fontSize: 10.5,
         fontFace: 'Work Sans',
         bold: false,
         color: COLORS.navy,
