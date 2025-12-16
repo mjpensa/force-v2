@@ -183,7 +183,7 @@
 
 .section-heading {
   font-family: 'Work Sans', sans-serif;
-  font-size: var(--text-3xl);
+  font-size: var(--text-4xl);
   font-weight: var(--weight-medium);
   line-height: var(--leading-tight);
   color: var(--color-accent-red);
@@ -212,7 +212,7 @@
 
 .section-subheading {
   font-family: 'Work Sans', sans-serif;
-  font-size: var(--text-xl);
+  font-size: var(--text-2xl);
   font-weight: var(--weight-medium);
   color: var(--color-accent-red);
   margin: var(--spacing-8) 0 var(--spacing-4) 0;
@@ -311,7 +311,7 @@
 
 .appendix-title {
   font-family: 'Work Sans', sans-serif;
-  font-size: var(--text-xl);
+  font-size: var(--text-3xl);
   font-weight: var(--weight-medium);
   color: var(--color-accent-red);
   margin: 0 0 var(--spacing-4) 0;
@@ -471,7 +471,7 @@
 
 .executive-summary-label {
   font-family: 'Work Sans', sans-serif;
-  font-size: var(--text-sm);
+  font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
   text-transform: none;
   letter-spacing: normal;
@@ -568,7 +568,7 @@
 
 .analysis-overview-label {
   font-family: 'Work Sans', sans-serif;
-  font-size: var(--text-xl);
+  font-size: var(--text-3xl);
   font-weight: var(--weight-medium);
   color: var(--color-accent-red);
   text-transform: none;
@@ -595,7 +595,7 @@
 /* Overview Section Labels */
 .overview-section-label {
   font-family: 'Work Sans', sans-serif;
-  font-size: var(--text-lg);
+  font-size: var(--text-2xl);
   font-weight: var(--weight-semibold);
   color: var(--color-accent-red);
   text-transform: none;

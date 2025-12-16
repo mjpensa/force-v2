@@ -11,37 +11,13 @@
   border-radius: 8px;
   background-color: transparent;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  overflow-x: auto;
-  overflow-y: auto;
-  max-height: 80vh;
+  overflow: visible;
   margin-top: 0;
   font-family: 'Work Sans', sans-serif;
   position: relative;
   box-sizing: border-box;
 }
 
-#gantt-chart-container::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-#gantt-chart-container::-webkit-scrollbar-track {
-  background: var(--glass-white-5, rgba(255, 255, 255, 0.05));
-  border-radius: 9999px;
-}
-
-#gantt-chart-container::-webkit-scrollbar-thumb {
-  background: var(--glass-white-20, rgba(255, 255, 255, 0.20));
-  border-radius: 9999px;
-}
-
-#gantt-chart-container::-webkit-scrollbar-thumb:hover {
-  background: var(--glass-white-30, rgba(255, 255, 255, 0.30));
-}
-
-#gantt-chart-container::-webkit-scrollbar-corner {
-  background: transparent;
-}
 
 /* Title Container */
 .gantt-title-container {
