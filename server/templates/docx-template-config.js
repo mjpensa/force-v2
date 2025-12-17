@@ -58,7 +58,7 @@ export const STYLES = {
   title: {
     font: FONTS.heading,
     size: FONT_SIZES.title,        // 24pt
-    color: COLORS.coral,           // Coral red title
+    color: COLORS.black,           // Black title
     bold: true
   },
   subtitle: {

@@ -99,6 +99,110 @@ class PollingService {
       });
   }
 }
+
+/**
+ * SSE Service for real-time progress updates
+ * Falls back to polling if SSE is not supported or connection fails
+ */
+class SSEService {
+  constructor() {
+    this.eventSources = new Map();
+    this.onProgress = null;
+    this.onComplete = null;
+    this.onError = null;
+  }
+
+  /**
+   * Start SSE connection for a session
+   * @param {string} sessionId - Session ID to stream
+   * @param {Function} onProgress - Callback for progress updates
+   * @param {Function} onComplete - Callback when all content is complete
+   * @param {Function} onError - Callback for errors (triggers fallback to polling)
+   */
+  start(sessionId, onProgress, onComplete, onError) {
+    this.stop(sessionId);
+
+    // Check if EventSource is supported
+    if (typeof EventSource === 'undefined') {
+      console.warn('[SSE] EventSource not supported, falling back to polling');
+      onError?.('EventSource not supported');
+      return false;
+    }
+
+    try {
+      const eventSource = new EventSource(`/api/content/stream/${sessionId}`);
+      this.eventSources.set(sessionId, eventSource);
+
+      eventSource.addEventListener('connected', (event) => {
+        const data = JSON.parse(event.data);
+        console.log('[SSE] Connected:', data.message);
+      });
+
+      eventSource.addEventListener('progress', (event) => {
+        const data = JSON.parse(event.data);
+        onProgress?.(data.content);
+      });
+
+      eventSource.addEventListener('complete', (event) => {
+        const data = JSON.parse(event.data);
+        console.log('[SSE] All content complete:', data.summary);
+        onComplete?.(data);
+        this.stop(sessionId);
+      });
+
+      eventSource.addEventListener('error', (event) => {
+        const data = event.data ? JSON.parse(event.data) : { message: 'Unknown error' };
+        console.error('[SSE] Server error:', data.message);
+        onError?.(data.message);
+        this.stop(sessionId);
+      });
+
+      eventSource.onerror = (error) => {
+        console.error('[SSE] Connection error:', error);
+        // Only call onError if connection was never established
+        if (eventSource.readyState === EventSource.CLOSED) {
+          onError?.('Connection closed');
+          this.stop(sessionId);
+        }
+      };
+
+      return true;
+    } catch (error) {
+      console.error('[SSE] Failed to create EventSource:', error);
+      onError?.(error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Stop SSE connection for a session
+   */
+  stop(sessionId) {
+    const eventSource = this.eventSources.get(sessionId);
+    if (eventSource) {
+      eventSource.close();
+      this.eventSources.delete(sessionId);
+    }
+  }
+
+  /**
+   * Stop all SSE connections
+   */
+  stopAll() {
+    for (const sessionId of this.eventSources.keys()) {
+      this.stop(sessionId);
+    }
+  }
+
+  /**
+   * Check if SSE is connected for a session
+   */
+  isConnected(sessionId) {
+    const eventSource = this.eventSources.get(sessionId);
+    return eventSource?.readyState === EventSource.OPEN;
+  }
+}
+
 class ContentViewer {
   constructor() {
     this.stateManager = new StateManager();
@@ -114,8 +218,10 @@ class ContentViewer {
 
     // Performance optimizations
     this.pollingService = new PollingService();
+    this.sseService = new SSEService(); // Real-time updates (fallback to polling)
     this._renderQueue = new Map(); // Batch DOM updates
     this._isRendering = false;
+    this._useSSE = true; // Try SSE first, fallback to polling on failure
   }
   async init() {
     try {
@@ -665,7 +771,85 @@ class ContentViewer {
     const views = ['roadmap', 'slides', 'document', 'research-analysis'];
     views.forEach(view => this._updateTabStatus(view, 'loading'));
 
-    // Use unified polling service for efficient background status checks
+    // Try SSE first for real-time updates, fallback to polling
+    if (this._useSSE) {
+      const sseStarted = this.sseService.start(
+        this.sessionId,
+        // onProgress: Update tab statuses based on SSE events
+        (content) => {
+          for (const [viewName, viewStatus] of Object.entries(content)) {
+            // Map SSE view names to internal view names
+            const internalViewName = viewName === 'researchAnalysis' ? 'research-analysis' : viewName;
+
+            if (viewStatus.status === 'completed' && viewStatus.ready) {
+              this._updateTabStatus(internalViewName, 'ready');
+              // Fetch the actual content if not already cached
+              this._fetchAndCacheContent(internalViewName);
+            } else if (viewStatus.status === 'error') {
+              this._updateTabStatus(internalViewName, 'failed');
+            } else if (viewStatus.status === 'generating') {
+              this._updateTabStatus(internalViewName, 'processing');
+            } else {
+              this._updateTabStatus(internalViewName, 'loading');
+            }
+          }
+        },
+        // onComplete: All content ready
+        (data) => {
+          console.log('[SSE] All content generation complete');
+          // Fetch any content not yet cached
+          views.forEach(viewName => this._fetchAndCacheContent(viewName));
+        },
+        // onError: Fallback to polling
+        (error) => {
+          console.warn('[SSE] Error, falling back to polling:', error);
+          this._useSSE = false;
+          this._startPollingFallback(views);
+        }
+      );
+
+      if (!sseStarted) {
+        // SSE failed to start, use polling
+        this._useSSE = false;
+        this._startPollingFallback(views);
+      }
+    } else {
+      // Use polling directly
+      this._startPollingFallback(views);
+    }
+  }
+
+  /**
+   * Fetch and cache content for a view (called when SSE reports content is ready)
+   */
+  async _fetchAndCacheContent(viewName) {
+    // Skip if already cached
+    if (this.stateManager.state.content[viewName]) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/content/${this.sessionId}/${viewName}`);
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (data.status === 'completed' && data.data) {
+        const isValidData = this._validateViewData(viewName, data.data);
+        if (isValidData) {
+          this.stateManager.batchSetState({
+            content: { ...this.stateManager.state.content, [viewName]: data.data }
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`[SSE] Failed to fetch content for ${viewName}:`, error);
+    }
+  }
+
+  /**
+   * Fallback polling when SSE is not available or fails
+   */
+  _startPollingFallback(views) {
     views.forEach(viewName => {
       this.pollingService.start(`bg-${viewName}`, async ({ status, attempt }) => {
         if (status === 'timeout') {
@@ -717,7 +901,8 @@ class ContentViewer {
     });
   }
   destroy() {
-    // Clean up polling service (handles all timeouts)
+    // Clean up SSE and polling services
+    this.sseService.stopAll();
     this.pollingService.stopAll();
 
     if (this._processingPollTimeouts) {

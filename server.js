@@ -34,6 +34,7 @@ import {
 import chartRoutes from './server/routes/charts.js';
 import analysisRoutes from './server/routes/analysis.js';
 import contentRoutes from './server/routes/content.js';
+import sseContentRoutes from './server/routes/sse-content.js';
 
 // --- Server Setup ---
 const app = express();
@@ -101,6 +102,7 @@ app.get('/api/health', (req, res) => {
 app.use('/', chartRoutes);
 app.use('/', analysisRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/content', sseContentRoutes); // SSE streaming for real-time progress
 
 // --- Error Handling ---
 app.use(handleUploadErrors);

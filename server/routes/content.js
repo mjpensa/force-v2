@@ -12,12 +12,12 @@
  */
 
 import express from 'express';
-import mammoth from 'mammoth';
 import crypto from 'crypto';
 import { generateAllContent, regenerateContent } from '../generators.js';
 import { uploadMiddleware, handleUploadErrors } from '../middleware.js';
 import { generatePptx } from '../templates/ppt-export-service-v2.js';
 import { generateDocx } from '../templates/docx-export-service.js';
+import { fileCache } from '../cache/FileCache.js';
 
 const router = express.Router();
 
@@ -145,18 +145,10 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
     // Process uploaded files to extract content
     const sortedFiles = files.sort((a, b) => a.originalname.localeCompare(b.originalname));
 
-    // Process files in parallel
+    // Process files in parallel with caching for DOCX extraction
     const fileProcessingPromises = sortedFiles.map(async (file) => {
-      let content = '';
-
-      // Handle DOCX files with mammoth - extract plain text to avoid HTML artifacts
-      if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        const result = await mammoth.extractRawText({ buffer: file.buffer });
-        content = result.value;
-      } else {
-        // Handle text-based files (TXT, MD, etc.)
-        content = file.buffer.toString('utf8');
-      }
+      // Use cached extraction for better performance on repeated files
+      const content = await fileCache.get(file.buffer, file.mimetype, file.originalname);
 
       return {
         filename: file.originalname,
@@ -170,14 +162,13 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
     // Generate all content synchronously
     const results = await generateAllContent(prompt, researchFiles);
 
-    // Create session and store content (including research for task analysis)
+    // Create session and store content (including full research files for regeneration)
     const sessionId = generateSessionId();
     const now = Date.now();
     sessions.set(sessionId, {
       prompt,
-      researchFiles: researchFiles.map(f => f.filename),
-      // Store research content for session-based task analysis (truncated to limit memory)
-      researchContent: researchFiles.map(f => f.content).join('\n\n---\n\n').substring(0, 500000),
+      // Store full research files to enable session-based regeneration without re-upload
+      researchFiles: researchFiles.map(f => ({ filename: f.filename, content: f.content })),
       content: {
         roadmap: results.roadmap,
         slides: results.slides,
@@ -262,16 +253,10 @@ router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), as
       });
     }
 
-    // Process uploaded files
+    // Process uploaded files with caching
     const sortedFiles = files.sort((a, b) => a.originalname.localeCompare(b.originalname));
     const fileProcessingPromises = sortedFiles.map(async (file) => {
-      let content = '';
-      if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        const result = await mammoth.extractRawText({ buffer: file.buffer });
-        content = result.value;
-      } else {
-        content = file.buffer.toString('utf8');
-      }
+      const content = await fileCache.get(file.buffer, file.mimetype, file.originalname);
       return { filename: file.originalname, content };
     });
     const researchFiles = await Promise.all(fileProcessingPromises);
@@ -287,6 +272,93 @@ router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), as
     });
 
   } catch (error) {
+    res.status(500).json({
+      error: 'Failed to regenerate content',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/content/:sessionId/regenerate/:viewType
+ * Regenerates content using cached session research files (no file upload needed)
+ *
+ * URL params:
+ * - sessionId: string - Session ID with cached research files
+ * - viewType: 'roadmap', 'slides', 'document', or 'research-analysis'
+ *
+ * Request body (optional):
+ * - prompt: string - New prompt (uses session prompt if not provided)
+ *
+ * Response:
+ * {
+ *   viewType: string,
+ *   status: 'completed' | 'error',
+ *   data: object | null,
+ *   error: string | null
+ * }
+ */
+router.post('/:sessionId/regenerate/:viewType', express.json(), async (req, res) => {
+  const REGENERATE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+  req.setTimeout(REGENERATE_TIMEOUT_MS);
+  res.setTimeout(REGENERATE_TIMEOUT_MS);
+
+  try {
+    const { sessionId, viewType } = req.params;
+    const { prompt: newPrompt } = req.body;
+
+    // Validate view type
+    const validViewTypes = ['roadmap', 'slides', 'document', 'research-analysis'];
+    if (!validViewTypes.includes(viewType)) {
+      return res.status(400).json({
+        error: `Invalid view type. Must be one of: ${validViewTypes.join(', ')}`
+      });
+    }
+
+    // Check session exists
+    const session = sessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        error: 'Session not found or expired',
+        message: 'Please upload files again to regenerate content.'
+      });
+    }
+
+    // Validate session has research files
+    if (!session.researchFiles || session.researchFiles.length === 0) {
+      return res.status(400).json({
+        error: 'Session has no cached research files',
+        message: 'Please use the standard regenerate endpoint with file upload.'
+      });
+    }
+
+    touchSession(sessionId);
+
+    // Use session's cached research files
+    const researchFiles = session.researchFiles;
+    const prompt = newPrompt || session.prompt;
+
+    console.log(`[Session Regenerate] ${viewType} using ${researchFiles.length} cached files from session ${sessionId}`);
+
+    // Regenerate specific content type
+    const result = await regenerateContent(viewType, prompt, researchFiles);
+
+    // Update session with regenerated content
+    const contentKey = viewType === 'research-analysis' ? 'researchAnalysis' : viewType;
+    if (result.success) {
+      session.content[contentKey] = result;
+      session.lastAccessed = Date.now();
+    }
+
+    res.json({
+      viewType,
+      status: result.success ? 'completed' : 'error',
+      data: result.data || null,
+      error: result.error ? formatUserError(result.error, viewType) : null
+    });
+
+  } catch (error) {
+    console.error('[Session Regenerate] Error:', error);
     res.status(500).json({
       error: 'Failed to regenerate content',
       details: error.message
