@@ -15,6 +15,14 @@ const PROPER_NOUNS = {
   'e.u.': 'E.U.'
 };
 
+// Known acronyms to preserve (case-insensitive matching)
+const KNOWN_ACRONYMS = [
+  'CDM', 'DRR', 'API', 'ROI', 'KPI', 'CEO', 'CTO', 'CFO', 'COO', 'CIO',
+  'AI', 'ML', 'CFTC', 'SEC', 'FDA', 'EPA', 'UTI', 'UPI', 'ESG', 'DEI',
+  'IPO', 'ETF', 'GDP', 'CPMI', 'IOSCO', 'OTC', 'FX', 'USD', 'EUR', 'GBP',
+  'ISDA', 'DLT', 'IT', 'HR', 'PR', 'EMIR', 'OCC', 'BSA', 'AML', 'FINOS'
+];
+
 /**
  * Check if a single word (no slashes) is an acronym
  * @param {string} word - Word to check
@@ -22,37 +30,50 @@ const PROPER_NOUNS = {
  */
 function isAcronymWord(word) {
   if (!word) return false;
-  // Check if word is an acronym (2-5 uppercase letters, optionally with numbers)
+  // Check against known acronyms list (case-insensitive)
+  if (KNOWN_ACRONYMS.some(a => a.toLowerCase() === word.toLowerCase())) {
+    return true;
+  }
+  // Fallback: Check if word is all uppercase (2-5 letters, optionally with numbers)
   return /^[A-Z][A-Z0-9]{1,4}$/.test(word);
 }
 
 /**
  * Check if a word (possibly compound with slashes) is an acronym
- * Handles compound forms like "CDM/DRR" and proper nouns like "U.S."
+ * Handles compound forms like "CDM/DRR", proper nouns like "U.S.", and trailing punctuation like "CDM:"
  * @param {string} word - Word to check
  * @returns {{ isAcronym: boolean, value: string }}
  */
 function checkAcronym(word) {
   if (!word) return { isAcronym: false, value: word };
 
+  // Strip trailing punctuation for acronym check, reattach later
+  const punctMatch = word.match(/^(.+?)([.:,;!?]+)$/);
+  const baseWord = punctMatch ? punctMatch[1] : word;
+  const trailingPunct = punctMatch ? punctMatch[2] : '';
+
   // Check proper nouns with periods first (e.g., U.S., U.K.)
-  const lowerWord = word.toLowerCase();
+  const lowerWord = baseWord.toLowerCase();
   if (PROPER_NOUNS[lowerWord]) {
-    return { isAcronym: true, value: PROPER_NOUNS[lowerWord] };
+    return { isAcronym: true, value: PROPER_NOUNS[lowerWord] + trailingPunct };
   }
 
   // Handle slashed compound acronyms like "CDM/DRR"
-  if (word.includes('/')) {
-    const parts = word.split('/');
+  if (baseWord.includes('/')) {
+    const parts = baseWord.split('/');
     const allAcronyms = parts.every(part => isAcronymWord(part));
 
     if (allAcronyms) {
-      return { isAcronym: true, value: parts.map(p => p.toUpperCase()).join('/') };
+      return { isAcronym: true, value: parts.map(p => p.toUpperCase()).join('/') + trailingPunct };
     }
     return { isAcronym: false, value: word };
   }
 
-  return { isAcronym: isAcronymWord(word), value: word };
+  if (isAcronymWord(baseWord)) {
+    return { isAcronym: true, value: baseWord.toUpperCase() + trailingPunct };
+  }
+
+  return { isAcronym: false, value: word };
 }
 
 /**
@@ -250,7 +271,7 @@ function renderTwoColumnSlide(slide, index) {
   // TITLE - EXACT from XML:
   // x=228208/12192000 = 1.87%, y=613997/6858000 = 8.95%
   // width=5435991/12192000 = 44.59%, height=2150574/6858000 = 31.36%
-  // Font: 72pt Work Sans Thin, #0C2340, line-height 70% (tight spacing - content must avoid descender/ascender conflicts)
+  // Font: 72pt Work Sans Thin, #0C2340
   const title = document.createElement('div');
   title.style.cssText = `
     position: absolute;
@@ -261,7 +282,7 @@ function renderTwoColumnSlide(slide, index) {
     font-family: 'Work Sans', sans-serif;
     font-size: clamp(18px, 6cqw, 72px);
     font-weight: 100;
-    line-height: 0.85;
+    line-height: 0.95;
     color: #0C2340;
     white-space: pre-line;
   `;
@@ -412,7 +433,7 @@ function renderThreeColumnSlide(slide, index) {
   el.appendChild(tagline);
 
   // TITLE - PPT: x=0.25", y=0.67", w=2.76", h=2.35" → 1.88%, 8.93%, 20.70%, 31.33%
-  // Font: Work Sans Light (weight 300), line-height 0.85 - template 2 uses heavier weight
+  // Font: Work Sans Light (weight 300) - template 2 uses heavier weight
   // NOTE: Width increased to 24% and font reduced to prevent choppy mid-word breaks
   const title = document.createElement('div');
   title.style.cssText = `
@@ -424,7 +445,7 @@ function renderThreeColumnSlide(slide, index) {
     font-family: 'Work Sans', sans-serif;
     font-size: clamp(14px, 3.2cqw, 38px);
     font-weight: 300;
-    line-height: 0.85;
+    line-height: 0.95;
     color: #0C2340;
     white-space: pre-line;
     word-break: keep-all;

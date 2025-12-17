@@ -65,10 +65,10 @@ const apiQueue = new APIQueue(4);
  */
 
 const DOCUMENT_CONFIG = {
-  temperature: 0.65,       // Increased for reasoning diversity with 16K thinking budget
+  temperature: 0.65,       // Balanced for reasoning diversity
   topP: 0.9,               // High: allows diverse token selection for engaging prose
   topK: 40,                // Standard: good vocabulary breadth
-  thinkingBudget: 16384    // Very high: deep 7-step COT reasoning, exec summary synthesis, counterargument development
+  thinkingBudget: 20000    // High: 7-step COT reasoning, exec summary synthesis, counterargument development
 };
 
 const STRUCTURED_DEFAULT_CONFIG = {
@@ -92,13 +92,13 @@ const RESEARCH_ANALYSIS_CONFIG = {
 const SLIDES_CONFIG = {
   temperature: 0.6,        // Higher for engaging narrative variety
   topP: 0.9,               // Broad selection for compelling content
-  thinkingBudget: 4096     // Medium-high: narrative coherence and evidence chain reasoning
+  thinkingBudget: 8192     // High: narrative coherence, evidence chains, and quality formatting
 };
 
 const SLIDES_OUTLINE_CONFIG = {
   temperature: 0.3,        // Low-moderate: structure with some creative flexibility
   topP: 0.7,               // Balanced for consistent yet varied output
-  thinkingBudget: 20000    // Very high: deep reasoning for COT object, framework selection, evidence chains, cross-section connections
+  thinkingBudget: 16000    // High: narrative planning, framework selection, evidence chains
 };
 
 // ============================================================================

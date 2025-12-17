@@ -223,8 +223,7 @@ function createBipHeader() {
             transformation: {
               width: 60,
               height: 25
-            },
-            type: 'png'
+            }
           })
         ]
       })

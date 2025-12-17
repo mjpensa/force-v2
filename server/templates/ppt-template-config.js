@@ -41,7 +41,7 @@ export const LAYOUTS = {
       title: {
         x: 0.25, y: 0.52, w: 5.94, h: 3.0,
         fontSize: 44, fontFace: FONTS.workSansThin, color: COLORS.navy,
-        align: 'left', italic: false, lineSpacing: 70
+        align: 'left', italic: false, lineSpacing: 55
       },
       // Body: left 50.59%, top 57%, width 44.30%, height 37%
       paragraphs: {
@@ -69,7 +69,7 @@ export const LAYOUTS = {
       title: {
         x: 0.25, y: 0.52, w: 3.2, h: 3.0,
         fontSize: 30, fontFace: FONTS.workSansThin, color: COLORS.navy,
-        align: 'left', italic: false, lineSpacing: 70
+        align: 'left', italic: false, lineSpacing: 55
       },
       // Columns: left 26.71%, top 46.13%, width 68.27%, height 46.93%
       threeColumns: {
