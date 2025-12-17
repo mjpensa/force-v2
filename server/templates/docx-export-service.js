@@ -20,9 +20,19 @@ import {
   ShadingType,
   Header,
   VerticalAlign,
-  TableLayoutType
+  TableLayoutType,
+  ImageRun
 } from 'docx';
 import { COLORS, FONTS, STYLES, PAGE, SPACING, DEFAULT_METADATA } from './docx-template-config.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Path to BIP logo
+const BIP_LOGO_PATH = path.join(__dirname, '../../Public/bip_logo.png');
 
 // ============================================================================
 // HELPERS
@@ -196,18 +206,40 @@ function buildTitleSection(title, subtitle) {
 
 /**
  * Create header with bip. logo (v19 format - right aligned)
- * Note: v19 uses an actual image, this is a text fallback
+ * Uses the actual PNG logo from Public/bip_logo.png
  */
 function createBipHeader() {
-  return new Header({
-    children: [
+  let headerChildren;
+
+  try {
+    // Read the actual BIP logo PNG
+    const logoBuffer = fs.readFileSync(BIP_LOGO_PATH);
+    headerChildren = [
+      new Paragraph({
+        alignment: AlignmentType.RIGHT,
+        children: [
+          new ImageRun({
+            data: logoBuffer,
+            transformation: {
+              width: 60,
+              height: 25
+            },
+            type: 'png'
+          })
+        ]
+      })
+    ];
+  } catch (error) {
+    // Fallback to text if logo file not found
+    console.warn('[DOCX Export] BIP logo not found, using text fallback:', error.message);
+    headerChildren = [
       new Paragraph({
         alignment: AlignmentType.RIGHT,
         children: [
           styledText('bip', {
             font: FONTS.heading,
             size: 28,
-            color: 'C54B4B',  // BIP coral red for logo
+            color: 'C54B4B',
             bold: true
           }),
           styledText('.', {
@@ -218,7 +250,11 @@ function createBipHeader() {
           })
         ]
       })
-    ]
+    ];
+  }
+
+  return new Header({
+    children: headerChildren
   });
 }
 

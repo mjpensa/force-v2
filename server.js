@@ -135,7 +135,7 @@ process.on('SIGINT', () => {
 // --- Start Server ---
 serverStartTime = new Date().toISOString();
 app.listen(port, () => {
-  console.log('AI Roadmap Generator Server');
+  console.log('Proposal Studio Server');
   console.log(`Server running at http://localhost:${port}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Server started at: ${serverStartTime}`);

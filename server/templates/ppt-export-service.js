@@ -44,6 +44,25 @@ function capitalizeAcronyms(text) {
   return result;
 }
 
+/**
+ * Sanitize text by removing markdown and converting placeholder terms
+ * - Removes **bold** markers
+ * - Converts UNDERSCORE_TERMS to lowercase "underscore terms"
+ */
+function sanitizeText(text) {
+  if (!text) return '';
+
+  return text
+    // Remove markdown bold markers: **text** → text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    // Remove markdown italic markers: *text* → text
+    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
+    // Convert UNDERSCORE_TERMS to lowercase spaced words
+    .replace(/\b([A-Z]+(?:_[A-Z]+)+)\b/g, (match) => {
+      return match.toLowerCase().replace(/_/g, ' ');
+    });
+}
+
 function enforceExactlyFourLinesFallback(title) {
   const titleText = title || '';
   let lines = titleText.split('\n').map(l => l.trim()).filter(l => l);
@@ -132,14 +151,14 @@ function getParagraphText(slideData) {
   // Current schema: paragraph1 and paragraph2 as separate string fields
   if (slideData.paragraph1 || slideData.paragraph2) {
     const parts = [];
-    if (slideData.paragraph1) parts.push(slideData.paragraph1.trim());
-    if (slideData.paragraph2) parts.push(slideData.paragraph2.trim());
+    if (slideData.paragraph1) parts.push(sanitizeText(slideData.paragraph1.trim()));
+    if (slideData.paragraph2) parts.push(sanitizeText(slideData.paragraph2.trim()));
     // Double newline creates paragraph break in PPT
     return parts.join('\n\n');
   }
   // Legacy: body field with double-newline separated paragraphs
   if (slideData.body) {
-    return slideData.body.trim();
+    return sanitizeText(slideData.body.trim());
   }
   return '';
 }
@@ -400,9 +419,9 @@ function addTextThreeColumnSlide(pptx, slideData, slideNumber) {
   const colConfig = layout.elements.threeColumns;
   const colWidth = (colConfig.w - (colConfig.columnGap * 2)) / 3;
   const columns = [
-    slideData.paragraph1 || '',
-    slideData.paragraph2 || '',
-    slideData.paragraph3 || ''
+    sanitizeText(slideData.paragraph1 || ''),
+    sanitizeText(slideData.paragraph2 || ''),
+    sanitizeText(slideData.paragraph3 || '')
   ];
 
   columns.forEach((text, i) => {

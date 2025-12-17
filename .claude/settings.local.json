@@ -22,7 +22,8 @@
       "Bash(git -C \"c:\\FORCE\" push)",
       "Bash(comm:*)",
       "Bash(findstr:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

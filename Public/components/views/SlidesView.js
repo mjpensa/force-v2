@@ -90,6 +90,27 @@ function toSentenceCasePreservingAcronyms(text) {
   }).join('\n');
 }
 
+/**
+ * Sanitize text by removing markdown and converting placeholder terms
+ * - Removes **bold** markers
+ * - Converts UNDERSCORE_TERMS to lowercase "underscore terms"
+ * @param {string} text - Text to sanitize
+ * @returns {string} - Cleaned text
+ */
+function sanitizeText(text) {
+  if (!text) return '';
+
+  return text
+    // Remove markdown bold markers: **text** → text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    // Remove markdown italic markers: *text* → text (but not ** which is already handled)
+    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
+    // Convert UNDERSCORE_TERMS to lowercase spaced words
+    .replace(/\b([A-Z]+(?:_[A-Z]+)+)\b/g, (match) => {
+      return match.toLowerCase().replace(/_/g, ' ');
+    });
+}
+
 // Dispatcher - routes to correct renderer based on layout
 function renderSlide(slide, index) {
   const layout = slide.layout || 'twoColumn';
@@ -238,7 +259,7 @@ function renderTwoColumnSlide(slide, index) {
     width: 44.59%;
     height: 40%;
     font-family: 'Work Sans', sans-serif;
-    font-size: clamp(18px, 8cqw, 96px);
+    font-size: clamp(18px, 6cqw, 72px);
     font-weight: 100;
     line-height: 0.85;
     color: #0C2340;
@@ -305,11 +326,11 @@ function renderTwoColumnSlide(slide, index) {
   let paragraphs = [];
   if (slide.paragraph1 || slide.paragraph2) {
     // New schema with separate paragraph fields
-    if (slide.paragraph1) paragraphs.push(truncateToSentence(slide.paragraph1.trim().replace(/\n/g, ' ')));
-    if (slide.paragraph2) paragraphs.push(truncateToSentence(slide.paragraph2.trim().replace(/\n/g, ' ')));
+    if (slide.paragraph1) paragraphs.push(truncateToSentence(sanitizeText(slide.paragraph1.trim().replace(/\n/g, ' '))));
+    if (slide.paragraph2) paragraphs.push(truncateToSentence(sanitizeText(slide.paragraph2.trim().replace(/\n/g, ' '))));
   } else if (slide.body) {
     // Legacy schema with combined body field
-    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(p.trim().replace(/\n/g, ' ')));
+    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(sanitizeText(p.trim().replace(/\n/g, ' '))));
   }
   body.innerHTML = paragraphs.map(p => {
     return `<p style="margin: 0 0 0.8em 0;">${p}</p>`;
@@ -392,23 +413,22 @@ function renderThreeColumnSlide(slide, index) {
 
   // TITLE - PPT: x=0.25", y=0.67", w=2.76", h=2.35" → 1.88%, 8.93%, 20.70%, 31.33%
   // Font: Work Sans Light (weight 300), line-height 0.85 - template 2 uses heavier weight
+  // NOTE: Width increased to 24% and font reduced to prevent choppy mid-word breaks
   const title = document.createElement('div');
   title.style.cssText = `
     position: absolute;
     top: 7%;
     left: 1.87%;
-    width: 20.70%;
+    width: 24%;
     height: 40%;
     font-family: 'Work Sans', sans-serif;
-    font-size: clamp(14px, 3.7cqw, 44px);
+    font-size: clamp(14px, 3.2cqw, 38px);
     font-weight: 300;
     line-height: 0.85;
     color: #0C2340;
     white-space: pre-line;
-    overflow-wrap: break-word;
-    hyphens: auto;
+    word-break: keep-all;
   `;
-  title.lang = 'en'; // Required for CSS hyphens to work
 
   // Convert to sentence case (preserving acronyms) and enforce exactly 4 lines
   const titleText = slide.title || '';
@@ -447,9 +467,9 @@ function renderThreeColumnSlide(slide, index) {
   `;
 
   const columnTexts = [
-    truncateToSentence(slide.paragraph1),
-    truncateToSentence(slide.paragraph2),
-    truncateToSentence(slide.paragraph3)
+    truncateToSentence(sanitizeText(slide.paragraph1)),
+    truncateToSentence(sanitizeText(slide.paragraph2)),
+    truncateToSentence(sanitizeText(slide.paragraph3))
   ];
 
   columnTexts.forEach(text => {
