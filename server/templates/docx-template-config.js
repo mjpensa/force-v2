@@ -1,21 +1,21 @@
 /**
  * DOCX Template Configuration
  * Document styles and formatting for Word export
- * Matches v19 template format
+ * BIP format (coral red headings, black body)
  */
 
 // Brand colors (hex without #)
 export const COLORS = {
-  black: '000000',        // Headings and body text
+  coral: 'C54B4B',        // BIP coral red for headings
+  black: '000000',        // Body text
   navy: '1E3A5F',         // Navy for table headers
-  blue: '1F4D78',         // Heading3 color
   white: 'FFFFFF',
   darkGray: '6B7280',     // Subtitles, captions
   lightGray: 'F3F4F6',
   linkBlue: '0563C1'      // Hyperlinks
 };
 
-// Brand fonts (v19 uses Arial)
+// Brand fonts (BIP uses Arial)
 export const FONTS = {
   heading: 'Arial',
   body: 'Arial',
@@ -53,12 +53,12 @@ export const SPACING = {
   sectionGap: 400
 };
 
-// Style definitions for document elements (v19 format)
+// Style definitions for document elements (BIP format - coral headings)
 export const STYLES = {
   title: {
     font: FONTS.heading,
     size: FONT_SIZES.title,        // 24pt
-    color: COLORS.black,
+    color: COLORS.coral,           // Coral red title
     bold: true
   },
   subtitle: {
@@ -69,20 +69,20 @@ export const STYLES = {
   },
   heading1: {
     font: FONTS.heading,
-    size: 28,                       // 14pt (v19)
-    color: COLORS.black,
-    bold: true
+    size: 28,                       // 14pt
+    color: COLORS.coral,           // Coral red heading
+    bold: false                    // Not bold per BIP format
   },
   heading2: {
     font: FONTS.heading,
-    size: 24,                       // 12pt (v19)
-    color: COLORS.black,
-    bold: true
+    size: 24,                       // 12pt
+    color: COLORS.coral,           // Coral red heading
+    bold: false
   },
   heading3: {
     font: FONTS.heading,
-    size: 24,                       // 12pt (v19)
-    color: COLORS.blue,            // Blue for heading3
+    size: 24,                       // 12pt
+    color: COLORS.coral,           // Coral red heading
     bold: false
   },
   body: {
@@ -93,7 +93,7 @@ export const STYLES = {
   label: {
     font: FONTS.body,
     size: FONT_SIZES.small,
-    color: COLORS.black,
+    color: COLORS.coral,          // Coral red labels
     bold: true,
     allCaps: true
   },

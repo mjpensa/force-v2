@@ -1,7 +1,7 @@
 /**
  * DOCX Export Service
  * Generates Word documents from document data
- * Matches v19 template format (Arial, black bold headings)
+ * BIP format (Arial, coral red headings, black body text)
  * Supports executive summary, analysis overview, and content sections
  */
 
@@ -51,7 +51,7 @@ function styledText(text, style = {}) {
 }
 
 /**
- * Create a heading paragraph (v19 format - black bold)
+ * Create a heading paragraph (BIP format - coral red)
  */
 function createHeading(text, level = 1) {
   const headingStyles = {
@@ -98,7 +98,7 @@ function createLabel(text) {
 }
 
 /**
- * Create a key insight callout (v19 format)
+ * Create a key insight callout (BIP format)
  */
 function createKeyInsight(text) {
   return new Paragraph({
@@ -165,12 +165,12 @@ function splitIntoParagraphs(text) {
 // ============================================================================
 
 /**
- * Build the title section (v19 format - centered, black bold)
+ * Build the title section (BIP format - centered, coral red)
  */
 function buildTitleSection(title, subtitle) {
   const elements = [];
 
-  // Main title - black bold, centered (v19)
+  // Main title - coral red, centered (BIP format)
   elements.push(new Paragraph({
     spacing: { before: 400, after: 200 },
     alignment: AlignmentType.CENTER,
@@ -223,7 +223,7 @@ function createBipHeader() {
 }
 
 /**
- * Create a styled table with navy headers (v19 format)
+ * Create a styled table with navy headers (BIP format)
  */
 function createStyledTable(headers, rows) {
   const tableRows = [];
@@ -261,14 +261,14 @@ function createStyledTable(headers, rows) {
 }
 
 /**
- * Build the executive summary section (v19 format)
+ * Build the executive summary section (BIP format)
  */
 function buildExecutiveSummary(execSummary) {
   if (!execSummary) return [];
 
   const elements = [];
 
-  // Section heading - black bold (v19)
+  // Section heading - coral red (BIP format)
   elements.push(createHeading('Executive Summary', 1));
 
   // Source badge if present
@@ -320,14 +320,14 @@ function buildExecutiveSummary(execSummary) {
 }
 
 /**
- * Build the analysis overview section (v19 format)
+ * Build the analysis overview section (BIP format)
  */
 function buildAnalysisOverview(overview) {
   if (!overview) return [];
 
   const elements = [];
 
-  // Section heading - black bold (v19)
+  // Section heading - coral red (BIP format)
   elements.push(createHeading('Analysis Overview', 1));
 
   // Narrative paragraphs
@@ -391,7 +391,7 @@ function buildAnalysisOverview(overview) {
 }
 
 /**
- * Build a content section (v19 format)
+ * Build a content section (BIP format)
  */
 function buildContentSection(section, index) {
   const elements = [];
@@ -483,7 +483,7 @@ function buildContentSection(section, index) {
 // ============================================================================
 
 /**
- * Generate a Word document from document data (v19 format)
+ * Generate a Word document from document data (BIP format)
  * @param {Object} documentData - Document content object
  * @param {Object} options - Export options
  * @returns {Promise<Buffer>} - Document buffer

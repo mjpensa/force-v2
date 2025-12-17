@@ -67,14 +67,7 @@ const LAYOUTS = {
       w: 2,
       h: 0.04
     },
-    // Corner graphic: top: 0, right: 0, width: 10.9%
-    // SVG actual dimensions: 312x313 (essentially square, ~1:1 ratio)
-    cornerGraphic: {
-      x: SLIDE.WIDTH - pctX(10.9),
-      y: 0,
-      w: pctX(10.9),
-      h: pctX(10.9)  // Square aspect ratio (312:313 ≈ 1:1)
-    },
+    // No corner graphic on section title slides - only used on templates 1 and 2
     // Logo: bottom: 3%, right: 2%, height: 4%
     // Logo actual dimensions: 816x569 (aspect ratio ~1.434:1)
     // Using height-based sizing to maintain aspect ratio
@@ -258,7 +251,11 @@ const ACRONYMS_MIXED = {
   'regtech': 'RegTech',
   'fintech': 'FinTech',
   'devops': 'DevOps',
-  'mifid': 'MiFID'  // Can be MiFID or MIFID depending on context
+  'mifid': 'MiFID',  // Can be MiFID or MIFID depending on context
+  // Proper nouns with periods (place names must always be capitalized)
+  'u.s.': 'U.S.',
+  'u.k.': 'U.K.',
+  'e.u.': 'E.U.'
 };
 
 /**
@@ -548,8 +545,7 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
     line: { color: COLORS.red, width: 0 }
   });
 
-  // Corner graphic (shape-based, muted for dark bg)
-  addCornerGraphic(pptx, slide, L, true);
+  // No corner graphic on section title slides - only used on templates 1 and 2
 
   // Logo
   if (ASSETS.logo) {

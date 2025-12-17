@@ -8,6 +8,13 @@
  * Sections structure aligned with Gantt chart swimlanes
  */
 
+// Proper nouns with periods (place names must always be capitalized)
+const PROPER_NOUNS = {
+  'u.s.': 'U.S.',
+  'u.k.': 'U.K.',
+  'e.u.': 'E.U.'
+};
+
 /**
  * Check if a single word (no slashes) is an acronym
  * @param {string} word - Word to check
@@ -21,12 +28,18 @@ function isAcronymWord(word) {
 
 /**
  * Check if a word (possibly compound with slashes) is an acronym
- * Handles compound forms like "CDM/DRR"
+ * Handles compound forms like "CDM/DRR" and proper nouns like "U.S."
  * @param {string} word - Word to check
  * @returns {{ isAcronym: boolean, value: string }}
  */
 function checkAcronym(word) {
   if (!word) return { isAcronym: false, value: word };
+
+  // Check proper nouns with periods first (e.g., U.S., U.K.)
+  const lowerWord = word.toLowerCase();
+  if (PROPER_NOUNS[lowerWord]) {
+    return { isAcronym: true, value: PROPER_NOUNS[lowerWord] };
+  }
 
   // Handle slashed compound acronyms like "CDM/DRR"
   if (word.includes('/')) {
@@ -392,7 +405,10 @@ function renderThreeColumnSlide(slide, index) {
     line-height: 0.85;
     color: #0C2340;
     white-space: pre-line;
+    overflow-wrap: break-word;
+    hyphens: auto;
   `;
+  title.lang = 'en'; // Required for CSS hyphens to work
 
   // Convert to sentence case (preserving acronyms) and enforce exactly 4 lines
   const titleText = slide.title || '';
