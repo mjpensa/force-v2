@@ -387,6 +387,11 @@ CONCLUSION SECTION (LAST SECTION - REQUIRED):
 
 Your goal: Define the STRUCTURE and NARRATIVE FLOW before any detailed content is written.
 
+## ACRONYM CAPITALIZATION (CRITICAL - applies to all text including swimlane names, taglines, and narratives)
+- MIXED CASE acronyms: FpML, SaaS, PaaS, IaaS, RegTech, FinTech, DeFi, TradFi, DevOps, GenAI
+- ALL CAPS acronyms: CDM, DRR, API, ROI, KPI, ISDA, EMIR, MiFID, CFTC, SEC
+- NEVER alter: "Fpml" is WRONG → "FpML" is CORRECT; "Saas" is WRONG → "SaaS" is CORRECT
+
 ## CHAIN OF THOUGHT: REASON BEFORE STRUCTURING
 
 You MUST complete the 'reasoning' object FIRST, before creating any sections. This forces analytical rigor.
@@ -856,6 +861,7 @@ TAGLINE: 2-word uppercase label, MAX 21 characters. Example: "MARGIN EROSION"
 
 TITLE RULES (CRITICAL - HARD LIMIT: 3 OR 4 LINES ONLY):
 !!! STOP AND COUNT: Every title MUST have EXACTLY 2 or 3 \\n separators. NO EXCEPTIONS !!!
+!!! ACRONYM REMINDER: Preserve exact acronym casing in titles - "FpML" NOT "Fpml", "SaaS" NOT "Saas" !!!
 - MANDATORY: Count \\n separators BEFORE writing each title. 2 = 3 lines, 3 = 4 lines. NEVER 4+ separators.
 - 5+ LINES = REJECTED. 6+ LINES = REJECTED. 7+ LINES = REJECTED. The slide WILL break.
 - If your concept has 5+ words, you MUST combine words onto shared lines

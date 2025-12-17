@@ -235,6 +235,22 @@ SOURCE EXTRACTION (Reference Material):
 - If a research document doesn't cite a specific source, use the document's apparent origin (e.g., "Internal Market Analysis" or "Competitive Intelligence Brief")
 - NEVER use the uploaded filename (like "research.md" or "data.pdf") as the source
 
+ACRONYMS (CRITICAL - USE EXACT STANDARD CAPITALIZATION IN ALL TEXT):
+
+ALL CAPS acronyms:
+- Tech: API, SDK, UI, UX, AI, ML, REST, SQL, JSON, XML, ETL, AWS, GCP, DLT, NFT, DAO, LLM
+- Finance: CDM, CRM, DRR, ROI, KPI, ESG, AML, KYC, OTC, ISDA, EMIR, MiFID, CFTC, SEC, FCA, GDPR
+- General: B2B, P2P, M&A, IPO
+
+MIXED CASE acronyms (preserve exact capitalization):
+- FpML, SaaS, PaaS, IaaS, RegTech, FinTech, InsurTech, SupTech, PropTech, DeFi, TradFi, DevOps, GenAI
+
+CAPITALIZATION RULES:
+- NEVER alter acronym capitalization: "fpml" or "Fpml" is WRONG, "FpML" is CORRECT
+- "saas" or "SAAS" is WRONG, "SaaS" is CORRECT
+- "cdm" or "Cdm" is WRONG, "CDM" is CORRECT
+- For acronyms not listed above, preserve capitalization exactly as found in research documents
+
 CHAIN-OF-THOUGHT REASONING PROCESS (CRITICAL - Complete FIRST):
 
 You MUST populate the "reasoning" object BEFORE writing any other content. This forces analytical rigor and ensures coherent output.
