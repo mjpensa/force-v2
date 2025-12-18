@@ -532,6 +532,10 @@
   color: var(--color-navy-deep);
   margin: 0;
   max-width: 100%;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  -webkit-hyphens: none;
+  hyphens: none;
 }
 .slide-two-column-layout {
   display: flex;
@@ -932,6 +936,73 @@
 /* Chevron rotation when expanded */
 .speaker-notes-panel.expanded .speaker-notes-chevron {
   transform: rotate(180deg);
+}
+
+/* Speaker Notes Loading Spinner */
+.speaker-notes-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #DA291C;
+  border-radius: 50%;
+  animation: speaker-notes-spin 0.8s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes speaker-notes-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Hide chevron when loading */
+.speaker-notes-panel.loading .speaker-notes-chevron {
+  display: none;
+}
+
+/* Loading state placeholder */
+.notes-placeholder.notes-loading {
+  text-align: center;
+  padding: 2rem;
+}
+
+.notes-progress-bar {
+  width: 100%;
+  max-width: 300px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  margin: 1rem auto 0;
+  overflow: hidden;
+}
+
+.notes-progress-fill {
+  height: 100%;
+  width: 30%;
+  background: linear-gradient(90deg, #DA291C, #ff6b5b, #DA291C);
+  background-size: 200% 100%;
+  border-radius: 2px;
+  animation: notes-progress-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes notes-progress-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+/* Retry button */
+.notes-retry-btn {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: #DA291C;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s ease;
+}
+
+.notes-retry-btn:hover {
+  background: #b82318;
 }
 
 /* Content area - hidden by default, shown when expanded */

@@ -70,12 +70,12 @@ const LAYOUTS = {
     // No corner graphic on section title slides - only used on templates 1 and 2
     // Logo: bottom: 3%, right: 2%, height: 4%
     // Logo actual dimensions: 816x569 (aspect ratio ~1.434:1)
-    // Using height-based sizing to maintain aspect ratio
+    // Reduced size for cleaner web rendering
     logo: {
-      x: SLIDE.WIDTH - 0.85,
-      y: SLIDE.HEIGHT - 0.55,
-      w: 0.35 * (816 / 569),  // ~0.50 inches (calculated from aspect ratio)
-      h: 0.35
+      x: SLIDE.WIDTH - 0.75,
+      y: SLIDE.HEIGHT - 0.50,
+      w: 0.30 * (816 / 569),  // ~0.43 inches (calculated from aspect ratio)
+      h: 0.30
     },
     // Page number: bottom: 3.43%, left: 2.11%
     pageNumber: {
@@ -109,21 +109,23 @@ const LAYOUTS = {
       w: pctX(44.30),
       h: pctY(37)  // 100% - 57% - 6%
     },
-    // Corner graphic: top: 0, right: 0, width: 10.9%
+    // Corner graphic: top: 0, right: 0, width: 10%
     // SVG actual dimensions: 312x313 (essentially square, ~1:1 ratio)
+    // Slightly reduced from 10.9% to 10% for better web rendering
     cornerGraphic: {
-      x: SLIDE.WIDTH - pctX(10.9),
+      x: SLIDE.WIDTH - pctX(10),
       y: 0,
-      w: pctX(10.9),
-      h: pctX(10.9)  // Square aspect ratio
+      w: pctX(10),
+      h: pctX(10)  // Square aspect ratio
     },
     // Logo: bottom: 3%, right: 2%
     // Logo actual dimensions: 816x569 (aspect ratio ~1.434:1)
+    // Reduced size for cleaner web rendering
     logo: {
-      x: SLIDE.WIDTH - 0.85,
-      y: SLIDE.HEIGHT - 0.55,
-      w: 0.35 * (816 / 569),  // ~0.50 inches
-      h: 0.35
+      x: SLIDE.WIDTH - 0.75,
+      y: SLIDE.HEIGHT - 0.50,
+      w: 0.30 * (816 / 569),  // ~0.43 inches
+      h: 0.30
     },
     // Page number: bottom: 3.43%, left: 2.11%
     pageNumber: {
@@ -160,18 +162,20 @@ const LAYOUTS = {
     // Column gap: 4.43%
     columnGap: pctX(4.43),
     // Corner graphic - SVG actual dimensions: 312x313 (essentially square)
+    // Slightly reduced from 10.9% to 10% for better web rendering
     cornerGraphic: {
-      x: SLIDE.WIDTH - pctX(10.9),
+      x: SLIDE.WIDTH - pctX(10),
       y: 0,
-      w: pctX(10.9),
-      h: pctX(10.9)  // Square aspect ratio
+      w: pctX(10),
+      h: pctX(10)  // Square aspect ratio
     },
     // Logo - actual dimensions: 816x569 (aspect ratio ~1.434:1)
+    // Reduced size for cleaner web rendering
     logo: {
-      x: SLIDE.WIDTH - 0.85,
-      y: SLIDE.HEIGHT - 0.55,
-      w: 0.35 * (816 / 569),  // ~0.50 inches
-      h: 0.35
+      x: SLIDE.WIDTH - 0.75,
+      y: SLIDE.HEIGHT - 0.50,
+      w: 0.30 * (816 / 569),  // ~0.43 inches
+      h: 0.30
     },
     // Page number
     pageNumber: {
@@ -443,15 +447,36 @@ function truncateToSentence(text, maxChars = 415) {
 }
 
 /**
- * Format body paragraphs with proper spacing and truncation
+ * Normalize body text by converting all-caps words to proper case
+ * Preserves known acronyms
+ * @param {string} text - Body text to normalize
+ * @returns {string} Normalized text
+ */
+function normalizeBodyText(text) {
+  if (!text) return '';
+
+  // Match all-caps words (3+ letters) that aren't known acronyms
+  return text.replace(/\b([A-Z]{3,})\b/g, (match) => {
+    const acronymResult = getAcronymForm(match);
+    if (acronymResult.isAcronym) {
+      return acronymResult.value; // Keep as-is
+    }
+    // Convert to proper case (first letter uppercase, rest lowercase)
+    return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase();
+  });
+}
+
+/**
+ * Format body paragraphs with proper spacing, normalization, and truncation
  * @param {string} p1 - First paragraph
  * @param {string} p2 - Second paragraph
  * @param {number} maxChars - Max chars per paragraph (default 415 for two-column)
  */
 function formatBody(p1, p2, maxChars = 415) {
   const parts = [];
-  if (p1) parts.push(truncateToSentence(p1, maxChars));
-  if (p2) parts.push(truncateToSentence(p2, maxChars));
+  // Pipeline: normalize caps → truncate
+  if (p1) parts.push(truncateToSentence(normalizeBodyText(p1), maxChars));
+  if (p2) parts.push(truncateToSentence(normalizeBodyText(p2), maxChars));
   // Single \n creates paragraph break; paraSpaceAfter handles the spacing
   return parts.join('\n');
 }
@@ -905,13 +930,13 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   const gapWidth = L.columnGap;
   const columnWidth = (totalWidth - (2 * gapWidth)) / 3;
 
-  // Truncate column text to 400 chars (matches browser SlidesView.js)
+  // Normalize and truncate column text to 400 chars (matches browser SlidesView.js)
   // Browser: font-size: clamp(7px, 1.15cqw, 14px), line-height: 1.3
   // 14px = 10.5pt
   const columnTexts = [
-    truncateToSentence(data.paragraph1, 400),
-    truncateToSentence(data.paragraph2, 400),
-    truncateToSentence(data.paragraph3, 400)
+    truncateToSentence(normalizeBodyText(data.paragraph1), 400),
+    truncateToSentence(normalizeBodyText(data.paragraph2), 400),
+    truncateToSentence(normalizeBodyText(data.paragraph3), 400)
   ];
 
   columnTexts.forEach((text, index) => {

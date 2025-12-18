@@ -132,6 +132,27 @@ function sanitizeText(text) {
     });
 }
 
+/**
+ * Normalize body text by converting all-caps words to proper case
+ * Preserves known acronyms (CDM, DRR, API, etc.)
+ * @param {string} text - Body text to normalize
+ * @returns {string} - Normalized text
+ */
+function normalizeBodyText(text) {
+  if (!text) return '';
+
+  // Match all-caps words (3+ letters) that aren't known acronyms
+  return text.replace(/\b([A-Z]{3,})\b/g, (match) => {
+    // Check if it's a known acronym
+    const acronymCheck = checkAcronym(match);
+    if (acronymCheck.isAcronym) {
+      return acronymCheck.value; // Keep as-is
+    }
+    // Convert to proper case (first letter uppercase, rest lowercase)
+    return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase();
+  });
+}
+
 // Dispatcher - routes to correct renderer based on layout
 function renderSlide(slide, index) {
   const layout = slide.layout || 'twoColumn';
@@ -347,11 +368,12 @@ function renderTwoColumnSlide(slide, index) {
   let paragraphs = [];
   if (slide.paragraph1 || slide.paragraph2) {
     // New schema with separate paragraph fields
-    if (slide.paragraph1) paragraphs.push(truncateToSentence(sanitizeText(slide.paragraph1.trim().replace(/\n/g, ' '))));
-    if (slide.paragraph2) paragraphs.push(truncateToSentence(sanitizeText(slide.paragraph2.trim().replace(/\n/g, ' '))));
+    // Pipeline: clean whitespace → sanitize markdown → normalize caps → truncate
+    if (slide.paragraph1) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1.trim().replace(/\n/g, ' ')))));
+    if (slide.paragraph2) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2.trim().replace(/\n/g, ' ')))));
   } else if (slide.body) {
     // Legacy schema with combined body field
-    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(sanitizeText(p.trim().replace(/\n/g, ' '))));
+    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(normalizeBodyText(sanitizeText(p.trim().replace(/\n/g, ' ')))));
   }
   body.innerHTML = paragraphs.map(p => {
     return `<p style="margin: 0 0 0.8em 0;">${p}</p>`;
@@ -488,9 +510,9 @@ function renderThreeColumnSlide(slide, index) {
   `;
 
   const columnTexts = [
-    truncateToSentence(sanitizeText(slide.paragraph1)),
-    truncateToSentence(sanitizeText(slide.paragraph2)),
-    truncateToSentence(sanitizeText(slide.paragraph3))
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1))),
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2))),
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph3)))
   ];
 
   columnTexts.forEach(text => {
@@ -586,6 +608,7 @@ export class SlidesView {
     // Store speaker notes data (from separate generation pass)
     this.speakerNotes = data?.speakerNotes || null;
     this.speakerNotesVisible = false; // Hidden by default
+    this.speakerNotesLoading = false; // Track loading state for on-demand generation
 
     // Track section start indices for TOC navigation
     this.sectionStartIndices = new Map();
@@ -915,11 +938,19 @@ export class SlidesView {
     headerLeft.appendChild(title);
     headerLeft.appendChild(slideIndicator);
 
+    // Loading spinner (hidden by default, shown during on-demand generation)
+    const spinner = document.createElement('span');
+    spinner.className = 'speaker-notes-spinner';
+    spinner.id = 'speaker-notes-spinner';
+    spinner.innerHTML = '';
+    spinner.style.display = 'none';
+
     const chevron = document.createElement('span');
     chevron.className = 'speaker-notes-chevron';
     chevron.innerHTML = '▼';
 
     header.appendChild(headerLeft);
+    header.appendChild(spinner);
     header.appendChild(chevron);
 
     // Content area (hidden by default)
@@ -935,6 +966,7 @@ export class SlidesView {
 
   /**
    * Toggle speaker notes panel visibility
+   * Triggers on-demand generation if notes don't exist yet
    */
   _toggleSpeakerNotes() {
     this.speakerNotesVisible = !this.speakerNotesVisible;
@@ -960,7 +992,94 @@ export class SlidesView {
 
     // Update notes content if visible
     if (this.speakerNotesVisible) {
-      this._updateSpeakerNotesContent();
+      // Check if notes need to be generated on-demand
+      if (!this.speakerNotes?.slides?.length && !this.speakerNotesLoading && this.sessionId) {
+        this._generateSpeakerNotesOnDemand();
+      } else {
+        this._updateSpeakerNotesContent();
+      }
+    }
+  }
+
+  /**
+   * Generate speaker notes on-demand via API
+   * Shows loading indicator while generating
+   */
+  async _generateSpeakerNotesOnDemand() {
+    if (this.speakerNotesLoading || !this.sessionId) return;
+
+    this.speakerNotesLoading = true;
+    this._showSpeakerNotesLoading(true);
+
+    // Show loading state in content area
+    const contentEl = document.getElementById('speaker-notes-content');
+    if (contentEl) {
+      contentEl.innerHTML = `
+        <div class="notes-placeholder notes-loading">
+          <p>Generating speaker notes...</p>
+          <p class="notes-hint">This may take 5-8 minutes. You can continue navigating slides.</p>
+          <div class="notes-progress-bar"><div class="notes-progress-fill"></div></div>
+        </div>
+      `;
+    }
+
+    try {
+      const response = await fetch(`/api/content/${this.sessionId}/slides/speaker-notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'completed' && result.data) {
+        this.speakerNotes = result.data;
+        console.log('[SpeakerNotes] On-demand generation complete:', result.data.slides?.length || 0, 'notes');
+
+        // Update content if panel is still visible
+        if (this.speakerNotesVisible) {
+          this._updateSpeakerNotesContent();
+        }
+      } else {
+        console.error('[SpeakerNotes] Generation failed:', result.error);
+        if (contentEl) {
+          contentEl.innerHTML = `
+            <div class="notes-placeholder notes-error">
+              <p>Failed to generate speaker notes.</p>
+              <p class="notes-hint">${result.error || 'Unknown error occurred.'}</p>
+              <button class="notes-retry-btn" onclick="this.closest('.slides-view-container').__view__._generateSpeakerNotesOnDemand()">Retry</button>
+            </div>
+          `;
+        }
+      }
+    } catch (error) {
+      console.error('[SpeakerNotes] Request failed:', error);
+      if (contentEl) {
+        contentEl.innerHTML = `
+          <div class="notes-placeholder notes-error">
+            <p>Network error while generating notes.</p>
+            <p class="notes-hint">${error.message}</p>
+          </div>
+        `;
+      }
+    } finally {
+      this.speakerNotesLoading = false;
+      this._showSpeakerNotesLoading(false);
+    }
+  }
+
+  /**
+   * Show/hide the loading spinner next to the speaker notes chevron
+   * @param {boolean} show - Whether to show the spinner
+   */
+  _showSpeakerNotesLoading(show) {
+    const spinner = document.getElementById('speaker-notes-spinner');
+    if (spinner) {
+      spinner.style.display = show ? 'inline-block' : 'none';
+    }
+
+    // Also update the panel class for styling
+    if (this.speakerNotesPanel) {
+      this.speakerNotesPanel.classList.toggle('loading', show);
     }
   }
 

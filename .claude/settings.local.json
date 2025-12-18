@@ -30,7 +30,11 @@
       "Bash(done)",
       "Bash(npm ls:*)",
       "Bash(ren FORCE_Phase1_Lite.md Phase1_Lite.md)",
-      "Bash(ren FORCE_Phase2_Lite.md Phase2_Lite.md)"
+      "Bash(ren FORCE_Phase2_Lite.md Phase2_Lite.md)",
+      "Bash(git -C \"c:\\FORCE\" log --oneline --since=\"12 hours ago\" -20)",
+      "Bash(git -C \"c:\\FORCE\" log --oneline -10)",
+      "Bash(git -C \"c:\\FORCE\" diff --stat d545b35..17cb36b)",
+      "Bash(git -C \"c:\\FORCE\" diff --stat 95ffed9..d545b35)"
     ],
     "deny": [],
     "ask": []

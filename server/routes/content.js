@@ -13,7 +13,7 @@
 
 import express from 'express';
 import crypto from 'crypto';
-import { generateAllContent, regenerateContent, generateIntelligenceBrief } from '../generators.js';
+import { generateAllContent, regenerateContent, generateIntelligenceBrief, generateSpeakerNotesAsync } from '../generators.js';
 import { uploadMiddleware, handleUploadErrors } from '../middleware.js';
 import { generatePptx } from '../templates/ppt-export-service-v2.js';
 import { generateDocx, generateIntelligenceBriefDocx } from '../templates/docx-export-service.js';
@@ -425,6 +425,101 @@ router.get('/:sessionId/slides/export', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: 'Failed to generate PowerPoint file',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/content/:sessionId/slides/speaker-notes
+ * Generates speaker notes on-demand for a session's slides
+ * This is called separately from main generation to avoid blocking the initial response
+ *
+ * URL params:
+ * - sessionId: string - Session ID
+ *
+ * Response:
+ * {
+ *   status: 'completed' | 'error',
+ *   data: object | null,
+ *   error: string | null
+ * }
+ */
+router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
+  const SPEAKER_NOTES_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+  req.setTimeout(SPEAKER_NOTES_TIMEOUT_MS);
+  res.setTimeout(SPEAKER_NOTES_TIMEOUT_MS);
+
+  try {
+    const { sessionId } = req.params;
+
+    // Check if session exists
+    const session = sessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        error: 'Session not found',
+        message: 'Session may have expired. Please generate new content.'
+      });
+    }
+
+    touchSession(sessionId);
+
+    // Check if slides exist
+    const slidesResult = session.content.slides;
+    if (!slidesResult || !slidesResult.success || !slidesResult.data) {
+      return res.status(400).json({
+        error: 'Slides not available',
+        message: 'Slides must be generated before speaker notes can be created.'
+      });
+    }
+
+    // Check if speaker notes already exist
+    if (slidesResult.speakerNotes?.slides?.length > 0) {
+      console.log(`[Speaker Notes] Returning cached notes for session ${sessionId}`);
+      return res.json({
+        status: 'completed',
+        data: slidesResult.speakerNotes,
+        cached: true
+      });
+    }
+
+    // Check if research files are available
+    if (!session.researchFiles || session.researchFiles.length === 0) {
+      return res.status(400).json({
+        error: 'Research files not available',
+        message: 'Session research files have expired. Please regenerate content.'
+      });
+    }
+
+    console.log(`[Speaker Notes] Generating on-demand for session ${sessionId}`);
+
+    // Generate speaker notes
+    const result = await generateSpeakerNotesAsync(
+      slidesResult.data,
+      session.researchFiles,
+      session.prompt
+    );
+
+    if (result.success && result.data) {
+      // Cache the speaker notes in the session
+      session.content.slides.speakerNotes = result.data;
+      session.lastAccessed = Date.now();
+
+      res.json({
+        status: 'completed',
+        data: result.data
+      });
+    } else {
+      res.json({
+        status: 'error',
+        error: result.error || 'Failed to generate speaker notes'
+      });
+    }
+
+  } catch (error) {
+    console.error('[Speaker Notes] Error:', error);
+    res.status(500).json({
+      error: 'Failed to generate speaker notes',
       details: error.message
     });
   }

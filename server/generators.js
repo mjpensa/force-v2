@@ -1340,20 +1340,19 @@ export async function generateIntelligenceBrief(sessionData, meetingContext) {
 }
 
 /**
- * Generate all content types with optimized 4-phase pipeline
+ * Generate all content types with optimized 3-phase pipeline
  *
- * OPTIMIZED PIPELINE:
+ * OPTIMIZED PIPELINE (Speaker Notes deferred to background):
  * Phase 0: Start Research Analysis immediately (100% independent, no dependencies)
  * Phase 1: Roadmap + Slides Outline in parallel (Outline can auto-detect topics)
  * Phase 2: Slides Pass 2 + Document in parallel (both use swimlanes from roadmap)
- * Phase 3: Speaker Notes (separate pass, depends on slides completion)
  *
- * This maximizes API utilization while maintaining swimlane alignment
- * and generating comprehensive speaker notes for sales enablement.
+ * Speaker Notes are generated on-demand via generateSpeakerNotesAsync() to avoid
+ * blocking the main response. This reduces initial latency from ~10min to ~2min.
  */
 export async function generateAllContent(userPrompt, researchFiles) {
   try {
-    console.log('[Generation] Starting optimized 4-phase pipeline...');
+    console.log('[Generation] Starting optimized 3-phase pipeline (speaker notes deferred)...');
     const startTime = Date.now();
 
     // Phase 0: Start Research Analysis immediately (no dependencies)
@@ -1418,31 +1417,48 @@ export async function generateAllContent(userPrompt, researchFiles) {
       }
     }
 
-    // Phase 3: Generate speaker notes (separate pass, depends on slides)
-    let speakerNotes = { success: false, error: 'Slides not generated' };
-    if (slides.success && slides.data) {
-      console.log('[Generation] Phase 3: Generating speaker notes...');
-      speakerNotes = await apiQueue.add(
-        () => generateSpeakerNotes(slides.data, researchFiles, userPrompt),
-        'SpeakerNotes'
-      );
-
-      // Attach speaker notes to slides data if successful
-      if (speakerNotes.success && speakerNotes.data) {
-        slides.speakerNotes = speakerNotes.data;
-        console.log(`[Generation] Speaker notes attached to slides (${speakerNotes.data.slides?.length || 0} notes)`);
-      } else {
-        console.warn('[Generation] Speaker notes generation failed:', speakerNotes.error);
-      }
-    }
+    // Speaker notes are now generated on-demand, not during initial generation
+    // This reduces initial response time from ~10min to ~2min
+    const speakerNotes = { success: false, error: 'Speaker notes available on-demand', deferred: true };
 
     const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`[Generation] All phases complete in ${totalTime}s`);
+    console.log(`[Generation] Core content complete in ${totalTime}s (speaker notes deferred)`);
 
     return { roadmap, slides, document, researchAnalysis, speakerNotes };
   } catch (error) {
     throw error;
   }
+}
+
+/**
+ * Generate speaker notes asynchronously (on-demand)
+ * Called separately after main content generation to avoid blocking
+ * @param {object} slidesData - Generated slides data with sections
+ * @param {Array} researchFiles - Original research files
+ * @param {string} userPrompt - Original user request
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export async function generateSpeakerNotesAsync(slidesData, researchFiles, userPrompt) {
+  if (!slidesData?.sections) {
+    return { success: false, error: 'Slides data required for speaker notes generation' };
+  }
+
+  console.log('[Speaker Notes Async] Starting on-demand generation...');
+  const startTime = Date.now();
+
+  const result = await apiQueue.add(
+    () => generateSpeakerNotes(slidesData, researchFiles, userPrompt),
+    'SpeakerNotes'
+  );
+
+  const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+  if (result.success) {
+    console.log(`[Speaker Notes Async] Complete in ${totalTime}s (${result.data?.slides?.length || 0} notes)`);
+  } else {
+    console.warn(`[Speaker Notes Async] Failed after ${totalTime}s:`, result.error);
+  }
+
+  return result;
 }
 export async function regenerateContent(viewType, prompt, researchFiles) {
   try {
