@@ -186,6 +186,683 @@ export const slidesOutlineSchema = {
   required: ["reasoning", "sections"]
 };
 
+// ============================================================================
+// SPEAKER NOTES SCHEMA - For separate pass generation after slides
+// ============================================================================
+
+/**
+ * Schema for speaker notes - generated in a separate pass after slides
+ * Includes narrative script, Q&A, source attribution, story context, and transparency
+ */
+export const speakerNotesSchema = {
+  description: "Speaker notes for each slide - generated after slides to support sales enablement",
+  type: "object",
+  properties: {
+    // Top-level reasoning block for transparency (from Pass 1 outline)
+    reasoning: {
+      type: "object",
+      description: "Chain-of-thought reasoning that informed notes generation. Provides transparency into the analytical process.",
+      properties: {
+        presentationNarrativeArc: {
+          type: "string",
+          description: "The overall story arc: [Opening Hook] → [Tension Building] → [Resolution/CTA]"
+        },
+        audienceProfile: {
+          type: "object",
+          properties: {
+            primaryStakeholder: { type: "string", description: "Key decision-maker (CFO, CTO, Board, etc.)" },
+            painPoints: { type: "array", items: { type: "string" }, description: "Top 3 pain points" },
+            decisionCriteria: { type: "array", items: { type: "string" }, description: "Key decision factors" }
+          }
+        },
+        keyEvidenceChains: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              evidence: { type: "string" },
+              insight: { type: "string" },
+              anticipatedQuestion: { type: "string" },
+              preparedResponse: { type: "string" }
+            }
+          },
+          description: "3-5 anchor evidence chains that drive Q&A"
+        },
+        sourceInventory: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              sourceName: { type: "string" },
+              keyFindings: { type: "array", items: { type: "string" } },
+              confidenceLevel: { type: "string", enum: ["high", "medium", "low"] }
+            }
+          },
+          description: "Inventory of authoritative sources used"
+        },
+        anticipatedPushback: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              pushbackType: { type: "string" },
+              specificObjection: { type: "string" },
+              evidenceToCounter: { type: "string" },
+              reframingStrategy: { type: "string" }
+            }
+          },
+          description: "Hardest pushbacks and how to handle them"
+        },
+        // Narrative transitions for slide-to-slide coherence
+        narrativeTransitions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              fromSlide: { type: "string", description: "Slide tagline transitioning FROM" },
+              toSlide: { type: "string", description: "Slide tagline transitioning TO" },
+              transitionLogic: { type: "string", description: "Why this transition makes narrative sense" },
+              bridgePhrase: { type: "string", description: "Actual phrase to use: 'This leads us to...' or 'Building on this...'" }
+            }
+          },
+          description: "Planned transitions between slides for narrative coherence"
+        },
+        // Enhancement #3: Competitive Differentiation Arsenal
+        competitivePositioning: {
+          type: "object",
+          description: "Ammunition for 'why not [competitor]?' questions",
+          properties: {
+            primaryCompetitors: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string", description: "Competitor name (McKinsey, Deloitte, internal team, etc.)" },
+                  theirStrength: { type: "string", description: "What they're known for - acknowledge it" },
+                  ourCounter: { type: "string", description: "Why we're better for THIS engagement" },
+                  bridgePhrase: { type: "string", description: "Transition phrase: 'While X excels at..., what you need is...'" }
+                }
+              },
+              description: "Top 2-3 competitors and how to position against them"
+            },
+            internalTeamResponse: {
+              type: "string",
+              description: "Response to 'why not do this in-house?' - the classic objection"
+            },
+            doNothingRisk: {
+              type: "string",
+              description: "Cost of inaction - critical for hostile audiences who want to delay"
+            }
+          }
+        },
+        // Enhancement #10: Bridge Phrases for Difficult Moments
+        bridgePhrases: {
+          type: "object",
+          description: "Pre-written phrases for difficult presentation moments",
+          properties: {
+            dontKnowAnswer: {
+              type: "array",
+              items: { type: "string" },
+              description: "Phrases when you don't have an answer ready"
+            },
+            hostileInterruption: {
+              type: "array",
+              items: { type: "string" },
+              description: "Phrases to handle aggressive pushback"
+            },
+            goingOffTopic: {
+              type: "array",
+              items: { type: "string" },
+              description: "Phrases to redirect wandering discussions"
+            },
+            technicalDive: {
+              type: "array",
+              items: { type: "string" },
+              description: "Phrases to defer deep technical questions"
+            },
+            losingTheRoom: {
+              type: "array",
+              items: { type: "string" },
+              description: "Recovery phrases when engagement drops"
+            }
+          }
+        }
+      }
+    },
+    slides: {
+      type: "array",
+      description: "Speaker notes for each content slide (matches slide order)",
+      items: {
+        type: "object",
+        properties: {
+          slideIndex: {
+            type: "number",
+            description: "Index of the slide these notes apply to (0-based within section)"
+          },
+          sectionName: {
+            type: "string",
+            description: "Name of the section this slide belongs to"
+          },
+          slideTagline: {
+            type: "string",
+            description: "Tagline of the slide for reference"
+          },
+
+          // 1. NARRATIVE SCRIPT
+          narrative: {
+            type: "object",
+            properties: {
+              talkingPoints: {
+                type: "array",
+                items: { type: "string" },
+                description: "3-5 key talking points presenter can use verbatim or adapt"
+              },
+              transitionIn: {
+                type: "string",
+                description: "How to transition FROM the previous slide to this one"
+              },
+              transitionOut: {
+                type: "string",
+                description: "How to transition FROM this slide TO the next"
+              },
+              keyPhrase: {
+                type: "string",
+                description: "The ONE phrase to emphasize for audience retention"
+              }
+            },
+            required: ["talkingPoints", "keyPhrase"]
+          },
+
+          // 2. ANTICIPATE & RESPOND (Enhanced with severity tiers - Enhancement #2)
+          anticipatedQuestions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                question: {
+                  type: "string",
+                  description: "A likely client question or objection"
+                },
+                response: {
+                  type: "string",
+                  description: "Initial response using ACE framework (Acknowledge, Cite Evidence, Expand)"
+                },
+                pushbackType: {
+                  type: "string",
+                  enum: ["skepticism", "cost_concern", "timeline", "feasibility", "risk", "scope", "competitive"],
+                  description: "Category of pushback"
+                },
+                severity: {
+                  type: "string",
+                  enum: ["probing", "skeptical", "hostile", "deal_breaker"],
+                  description: "How serious is this objection? Affects preparation priority"
+                },
+                escalationResponse: {
+                  type: "string",
+                  description: "Follow-up response if they push back AGAIN after initial response",
+                  nullable: true
+                },
+                deferralOption: {
+                  type: "string",
+                  description: "Graceful way to defer: 'Let me follow up with specifics after this meeting'",
+                  nullable: true
+                },
+                bridgeToStrength: {
+                  type: "string",
+                  description: "How to pivot this objection INTO a selling point",
+                  nullable: true
+                }
+              },
+              required: ["question", "response", "pushbackType", "severity"]
+            },
+            description: "2-3 likely questions/objections with prepared responses and escalation paths"
+          },
+
+          // 3. SOURCE ATTRIBUTION
+          sourceAttribution: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                claim: {
+                  type: "string",
+                  description: "The specific claim or data point being cited"
+                },
+                source: {
+                  type: "string",
+                  description: "Source document name and location (e.g., 'McKinsey Report 2024, p.15')"
+                },
+                confidence: {
+                  type: "string",
+                  enum: ["direct_extraction", "paraphrase", "synthesis", "inference"],
+                  description: "How the content was derived from the source"
+                },
+                originalText: {
+                  type: "string",
+                  description: "Original quote if direct extraction (optional)",
+                  nullable: true
+                }
+              },
+              required: ["claim", "source", "confidence"]
+            },
+            description: "Citations for key claims on this slide"
+          },
+
+          // 4. STORY CONTEXT (Enhanced with CTA variants and Time Guidance)
+          storyContext: {
+            type: "object",
+            properties: {
+              narrativePosition: {
+                type: "string",
+                enum: ["opening_hook", "context_setting", "evidence_building", "insight_reveal", "implication", "call_to_action"],
+                description: "Where this slide sits in the narrative arc"
+              },
+              precededBy: {
+                type: "string",
+                description: "What the audience just learned from the previous slide"
+              },
+              followedBy: {
+                type: "string",
+                description: "What comes next and why this slide sets it up"
+              },
+              soWhat: {
+                type: "string",
+                description: "Why this slide matters to the client - the key takeaway"
+              },
+              // Enhancement #8: Call-to-Action Variants by Audience Temperature
+              callToAction: {
+                type: "object",
+                description: "Different closes based on audience receptivity",
+                properties: {
+                  warmAudience: {
+                    type: "object",
+                    properties: {
+                      ask: { type: "string", description: "Direct ask for commitment" },
+                      timeline: { type: "string", description: "Specific next step timing" }
+                    }
+                  },
+                  neutralAudience: {
+                    type: "object",
+                    properties: {
+                      ask: { type: "string", description: "Softer ask - follow-up materials" },
+                      nextStep: { type: "string", description: "Lower-commitment next action" }
+                    }
+                  },
+                  hostileAudience: {
+                    type: "object",
+                    properties: {
+                      ask: { type: "string", description: "Address concerns directly" },
+                      fallback: { type: "string", description: "Minimum viable next step" }
+                    }
+                  }
+                }
+              },
+              // Enhancement #9: Time Management Cues
+              timeGuidance: {
+                type: "object",
+                description: "Time management for this slide",
+                properties: {
+                  suggestedDuration: { type: "string", description: "How long to spend: '2-3 minutes'" },
+                  canCondense: { type: "boolean", description: "True if slide can be shortened if running late" },
+                  condensedVersion: { type: "string", description: "One-sentence version if short on time" },
+                  mustInclude: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Non-negotiable points even if condensing"
+                  }
+                }
+              }
+            },
+            required: ["narrativePosition", "soWhat"]
+          },
+
+          // 5. GENERATION TRANSPARENCY
+          generationTransparency: {
+            type: "object",
+            properties: {
+              primarySources: {
+                type: "array",
+                items: { type: "string" },
+                description: "List of source documents that informed this slide's content"
+              },
+              derivationMethod: {
+                type: "string",
+                enum: ["extracted", "paraphrased", "synthesized", "inferred"],
+                description: "Primary method used to derive slide content from sources"
+              },
+              assumptions: {
+                type: "array",
+                items: { type: "string" },
+                description: "Any assumptions made during content generation"
+              },
+              dataLineage: {
+                type: "string",
+                description: "Brief trace from source material to slide content"
+              }
+            },
+            required: ["primarySources", "derivationMethod", "dataLineage"]
+          },
+
+          // 6. CREDIBILITY ANCHORS (Enhancement #6)
+          credibilityAnchors: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                type: {
+                  type: "string",
+                  enum: ["case_study", "analyst_quote", "regulatory", "peer_company", "research"],
+                  description: "Type of credibility anchor"
+                },
+                statement: {
+                  type: "string",
+                  description: "The credibility-building statement"
+                },
+                dropPhrase: {
+                  type: "string",
+                  description: "Natural way to introduce: 'As Gartner noted...'"
+                },
+                fullCitation: {
+                  type: "string",
+                  description: "Full citation for follow-up questions"
+                }
+              },
+              required: ["type", "statement", "dropPhrase", "fullCitation"]
+            },
+            description: "Third-party validation points for skeptical audiences"
+          },
+
+          // 7. RISK MITIGATION (Enhancement #7)
+          riskMitigation: {
+            type: "object",
+            description: "De-risking language for risk-averse audiences",
+            properties: {
+              implementationRisk: {
+                type: "object",
+                properties: {
+                  concern: { type: "string", description: "The implementation concern" },
+                  response: { type: "string", description: "De-risk with pilot scope, phased approach" },
+                  proofPoint: { type: "string", description: "Evidence of successful implementation" }
+                },
+                nullable: true
+              },
+              reputationalRisk: {
+                type: "object",
+                properties: {
+                  concern: { type: "string", description: "Public failure fear" },
+                  response: { type: "string", description: "Internal pilot framing, controlled rollout" }
+                },
+                nullable: true
+              },
+              careerRisk: {
+                type: "object",
+                properties: {
+                  concern: { type: "string", description: "Sponsor's personal exposure" },
+                  response: { type: "string", description: "Checkpoints, off-ramps, board-ready narratives" }
+                },
+                nullable: true
+              }
+            }
+          },
+
+          // 8. STAKEHOLDER-SPECIFIC MESSAGING (Enhancement #1)
+          stakeholderAngles: {
+            type: "object",
+            description: "Tailored messaging for different decision-makers in the room",
+            properties: {
+              cfo: {
+                type: "string",
+                description: "ROI/cost framing: quantify savings, payback period, budget impact"
+              },
+              cto: {
+                type: "string",
+                description: "Technical feasibility: integration complexity, stack compatibility, security"
+              },
+              ceo: {
+                type: "string",
+                description: "Strategic positioning: competitive advantage, market timing, board narrative"
+              },
+              operations: {
+                type: "string",
+                description: "Implementation risk: timeline, resource requirements, change management"
+              }
+            }
+          },
+
+          // 9. AUDIENCE SIGNALS (Enhancement #4)
+          audienceSignals: {
+            type: "object",
+            description: "How to read the room and adapt in real-time",
+            properties: {
+              losingThem: {
+                type: "object",
+                properties: {
+                  signs: { type: "array", items: { type: "string" }, description: "Observable signals of disengagement" },
+                  pivotStrategy: { type: "string", description: "What to do when you notice these signs" },
+                  emergencyBridge: { type: "string", description: "Quick escape to skip ahead: 'Let me cut to the bottom line...'" }
+                }
+              },
+              winningThem: {
+                type: "object",
+                properties: {
+                  signs: { type: "array", items: { type: "string" }, description: "Signals of engagement and buy-in" },
+                  accelerationOption: { type: "string", description: "How to capitalize: ask for commitment, go deeper" }
+                }
+              }
+            }
+          },
+
+          // 10. QUICK REFERENCE CHEAT SHEET (Enhancement #5)
+          quickReference: {
+            type: "object",
+            description: "Condensed view for quick glance during presentation",
+            properties: {
+              keyNumber: { type: "string", description: "The ONE number to remember: '$2.3M savings'" },
+              keyPhrase: { type: "string", description: "The memorable quote: '60% cost reduction in 18 months'" },
+              keyProof: { type: "string", description: "The credibility anchor: 'JPMorgan achieved this Q4 2024'" },
+              keyAsk: { type: "string", description: "The call to action: 'Pilot program starting Q2'" }
+            }
+          }
+        },
+        required: ["slideIndex", "sectionName", "slideTagline", "narrative", "anticipatedQuestions", "sourceAttribution", "storyContext", "generationTransparency"]
+      }
+    }
+  },
+  required: ["reasoning", "slides"]
+};
+
+// ============================================================================
+// SPEAKER NOTES OUTLINE SCHEMA - For two-pass generation (Pass 1)
+// ============================================================================
+
+/**
+ * Schema for speaker notes outline - lightweight structure for Pass 1
+ * Captures reasoning and high-level notes structure before full generation
+ */
+export const speakerNotesOutlineSchema = {
+  description: "Speaker notes outline with chain-of-thought reasoning - Pass 1 of two-pass generation",
+  type: "object",
+  properties: {
+    // Chain-of-thought reasoning (completed BEFORE structuring notes)
+    reasoning: {
+      type: "object",
+      description: "Explicit reasoning completed BEFORE generating notes. Forces analytical depth.",
+      properties: {
+        presentationNarrativeArc: {
+          type: "string",
+          description: "The overall story arc: [Opening Hook] → [Tension Building] → [Resolution/CTA]. What is the single thread connecting all slides?"
+        },
+        audienceProfile: {
+          type: "object",
+          properties: {
+            primaryStakeholder: {
+              type: "string",
+              description: "Who is the key decision-maker? (e.g., CFO, CTO, Board)"
+            },
+            painPoints: {
+              type: "array",
+              items: { type: "string" },
+              description: "Top 3 pain points this audience cares about"
+            },
+            decisionCriteria: {
+              type: "array",
+              items: { type: "string" },
+              description: "What factors will drive their decision? (ROI, risk, timeline, etc.)"
+            }
+          }
+        },
+        keyEvidenceChains: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              evidence: { type: "string", description: "Specific data point with source" },
+              insight: { type: "string", description: "What this evidence means" },
+              anticipatedQuestion: { type: "string", description: "Likely question this evidence will trigger" },
+              preparedResponse: { type: "string", description: "Prepared response using ACE framework" }
+            }
+          },
+          description: "3-5 anchor evidence chains that will drive Q&A"
+        },
+        sourceInventory: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              sourceName: { type: "string", description: "Authoritative source name (not filename)" },
+              keyFindings: { type: "array", items: { type: "string" }, description: "2-3 key findings from this source" },
+              confidenceLevel: { type: "string", enum: ["high", "medium", "low"], description: "How reliable is this source?" }
+            }
+          },
+          description: "Inventory of sources to cite in speaker notes"
+        },
+        narrativeTransitions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              fromSlide: { type: "string", description: "Slide tagline transitioning FROM" },
+              toSlide: { type: "string", description: "Slide tagline transitioning TO" },
+              transitionLogic: { type: "string", description: "Why this transition makes narrative sense" },
+              bridgePhrase: { type: "string", description: "Actual phrase to use: 'This leads us to...' or 'Building on this...'" }
+            }
+          },
+          description: "Planned transitions between slides for narrative coherence"
+        },
+        anticipatedPushback: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              pushbackType: { type: "string", enum: ["skepticism", "cost_concern", "timeline", "feasibility", "risk", "scope"] },
+              specificObjection: { type: "string", description: "The exact objection they might raise" },
+              evidenceToCounter: { type: "string", description: "Data point that counters this objection" },
+              reframingStrategy: { type: "string", description: "How to reframe the objection as an opportunity" }
+            }
+          },
+          description: "3-5 hardest pushbacks and how to handle them"
+        },
+        // Enhancement #3: Competitive Differentiation Arsenal
+        competitivePositioning: {
+          type: "object",
+          description: "Ammunition for 'why not [competitor]?' questions",
+          properties: {
+            primaryCompetitors: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string", description: "Competitor name (McKinsey, Deloitte, internal team, etc.)" },
+                  theirStrength: { type: "string", description: "What they're known for - acknowledge it" },
+                  ourCounter: { type: "string", description: "Why we're better for THIS engagement" },
+                  bridgePhrase: { type: "string", description: "Transition phrase: 'While X excels at..., what you need is...'" }
+                }
+              },
+              description: "Top 2-3 competitors and how to position against them"
+            },
+            internalTeamResponse: {
+              type: "string",
+              description: "Response to 'why not do this in-house?' - the classic objection"
+            },
+            doNothingRisk: {
+              type: "string",
+              description: "Cost of inaction - critical for hostile audiences who want to delay"
+            }
+          }
+        },
+        // Enhancement #10: Bridge Phrases for Difficult Moments
+        bridgePhrases: {
+          type: "object",
+          description: "Pre-written phrases for difficult presentation moments",
+          properties: {
+            dontKnowAnswer: {
+              type: "array",
+              items: { type: "string" },
+              description: "Phrases when you don't have an answer ready"
+            },
+            hostileInterruption: {
+              type: "array",
+              items: { type: "string" },
+              description: "Phrases to handle aggressive pushback"
+            },
+            goingOffTopic: {
+              type: "array",
+              items: { type: "string" },
+              description: "Phrases to redirect wandering discussions"
+            },
+            technicalDive: {
+              type: "array",
+              items: { type: "string" },
+              description: "Phrases to defer deep technical questions"
+            },
+            losingTheRoom: {
+              type: "array",
+              items: { type: "string" },
+              description: "Recovery phrases when engagement drops"
+            }
+          }
+        }
+      },
+      required: ["presentationNarrativeArc", "keyEvidenceChains", "sourceInventory", "anticipatedPushback"]
+    },
+
+    // Slide-level outline (lightweight - just key elements, not full notes)
+    slideOutlines: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          slideIndex: { type: "number" },
+          sectionName: { type: "string" },
+          slideTagline: { type: "string" },
+          narrativePosition: {
+            type: "string",
+            enum: ["opening_hook", "context_setting", "evidence_building", "insight_reveal", "implication", "call_to_action"]
+          },
+          keyTalkingPoint: {
+            type: "string",
+            description: "The ONE most important point for this slide"
+          },
+          primaryQuestion: {
+            type: "string",
+            description: "The most likely question this slide will trigger"
+          },
+          primarySource: {
+            type: "string",
+            description: "The main source to cite for this slide's claims"
+          },
+          soWhatStatement: {
+            type: "string",
+            description: "Draft of the 'so what' - why this matters to the client"
+          }
+        },
+        required: ["slideIndex", "sectionName", "slideTagline", "narrativePosition", "keyTalkingPoint"]
+      }
+    }
+  },
+  required: ["reasoning", "slideOutlines"]
+};
+
 /**
  * Get current date context for time-aware recommendations
  * Enables temporally-aware framing in slide content
@@ -1062,4 +1739,562 @@ FINAL VALIDATION (DO THIS BEFORE OUTPUTTING - MANDATORY):
 4. VERIFY: Every title must have exactly 2 or 3 \\n separators (3 or 4 lines)
 5. Double-check twoColumn titles: each line must be ≤10 characters
 `;
+}
+
+// ============================================================================
+// SPEAKER NOTES PROMPT - Separate pass after slides generation
+// ============================================================================
+
+/**
+ * Generate prompt for speaker notes (Pass 2 of two-pass generation)
+ * Creates comprehensive presenter support notes for each slide
+ * Uses outline from Pass 1 as constraint for higher quality output
+ * @param {object} slidesData - Generated slides data with sections
+ * @param {Array<{filename: string, content: string}>} researchFiles - Original research files
+ * @param {string} userPrompt - Original user request
+ * @param {object|null} outline - Optional outline from Pass 1 for constrained generation
+ * @returns {string} Complete prompt for speaker notes generation
+ */
+export function generateSpeakerNotesPrompt(slidesData, researchFiles, userPrompt, outline = null) {
+  // Validate inputs
+  if (!slidesData?.sections?.length) {
+    throw new Error('slidesData with sections is required for speaker notes generation');
+  }
+  if (!researchFiles?.length) {
+    throw new Error('researchFiles are required for speaker notes generation');
+  }
+
+  // Format slides data for the prompt
+  const slidesReference = slidesData.sections.map((section, sectionIdx) => {
+    const sectionSlides = section.slides.map((slide, slideIdx) => {
+      return `    Slide ${slideIdx + 1}: "${slide.tagline}" - ${slide.subTopic || 'No subtopic'}
+      Title: ${slide.title?.replace(/\n/g, ' | ')}
+      Key content: ${(slide.paragraph1 || '').substring(0, 200)}...`;
+    }).join('\n');
+
+    return `  Section ${sectionIdx + 1}: "${section.swimlane}"
+${sectionSlides}`;
+  }).join('\n\n');
+
+  // Format research content
+  const researchContent = researchFiles
+    .filter(file => file?.filename && file?.content?.trim())
+    .map(file => `=== ${file.filename} ===\n${file.content}`)
+    .join('\n\n');
+
+  // Extract source document names for reference
+  const sourceDocuments = researchFiles
+    .filter(file => file?.filename)
+    .map(file => file.filename);
+
+  // Build outline constraint section if outline is provided
+  const outlineConstraint = outline ? `
+## OUTLINE FROM PASS 1 (STRICT CONSTRAINT)
+You have been given a pre-analyzed reasoning framework. You MUST use it to guide your notes.
+
+### PRESENTATION NARRATIVE ARC
+${outline.reasoning?.presentationNarrativeArc || 'Not specified'}
+
+### AUDIENCE PROFILE
+- Primary Stakeholder: ${outline.reasoning?.audienceProfile?.primaryStakeholder || 'Not specified'}
+- Pain Points: ${outline.reasoning?.audienceProfile?.painPoints?.join(', ') || 'Not specified'}
+- Decision Criteria: ${outline.reasoning?.audienceProfile?.decisionCriteria?.join(', ') || 'Not specified'}
+
+### KEY EVIDENCE CHAINS (MUST appear in Q&A responses)
+${outline.reasoning?.keyEvidenceChains?.map((chain, i) => `
+${i + 1}. Evidence: "${chain.evidence}"
+   Insight: "${chain.insight}"
+   Anticipated Question: "${chain.anticipatedQuestion}"
+   Prepared Response: "${chain.preparedResponse}"
+`).join('') || 'No evidence chains specified'}
+
+### SOURCE INVENTORY (USE THESE SOURCE NAMES)
+${outline.reasoning?.sourceInventory?.map((src, i) => `
+${i + 1}. ${src.sourceName} (${src.confidenceLevel} confidence)
+   - ${src.keyFindings?.join('\n   - ') || 'No key findings'}
+`).join('') || 'No sources specified'}
+
+### ANTICIPATED PUSHBACK (PREPARE FOR THESE)
+${outline.reasoning?.anticipatedPushback?.map((pb, i) => `
+${i + 1}. [${pb.pushbackType}] "${pb.specificObjection}"
+   Counter with: ${pb.evidenceToCounter}
+   Reframe as: ${pb.reframingStrategy}
+`).join('') || 'No pushback specified'}
+
+### NARRATIVE TRANSITIONS (USE THESE BRIDGE PHRASES)
+${outline.reasoning?.narrativeTransitions?.map(t => `
+- From "${t.fromSlide}" → To "${t.toSlide}": "${t.bridgePhrase}"
+`).join('') || 'No transitions specified'}
+
+### SLIDE-LEVEL GUIDANCE
+${outline.slideOutlines?.map((so, i) => `
+Slide ${i + 1} (${so.sectionName} - "${so.slideTagline}"):
+- Narrative Position: ${so.narrativePosition}
+- Key Talking Point: ${so.keyTalkingPoint}
+- Primary Question: ${so.primaryQuestion || 'Not specified'}
+- Primary Source: ${so.primarySource || 'Not specified'}
+- So-What: ${so.soWhatStatement || 'Not specified'}
+`).join('') || 'No slide outlines'}
+
+═══════════════════════════════════════════════════════════════════════════════
+                     OUTLINE FIDELITY REQUIREMENTS
+═══════════════════════════════════════════════════════════════════════════════
+1. Use the EXACT source names from sourceInventory (not filenames)
+2. Include ALL keyEvidenceChains in your Q&A responses
+3. Use the anticipatedPushback to inform your response strategies
+4. Use the narrativeTransitions for transitionIn/transitionOut
+5. Honor the narrative position and so-what from slideOutlines
+6. Copy the reasoning object to the top-level 'reasoning' field in output
+═══════════════════════════════════════════════════════════════════════════════
+
+` : '';
+
+  return `You are generating SPEAKER NOTES for a sales presentation. These notes will help a consulting partner prepare for client meetings.
+${outline ? '\nThis is PASS 2 of a two-pass generation. You have been given an outline with reasoning to guide your output.' : ''}
+
+## YOUR ROLE
+You are a senior consultant preparing presenter notes that will:
+1. Help the presenter deliver the content confidently
+2. Anticipate client questions and objections
+3. Trace every claim back to source documents
+4. Explain how the presentation fits together as a narrative
+
+## SLIDES TO ANNOTATE
+The following slides have already been generated. Create speaker notes for EACH content slide (skip section title slides).
+
+${slidesReference}
+
+## SOURCE DOCUMENTS
+These are the original research documents used to generate the slides. Use them for:
+- Source attribution (cite specific documents, pages, sections)
+- Answering "where did this come from?" questions
+- Identifying direct extractions vs. synthesis vs. inference
+
+${outline?.reasoning?.sourceInventory?.length ? `
+Authoritative sources identified in analysis:
+${outline.reasoning.sourceInventory.map(s => `- ${s.sourceName} (${s.confidenceLevel} confidence)`).join('\n')}
+` : `Source documents provided: ${sourceDocuments.join(', ')}
+NOTE: Extract actual publication names from within these documents - do NOT cite these filenames.`}
+${outlineConstraint}
+## SPEAKER NOTES REQUIREMENTS
+
+For EACH content slide, generate:
+
+### 1. NARRATIVE (talking points)
+- 3-5 bullet points the presenter can use VERBATIM in conversation
+- Each point should be 1-2 natural sentences (not bullet-point fragments)
+- Include delivery cues in brackets: [pause], [emphasize], [gesture to slide]
+- Start with a hook: "Here's where it gets interesting..." or "This is the critical insight..."
+- Include the KEY PHRASE - a memorable, quotable line the client will repeat internally
+- Transition phrases: how to flow FROM the previous slide and TO the next
+
+### 2. ANTICIPATED QUESTIONS (Q&A prep with SEVERITY TIERS)
+- 2-3 likely questions from a skeptical C-suite executive
+- Structure EVERY response using the ACE framework:
+  - ACKNOWLEDGE: "That's a fair concern..." / "You're right to ask..."
+  - CITE EVIDENCE: Specific data point or source
+  - EXPAND: Why this actually supports the recommendation
+
+FOR EACH QUESTION PROVIDE:
+- question: The exact question they'll ask
+- response: Initial ACE framework response
+- pushbackType: skepticism, cost_concern, timeline, feasibility, risk, scope, competitive
+- severity: CRITICAL - Assign one of these levels:
+  * probing: Genuine curiosity, easy to satisfy
+  * skeptical: Needs convincing, but open to evidence
+  * hostile: Actively looking for holes, requires careful handling
+  * deal_breaker: If not addressed, kills the deal
+- escalationResponse: If they push back AGAIN, what's your second response?
+- deferralOption: Graceful exit if you need to follow up later
+- bridgeToStrength: How to turn this objection into a selling point
+
+Example deal_breaker question:
+{
+  question: "Our board won't approve anything without 18-month ROI projections",
+  response: "That's exactly the right question. JPMorgan's deployment showed 14-month payback...",
+  severity: "deal_breaker",
+  escalationResponse: "I can provide a custom ROI model using your actual cost structure...",
+  deferralOption: "Let me build a board-ready ROI deck with your specific numbers",
+  bridgeToStrength: "This rigor is why you'll succeed - let me give you the ammunition"
+}
+
+### 3. SOURCE ATTRIBUTION (citations)
+- For each key claim or data point on the slide, cite the SPECIFIC source
+- Include: the claim, source document/section/page, and confidence level
+- CRITICAL: Extract REAL publication names from the research content:
+  - Look for: "according to...", "published by...", "per the...", author names, report titles
+  - Examples: "McKinsey Global Institute 2024 Report", "Gartner Magic Quadrant Q3 2024", "Federal Reserve Economic Data"
+  - If truly unnamed, use descriptive type: "Internal benchmarking analysis" or "Industry consortium survey"
+- Confidence levels:
+  - direct_extraction: Quoted or nearly quoted from source (include original text)
+  - paraphrase: Restated in different words, same meaning
+  - synthesis: Combined multiple sources into one insight
+  - inference: Logical conclusion drawn from evidence (flag assumptions clearly)
+
+### 4. STORY CONTEXT (narrative position)
+- Where this slide sits in the overall arc (opening_hook, context_setting, evidence_building, insight_reveal, implication, call_to_action)
+- What the audience just learned (precededBy) - the mental context they're carrying
+- What comes next and why (followedBy) - create anticipation
+- The "SO WHAT" - must be:
+  - Action-oriented: "This means you need to..." or "This changes how you should..."
+  - Quantified if possible: "...saving $X" or "...reducing risk by Y%"
+  - Urgent: "...before Q2" or "...while the window is open"
+  - Client-specific: Frame in terms of THEIR business outcomes
+
+### 5. GENERATION TRANSPARENCY (provenance)
+- Which source documents informed this slide (list actual document names/titles)
+- How the content was derived (extracted, paraphrased, synthesized, inferred)
+- Any assumptions made - be explicit about logical leaps
+- Data lineage: "Claim X comes from Source Y, page Z, where it states '...'"
+
+### 6. CREDIBILITY ANCHORS (third-party validation)
+For each major claim, provide third-party validation points:
+- type: case_study, analyst_quote, regulatory, peer_company, or research
+- statement: The credibility-building statement
+- dropPhrase: Natural conversation insert - "As Gartner noted in their 2024 analysis..."
+- fullCitation: Complete reference for "where did you get that?" questions
+
+Prioritize:
+1. Analyst firms (Gartner, Forrester, McKinsey research)
+2. Peer company results (JPMorgan, Goldman implementations)
+3. Regulatory/standards bodies (ISDA, SEC guidance)
+4. Academic/research institutions
+
+Example:
+{
+  type: "analyst_quote",
+  statement: "Gartner predicts 60% of enterprises will adopt CDM by 2026",
+  dropPhrase: "As Gartner noted in their Magic Quadrant...",
+  fullCitation: "Gartner Magic Quadrant for Data Management, Q3 2024, p.23"
+}
+
+### 7. RISK MITIGATION LANGUAGE
+Address unspoken fears of risk-averse stakeholders:
+
+IMPLEMENTATION RISK (IT complexity fears):
+- concern: "This sounds like a major IT project"
+- response: De-risk with pilot scope, phased approach, no-infrastructure messaging
+- proofPoint: "Goldman did their pilot with 2 FTEs, no infrastructure changes"
+
+REPUTATIONAL RISK (public failure fears):
+- concern: "What if this fails publicly?"
+- response: Internal pilot framing, controlled rollout, clear success criteria
+
+CAREER RISK (sponsor's personal exposure):
+- concern: "I'm putting my neck out recommending this"
+- response: Checkpoints, off-ramps, board-ready progress narratives
+
+Not every slide needs all three risk types - include only when relevant to slide content.
+
+### 8. STAKEHOLDER-SPECIFIC ANGLES
+For each slide, provide tailored one-liner pivots for different stakeholders:
+- cfo: Frame in terms of ROI, cost savings, payback period. Use specific numbers.
+  Example: "This represents $2.3M annual savings with 8-month payback"
+- cto: Address technical feasibility, integration complexity, security concerns.
+  Example: "API-first architecture means no rip-and-replace - integrates with existing stack"
+- ceo: Position strategically - competitive advantage, market timing, board-ready narrative.
+  Example: "First-mover advantage closes in Q2 - competitors are 18 months behind"
+- operations: Mitigate implementation concerns - timeline, resources, change management.
+  Example: "Pilot requires 2 FTEs for 6 weeks - no production system changes"
+
+### 9. AUDIENCE SIGNALS (Room Temperature)
+Help the presenter read the room:
+
+LOSING THEM - provide:
+- signs: ["Phone checking", "Side conversations", "Crossed arms", "Clock watching"]
+- pivotStrategy: Action to take - e.g., "Pause and ask: 'I want to make sure this is relevant...'"
+- emergencyBridge: Escape hatch - e.g., "Let me skip to the bottom line..."
+
+WINNING THEM - provide:
+- signs: ["Nodding", "Note-taking", "Leaning forward", "Asking follow-up questions"]
+- accelerationOption: How to capitalize - e.g., "Good time to ask: 'Does this align with what you need?'"
+
+### 10. QUICK REFERENCE (Cheat Sheet)
+For at-a-glance reference during presentation:
+- keyNumber: The single most important number on this slide (with context)
+- keyPhrase: The one line they should remember - quotable in their next meeting
+- keyProof: The credibility anchor - company name + result + timeframe
+- keyAsk: What you want them to do/decide after this slide
+
+### 11. CALL-TO-ACTION VARIANTS (in storyContext)
+Provide different closes based on room temperature:
+
+WARM AUDIENCE (engaged, nodding):
+- ask: Direct commitment request - "Can we schedule the pilot kickoff?"
+- timeline: Specific date/time - "I have availability Tuesday at 2pm"
+
+NEUTRAL AUDIENCE (polite but noncommittal):
+- ask: Lower-pressure ask - "Would a detailed ROI model be helpful?"
+- nextStep: Give them homework - "Review with your team and let's reconvene"
+
+HOSTILE AUDIENCE (skeptical, arms crossed):
+- ask: Address resistance - "What would need to be true for this to work for you?"
+- fallback: Leave something behind - "Can I at least share the analyst reports?"
+
+### 12. TIME MANAGEMENT (in storyContext)
+Help presenters manage pacing:
+- suggestedDuration: "2-3 minutes" - realistic time for this slide
+- canCondense: true/false - can this be shortened if running late?
+- condensedVersion: One-sentence summary if skipping details
+- mustInclude: List of 2-3 points that MUST be said even if condensing
+
+### 13. BRIDGE PHRASES LIBRARY (in reasoning block - TOP LEVEL)
+Provide pre-written escape phrases for difficult presentation moments.
+These go in the TOP-LEVEL reasoning object (reasoning.bridgePhrases), NOT per-slide:
+
+DONT KNOW ANSWER (dontKnowAnswer - 2-3 phrases):
+- "That's an excellent question - let me get you the precise data after this meeting"
+- "I want to give you accurate numbers, so let me follow up with our analytics team"
+
+HOSTILE INTERRUPTION (hostileInterruption - 2-3 phrases):
+- "I appreciate the pushback - let me address that directly..."
+- "That's exactly the skepticism we need - here's why it still holds..."
+
+GOING OFF TOPIC (goingOffTopic - 2-3 phrases):
+- "Great point - let me note that for our follow-up and bring us back to..."
+- "I want to give that the attention it deserves - can we park it for the end?"
+
+TECHNICAL DIVE (technicalDive - 2-3 phrases):
+- "Happy to go deeper on the technical architecture - should we schedule a separate session with your engineering team?"
+- "The short answer is [X] - I have detailed specs if you'd like them after"
+
+LOSING THE ROOM (losingTheRoom - 2-3 phrases):
+- "Let me cut to the bottom line..."
+- "Here's what this means for your Q2 numbers specifically..."
+
+## QUALITY STANDARDS
+
+TALKING POINTS MUST:
+- Sound like a confident senior partner speaking, not reading
+- Include specific numbers, dates, company names from the research
+- Use power phrases: "The data is clear...", "What we're seeing across the industry...", "The real risk here is..."
+- Add context the slide doesn't show: "Behind this number is..."
+- Include a rhetorical question: "So what does this mean for your Q2 planning?"
+
+ANTICIPATED QUESTIONS MUST:
+- Be the HARDEST questions a skeptical CFO/CTO would ask
+- Include at least one "devil's advocate" question
+- Sample tough questions to anticipate:
+  - "What's the ROI on this investment?"
+  - "Why should we believe these projections?"
+  - "What are competitors doing differently?"
+  - "What happens if we don't act on this?"
+  - "How confident are you in this data?"
+- NEVER give generic responses - every answer needs a specific data point
+
+SOURCE ATTRIBUTION MUST:
+- NEVER cite uploaded filenames (e.g., "research.pdf", "document.docx")
+- ALWAYS extract the actual source: look for publication names, author names, dates
+- Include page/section references where possible
+- Flag confidence clearly: "directly stated" vs "our inference from the data"
+
+SO-WHAT STATEMENTS MUST:
+- Start with action verbs: "Accelerate...", "Prioritize...", "Reallocate..."
+- Include a timeline or urgency driver
+- Connect to business metrics the client cares about (revenue, cost, risk, speed)
+- Be specific enough that the client could repeat it in their next board meeting
+
+## ORIGINAL USER REQUEST
+"${userPrompt}"
+
+## RESEARCH CONTENT
+${researchContent}
+
+## OUTPUT FORMAT
+Return valid JSON matching the speakerNotesSchema. Generate notes for every content slide in order.
+- Skip section title slides (they don't need presenter notes)
+- Match slideIndex to the slide's position within its section (0-based)
+- Include sectionName and slideTagline for reference
+${outline ? `
+IMPORTANT: Include the 'reasoning' block at the top level of your output.
+Transform the outline reasoning into the speakerNotesSchema reasoning format:
+- presentationNarrativeArc: Copy from outline
+- audienceProfile: Copy from outline (primaryStakeholder, painPoints, decisionCriteria)
+- keyEvidenceChains: Transform evidence/insight/question/response to evidence/insight/anticipatedQuestion/preparedResponse
+- sourceInventory: Copy from outline
+- anticipatedPushback: Copy from outline
+` : ''}
+Start with { and end with }`;
+}
+
+// ============================================================================
+// SPEAKER NOTES OUTLINE PROMPT - Pass 1 of two-pass generation
+// ============================================================================
+
+/**
+ * Generate prompt for speaker notes outline (Pass 1)
+ * Creates reasoning framework and lightweight structure before full notes generation
+ * @param {object} slidesData - Generated slides data with sections
+ * @param {Array<{filename: string, content: string}>} researchFiles - Original research files
+ * @param {string} userPrompt - Original user request
+ * @returns {string} Complete prompt for speaker notes outline generation
+ */
+export function generateSpeakerNotesOutlinePrompt(slidesData, researchFiles, userPrompt) {
+  // Validate inputs
+  if (!slidesData?.sections?.length) {
+    throw new Error('slidesData with sections is required for speaker notes outline generation');
+  }
+  if (!researchFiles?.length) {
+    throw new Error('researchFiles are required for speaker notes outline generation');
+  }
+
+  // Format slides data for the prompt
+  const slidesReference = slidesData.sections.map((section, sectionIdx) => {
+    const sectionSlides = section.slides.map((slide, slideIdx) => {
+      return `    Slide ${slideIdx + 1}: "${slide.tagline}" - ${slide.subTopic || 'No subtopic'}
+      Title: ${slide.title?.replace(/\n/g, ' | ')}
+      Key content: ${(slide.paragraph1 || '').substring(0, 150)}...`;
+    }).join('\n');
+
+    return `  Section ${sectionIdx + 1}: "${section.swimlane}"
+${sectionSlides}`;
+  }).join('\n\n');
+
+  // Format research content
+  const researchContent = researchFiles
+    .filter(file => file?.filename && file?.content?.trim())
+    .map(file => `=== ${file.filename} ===\n${file.content}`)
+    .join('\n\n');
+
+  // Extract source document names for reference
+  const sourceDocuments = researchFiles
+    .filter(file => file?.filename)
+    .map(file => file.filename);
+
+  return `You are performing STEP 1 of a two-step speaker notes generation process.
+
+## YOUR TASK
+Create a REASONING FRAMEWORK and LIGHTWEIGHT OUTLINE for speaker notes.
+This will guide the full notes generation in Step 2.
+
+## CHAIN-OF-THOUGHT INSTRUCTION (CRITICAL)
+You MUST complete the 'reasoning' object FIRST, before creating any slide outlines.
+This forces you to think deeply about:
+1. The overall narrative arc of the presentation
+2. Who the audience is and what they care about
+3. What evidence chains will drive the Q&A
+4. What sources to cite (not filenames - actual publication names)
+5. How slides connect through transitions
+6. What pushback to anticipate and how to handle it
+
+## REASONING REQUIREMENTS (COMPLETE BEFORE SLIDE OUTLINES)
+
+### 1. PRESENTATION NARRATIVE ARC
+Identify the single story thread connecting all slides:
+- Opening Hook: What grabs attention in the first 2 slides?
+- Tension Building: What stakes or urgency builds through the middle?
+- Resolution/CTA: What action does the presentation drive toward?
+Format: "[Opening Hook] → [Tension Building] → [Resolution/CTA]"
+
+### 2. AUDIENCE PROFILE
+Think carefully about who will be in the room:
+- Primary Stakeholder: Who is the key decision-maker? (CFO, CTO, CEO, Board?)
+- Pain Points: What 3 things keep them up at night?
+- Decision Criteria: What factors will drive their yes/no? (ROI, risk, timeline, competitive pressure?)
+
+### 3. KEY EVIDENCE CHAINS (3-5 chains)
+For each major data point in the presentation:
+- evidence: The specific data point with its source
+- insight: What this evidence means (the "so what")
+- anticipatedQuestion: What question will this trigger from a skeptical executive?
+- preparedResponse: Your prepared response using the ACE framework:
+  - ACKNOWLEDGE: "That's a fair concern..." / "You're right to ask..."
+  - CITE EVIDENCE: Specific data point or source
+  - EXPAND: Why this actually supports the recommendation
+
+### 4. SOURCE INVENTORY
+Create an inventory of sources to cite:
+- Extract REAL publication names from the research (not filenames)
+- Look for: "according to...", "published by...", author names, report titles
+- Examples: "McKinsey Global Institute 2024 Report", "Gartner Magic Quadrant Q3 2024"
+- Note key findings from each source
+- Assess confidence level (high/medium/low)
+
+### 5. NARRATIVE TRANSITIONS
+Plan how slides connect:
+- Identify pairs of slides that need strong transitions
+- Explain WHY the transition makes sense (causal, temporal, contrast?)
+- Draft the actual bridge phrase to use
+
+### 6. ANTICIPATED PUSHBACK (3-5 pushbacks)
+Think like a skeptical CFO/CTO:
+- What type of pushback? (skepticism, cost_concern, timeline, feasibility, risk, scope)
+- What's the specific objection they'll raise?
+- What evidence counters this objection?
+- How can you reframe the objection as an opportunity?
+
+### 7. COMPETITIVE POSITIONING
+Prepare for "why you?" questions:
+
+PRIMARY COMPETITORS (identify top 2-3):
+For each, provide:
+- name: Who they are (be specific: "McKinsey", "Deloitte Digital", "internal IT team")
+- theirStrength: Acknowledge what they're good at (builds credibility)
+- ourCounter: Why we're better for THIS specific situation
+- bridgePhrase: "While [competitor] excels at [X], what you need here is [Y]..."
+
+INTERNAL TEAM RESPONSE:
+- Address "why not do this ourselves?" directly
+- Focus on: speed, specialized expertise, objectivity, resource constraints
+
+DO-NOTHING RISK:
+- Quantify the cost of inaction
+- Create urgency without being pushy
+- Frame as "every quarter of delay costs [X]"
+
+### 8. BRIDGE PHRASES LIBRARY
+Pre-write escape hatches for difficult moments:
+
+DONT_KNOW_ANSWER (2-3 phrases):
+- "That's a great question - I want to give you accurate numbers, so let me follow up"
+- "I don't have that specific data point, but what I can tell you is..."
+
+HOSTILE_INTERRUPTION (2-3 phrases):
+- "I appreciate the pushback - let me make sure I understand your concern..."
+- "You're raising an important point. Let me address that directly..."
+
+GOING_OFF_TOPIC (2-3 phrases):
+- "Great point - can we table it for Q&A so we stay on track?"
+- "Definitely worth discussing - let's come back after I show you [next section]"
+
+TECHNICAL_DIVE (2-3 phrases):
+- "Happy to go deeper - should we do that now or schedule a technical deep-dive?"
+- "I can walk through the architecture - would that be more useful now or in a follow-up?"
+
+LOSING_THE_ROOM (2-3 phrases):
+- "Let me pause - is this landing? What would be most useful to focus on?"
+- "I'm sensing we should shift gears - what's your biggest question right now?"
+
+## SLIDES TO OUTLINE
+
+${slidesReference}
+
+## SOURCE DOCUMENTS
+Available for citation: ${sourceDocuments.join(', ')}
+
+## RESEARCH CONTENT
+${researchContent}
+
+## ORIGINAL USER REQUEST
+"${userPrompt}"
+
+## SLIDE OUTLINE REQUIREMENTS (AFTER REASONING)
+
+For each content slide, provide a lightweight outline:
+- slideIndex: Position within section (0-based)
+- sectionName: Section name
+- slideTagline: The slide's tagline
+- narrativePosition: Where it sits in the arc (opening_hook, context_setting, evidence_building, insight_reveal, implication, call_to_action)
+- keyTalkingPoint: The ONE most important point (will be expanded in Pass 2)
+- primaryQuestion: Most likely question this slide triggers
+- primarySource: Main source to cite (authoritative name, not filename)
+- soWhatStatement: Draft of why this matters to the client
+
+## OUTPUT FORMAT
+Return valid JSON matching the speakerNotesOutlineSchema.
+- Complete the 'reasoning' object FIRST
+- Then provide 'slideOutlines' for each content slide
+- Skip section title slides
+
+Start with { and end with }`;
 }

@@ -583,6 +583,10 @@ export class SlidesView {
     // Store sections for TOC generation
     this.sections = data?.sections || [];
 
+    // Store speaker notes data (from separate generation pass)
+    this.speakerNotes = data?.speakerNotes || null;
+    this.speakerNotesVisible = false; // Hidden by default
+
     // Track section start indices for TOC navigation
     this.sectionStartIndices = new Map();
     this.sectionStartIndices.set('demo', 0); // Demo slides start at index 0
@@ -600,6 +604,7 @@ export class SlidesView {
     this.index = 0;
     this.slideEl = null;
     this.counter = null;
+    this.speakerNotesPanel = null; // Speaker notes panel element
 
     // TOC management
     this.tocLinks = new Map();
@@ -865,8 +870,671 @@ export class SlidesView {
 
     container.appendChild(mainLayout);
 
+    // Add speaker notes panel (hidden by default)
+    this.speakerNotesPanel = this._renderSpeakerNotesPanel();
+    container.appendChild(this.speakerNotesPanel);
+
     this._update();
     return container;
+  }
+
+  /**
+   * Render the speaker notes panel (collapsed by default)
+   * @returns {HTMLElement} The speaker notes panel container
+   */
+  _renderSpeakerNotesPanel() {
+    const panel = document.createElement('div');
+    panel.className = 'speaker-notes-panel';
+    panel.setAttribute('aria-label', 'Speaker notes');
+
+    const header = document.createElement('div');
+    header.className = 'speaker-notes-header';
+
+    const title = document.createElement('h3');
+    title.className = 'speaker-notes-title';
+    title.textContent = 'Speaker Notes';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'speaker-notes-close';
+    closeBtn.setAttribute('aria-label', 'Close speaker notes');
+    closeBtn.innerHTML = '×';
+    closeBtn.addEventListener('click', () => this._toggleSpeakerNotes());
+
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+
+    const content = document.createElement('div');
+    content.className = 'speaker-notes-content';
+    content.id = 'speaker-notes-content';
+
+    panel.appendChild(header);
+    panel.appendChild(content);
+
+    return panel;
+  }
+
+  /**
+   * Toggle speaker notes panel visibility
+   */
+  _toggleSpeakerNotes() {
+    this.speakerNotesVisible = !this.speakerNotesVisible;
+
+    if (this.speakerNotesPanel) {
+      this.speakerNotesPanel.classList.toggle('visible', this.speakerNotesVisible);
+    }
+
+    // Update the menu button text
+    const toggleBtn = document.getElementById('toggle-notes-btn');
+    if (toggleBtn) {
+      const textSpan = toggleBtn.querySelector('.menu-item-text');
+      if (textSpan) {
+        textSpan.textContent = this.speakerNotesVisible ? 'Hide Notes' : 'Show Notes';
+      }
+    }
+
+    // Update notes content if visible
+    if (this.speakerNotesVisible) {
+      this._updateSpeakerNotesContent();
+    }
+  }
+
+  /**
+   * Update speaker notes content for current slide
+   */
+  _updateSpeakerNotesContent() {
+    const contentEl = document.getElementById('speaker-notes-content');
+    if (!contentEl) return;
+
+    const notes = this._getSpeakerNotesForCurrentSlide();
+
+    if (!notes) {
+      contentEl.innerHTML = `
+        <div class="notes-placeholder">
+          <p>No speaker notes available for this slide.</p>
+          <p class="notes-hint">Speaker notes are generated for content slides only.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Render reasoning section (presentation-level) + slide-specific notes
+    const reasoningHTML = this._renderReasoningSection();
+    const slideNotesHTML = this._renderSpeakerNotesHTML(notes);
+    contentEl.innerHTML = reasoningHTML + slideNotesHTML;
+
+    // Attach click handlers for collapsible sections
+    this._attachCollapsibleToggleHandlers(contentEl);
+  }
+
+  /**
+   * Attach click handlers to collapsible section toggles
+   * @param {HTMLElement} container - Container element with toggle elements
+   */
+  _attachCollapsibleToggleHandlers(container) {
+    const toggles = container.querySelectorAll('.notes-section-toggle');
+    toggles.forEach(toggle => {
+      toggle.addEventListener('click', (e) => {
+        const section = e.target.closest('.notes-section');
+        if (section) {
+          section.classList.toggle('notes-section-collapsed');
+          // Update aria-expanded for accessibility
+          const isCollapsed = section.classList.contains('notes-section-collapsed');
+          toggle.setAttribute('aria-expanded', !isCollapsed);
+        }
+      });
+    });
+  }
+
+  /**
+   * Get speaker notes for the current slide
+   * Uses three-tier matching strategy for robustness
+   * @returns {object|null} Speaker notes object or null
+   */
+  _getSpeakerNotesForCurrentSlide() {
+    if (!this.speakerNotes?.slides) return null;
+
+    const currentSlide = this.slides[this.index];
+    if (!currentSlide || currentSlide.layout === 'sectionTitle') return null;
+
+    const sectionName = currentSlide._sectionId?.replace(/-/g, ' ') || '';
+    const slideTagline = (currentSlide.tagline || '').toLowerCase().trim();
+
+    // Strategy 1: Exact match on both section and tagline (most reliable)
+    const exactMatch = this.speakerNotes.slides.find(note =>
+      note.slideTagline?.toLowerCase().trim() === slideTagline &&
+      note.sectionName?.toLowerCase().trim() === sectionName.toLowerCase().trim()
+    );
+    if (exactMatch) return exactMatch;
+
+    // Strategy 2: Section contains match + exact tagline (handles section name variations)
+    const partialSectionMatch = this.speakerNotes.slides.find(note =>
+      note.slideTagline?.toLowerCase().trim() === slideTagline &&
+      (note.sectionName?.toLowerCase().includes(sectionName.toLowerCase()) ||
+       sectionName.toLowerCase().includes(note.sectionName?.toLowerCase() || ''))
+    );
+    if (partialSectionMatch) return partialSectionMatch;
+
+    // Strategy 3: Tagline-only match as last resort (risky with duplicate taglines)
+    // Only use if there's exactly one match to avoid ambiguity
+    const taglineOnlyMatches = this.speakerNotes.slides.filter(note =>
+      note.slideTagline?.toLowerCase().trim() === slideTagline
+    );
+    if (taglineOnlyMatches.length === 1) {
+      console.warn(`[SpeakerNotes] Using tagline-only match for "${slideTagline}" - section mismatch`);
+      return taglineOnlyMatches[0];
+    }
+
+    // No reliable match found
+    if (taglineOnlyMatches.length > 1) {
+      console.warn(`[SpeakerNotes] Ambiguous match: ${taglineOnlyMatches.length} notes with tagline "${slideTagline}"`);
+    }
+    return null;
+  }
+
+  /**
+   * Render speaker notes as HTML
+   * @param {object} notes - Speaker notes object
+   * @returns {string} HTML string
+   */
+  _renderSpeakerNotesHTML(notes) {
+    // Defensive check for notes object
+    if (!notes || typeof notes !== 'object') {
+      console.warn('[SpeakerNotes] Invalid notes object received');
+      return '<p class="notes-placeholder">No notes available.</p>';
+    }
+
+    const sections = [];
+
+    // 1. Talking Points (highest priority)
+    if (notes.narrative?.talkingPoints?.length) {
+      sections.push(`
+        <div class="notes-section">
+          <h4 class="notes-section-title">💬 Talking Points</h4>
+          <ul class="notes-list">
+            ${notes.narrative.talkingPoints.map(point => `<li>${this._escapeHtml(point)}</li>`).join('')}
+          </ul>
+          ${notes.narrative.keyPhrase ? `
+            <div class="key-phrase">
+              <strong>Key Phrase:</strong> "${this._escapeHtml(notes.narrative.keyPhrase)}"
+            </div>
+          ` : ''}
+        </div>
+      `);
+    }
+
+    // Transitions
+    if (notes.narrative?.transitionIn || notes.narrative?.transitionOut) {
+      sections.push(`
+        <div class="notes-section">
+          <h4 class="notes-section-title">🔄 Transitions</h4>
+          ${notes.narrative.transitionIn ? `<p><strong>← From previous:</strong> ${this._escapeHtml(notes.narrative.transitionIn)}</p>` : ''}
+          ${notes.narrative.transitionOut ? `<p><strong>→ To next:</strong> ${this._escapeHtml(notes.narrative.transitionOut)}</p>` : ''}
+        </div>
+      `);
+    }
+
+    // 2. Stakeholder Angles (Enhancement #1)
+    if (notes.stakeholderAngles) {
+      const angles = notes.stakeholderAngles;
+      sections.push(`
+        <div class="notes-section">
+          <h4 class="notes-section-title">👥 Stakeholder Angles</h4>
+          <div class="stakeholder-tabs">
+            ${angles.cfo ? `
+              <div class="stakeholder-tab" data-role="cfo">
+                <span class="stakeholder-icon">💰</span>
+                <span class="stakeholder-label">CFO</span>
+                <p class="stakeholder-angle">${this._escapeHtml(angles.cfo)}</p>
+              </div>
+            ` : ''}
+            ${angles.cto ? `
+              <div class="stakeholder-tab" data-role="cto">
+                <span class="stakeholder-icon">⚙️</span>
+                <span class="stakeholder-label">CTO</span>
+                <p class="stakeholder-angle">${this._escapeHtml(angles.cto)}</p>
+              </div>
+            ` : ''}
+            ${angles.ceo ? `
+              <div class="stakeholder-tab" data-role="ceo">
+                <span class="stakeholder-icon">🎯</span>
+                <span class="stakeholder-label">CEO</span>
+                <p class="stakeholder-angle">${this._escapeHtml(angles.ceo)}</p>
+              </div>
+            ` : ''}
+            ${angles.operations ? `
+              <div class="stakeholder-tab" data-role="ops">
+                <span class="stakeholder-icon">🔧</span>
+                <span class="stakeholder-label">Ops</span>
+                <p class="stakeholder-angle">${this._escapeHtml(angles.operations)}</p>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `);
+    }
+
+    // 3. Anticipated Questions (Enhanced with severity tiers - Enhancement #2)
+    if (notes.anticipatedQuestions?.length) {
+      sections.push(`
+        <div class="notes-section">
+          <h4 class="notes-section-title">❓ Anticipated Questions</h4>
+          ${notes.anticipatedQuestions.map(qa => `
+            <div class="qa-item qa-severity-${qa.severity || 'probing'}">
+              <div class="qa-header">
+                <span class="severity-badge severity-${qa.severity || 'probing'}">${(qa.severity || 'probing').replace(/_/g, ' ')}</span>
+                <span class="pushback-type">${qa.pushbackType?.replace(/_/g, ' ')}</span>
+              </div>
+              <p class="question"><strong>Q:</strong> ${this._escapeHtml(qa.question)}</p>
+              <p class="response"><strong>A:</strong> ${this._escapeHtml(qa.response)}</p>
+              ${qa.escalationResponse ? `
+                <div class="escalation-response">
+                  <strong>If they push back:</strong> ${this._escapeHtml(qa.escalationResponse)}
+                </div>
+              ` : ''}
+              ${qa.bridgeToStrength ? `
+                <div class="bridge-to-strength">
+                  <strong>Pivot to strength:</strong> ${this._escapeHtml(qa.bridgeToStrength)}
+                </div>
+              ` : ''}
+              ${qa.deferralOption ? `
+                <div class="deferral-option">
+                  <strong>Defer with:</strong> "${this._escapeHtml(qa.deferralOption)}"
+                </div>
+              ` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `);
+    }
+
+    // 4. Story Context (Enhanced with CTA variants #8 and Time Guidance #9)
+    if (notes.storyContext) {
+      sections.push(`
+        <div class="notes-section">
+          <h4 class="notes-section-title">📖 Story Context</h4>
+          <p class="narrative-position"><strong>Position:</strong> ${notes.storyContext.narrativePosition?.replace(/_/g, ' ')}</p>
+          ${notes.storyContext.precededBy ? `<p><strong>Preceded by:</strong> ${this._escapeHtml(notes.storyContext.precededBy)}</p>` : ''}
+          ${notes.storyContext.followedBy ? `<p><strong>Followed by:</strong> ${this._escapeHtml(notes.storyContext.followedBy)}</p>` : ''}
+          ${notes.storyContext.soWhat ? `<p class="so-what"><strong>So What:</strong> ${this._escapeHtml(notes.storyContext.soWhat)}</p>` : ''}
+          ${notes.storyContext.timeGuidance ? `
+            <div class="time-guidance">
+              <span class="time-badge">⏱️ ${notes.storyContext.timeGuidance.suggestedDuration || '2-3 min'}</span>
+              ${notes.storyContext.timeGuidance.canCondense ? '<span class="condensable-badge">Can condense</span>' : ''}
+              ${notes.storyContext.timeGuidance.condensedVersion ? `
+                <p class="condensed-version"><strong>Short version:</strong> "${this._escapeHtml(notes.storyContext.timeGuidance.condensedVersion)}"</p>
+              ` : ''}
+              ${notes.storyContext.timeGuidance.mustInclude?.length ? `
+                <p class="must-include"><strong>Must include:</strong> ${notes.storyContext.timeGuidance.mustInclude.join(' • ')}</p>
+              ` : ''}
+            </div>
+          ` : ''}
+          ${notes.storyContext.callToAction ? `
+            <div class="cta-variants">
+              <h5>Call-to-Action Options:</h5>
+              ${notes.storyContext.callToAction.warmAudience ? `
+                <div class="cta-option cta-warm">
+                  <span class="cta-label">🟢 Warm</span>
+                  <p>${this._escapeHtml(notes.storyContext.callToAction.warmAudience.ask)}</p>
+                  ${notes.storyContext.callToAction.warmAudience.timeline ? `<p class="cta-timeline">${this._escapeHtml(notes.storyContext.callToAction.warmAudience.timeline)}</p>` : ''}
+                </div>
+              ` : ''}
+              ${notes.storyContext.callToAction.neutralAudience ? `
+                <div class="cta-option cta-neutral">
+                  <span class="cta-label">🟡 Neutral</span>
+                  <p>${this._escapeHtml(notes.storyContext.callToAction.neutralAudience.ask)}</p>
+                  ${notes.storyContext.callToAction.neutralAudience.nextStep ? `<p class="cta-next-step">${this._escapeHtml(notes.storyContext.callToAction.neutralAudience.nextStep)}</p>` : ''}
+                </div>
+              ` : ''}
+              ${notes.storyContext.callToAction.hostileAudience ? `
+                <div class="cta-option cta-hostile">
+                  <span class="cta-label">🔴 Hostile</span>
+                  <p>${this._escapeHtml(notes.storyContext.callToAction.hostileAudience.ask)}</p>
+                  ${notes.storyContext.callToAction.hostileAudience.fallback ? `<p class="cta-fallback"><em>Fallback: ${this._escapeHtml(notes.storyContext.callToAction.hostileAudience.fallback)}</em></p>` : ''}
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
+        </div>
+      `);
+    }
+
+    // 4. Source Attribution
+    if (notes.sourceAttribution?.length) {
+      sections.push(`
+        <div class="notes-section">
+          <h4 class="notes-section-title">📚 Sources</h4>
+          ${notes.sourceAttribution.map(src => `
+            <div class="source-item">
+              <p class="claim">"${this._escapeHtml(src.claim)}"</p>
+              <p class="source"><strong>Source:</strong> ${this._escapeHtml(src.source)}</p>
+              <span class="confidence confidence-${src.confidence}">${src.confidence?.replace(/_/g, ' ')}</span>
+            </div>
+          `).join('')}
+        </div>
+      `);
+    }
+
+    // 5. Generation Transparency
+    if (notes.generationTransparency) {
+      sections.push(`
+        <div class="notes-section notes-section-collapsed">
+          <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">🔍 Content Derivation</h4>
+          <div class="notes-section-body">
+            <p><strong>Sources:</strong> ${notes.generationTransparency.primarySources?.join(', ') || 'N/A'}</p>
+            <p><strong>Method:</strong> ${notes.generationTransparency.derivationMethod || 'N/A'}</p>
+            ${notes.generationTransparency.dataLineage ? `<p><strong>Lineage:</strong> ${this._escapeHtml(notes.generationTransparency.dataLineage)}</p>` : ''}
+            ${notes.generationTransparency.assumptions?.length ? `
+              <p><strong>Assumptions:</strong></p>
+              <ul class="assumptions-list">
+                ${notes.generationTransparency.assumptions.map(a => `<li>${this._escapeHtml(a)}</li>`).join('')}
+              </ul>
+            ` : ''}
+          </div>
+        </div>
+      `);
+    }
+
+    // 6. Credibility Anchors (Enhancement #6)
+    if (notes.credibilityAnchors?.length) {
+      sections.push(`
+        <div class="notes-section">
+          <h4 class="notes-section-title">🏆 Credibility Anchors</h4>
+          ${notes.credibilityAnchors.map(anchor => `
+            <div class="credibility-item credibility-${anchor.type || 'research'}">
+              <span class="credibility-type">${(anchor.type || 'research').replace(/_/g, ' ')}</span>
+              <p class="credibility-statement">${this._escapeHtml(anchor.statement)}</p>
+              <p class="drop-phrase"><strong>Say:</strong> "${this._escapeHtml(anchor.dropPhrase)}"</p>
+              <p class="full-citation"><em>${this._escapeHtml(anchor.fullCitation)}</em></p>
+            </div>
+          `).join('')}
+        </div>
+      `);
+    }
+
+    // 7. Risk Mitigation (Enhancement #7)
+    if (notes.riskMitigation) {
+      const rm = notes.riskMitigation;
+      const hasContent = rm.implementationRisk || rm.reputationalRisk || rm.careerRisk;
+      if (hasContent) {
+        sections.push(`
+          <div class="notes-section notes-section-collapsed">
+            <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">🛡️ Risk Mitigation</h4>
+            <div class="notes-section-body">
+              ${rm.implementationRisk ? `
+                <div class="risk-block">
+                  <h5>Implementation Risk</h5>
+                  <p class="risk-concern"><em>"${this._escapeHtml(rm.implementationRisk.concern)}"</em></p>
+                  <p class="risk-response">${this._escapeHtml(rm.implementationRisk.response)}</p>
+                  ${rm.implementationRisk.proofPoint ? `<p class="risk-proof">Proof: ${this._escapeHtml(rm.implementationRisk.proofPoint)}</p>` : ''}
+                </div>
+              ` : ''}
+              ${rm.reputationalRisk ? `
+                <div class="risk-block">
+                  <h5>Reputational Risk</h5>
+                  <p class="risk-concern"><em>"${this._escapeHtml(rm.reputationalRisk.concern)}"</em></p>
+                  <p class="risk-response">${this._escapeHtml(rm.reputationalRisk.response)}</p>
+                </div>
+              ` : ''}
+              ${rm.careerRisk ? `
+                <div class="risk-block">
+                  <h5>Career Risk</h5>
+                  <p class="risk-concern"><em>"${this._escapeHtml(rm.careerRisk.concern)}"</em></p>
+                  <p class="risk-response">${this._escapeHtml(rm.careerRisk.response)}</p>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `);
+      }
+    }
+
+    // 8. Audience Signals / Room Temperature (Enhancement #4)
+    if (notes.audienceSignals) {
+      const signals = notes.audienceSignals;
+      sections.push(`
+        <div class="notes-section notes-section-collapsed">
+          <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">🌡️ Room Temperature</h4>
+          <div class="notes-section-body">
+            ${signals.losingThem ? `
+              <div class="signal-block signal-losing">
+                <h5>⚠️ Losing Them</h5>
+                <p><strong>Watch for:</strong> ${signals.losingThem.signs?.join(', ') || 'N/A'}</p>
+                <p><strong>Pivot:</strong> ${this._escapeHtml(signals.losingThem.pivotStrategy)}</p>
+                ${signals.losingThem.emergencyBridge ? `<p class="emergency-bridge"><strong>Emergency exit:</strong> "${this._escapeHtml(signals.losingThem.emergencyBridge)}"</p>` : ''}
+              </div>
+            ` : ''}
+            ${signals.winningThem ? `
+              <div class="signal-block signal-winning">
+                <h5>✅ Winning Them</h5>
+                <p><strong>Look for:</strong> ${signals.winningThem.signs?.join(', ') || 'N/A'}</p>
+                <p><strong>Accelerate:</strong> ${this._escapeHtml(signals.winningThem.accelerationOption)}</p>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `);
+    }
+
+    // 9. Quick Reference / Cheat Sheet (Enhancement #5) - Add at beginning for prominence
+    if (notes.quickReference) {
+      const qr = notes.quickReference;
+      const quickRefSection = `
+        <div class="notes-section quick-reference-section">
+          <h4 class="notes-section-title">⚡ Quick Reference</h4>
+          <div class="cheat-sheet">
+            ${qr.keyNumber ? `<div class="cheat-item cheat-number"><span class="cheat-label">Key Number</span>${this._escapeHtml(qr.keyNumber)}</div>` : ''}
+            ${qr.keyPhrase ? `<div class="cheat-item cheat-phrase"><span class="cheat-label">Key Phrase</span>"${this._escapeHtml(qr.keyPhrase)}"</div>` : ''}
+            ${qr.keyProof ? `<div class="cheat-item cheat-proof"><span class="cheat-label">Proof Point</span>${this._escapeHtml(qr.keyProof)}</div>` : ''}
+            ${qr.keyAsk ? `<div class="cheat-item cheat-ask"><span class="cheat-label">Ask For</span>${this._escapeHtml(qr.keyAsk)}</div>` : ''}
+          </div>
+        </div>
+      `;
+      // Insert at beginning for visibility
+      sections.unshift(quickRefSection);
+    }
+
+    return sections.join('') || '<p class="notes-placeholder">No notes available.</p>';
+  }
+
+  /**
+   * Render the reasoning transparency section (from two-pass generation)
+   * Shows audience analysis, evidence chains, and pushback preparation
+   * @returns {string} HTML for reasoning section
+   */
+  _renderReasoningSection() {
+    const reasoning = this.speakerNotes?.reasoning;
+    if (!reasoning || typeof reasoning !== 'object') return '';
+
+    const sections = [];
+
+    // Presentation Narrative Arc
+    if (reasoning.presentationNarrativeArc) {
+      sections.push(`
+        <div class="reasoning-item">
+          <h5 class="reasoning-label">🎯 Narrative Arc</h5>
+          <p class="reasoning-value">${this._escapeHtml(reasoning.presentationNarrativeArc)}</p>
+        </div>
+      `);
+    }
+
+    // Audience Profile
+    if (reasoning.audienceProfile) {
+      const profile = reasoning.audienceProfile;
+      sections.push(`
+        <div class="reasoning-item">
+          <h5 class="reasoning-label">👤 Audience Profile</h5>
+          ${profile.primaryStakeholder ? `<p><strong>Decision Maker:</strong> ${this._escapeHtml(profile.primaryStakeholder)}</p>` : ''}
+          ${profile.painPoints?.length ? `
+            <p><strong>Pain Points:</strong></p>
+            <ul class="reasoning-list">
+              ${profile.painPoints.map(p => `<li>${this._escapeHtml(p)}</li>`).join('')}
+            </ul>
+          ` : ''}
+          ${profile.decisionCriteria?.length ? `
+            <p><strong>Decision Criteria:</strong></p>
+            <ul class="reasoning-list">
+              ${profile.decisionCriteria.map(c => `<li>${this._escapeHtml(c)}</li>`).join('')}
+            </ul>
+          ` : ''}
+        </div>
+      `);
+    }
+
+    // Key Evidence Chains
+    if (reasoning.keyEvidenceChains?.length) {
+      sections.push(`
+        <div class="reasoning-item">
+          <h5 class="reasoning-label">📊 Key Evidence Chains</h5>
+          ${reasoning.keyEvidenceChains.map((chain, i) => `
+            <div class="evidence-chain">
+              <p class="chain-number">Chain ${i + 1}</p>
+              <p><strong>Evidence:</strong> ${this._escapeHtml(chain.evidence)}</p>
+              <p><strong>Insight:</strong> ${this._escapeHtml(chain.insight)}</p>
+              ${chain.anticipatedQuestion ? `<p><strong>Q:</strong> ${this._escapeHtml(chain.anticipatedQuestion)}</p>` : ''}
+              ${chain.preparedResponse ? `<p><strong>A:</strong> ${this._escapeHtml(chain.preparedResponse)}</p>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `);
+    }
+
+    // Source Inventory
+    if (reasoning.sourceInventory?.length) {
+      sections.push(`
+        <div class="reasoning-item">
+          <h5 class="reasoning-label">📚 Source Inventory</h5>
+          ${reasoning.sourceInventory.map(src => `
+            <div class="source-inventory-item">
+              <p class="source-name"><strong>${this._escapeHtml(src.sourceName)}</strong>
+                <span class="confidence-badge confidence-${src.confidenceLevel}">${src.confidenceLevel}</span>
+              </p>
+              ${src.keyFindings?.length ? `
+                <ul class="findings-list">
+                  ${src.keyFindings.map(f => `<li>${this._escapeHtml(f)}</li>`).join('')}
+                </ul>
+              ` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `);
+    }
+
+    // Anticipated Pushback
+    if (reasoning.anticipatedPushback?.length) {
+      sections.push(`
+        <div class="reasoning-item">
+          <h5 class="reasoning-label">⚡ Anticipated Pushback</h5>
+          ${reasoning.anticipatedPushback.map(pb => `
+            <div class="pushback-item">
+              <span class="pushback-type-badge">${pb.pushbackType?.replace(/_/g, ' ')}</span>
+              <p class="objection"><strong>Objection:</strong> "${this._escapeHtml(pb.specificObjection)}"</p>
+              <p><strong>Counter:</strong> ${this._escapeHtml(pb.evidenceToCounter)}</p>
+              <p><strong>Reframe:</strong> ${this._escapeHtml(pb.reframingStrategy)}</p>
+            </div>
+          `).join('')}
+        </div>
+      `);
+    }
+
+    // Competitive Positioning (Enhancement #3)
+    if (reasoning.competitivePositioning) {
+      const cp = reasoning.competitivePositioning;
+      sections.push(`
+        <div class="reasoning-item">
+          <h5 class="reasoning-label">⚔️ Competitive Positioning</h5>
+          ${cp.primaryCompetitors?.length ? `
+            <div class="competitors-list">
+              ${cp.primaryCompetitors.map(comp => `
+                <div class="competitor-card">
+                  <p class="competitor-name"><strong>${this._escapeHtml(comp.name)}</strong></p>
+                  <p class="competitor-strength"><em>Their strength:</em> ${this._escapeHtml(comp.theirStrength)}</p>
+                  <p class="our-counter"><em>Our counter:</em> ${this._escapeHtml(comp.ourCounter)}</p>
+                  <p class="bridge-phrase">"${this._escapeHtml(comp.bridgePhrase)}"</p>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+          ${cp.internalTeamResponse ? `
+            <div class="internal-team-block">
+              <strong>If they ask "why not in-house?":</strong>
+              <p>${this._escapeHtml(cp.internalTeamResponse)}</p>
+            </div>
+          ` : ''}
+          ${cp.doNothingRisk ? `
+            <div class="do-nothing-risk">
+              <strong>Cost of inaction:</strong>
+              <p>${this._escapeHtml(cp.doNothingRisk)}</p>
+            </div>
+          ` : ''}
+        </div>
+      `);
+    }
+
+    // Bridge Phrases Library (Enhancement #10)
+    if (reasoning.bridgePhrases) {
+      const bp = reasoning.bridgePhrases;
+      sections.push(`
+        <div class="reasoning-item">
+          <h5 class="reasoning-label">🌉 Bridge Phrases</h5>
+          <div class="bridge-phrases-grid">
+            ${bp.dontKnowAnswer?.length ? `
+              <div class="phrase-category">
+                <h6>Don't Know Answer</h6>
+                <ul>${bp.dontKnowAnswer.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
+              </div>
+            ` : ''}
+            ${bp.hostileInterruption?.length ? `
+              <div class="phrase-category phrase-hostile">
+                <h6>Hostile Interruption</h6>
+                <ul>${bp.hostileInterruption.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
+              </div>
+            ` : ''}
+            ${bp.goingOffTopic?.length ? `
+              <div class="phrase-category">
+                <h6>Going Off Topic</h6>
+                <ul>${bp.goingOffTopic.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
+              </div>
+            ` : ''}
+            ${bp.technicalDive?.length ? `
+              <div class="phrase-category">
+                <h6>Technical Deep-Dive</h6>
+                <ul>${bp.technicalDive.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
+              </div>
+            ` : ''}
+            ${bp.losingTheRoom?.length ? `
+              <div class="phrase-category phrase-warning">
+                <h6>Losing the Room</h6>
+                <ul>${bp.losingTheRoom.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `);
+    }
+
+    if (sections.length === 0) return '';
+
+    return `
+      <div class="notes-section notes-section-collapsed reasoning-section">
+        <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">🧠 Presentation Reasoning (CoT)</h4>
+        <div class="notes-section-body">
+          <p class="reasoning-intro">Chain-of-thought analysis from two-pass generation:</p>
+          ${sections.join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Escape HTML to prevent XSS
+   * @param {string} text - Text to escape
+   * @returns {string} Escaped text
+   */
+  _escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   /**
@@ -893,6 +1561,16 @@ export class SlidesView {
     const dropdown = document.createElement('div');
     dropdown.className = 'slides-menu-dropdown';
     dropdown.setAttribute('role', 'menu');
+
+    // Toggle Speaker Notes
+    const toggleNotesItem = this._createMenuItem({
+      id: 'toggle-notes-btn',
+      icon: '📝',
+      text: 'Show Notes',
+      ariaLabel: 'Toggle speaker notes panel'
+    });
+    toggleNotesItem.addEventListener('click', () => this._toggleSpeakerNotes());
+    dropdown.appendChild(toggleNotesItem);
 
     // Export to PowerPoint
     const exportPptItem = this._createMenuItem({
@@ -1037,6 +1715,10 @@ export class SlidesView {
     this.slideEl.appendChild(content);
     // Update TOC active state
     this._updateActiveTocSection();
+    // Update speaker notes if visible
+    if (this.speakerNotesVisible) {
+      this._updateSpeakerNotesContent();
+    }
   }
 
   destroy() {

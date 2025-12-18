@@ -398,7 +398,11 @@ router.get('/:sessionId/slides/export', async (req, res) => {
       });
     }
 
-    const slides = slidesResult.data;
+    // Include speaker notes if available
+    const slides = {
+      ...slidesResult.data,
+      speakerNotes: slidesResult.speakerNotes || null
+    };
 
     // Generate the PowerPoint file
     const pptxBuffer = await generatePptx(slides, {
@@ -544,9 +548,14 @@ router.get('/:sessionId/:viewType', (req, res) => {
       res.set('Cache-Control', 'private, max-age=300');
       res.set('ETag', `"${sessionId}-${viewType}-${session.lastAccessed}"`);
 
+      // Include speaker notes for slides view
+      const responseData = viewType === 'slides' && contentResult.speakerNotes
+        ? { ...contentResult.data, speakerNotes: contentResult.speakerNotes }
+        : contentResult.data;
+
       return res.json({
         status: 'completed',
-        data: contentResult.data
+        data: responseData
       });
     } else {
       // Don't cache error responses

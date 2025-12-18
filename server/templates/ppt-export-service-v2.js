@@ -487,6 +487,184 @@ function addCornerGraphic(pptx, slide, layout, isDarkBackground = false) {
 }
 
 // ============================================================================
+// SPEAKER NOTES FORMATTER - For PPTX notes field
+// ============================================================================
+
+/**
+ * Format speaker notes for PowerPoint notes field
+ * Priority ordering: Quick Ref > Talking Points > Q&A > CTA > Sources (truncate if needed)
+ * Enhanced with sentence-boundary truncation for graceful overflow handling
+ * Updated with sales enhancements for consulting executives
+ * @param {object} notes - Speaker notes object for a slide
+ * @param {number} maxLength - Maximum characters (PPTX practical limit ~3000)
+ * @returns {string} Formatted notes text for PPTX
+ */
+function formatSpeakerNotesForPptx(notes, maxLength = 3000) {
+  if (!notes) return '';
+
+  const sections = [];
+  let currentLength = 0;
+
+  // Helper to add section if within limit, with graceful truncation for high-priority content
+  const addSection = (title, content, priority = 'normal') => {
+    if (!content || !content.trim()) return true; // Skip empty content
+
+    const fullSection = `${title}\n${content}\n\n`;
+
+    // If it fits completely, add it
+    if (currentLength + fullSection.length <= maxLength) {
+      sections.push(fullSection);
+      currentLength += fullSection.length;
+      return true;
+    }
+
+    // For high-priority sections, try to fit partial content at sentence boundary
+    if (priority === 'high') {
+      const remaining = maxLength - currentLength - title.length - 4; // 4 for \n and spacing
+      if (remaining > 100) {
+        // Truncate at sentence boundary
+        const sentences = content.split(/(?<=[.!?])\s+/);
+        let partial = '';
+        for (const sentence of sentences) {
+          if ((partial + sentence).length < remaining - 20) { // Leave buffer
+            partial += (partial ? ' ' : '') + sentence;
+          } else {
+            break;
+          }
+        }
+        if (partial.trim()) {
+          sections.push(`${title}\n${partial.trim()}...\n\n`);
+          currentLength = maxLength; // Mark as full
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  // 0. QUICK REFERENCE (highest priority - cheat sheet for presenter)
+  if (notes.quickReference && currentLength < 200) {
+    const qr = notes.quickReference;
+    let cheatText = '';
+    if (qr.keyNumber) cheatText += `KEY NUMBER: ${qr.keyNumber}\n`;
+    if (qr.keyPhrase) cheatText += `KEY PHRASE: "${qr.keyPhrase}"\n`;
+    if (qr.keyProof) cheatText += `PROOF: ${qr.keyProof}\n`;
+    if (qr.keyAsk) cheatText += `ASK: ${qr.keyAsk}`;
+    if (cheatText) addSection('QUICK REFERENCE:', cheatText.trim(), 'high');
+  }
+
+  // 1. TALKING POINTS (highest priority - always try to include)
+  if (notes.narrative?.talkingPoints?.length) {
+    const points = notes.narrative.talkingPoints
+      .map((p, i) => `${i + 1}. ${p}`)
+      .join('\n');
+    addSection('TALKING POINTS:', points, 'high');
+
+    // Key phrase (high priority)
+    if (notes.narrative.keyPhrase && currentLength < maxLength - 100) {
+      addSection('KEY PHRASE:', `"${notes.narrative.keyPhrase}"`, 'high');
+    }
+  }
+
+  // 2. STAKEHOLDER ANGLES (sales enhancement #1 - high priority for consulting)
+  if (notes.stakeholderAngles && currentLength < maxLength - 250) {
+    const angles = notes.stakeholderAngles;
+    let angleText = '';
+    if (angles.cfo) angleText += `CFO: ${angles.cfo}\n`;
+    if (angles.cto) angleText += `CTO: ${angles.cto}\n`;
+    if (angles.ceo) angleText += `CEO: ${angles.ceo}\n`;
+    if (angles.operations) angleText += `OPS: ${angles.operations}`;
+    if (angleText) addSection('STAKEHOLDER ANGLES:', angleText.trim());
+  }
+
+  // 3. TRANSITIONS (medium priority)
+  if (notes.narrative?.transitionIn || notes.narrative?.transitionOut) {
+    let transitionText = '';
+    if (notes.narrative.transitionIn) {
+      transitionText += `From previous: ${notes.narrative.transitionIn}\n`;
+    }
+    if (notes.narrative.transitionOut) {
+      transitionText += `To next: ${notes.narrative.transitionOut}`;
+    }
+    addSection('TRANSITIONS:', transitionText.trim());
+  }
+
+  // 4. ANTICIPATED QUESTIONS (with severity - sales enhancement #2)
+  if (notes.anticipatedQuestions?.length && currentLength < maxLength - 400) {
+    // Prioritize deal_breaker and hostile questions
+    const prioritized = [...notes.anticipatedQuestions].sort((a, b) => {
+      const severityOrder = { deal_breaker: 0, hostile: 1, skeptical: 2, probing: 3 };
+      return (severityOrder[a.severity] || 3) - (severityOrder[b.severity] || 3);
+    });
+
+    const qaText = prioritized
+      .slice(0, 2) // Limit to 2 Q&As for space
+      .map(qa => {
+        let text = `[${(qa.severity || 'probing').toUpperCase()}] Q: ${qa.question}\nA: ${qa.response}`;
+        if (qa.escalationResponse && qa.severity === 'deal_breaker') {
+          text += `\nIF THEY PUSH BACK: ${qa.escalationResponse}`;
+        }
+        return text;
+      })
+      .join('\n\n');
+    addSection('Q&A PREP:', qaText);
+  }
+
+  // 5. CALL-TO-ACTION VARIANTS (sales enhancement #8)
+  if (notes.storyContext?.callToAction && currentLength < maxLength - 200) {
+    const cta = notes.storyContext.callToAction;
+    let ctaText = '';
+    if (cta.warmAudience?.ask) ctaText += `WARM: ${cta.warmAudience.ask}\n`;
+    if (cta.neutralAudience?.ask) ctaText += `NEUTRAL: ${cta.neutralAudience.ask}\n`;
+    if (cta.hostileAudience?.ask) ctaText += `HOSTILE: ${cta.hostileAudience.ask}`;
+    if (ctaText) addSection('CALL-TO-ACTION:', ctaText.trim());
+  }
+
+  // 6. WHY THIS MATTERS (medium-high priority)
+  if (notes.storyContext?.soWhat && currentLength < maxLength - 150) {
+    addSection('WHY THIS MATTERS:', notes.storyContext.soWhat, 'high');
+  }
+
+  // 7. TIME GUIDANCE (sales enhancement #9)
+  if (notes.storyContext?.timeGuidance && currentLength < maxLength - 100) {
+    const tg = notes.storyContext.timeGuidance;
+    let timeText = '';
+    if (tg.suggestedDuration) timeText += `Duration: ${tg.suggestedDuration}`;
+    if (tg.condensedVersion) timeText += `\nShort version: "${tg.condensedVersion}"`;
+    if (timeText) addSection('TIME:', timeText.trim());
+  }
+
+  // 8. SOURCES (lower priority - truncate claims aggressively)
+  if (notes.sourceAttribution?.length && currentLength < maxLength - 200) {
+    const sourcesText = notes.sourceAttribution
+      .slice(0, 2) // Limit to 2 sources
+      .map(src => {
+        const truncatedClaim = src.claim?.length > 80
+          ? src.claim.substring(0, 80) + '...'
+          : src.claim;
+        return `• ${src.source}: "${truncatedClaim}"`;
+      })
+      .join('\n');
+    addSection('SOURCES:', sourcesText);
+  }
+
+  // 9. CREDIBILITY ANCHORS (third-party validation for skeptical audiences)
+  if (notes.credibilityAnchors?.length && currentLength < maxLength - 150) {
+    const anchorsText = notes.credibilityAnchors
+      .slice(0, 2) // Limit to 2 for space
+      .map(anchor => {
+        const typeLabel = (anchor.type || 'research').toUpperCase().replace(/_/g, ' ');
+        return `[${typeLabel}] ${anchor.dropPhrase}\n  → ${anchor.statement}`;
+      })
+      .join('\n\n');
+    addSection('CREDIBILITY ANCHORS:', anchorsText);
+  }
+
+  return sections.join('').trim();
+}
+
+// ============================================================================
 // SLIDE RENDERERS
 // ============================================================================
 
@@ -574,8 +752,9 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
 /**
  * Add Two-Column Content Slide
  * White background, title left, body right
+ * @param {object} speakerNotes - Optional speaker notes for this slide
  */
-function addTwoColumnSlide(pptx, data, slideNumber) {
+function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   const L = LAYOUTS.twoColumn;
   const slide = pptx.addSlide();
 
@@ -664,13 +843,22 @@ function addTwoColumnSlide(pptx, data, slideNumber) {
     color: COLORS.darkGray,
     align: 'left'
   });
+
+  // Add speaker notes if provided
+  if (speakerNotes) {
+    const notesText = formatSpeakerNotesForPptx(speakerNotes);
+    if (notesText) {
+      slide.addNotes(notesText);
+    }
+  }
 }
 
 /**
  * Add Three-Column Content Slide
  * White background, narrow title left, three columns below
+ * @param {object} speakerNotes - Optional speaker notes for this slide
  */
-function addThreeColumnSlide(pptx, data, slideNumber) {
+function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   const L = LAYOUTS.threeColumn;
   const slide = pptx.addSlide();
 
@@ -770,6 +958,14 @@ function addThreeColumnSlide(pptx, data, slideNumber) {
     color: COLORS.darkGray,
     align: 'left'
   });
+
+  // Add speaker notes if provided
+  if (speakerNotes) {
+    const notesText = formatSpeakerNotesForPptx(speakerNotes);
+    if (notesText) {
+      slide.addNotes(notesText);
+    }
+  }
 }
 
 // ============================================================================
@@ -858,24 +1054,76 @@ export async function generatePptx(slidesData, options = {}) {
     console.warn('[PPT Export v2] Warning: No slides to render');
   }
 
+  // Get speaker notes if available
+  const speakerNotesData = slidesData.speakerNotes?.slides || [];
+  const hasSpeakerNotes = speakerNotesData.length > 0;
+  if (hasSpeakerNotes) {
+    console.log(`[PPT Export v2] Including speaker notes for ${speakerNotesData.length} slides`);
+  }
+
+  // Helper to find speaker notes for a slide (three-tier matching strategy)
+  const findSpeakerNotes = (slideData, sectionName) => {
+    if (!hasSpeakerNotes || slideData.layout === 'sectionTitle') return null;
+
+    const tagline = (slideData.tagline || '').toLowerCase().trim();
+    const section = (sectionName || '').toLowerCase().trim();
+
+    // Strategy 1: Exact match on both section and tagline
+    const exactMatch = speakerNotesData.find(note =>
+      note.slideTagline?.toLowerCase().trim() === tagline &&
+      note.sectionName?.toLowerCase().trim() === section
+    );
+    if (exactMatch) return exactMatch;
+
+    // Strategy 2: Section contains match + exact tagline
+    const partialMatch = speakerNotesData.find(note =>
+      note.slideTagline?.toLowerCase().trim() === tagline &&
+      (note.sectionName?.toLowerCase().includes(section) ||
+       section.includes(note.sectionName?.toLowerCase() || ''))
+    );
+    if (partialMatch) return partialMatch;
+
+    // Strategy 3: Tagline-only (single match only to avoid ambiguity)
+    const taglineMatches = speakerNotesData.filter(note =>
+      note.slideTagline?.toLowerCase().trim() === tagline
+    );
+    if (taglineMatches.length === 1) {
+      console.warn(`[PPT Export] Using tagline-only match for "${tagline}"`);
+      return taglineMatches[0];
+    }
+
+    return null;
+  };
+
+  // Track current section for speaker notes matching
+  let currentSectionName = '';
+
   // Render each slide
   for (let i = 0; i < slidesArray.length; i++) {
     const slideData = slidesArray[i];
     const slideNumber = i + 1;
     const layout = slideData.layout || 'twoColumn';
 
-    console.log(`[PPT Export v2] Rendering slide ${slideNumber}: ${layout}`);
+    // Track section name for speaker notes matching
+    if (layout === 'sectionTitle') {
+      currentSectionName = slideData.swimlane || '';
+    }
+
+    // Find speaker notes for this slide
+    const speakerNotes = findSpeakerNotes(slideData, currentSectionName);
+
+    console.log(`[PPT Export v2] Rendering slide ${slideNumber}: ${layout}${speakerNotes ? ' (with notes)' : ''}`);
 
     if (layout === 'sectionTitle') {
       addSectionTitleSlide(pptx, slideData, slideNumber);
     } else if (layout === 'threeColumn') {
-      addThreeColumnSlide(pptx, slideData, slideNumber);
+      addThreeColumnSlide(pptx, slideData, slideNumber, speakerNotes);
     } else {
-      addTwoColumnSlide(pptx, slideData, slideNumber);
+      addTwoColumnSlide(pptx, slideData, slideNumber, speakerNotes);
     }
   }
 
-  console.log(`[PPT Export v2] Generated ${slidesArray.length} slides`);
+  console.log(`[PPT Export v2] Generated ${slidesArray.length} slides${hasSpeakerNotes ? ' with speaker notes' : ''}`);
 
   // Export as buffer
   return await pptx.write({ outputType: 'nodebuffer' });

@@ -23,7 +23,14 @@
       "Bash(comm:*)",
       "Bash(findstr:*)",
       "Bash(wc:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npm run analyze:dead-code:*)",
+      "Bash(npm run analyze:deps:*)",
+      "Bash(xargs -I {} sh -c 'echo \"\"=== {} ===\"\" && head -20 \"\"{}\"\"')",
+      "Bash(done)",
+      "Bash(npm ls:*)",
+      "Bash(ren FORCE_Phase1_Lite.md Phase1_Lite.md)",
+      "Bash(ren FORCE_Phase2_Lite.md Phase2_Lite.md)"
     ],
     "deny": [],
     "ask": []

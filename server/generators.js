@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { jsonrepair } from 'jsonrepair';
 import { generateRoadmapPrompt, roadmapSchema } from './prompts/roadmap.js';
-import { generateSlidesPrompt, generateSlidesOutlinePrompt, slidesSchema, slidesOutlineSchema } from './prompts/slides.js';
+import { generateSlidesPrompt, generateSlidesOutlinePrompt, generateSpeakerNotesPrompt, generateSpeakerNotesOutlinePrompt, slidesSchema, slidesOutlineSchema, speakerNotesSchema, speakerNotesOutlineSchema } from './prompts/slides.js';
 import { generateDocumentPrompt, documentSchema } from './prompts/document.js';
 import { generateResearchAnalysisPrompt, researchAnalysisSchema } from './prompts/research-analysis.js';
 import { CONFIG } from './config.js';
@@ -83,22 +83,34 @@ const ROADMAP_CONFIG = {
 };
 
 const RESEARCH_ANALYSIS_CONFIG = {
-  temperature: 0.3,        // Low-moderate: reliable but insightful
-  topP: 0.7,               // Balanced token selection
+  temperature: 0.4,        // Slightly higher: allows discovery of non-obvious insights
+  topP: 0.75,              // Broader token selection for nuanced interpretation
   topK: 30,                // Moderate vocabulary for varied recommendations
-  thinkingBudget: 0        // Disabled: straightforward extraction task
+  thinkingBudget: 8192     // ENABLED: Critical first-pass analysis - extracts sources, stats, themes that feed ALL downstream. Deep thinking here prevents garbage-in-garbage-out.
 };
 
 const SLIDES_CONFIG = {
-  temperature: 0.6,        // Higher for engaging narrative variety
-  topP: 0.9,               // Broad selection for compelling content
-  thinkingBudget: 8192     // High: narrative coherence, evidence chains, and quality formatting
+  temperature: 0.55,       // Slightly lower: more precise execution of outline
+  topP: 0.85,              // Focused selection while maintaining engagement
+  thinkingBudget: 12000    // Increased: needs to execute outline faithfully, maintain evidence chains, format titles correctly
 };
 
 const SLIDES_OUTLINE_CONFIG = {
-  temperature: 0.3,        // Low-moderate: structure with some creative flexibility
-  topP: 0.7,               // Balanced for consistent yet varied output
-  thinkingBudget: 16000    // High: narrative planning, framework selection, evidence chains
+  temperature: 0.35,       // Strategic: structured with room for insightful framing
+  topP: 0.75,              // Balanced: consistent structure with varied analytical perspectives
+  thinkingBudget: 20000    // Maximum: Critical planning pass - analytical frameworks, evidence chain design, narrative arc, slide-level structure. Sets the ceiling for slides quality.
+};
+
+const SPEAKER_NOTES_CONFIG = {
+  temperature: 0.55,       // Slightly higher: natural conversational tone for verbatim talking points
+  topP: 0.88,              // Broad variety for engaging delivery cues and Q&A responses
+  thinkingBudget: 16000    // Matched with outline: needs deep reasoning to execute ACE framework, trace sources precisely, weave narrative
+};
+
+const SPEAKER_NOTES_OUTLINE_CONFIG = {
+  temperature: 0.35,       // Low but allows strategic creativity in pushback anticipation
+  topP: 0.75,              // Focused but not overly constrained for evidence chain discovery
+  thinkingBudget: 20000    // Maximum: This is the DEEP REASONING pass - audience profiling, evidence chain construction, pushback strategy, narrative arc. Quality here determines entire notes quality.
 };
 
 // ============================================================================
@@ -1055,6 +1067,127 @@ async function generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, o
 }
 
 /**
+ * Generate speaker notes for slides using two-pass generation for maximum quality
+ * Pass 1: Generate reasoning outline with CoT (audience analysis, evidence chains, pushback prep)
+ * Pass 2: Generate full notes using outline as constraint
+ * @param {object} slidesData - Generated slides data with sections
+ * @param {Array} researchFiles - Original research files
+ * @param {string} userPrompt - Original user request
+ * @returns {Promise<{success: boolean, data?: object, outline?: object, error?: string}>}
+ */
+async function generateSpeakerNotes(slidesData, researchFiles, userPrompt) {
+  try {
+    console.log('[Speaker Notes] Starting two-pass speaker notes generation...');
+
+    // Count total slides to annotate
+    const totalSlides = slidesData.sections?.reduce((sum, section) =>
+      sum + (section.slides?.length || 0), 0) || 0;
+    console.log(`[Speaker Notes] Generating notes for ${totalSlides} slides across ${slidesData.sections?.length || 0} sections`);
+
+    // Pass 1: Generate reasoning outline with deep CoT (with fallback)
+    let outline = null;
+    let outlinePrompt = null;
+    let outlineMetrics = { evidenceChains: 0, sources: 0, pushbacks: 0, transitions: 0, slideOutlines: 0 };
+
+    try {
+      console.log('[Speaker Notes] Pass 1: Generating reasoning outline with CoT...');
+      outlinePrompt = generateSpeakerNotesOutlinePrompt(slidesData, researchFiles, userPrompt);
+      outline = await generateWithGemini(outlinePrompt, speakerNotesOutlineSchema, 'SpeakerNotesOutline', SPEAKER_NOTES_OUTLINE_CONFIG);
+
+      // Log outline quality metrics
+      outlineMetrics = {
+        evidenceChains: outline.reasoning?.keyEvidenceChains?.length || 0,
+        sources: outline.reasoning?.sourceInventory?.length || 0,
+        pushbacks: outline.reasoning?.anticipatedPushback?.length || 0,
+        transitions: outline.reasoning?.narrativeTransitions?.length || 0,
+        slideOutlines: outline.slideOutlines?.length || 0
+      };
+      console.log('[Speaker Notes] Pass 1 complete:', outlineMetrics);
+
+      // Quality warnings
+      if (outlineMetrics.evidenceChains < 3) {
+        console.warn('[Speaker Notes] Low evidence chain count in outline:', outlineMetrics.evidenceChains);
+      }
+      if (outlineMetrics.sources < 2) {
+        console.warn('[Speaker Notes] Low source count in outline:', outlineMetrics.sources);
+      }
+
+      // Fix #11: Retry if quality is critically low
+      const MIN_EVIDENCE_CHAINS = 2;
+      if (outline && outlineMetrics.evidenceChains < MIN_EVIDENCE_CHAINS) {
+        console.warn(`[Speaker Notes] Evidence chains (${outlineMetrics.evidenceChains}) below minimum (${MIN_EVIDENCE_CHAINS}), retrying Pass 1...`);
+
+        try {
+          // Retry with slightly higher temperature for more exploration
+          const retryConfig = { ...SPEAKER_NOTES_OUTLINE_CONFIG, temperature: 0.45 };
+          const retryOutline = await generateWithGemini(outlinePrompt, speakerNotesOutlineSchema, 'SpeakerNotesOutline', retryConfig);
+
+          const retryEvidenceChains = retryOutline.reasoning?.keyEvidenceChains?.length || 0;
+          console.log(`[Speaker Notes] Retry yielded ${retryEvidenceChains} evidence chains`);
+
+          // Use retry result if it's better
+          if (retryEvidenceChains > outlineMetrics.evidenceChains) {
+            outline = retryOutline;
+            outlineMetrics.evidenceChains = retryEvidenceChains;
+            outlineMetrics.sources = retryOutline.reasoning?.sourceInventory?.length || 0;
+            outlineMetrics.pushbacks = retryOutline.reasoning?.anticipatedPushback?.length || 0;
+            outlineMetrics.transitions = retryOutline.reasoning?.narrativeTransitions?.length || 0;
+            outlineMetrics.slideOutlines = retryOutline.slideOutlines?.length || 0;
+            console.log('[Speaker Notes] Using retry result with improved metrics:', outlineMetrics);
+          }
+        } catch (retryError) {
+          console.warn('[Speaker Notes] Retry failed:', retryError.message);
+        }
+      }
+    } catch (pass1Error) {
+      console.warn('[Speaker Notes] Pass 1 failed, falling back to single-pass generation:', pass1Error.message);
+      outline = null;
+    }
+
+    // Pass 2: Generate full notes (with or without outline constraint)
+    console.log(`[Speaker Notes] Pass 2: Generating full notes ${outline ? 'with outline constraint' : 'WITHOUT outline (fallback mode)'}...`);
+    const fullPrompt = generateSpeakerNotesPrompt(slidesData, researchFiles, userPrompt, outline);
+    const data = await generateWithGemini(fullPrompt, speakerNotesSchema, 'SpeakerNotes', SPEAKER_NOTES_CONFIG);
+
+    // Validate we got notes for all slides
+    const notesCount = data.slides?.length || 0;
+    if (notesCount < totalSlides) {
+      console.warn(`[Speaker Notes] Generated ${notesCount} notes for ${totalSlides} slides - some slides may be missing notes`);
+    } else {
+      console.log(`[Speaker Notes] Pass 2 complete: ${notesCount} speaker notes generated`);
+    }
+
+    // Log if reasoning was included in output
+    if (data.reasoning) {
+      console.log('[Speaker Notes] Reasoning block included in output for transparency');
+    } else if (outline?.reasoning) {
+      // Copy reasoning from outline if not present in output
+      console.log('[Speaker Notes] Copying reasoning from outline to output');
+      data.reasoning = outline.reasoning;
+    }
+
+    // Fix #9: Validate delivery cues presence (logging only)
+    const deliveryCuePattern = /\[(pause|emphasize|gesture|lean in|lower voice|rhetorical)\]/i;
+    const slidesWithCues = data.slides?.filter(s =>
+      s.narrative?.talkingPoints?.some(tp => deliveryCuePattern.test(tp))
+    ).length || 0;
+
+    if (slidesWithCues === 0) {
+      console.warn('[Speaker Notes] No delivery cues detected in any talking points');
+    } else if (slidesWithCues < Math.floor((data.slides?.length || 0) / 2)) {
+      console.warn(`[Speaker Notes] Delivery cues found in only ${slidesWithCues}/${data.slides?.length} slides`);
+    } else {
+      console.log(`[Speaker Notes] Delivery cues present in ${slidesWithCues}/${data.slides?.length} slides`);
+    }
+
+    return { success: true, data, outline };
+  } catch (error) {
+    console.error('[Speaker Notes] Error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Generate executive summary document with optional swimlane alignment
  * @param {string} userPrompt - User's analysis request
  * @param {Array} researchFiles - Research files to analyze
@@ -1165,19 +1298,20 @@ async function generateResearchAnalysis(userPrompt, researchFiles) {
 }
 
 /**
- * Generate all content types with optimized 3-phase parallel pipeline
+ * Generate all content types with optimized 4-phase pipeline
  *
- * OPTIMIZED PIPELINE (37% faster than sequential):
+ * OPTIMIZED PIPELINE:
  * Phase 0: Start Research Analysis immediately (100% independent, no dependencies)
  * Phase 1: Roadmap + Slides Outline in parallel (Outline can auto-detect topics)
  * Phase 2: Slides Pass 2 + Document in parallel (both use swimlanes from roadmap)
+ * Phase 3: Speaker Notes (separate pass, depends on slides completion)
  *
- * This maximizes API utilization (4 concurrent calls) while maintaining
- * swimlane alignment for slides and document.
+ * This maximizes API utilization while maintaining swimlane alignment
+ * and generating comprehensive speaker notes for sales enablement.
  */
 export async function generateAllContent(userPrompt, researchFiles) {
   try {
-    console.log('[Generation] Starting optimized 3-phase parallel pipeline...');
+    console.log('[Generation] Starting optimized 4-phase pipeline...');
     const startTime = Date.now();
 
     // Phase 0: Start Research Analysis immediately (no dependencies)
@@ -1242,10 +1376,28 @@ export async function generateAllContent(userPrompt, researchFiles) {
       }
     }
 
+    // Phase 3: Generate speaker notes (separate pass, depends on slides)
+    let speakerNotes = { success: false, error: 'Slides not generated' };
+    if (slides.success && slides.data) {
+      console.log('[Generation] Phase 3: Generating speaker notes...');
+      speakerNotes = await apiQueue.add(
+        () => generateSpeakerNotes(slides.data, researchFiles, userPrompt),
+        'SpeakerNotes'
+      );
+
+      // Attach speaker notes to slides data if successful
+      if (speakerNotes.success && speakerNotes.data) {
+        slides.speakerNotes = speakerNotes.data;
+        console.log(`[Generation] Speaker notes attached to slides (${speakerNotes.data.slides?.length || 0} notes)`);
+      } else {
+        console.warn('[Generation] Speaker notes generation failed:', speakerNotes.error);
+      }
+    }
+
     const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`[Generation] All phases complete in ${totalTime}s`);
 
-    return { roadmap, slides, document, researchAnalysis };
+    return { roadmap, slides, document, researchAnalysis, speakerNotes };
   } catch (error) {
     throw error;
   }
