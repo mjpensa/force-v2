@@ -1380,7 +1380,9 @@ export class DocumentView {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Generation failed');
+        // Include detailed error message if available
+        const errorMessage = error.details || error.message || error.error || 'Generation failed';
+        throw new Error(errorMessage);
       }
 
       // Get filename from header or use default
