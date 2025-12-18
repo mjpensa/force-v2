@@ -40,7 +40,9 @@
 .slides-main-layout {
   display: block;
   width: 100%;
-  height: 100%;
+  min-height: 100%;
+  max-height: 100vh;
+  overflow-y: auto;
   padding: var(--spacing-4);
   padding-right: calc(var(--sidebar-width) + var(--spacing-8)); /* Account for fixed TOC */
   box-sizing: border-box;
@@ -49,7 +51,7 @@
 .slides-area {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 100%;
 }
 
 /* ========== SLIDES HEADER MENU (Fixed Upper Right) ========== */

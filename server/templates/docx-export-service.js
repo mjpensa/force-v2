@@ -640,7 +640,7 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
     children: [styledText(meetingContext.meetingObjective, {
       font: FONTS.body,
       size: 22,
-      color: COLORS.gray,
+      color: COLORS.darkGray,
       italics: true
     })]
   }));
@@ -702,7 +702,7 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
           children: [styledText(`→ ${tp.supporting}`, {
             ...STYLES.body,
             size: 20,
-            color: COLORS.gray,
+            color: COLORS.darkGray,
             italics: true
           })]
         }));
@@ -761,7 +761,7 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
     children.push(new Paragraph({
       spacing: { before: 200, after: 100 },
       border: {
-        top: { style: BorderStyle.SINGLE, size: 1, color: hexColor(COLORS.gray) }
+        top: { style: BorderStyle.SINGLE, size: 1, color: hexColor(COLORS.darkGray) }
       },
       children: [styledText('Caution Areas', {
         ...STYLES.body,
@@ -776,7 +776,7 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
         children: [styledText(`⚠ ${caution}`, {
           ...STYLES.body,
           size: 18,
-          color: COLORS.gray
+          color: COLORS.darkGray
         })]
       }));
     });
