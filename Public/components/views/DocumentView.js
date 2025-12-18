@@ -1255,6 +1255,11 @@ export class DocumentView {
         <p class="modal-description">Generate a one-page brief synthesizing your research and analysis for this meeting.</p>
 
         <div class="form-group">
+          <label for="company-name">Company Name *</label>
+          <input type="text" id="company-name" placeholder="e.g., Bank of America, Acme Corp" required />
+        </div>
+
+        <div class="form-group">
           <label for="meeting-attendees">Meeting Attendees *</label>
           <input type="text" id="meeting-attendees" placeholder="e.g., CEO, CFO, Head of Strategy" required />
         </div>
@@ -1282,8 +1287,8 @@ export class DocumentView {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    // Focus first input
-    setTimeout(() => modal.querySelector('#meeting-attendees').focus(), 100);
+    // Focus first input (company name)
+    setTimeout(() => modal.querySelector('#company-name').focus(), 100);
 
     // Attach event handlers
     this._setupIntelligenceBriefModalHandlers(overlay, modal);
@@ -1332,11 +1337,18 @@ export class DocumentView {
    * Handle intelligence brief generation
    */
   async _handleGenerateIntelligenceBrief(modal, closeModal) {
+    const companyName = modal.querySelector('#company-name').value.trim();
     const meetingAttendees = modal.querySelector('#meeting-attendees').value.trim();
     const meetingObjective = modal.querySelector('#meeting-objective').value.trim();
     const keyConcerns = modal.querySelector('#key-concerns').value.trim();
 
     // Validate required fields
+    if (!companyName) {
+      modal.querySelector('#company-name').focus();
+      modal.querySelector('#company-name').classList.add('input-error');
+      setTimeout(() => modal.querySelector('#company-name').classList.remove('input-error'), 500);
+      return;
+    }
     if (!meetingAttendees) {
       modal.querySelector('#meeting-attendees').focus();
       modal.querySelector('#meeting-attendees').classList.add('input-error');
@@ -1363,7 +1375,7 @@ export class DocumentView {
       const response = await fetch(`/api/content/${this.sessionId}/intelligence-brief/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ meetingAttendees, meetingObjective, keyConcerns })
+        body: JSON.stringify({ companyName, meetingAttendees, meetingObjective, keyConcerns })
       });
 
       if (!response.ok) {

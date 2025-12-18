@@ -621,6 +621,18 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
     })]
   }));
 
+  // Company name - centered, navy
+  children.push(new Paragraph({
+    spacing: { after: 100 },
+    alignment: AlignmentType.CENTER,
+    children: [styledText(meetingContext.companyName, {
+      font: FONTS.heading,
+      size: 26,
+      color: COLORS.navy,
+      bold: true
+    })]
+  }));
+
   // Meeting Objective subtitle - gray italic
   children.push(new Paragraph({
     spacing: { after: 200 },

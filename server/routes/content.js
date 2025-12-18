@@ -516,7 +516,7 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
 
   try {
     const { sessionId } = req.params;
-    const { meetingAttendees, meetingObjective, keyConcerns } = req.body;
+    const { companyName, meetingAttendees, meetingObjective, keyConcerns } = req.body;
 
     // Validate session exists
     const session = sessions.get(sessionId);
@@ -528,6 +528,12 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
     }
 
     // Validate required fields
+    if (!companyName?.trim()) {
+      return res.status(400).json({
+        error: 'Company name is required',
+        message: 'Please specify the company name for the meeting.'
+      });
+    }
     if (!meetingAttendees?.trim()) {
       return res.status(400).json({
         error: 'Meeting attendees are required',
@@ -572,6 +578,7 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
     });
 
     const meetingContext = {
+      companyName: companyName.trim(),
       meetingAttendees: meetingAttendees.trim(),
       meetingObjective: meetingObjective.trim(),
       keyConcerns: keyConcerns?.trim() || ''

@@ -116,25 +116,24 @@ Create a one-page meeting brief that helps the presenter walk into the meeting f
 /**
  * Generate the full prompt with session data context
  * @param {Object} sessionData - Contains sources, document, roadmap, slides
- * @param {Object} meetingContext - Contains meetingAttendees, meetingObjective, keyConcerns
+ * @param {Object} meetingContext - Contains companyName, meetingAttendees, meetingObjective, keyConcerns
  * @returns {string} Complete prompt for Gemini
  */
 export function generateIntelligenceBriefPrompt(sessionData, meetingContext) {
-  const { meetingAttendees, meetingObjective, keyConcerns } = meetingContext;
+  const { companyName, meetingAttendees, meetingObjective, keyConcerns } = meetingContext;
 
   // Build context from session data
   let sessionContext = '## Session Analysis Data\n\n';
 
-  // Source research
+  // Source research (stored as { filename, content } from upload)
   if (sessionData.sources?.length > 0) {
     sessionContext += '### Source Research\n';
     sessionData.sources.forEach((source, i) => {
-      sessionContext += `${i + 1}. ${source.title || source.url || 'Document ' + (i + 1)}\n`;
-      if (source.summary) sessionContext += `   Summary: ${source.summary}\n`;
+      sessionContext += `${i + 1}. ${source.filename || 'Document ' + (i + 1)}\n`;
       if (source.content) {
-        // Include first 500 chars of content for context
-        const preview = source.content.substring(0, 500).replace(/\n/g, ' ');
-        sessionContext += `   Preview: ${preview}...\n`;
+        // Include first 800 chars of content for context
+        const preview = source.content.substring(0, 800).replace(/\n+/g, ' ').trim();
+        sessionContext += `   Content: ${preview}...\n`;
       }
     });
     sessionContext += '\n';
@@ -176,28 +175,39 @@ export function generateIntelligenceBriefPrompt(sessionData, meetingContext) {
     sessionContext += '\n';
   }
 
-  // Roadmap
-  if (sessionData.roadmap?.phases?.length > 0) {
+  // Roadmap - data structure is { data: [{ title, entity, isSwimlane, bar }] }
+  if (sessionData.roadmap?.data?.length > 0) {
     sessionContext += '### Strategic Roadmap\n';
-    sessionData.roadmap.phases.forEach(phase => {
-      sessionContext += `- **${phase.name}** (${phase.timeframe || 'TBD'}): ${phase.description || ''}\n`;
-      if (phase.milestones?.length > 0) {
-        phase.milestones.slice(0, 3).forEach(m => {
-          sessionContext += `  * ${m.title || m.name || m}\n`;
-        });
+    // Extract swimlanes and their tasks
+    let currentSwimlane = null;
+    sessionData.roadmap.data.forEach(item => {
+      if (item.isSwimlane) {
+        currentSwimlane = item.title;
+        sessionContext += `\n**${item.title}** (${item.entity || 'Initiative'}):\n`;
+      } else if (currentSwimlane && item.title) {
+        sessionContext += `  - ${item.title}\n`;
       }
     });
     sessionContext += '\n';
   }
 
-  // Slides
-  if (sessionData.slides?.slides?.length > 0) {
+  // Slides - data structure is { sections: [{ swimlane, slides: [...] }] }
+  if (sessionData.slides?.sections?.length > 0) {
     sessionContext += '### Slide Deck Messaging\n';
-    sessionData.slides.slides.slice(0, 8).forEach((slide, i) => {
-      sessionContext += `${i + 1}. **${slide.title}**: ${slide.keyMessage || slide.narrative || ''}\n`;
-      if (slide.bullets?.length > 0) {
-        slide.bullets.slice(0, 3).forEach(b => {
-          sessionContext += `   - ${typeof b === 'string' ? b : b.text || b.point || ''}\n`;
+    let slideNum = 0;
+    sessionData.slides.sections.forEach(section => {
+      if (section.swimlane) {
+        sessionContext += `\n**${section.swimlane}**:\n`;
+      }
+      if (section.slides?.length > 0) {
+        section.slides.slice(0, 3).forEach(slide => {
+          slideNum++;
+          const title = slide.title?.replace(/\n/g, ' ') || slide.tagline || 'Slide';
+          sessionContext += `${slideNum}. ${title}\n`;
+          // Include key content from paragraphs
+          if (slide.paragraph1) {
+            sessionContext += `   - ${slide.paragraph1.substring(0, 150)}...\n`;
+          }
         });
       }
     });
@@ -207,6 +217,7 @@ export function generateIntelligenceBriefPrompt(sessionData, meetingContext) {
   return `${INTELLIGENCE_BRIEF_SYSTEM_PROMPT}
 
 ## Meeting Details
+- **Company**: ${companyName}
 - **Attendees**: ${meetingAttendees}
 - **Objective**: ${meetingObjective}
 ${keyConcerns ? `- **Key Concerns to Address**: ${keyConcerns}` : ''}

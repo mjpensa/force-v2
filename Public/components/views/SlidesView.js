@@ -1051,6 +1051,16 @@ export class SlidesView {
         matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Matched via partial section name">Partial match</div>`;
       } else if (matchInfo.matchType === 'tagline_only') {
         matchIndicator = `<div class="notes-match-indicator notes-match-fallback" title="Matched by tagline only - verify correct slide">Fallback match</div>`;
+      } else if (matchInfo.matchType === 'index_disambiguated') {
+        matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Resolved duplicate taglines using slide index">Index matched</div>`;
+      } else if (matchInfo.matchType === 'position_disambiguated') {
+        matchIndicator = `<div class="notes-match-indicator notes-match-fallback" title="Matched by position - low confidence">Position guess</div>`;
+      } else if (matchInfo.matchType === 'fuzzy_tagline') {
+        matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Matched via similar tagline text">Fuzzy match</div>`;
+      } else if (matchInfo.matchType === 'fuzzy_section') {
+        matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Matched via similar tagline and section">Fuzzy + section</div>`;
+      } else if (matchInfo.matchType === 'section_index_fallback') {
+        matchIndicator = `<div class="notes-match-indicator notes-match-fallback" title="Matched by position in section - verify correct notes (expected: ${matchInfo.tagline}, got: ${matchInfo.matchedTagline})">Index fallback</div>`;
       }
 
       contentEl.innerHTML = matchIndicator + reasoningHTML + slideNotesHTML;
@@ -1185,6 +1195,65 @@ export class SlidesView {
         duplicateCount: taglineOnlyMatches.length,
         duplicateSections
       });
+    }
+
+    // Strategy 4: Partial/fuzzy tagline matching (handles minor variations)
+    const fuzzyTaglineMatches = this.speakerNotes.slides.filter(note => {
+      const noteTagline = (note.slideTagline || '').toLowerCase().trim();
+      if (!noteTagline) return false;
+      // Check if either contains the other (handles truncation, extra words, etc.)
+      return slideTagline.includes(noteTagline) || noteTagline.includes(slideTagline);
+    });
+
+    if (fuzzyTaglineMatches.length === 1) {
+      console.warn(`[SpeakerNotes] Using fuzzy tagline match for "${slideTagline}" → "${fuzzyTaglineMatches[0].slideTagline}"`);
+      return { notes: fuzzyTaglineMatches[0], matchInfo: { matchType: 'fuzzy_tagline', tagline: slideTagline } };
+    }
+
+    // If multiple fuzzy matches, try to disambiguate by section
+    if (fuzzyTaglineMatches.length > 1) {
+      const fuzzyWithSection = fuzzyTaglineMatches.find(note =>
+        note.sectionName?.toLowerCase().includes(sectionName.toLowerCase()) ||
+        sectionName.toLowerCase().includes(note.sectionName?.toLowerCase() || '')
+      );
+      if (fuzzyWithSection) {
+        console.warn(`[SpeakerNotes] Resolved fuzzy tagline "${slideTagline}" using section match`);
+        return { notes: fuzzyWithSection, matchInfo: { matchType: 'fuzzy_section', tagline: slideTagline } };
+      }
+    }
+
+    // Strategy 5: Use slide index within section as last resort
+    // Count content slides (non-section-title) before this one in the same section
+    let contentSlideIndex = 0;
+    for (let i = 0; i < this.slides.length && i < this.index; i++) {
+      const s = this.slides[i];
+      if (s._sectionId === currentSlide._sectionId && s.layout !== 'sectionTitle') {
+        contentSlideIndex++;
+      }
+    }
+
+    // Find notes for this section and index
+    const sectionNotes = this.speakerNotes.slides.filter(note =>
+      note.sectionName?.toLowerCase().includes(sectionName.toLowerCase()) ||
+      sectionName.toLowerCase().includes(note.sectionName?.toLowerCase() || '')
+    );
+
+    if (sectionNotes.length > 0) {
+      // Sort by slideIndex and use position
+      const sortedSectionNotes = [...sectionNotes].sort((a, b) => (a.slideIndex || 0) - (b.slideIndex || 0));
+      if (contentSlideIndex < sortedSectionNotes.length) {
+        const indexMatch = sortedSectionNotes[contentSlideIndex];
+        console.warn(`[SpeakerNotes] Using section index fallback for "${slideTagline}" → matched to "${indexMatch.slideTagline}" at position ${contentSlideIndex}`);
+        return {
+          notes: indexMatch,
+          matchInfo: {
+            matchType: 'section_index_fallback',
+            tagline: slideTagline,
+            matchedTagline: indexMatch.slideTagline,
+            confidence: 'low'
+          }
+        };
+      }
     }
 
     // No matches found at all
