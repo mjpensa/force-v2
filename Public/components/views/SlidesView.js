@@ -833,7 +833,7 @@ export class SlidesView {
     const mainLayout = document.createElement('div');
     mainLayout.className = 'slides-main-layout';
 
-    // Slides area (wrapper + nav)
+    // Slides area (wrapper + nav + speaker notes)
     const slidesArea = document.createElement('div');
     slidesArea.className = 'slides-area';
 
@@ -862,6 +862,10 @@ export class SlidesView {
     slidesArea.appendChild(wrapper);
     slidesArea.appendChild(nav);
 
+    // Add inline speaker notes panel (collapsible, beneath nav)
+    this.speakerNotesPanel = this._renderSpeakerNotesPanel();
+    slidesArea.appendChild(this.speakerNotesPanel);
+
     // Add TOC sidebar first (for proper DOM order on tablets when static)
     const toc = this._renderTableOfContents();
     mainLayout.appendChild(toc);
@@ -870,39 +874,55 @@ export class SlidesView {
 
     container.appendChild(mainLayout);
 
-    // Add speaker notes panel (hidden by default)
-    this.speakerNotesPanel = this._renderSpeakerNotesPanel();
-    container.appendChild(this.speakerNotesPanel);
-
     this._update();
     return container;
   }
 
   /**
-   * Render the speaker notes panel (collapsed by default)
+   * Render the inline speaker notes panel (collapsible, beneath navigation)
+   * Navy blue glassmorphic styling to match UI
    * @returns {HTMLElement} The speaker notes panel container
    */
   _renderSpeakerNotesPanel() {
     const panel = document.createElement('div');
-    panel.className = 'speaker-notes-panel';
+    panel.className = 'speaker-notes-panel speaker-notes-inline';
     panel.setAttribute('aria-label', 'Speaker notes');
 
-    const header = document.createElement('div');
-    header.className = 'speaker-notes-header';
+    // Collapsible header (click to toggle)
+    const header = document.createElement('button');
+    header.className = 'speaker-notes-header speaker-notes-toggle';
+    header.setAttribute('aria-expanded', 'false');
+    header.setAttribute('aria-controls', 'speaker-notes-content');
+    header.addEventListener('click', () => this._toggleSpeakerNotes());
 
-    const title = document.createElement('h3');
+    const headerLeft = document.createElement('div');
+    headerLeft.className = 'speaker-notes-header-left';
+
+    const icon = document.createElement('span');
+    icon.className = 'speaker-notes-icon';
+    icon.innerHTML = '📝';
+
+    const title = document.createElement('span');
     title.className = 'speaker-notes-title';
     title.textContent = 'Speaker Notes';
 
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'speaker-notes-close';
-    closeBtn.setAttribute('aria-label', 'Close speaker notes');
-    closeBtn.innerHTML = '×';
-    closeBtn.addEventListener('click', () => this._toggleSpeakerNotes());
+    const slideIndicator = document.createElement('span');
+    slideIndicator.className = 'speaker-notes-slide-indicator';
+    slideIndicator.id = 'speaker-notes-slide-indicator';
+    slideIndicator.textContent = '';
 
-    header.appendChild(title);
-    header.appendChild(closeBtn);
+    headerLeft.appendChild(icon);
+    headerLeft.appendChild(title);
+    headerLeft.appendChild(slideIndicator);
 
+    const chevron = document.createElement('span');
+    chevron.className = 'speaker-notes-chevron';
+    chevron.innerHTML = '▼';
+
+    header.appendChild(headerLeft);
+    header.appendChild(chevron);
+
+    // Content area (hidden by default)
     const content = document.createElement('div');
     content.className = 'speaker-notes-content';
     content.id = 'speaker-notes-content';
@@ -920,10 +940,16 @@ export class SlidesView {
     this.speakerNotesVisible = !this.speakerNotesVisible;
 
     if (this.speakerNotesPanel) {
-      this.speakerNotesPanel.classList.toggle('visible', this.speakerNotesVisible);
+      this.speakerNotesPanel.classList.toggle('expanded', this.speakerNotesVisible);
+
+      // Update aria-expanded on the toggle header
+      const toggleHeader = this.speakerNotesPanel.querySelector('.speaker-notes-toggle');
+      if (toggleHeader) {
+        toggleHeader.setAttribute('aria-expanded', this.speakerNotesVisible);
+      }
     }
 
-    // Update the menu button text
+    // Update the menu button text (keep for backwards compatibility)
     const toggleBtn = document.getElementById('toggle-notes-btn');
     if (toggleBtn) {
       const textSpan = toggleBtn.querySelector('.menu-item-text');
@@ -940,30 +966,107 @@ export class SlidesView {
 
   /**
    * Update speaker notes content for current slide
+   * Provides detailed feedback for different failure scenarios
    */
   _updateSpeakerNotesContent() {
     const contentEl = document.getElementById('speaker-notes-content');
     if (!contentEl) return;
 
-    const notes = this._getSpeakerNotesForCurrentSlide();
+    const currentSlide = this.slides[this.index];
 
-    if (!notes) {
+    // Update slide indicator in header
+    const slideIndicator = document.getElementById('speaker-notes-slide-indicator');
+    if (slideIndicator) {
+      if (currentSlide?.tagline) {
+        slideIndicator.textContent = `— ${currentSlide.tagline}`;
+      } else if (currentSlide?.layout === 'sectionTitle') {
+        slideIndicator.textContent = `— ${currentSlide.sectionTitle || currentSlide.swimlane || 'Section'}`;
+      } else {
+        slideIndicator.textContent = `— Slide ${this.index + 1}`;
+      }
+    }
+
+    // Case 1: Section title slides don't have notes
+    if (currentSlide?.layout === 'sectionTitle') {
       contentEl.innerHTML = `
         <div class="notes-placeholder">
-          <p>No speaker notes available for this slide.</p>
-          <p class="notes-hint">Speaker notes are generated for content slides only.</p>
+          <p>Section title slides do not have speaker notes.</p>
+          <p class="notes-hint">Navigate to a content slide to view notes.</p>
         </div>
       `;
       return;
     }
 
-    // Render reasoning section (presentation-level) + slide-specific notes
-    const reasoningHTML = this._renderReasoningSection();
-    const slideNotesHTML = this._renderSpeakerNotesHTML(notes);
-    contentEl.innerHTML = reasoningHTML + slideNotesHTML;
+    // Case 2: No speaker notes data loaded at all
+    if (!this.speakerNotes?.slides || this.speakerNotes.slides.length === 0) {
+      contentEl.innerHTML = `
+        <div class="notes-placeholder notes-error">
+          <p>Speaker notes not available.</p>
+          <p class="notes-hint">Notes may not have been generated for this presentation, or generation may have failed.</p>
+          <p class="notes-action">Try regenerating the slides to include speaker notes.</p>
+        </div>
+      `;
+      return;
+    }
 
-    // Attach click handlers for collapsible sections
-    this._attachCollapsibleToggleHandlers(contentEl);
+    // Case 3: Try to get notes for current slide
+    const { notes, matchInfo } = this._getSpeakerNotesForCurrentSlide();
+
+    if (!notes) {
+      // Provide specific feedback based on why matching failed
+      let errorMessage = 'No speaker notes found for this slide.';
+      let hintMessage = 'Notes may not have been generated for this specific slide.';
+
+      if (matchInfo.reason === 'duplicate_taglines') {
+        errorMessage = `Multiple slides share the tagline "${matchInfo.tagline}".`;
+        hintMessage = `Found ${matchInfo.duplicateCount} slides with this tagline across different sections. Unable to determine which notes apply.`;
+      } else if (matchInfo.reason === 'no_tagline_match') {
+        errorMessage = `No notes match tagline "${matchInfo.tagline}".`;
+        hintMessage = 'The slide tagline may have changed after notes were generated.';
+      }
+
+      contentEl.innerHTML = `
+        <div class="notes-placeholder notes-warning">
+          <p>${errorMessage}</p>
+          <p class="notes-hint">${hintMessage}</p>
+          ${matchInfo.reason === 'duplicate_taglines' ? `
+            <details class="notes-debug">
+              <summary>Sections with this tagline</summary>
+              <ul>${matchInfo.duplicateSections.map(s => `<li>${s}</li>`).join('')}</ul>
+            </details>
+          ` : ''}
+        </div>
+      `;
+      return;
+    }
+
+    // Case 4: Success - render notes with match quality indicator
+    try {
+      const reasoningHTML = this._renderReasoningSection();
+      const slideNotesHTML = this._renderSpeakerNotesHTML(notes);
+
+      // Add match quality indicator if not exact match
+      let matchIndicator = '';
+      if (matchInfo.matchType === 'partial_section') {
+        matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Matched via partial section name">Partial match</div>`;
+      } else if (matchInfo.matchType === 'tagline_only') {
+        matchIndicator = `<div class="notes-match-indicator notes-match-fallback" title="Matched by tagline only - verify correct slide">Fallback match</div>`;
+      }
+
+      contentEl.innerHTML = matchIndicator + reasoningHTML + slideNotesHTML;
+
+      // Attach click handlers for collapsible sections
+      this._attachCollapsibleToggleHandlers(contentEl);
+    } catch (renderError) {
+      console.error('[SpeakerNotes] Failed to render notes:', renderError);
+      contentEl.innerHTML = `
+        <div class="notes-placeholder notes-error">
+          <p>Failed to render speaker notes.</p>
+          <p class="notes-hint">Error: ${renderError.message}</p>
+          <p class="notes-action">Try refreshing the page or regenerating notes.</p>
+        </div>
+      `;
+    }
   }
 
   /**
@@ -987,24 +1090,40 @@ export class SlidesView {
 
   /**
    * Get speaker notes for the current slide
-   * Uses three-tier matching strategy for robustness
-   * @returns {object|null} Speaker notes object or null
+   * Uses three-tier matching strategy with fallback for duplicates
+   * @returns {{ notes: object|null, matchInfo: object }} Speaker notes and match metadata
    */
   _getSpeakerNotesForCurrentSlide() {
-    if (!this.speakerNotes?.slides) return null;
+    const noMatch = (reason, extra = {}) => ({
+      notes: null,
+      matchInfo: { matchType: 'none', reason, ...extra }
+    });
+
+    if (!this.speakerNotes?.slides) {
+      return noMatch('no_data');
+    }
 
     const currentSlide = this.slides[this.index];
-    if (!currentSlide || currentSlide.layout === 'sectionTitle') return null;
+    if (!currentSlide || currentSlide.layout === 'sectionTitle') {
+      return noMatch('section_title');
+    }
 
     const sectionName = currentSlide._sectionId?.replace(/-/g, ' ') || '';
     const slideTagline = (currentSlide.tagline || '').toLowerCase().trim();
+    const slideIndex = currentSlide._slideId ? parseInt(currentSlide._slideId.split('-').pop(), 10) : -1;
+
+    if (!slideTagline) {
+      return noMatch('no_tagline');
+    }
 
     // Strategy 1: Exact match on both section and tagline (most reliable)
     const exactMatch = this.speakerNotes.slides.find(note =>
       note.slideTagline?.toLowerCase().trim() === slideTagline &&
       note.sectionName?.toLowerCase().trim() === sectionName.toLowerCase().trim()
     );
-    if (exactMatch) return exactMatch;
+    if (exactMatch) {
+      return { notes: exactMatch, matchInfo: { matchType: 'exact', tagline: slideTagline } };
+    }
 
     // Strategy 2: Section contains match + exact tagline (handles section name variations)
     const partialSectionMatch = this.speakerNotes.slides.find(note =>
@@ -1012,23 +1131,64 @@ export class SlidesView {
       (note.sectionName?.toLowerCase().includes(sectionName.toLowerCase()) ||
        sectionName.toLowerCase().includes(note.sectionName?.toLowerCase() || ''))
     );
-    if (partialSectionMatch) return partialSectionMatch;
+    if (partialSectionMatch) {
+      return { notes: partialSectionMatch, matchInfo: { matchType: 'partial_section', tagline: slideTagline } };
+    }
 
-    // Strategy 3: Tagline-only match as last resort (risky with duplicate taglines)
-    // Only use if there's exactly one match to avoid ambiguity
+    // Strategy 3: Tagline-only matches
     const taglineOnlyMatches = this.speakerNotes.slides.filter(note =>
       note.slideTagline?.toLowerCase().trim() === slideTagline
     );
+
+    // 3a: Single tagline match - safe to use
     if (taglineOnlyMatches.length === 1) {
       console.warn(`[SpeakerNotes] Using tagline-only match for "${slideTagline}" - section mismatch`);
-      return taglineOnlyMatches[0];
+      return { notes: taglineOnlyMatches[0], matchInfo: { matchType: 'tagline_only', tagline: slideTagline } };
     }
 
-    // No reliable match found
+    // 3b: Multiple tagline matches - try to disambiguate using slide index
     if (taglineOnlyMatches.length > 1) {
-      console.warn(`[SpeakerNotes] Ambiguous match: ${taglineOnlyMatches.length} notes with tagline "${slideTagline}"`);
+      // Try matching by slideIndex if available
+      const indexMatch = taglineOnlyMatches.find(note => note.slideIndex === slideIndex);
+      if (indexMatch) {
+        console.warn(`[SpeakerNotes] Resolved duplicate tagline "${slideTagline}" using slideIndex ${slideIndex}`);
+        return { notes: indexMatch, matchInfo: { matchType: 'index_disambiguated', tagline: slideTagline } };
+      }
+
+      // Try matching by position within section (heuristic)
+      // Count how many slides with this tagline come before this one in the same section
+      const slidesInSection = this.slides.filter(s =>
+        s._sectionId === currentSlide._sectionId &&
+        (s.tagline || '').toLowerCase().trim() === slideTagline
+      );
+      const positionInSection = slidesInSection.findIndex(s => s === currentSlide);
+
+      if (positionInSection >= 0 && positionInSection < taglineOnlyMatches.length) {
+        // Use position as a best-guess match
+        const positionalMatch = taglineOnlyMatches[positionInSection];
+        console.warn(`[SpeakerNotes] Resolved duplicate tagline "${slideTagline}" using position ${positionInSection}`);
+        return {
+          notes: positionalMatch,
+          matchInfo: {
+            matchType: 'position_disambiguated',
+            tagline: slideTagline,
+            confidence: 'low'
+          }
+        };
+      }
+
+      // Cannot disambiguate - report duplicates for UI feedback
+      const duplicateSections = [...new Set(taglineOnlyMatches.map(n => n.sectionName || 'Unknown'))];
+      console.warn(`[SpeakerNotes] Ambiguous match: ${taglineOnlyMatches.length} notes with tagline "${slideTagline}" in sections: ${duplicateSections.join(', ')}`);
+      return noMatch('duplicate_taglines', {
+        tagline: slideTagline,
+        duplicateCount: taglineOnlyMatches.length,
+        duplicateSections
+      });
     }
-    return null;
+
+    // No matches found at all
+    return noMatch('no_tagline_match', { tagline: slideTagline });
   }
 
   /**
@@ -1715,9 +1875,29 @@ export class SlidesView {
     this.slideEl.appendChild(content);
     // Update TOC active state
     this._updateActiveTocSection();
-    // Update speaker notes if visible
+    // Always update slide indicator in speaker notes header
+    this._updateSlideIndicator();
+    // Update full speaker notes content if panel is expanded
     if (this.speakerNotesVisible) {
       this._updateSpeakerNotesContent();
+    }
+  }
+
+  /**
+   * Update just the slide indicator in the speaker notes header
+   * Called on every slide change regardless of panel visibility
+   */
+  _updateSlideIndicator() {
+    const slideIndicator = document.getElementById('speaker-notes-slide-indicator');
+    if (!slideIndicator) return;
+
+    const currentSlide = this.slides[this.index];
+    if (currentSlide?.tagline) {
+      slideIndicator.textContent = `— ${currentSlide.tagline}`;
+    } else if (currentSlide?.layout === 'sectionTitle') {
+      slideIndicator.textContent = `— ${currentSlide.sectionTitle || currentSlide.swimlane || 'Section'}`;
+    } else {
+      slideIndicator.textContent = `— Slide ${this.index + 1}`;
     }
   }
 

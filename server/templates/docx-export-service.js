@@ -599,4 +599,214 @@ export async function generateDocx(documentData, options = {}) {
   return buffer;
 }
 
-export default { generateDocx, createStyledTable };
+/**
+ * Generate a one-page intelligence brief DOCX
+ * Optimized for meeting preparation with concise, actionable content
+ * @param {Object} briefData - Intelligence brief data from generator
+ * @param {Object} meetingContext - Meeting context (attendees, objective, keyConcerns)
+ * @returns {Promise<Buffer>} - Document buffer
+ */
+export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
+  const children = [];
+
+  // Title - centered, coral red
+  children.push(new Paragraph({
+    spacing: { before: 0, after: 100 },
+    alignment: AlignmentType.CENTER,
+    children: [styledText('Pre-Meeting Intelligence Brief', {
+      font: FONTS.heading,
+      size: 32,
+      color: COLORS.coral,
+      bold: true
+    })]
+  }));
+
+  // Meeting Objective subtitle - gray italic
+  children.push(new Paragraph({
+    spacing: { after: 200 },
+    alignment: AlignmentType.CENTER,
+    children: [styledText(meetingContext.meetingObjective, {
+      font: FONTS.body,
+      size: 22,
+      color: COLORS.gray,
+      italics: true
+    })]
+  }));
+
+  // Attendees line
+  children.push(new Paragraph({
+    spacing: { after: 200 },
+    children: [
+      styledText('Attendees: ', { ...STYLES.body, bold: true, size: 20 }),
+      styledText(meetingContext.meetingAttendees, { ...STYLES.body, size: 20 })
+    ]
+  }));
+
+  // Key Concerns if provided
+  if (meetingContext.keyConcerns) {
+    children.push(new Paragraph({
+      spacing: { after: 250 },
+      children: [
+        styledText('Key Concerns: ', { ...STYLES.body, bold: true, size: 20 }),
+        styledText(meetingContext.keyConcerns, { ...STYLES.body, size: 20, italics: true })
+      ]
+    }));
+  }
+
+  // Divider line
+  children.push(new Paragraph({
+    spacing: { after: 200 },
+    border: {
+      bottom: { style: BorderStyle.SINGLE, size: 6, color: hexColor(COLORS.navy) }
+    },
+    children: []
+  }));
+
+  // Key Insights (most important - appears first)
+  if (briefData.keyInsights?.length > 0) {
+    children.push(createHeading('Key Insights', 2));
+    briefData.keyInsights.forEach(insight => {
+      children.push(createBullet(insight));
+    });
+  }
+
+  // Talking Points (with supporting evidence)
+  if (briefData.talkingPoints?.length > 0) {
+    children.push(createHeading('Talking Points', 2));
+    briefData.talkingPoints.forEach((tp, i) => {
+      // Main point - numbered and bold
+      children.push(new Paragraph({
+        spacing: { before: 100, after: 50 },
+        children: [
+          styledText(`${i + 1}. `, { ...STYLES.body, bold: true }),
+          styledText(tp.point, { ...STYLES.body, bold: true })
+        ]
+      }));
+      // Supporting evidence (if present) - indented, gray italic
+      if (tp.supporting) {
+        children.push(new Paragraph({
+          spacing: { after: 100 },
+          indent: { left: 300 },
+          children: [styledText(`→ ${tp.supporting}`, {
+            ...STYLES.body,
+            size: 20,
+            color: COLORS.gray,
+            italics: true
+          })]
+        }));
+      }
+    });
+  }
+
+  // Anticipated Questions (Q&A format)
+  if (briefData.anticipatedQuestions?.length > 0) {
+    children.push(createHeading('Anticipated Questions', 2));
+    briefData.anticipatedQuestions.forEach(qa => {
+      // Question - coral Q prefix
+      children.push(new Paragraph({
+        spacing: { before: 100, after: 50 },
+        children: [
+          styledText('Q: ', { ...STYLES.body, bold: true, color: COLORS.coral }),
+          styledText(qa.question, { ...STYLES.body, italics: true })
+        ]
+      }));
+      // Suggested response
+      children.push(new Paragraph({
+        spacing: { after: 100 },
+        indent: { left: 200 },
+        children: [
+          styledText('A: ', { ...STYLES.body, bold: true }),
+          styledText(qa.suggestedResponse, STYLES.body)
+        ]
+      }));
+    });
+  }
+
+  // Roadmap Highlights (if present)
+  if (briefData.roadmapHighlights?.length > 0) {
+    children.push(createHeading('Roadmap Highlights', 2));
+    briefData.roadmapHighlights.forEach(highlight => {
+      children.push(createBullet(highlight));
+    });
+  }
+
+  // Recommended Next Steps - numbered list
+  if (briefData.recommendedNextSteps?.length > 0) {
+    children.push(createHeading('Recommended Next Steps', 2));
+    briefData.recommendedNextSteps.forEach((step, i) => {
+      children.push(new Paragraph({
+        spacing: { after: 80 },
+        children: [
+          styledText(`${i + 1}. `, { ...STYLES.body, bold: true }),
+          styledText(step, STYLES.body)
+        ]
+      }));
+    });
+  }
+
+  // Caution Areas (if present - smaller section at end)
+  if (briefData.cautionAreas?.length > 0) {
+    children.push(new Paragraph({
+      spacing: { before: 200, after: 100 },
+      border: {
+        top: { style: BorderStyle.SINGLE, size: 1, color: hexColor(COLORS.gray) }
+      },
+      children: [styledText('Caution Areas', {
+        ...STYLES.body,
+        bold: true,
+        size: 20,
+        color: COLORS.coral
+      })]
+    }));
+    briefData.cautionAreas.forEach(caution => {
+      children.push(new Paragraph({
+        spacing: { after: 50 },
+        children: [styledText(`⚠ ${caution}`, {
+          ...STYLES.body,
+          size: 18,
+          color: COLORS.gray
+        })]
+      }));
+    });
+  }
+
+  // Create the document with tighter margins to fit on one page
+  const doc = new Document({
+    creator: DEFAULT_METADATA.creator,
+    title: 'Pre-Meeting Intelligence Brief',
+    description: 'Meeting preparation brief',
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: FONTS.body,
+            size: STYLES.body.size
+          }
+        }
+      }
+    },
+    sections: [{
+      properties: {
+        page: {
+          margin: {
+            top: 720,    // 0.5 inch (tighter margins for one-page fit)
+            right: 720,
+            bottom: 720,
+            left: 720
+          }
+        }
+      },
+      headers: {
+        default: createBipHeader()
+      },
+      children
+    }]
+  });
+
+  const buffer = await Packer.toBuffer(doc);
+  console.log(`[DOCX Export] Generated intelligence brief (${buffer.length} bytes)`);
+
+  return buffer;
+}
+
+export default { generateDocx, generateIntelligenceBriefDocx, createStyledTable };

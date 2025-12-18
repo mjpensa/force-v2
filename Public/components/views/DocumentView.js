@@ -1153,6 +1153,16 @@ export class DocumentView {
     exportWordItem.addEventListener('click', () => this._exportToDocx());
     dropdown.appendChild(exportWordItem);
 
+    // Pre-Meeting Intelligence Brief
+    const intelligenceBriefItem = this._createDocMenuItem({
+      id: 'intelligence-brief-btn',
+      icon: '🎯',
+      text: 'Pre-Meeting Intelligence Brief',
+      ariaLabel: 'Generate pre-meeting intelligence brief'
+    });
+    intelligenceBriefItem.addEventListener('click', () => this._showIntelligenceBriefModal());
+    dropdown.appendChild(intelligenceBriefItem);
+
     menuContainer.appendChild(triggerBtn);
     menuContainer.appendChild(dropdown);
 
@@ -1219,6 +1229,187 @@ export class DocumentView {
         closeMenu();
       }
     });
+  }
+
+  /**
+   * Show the intelligence brief modal
+   */
+  _showIntelligenceBriefModal() {
+    // Remove existing modal if present
+    const existing = document.querySelector('.intelligence-brief-modal-overlay');
+    if (existing) existing.remove();
+
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'intelligence-brief-modal-overlay';
+
+    // Create modal container
+    const modal = document.createElement('div');
+    modal.className = 'intelligence-brief-modal';
+    modal.innerHTML = `
+      <div class="modal-header">
+        <h2>Pre-Meeting Intelligence Brief</h2>
+        <button class="modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-description">Generate a one-page brief synthesizing your research and analysis for this meeting.</p>
+
+        <div class="form-group">
+          <label for="meeting-attendees">Meeting Attendees *</label>
+          <input type="text" id="meeting-attendees" placeholder="e.g., CEO, CFO, Head of Strategy" required />
+        </div>
+
+        <div class="form-group">
+          <label for="meeting-objective">Meeting Objective *</label>
+          <input type="text" id="meeting-objective" placeholder="e.g., Present digital transformation roadmap" required />
+        </div>
+
+        <div class="form-group">
+          <label for="key-concerns">Key Concerns to Address (Optional)</label>
+          <input type="text" id="key-concerns" placeholder="e.g., Budget constraints, timeline, competitive pressure" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-cancel">Cancel</button>
+        <button class="modal-generate" id="generate-brief-btn">Generate Brief</button>
+      </div>
+      <div class="modal-loading hidden">
+        <div class="loading-spinner"></div>
+        <p>Synthesizing your research and analysis...</p>
+      </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Focus first input
+    setTimeout(() => modal.querySelector('#meeting-attendees').focus(), 100);
+
+    // Attach event handlers
+    this._setupIntelligenceBriefModalHandlers(overlay, modal);
+  }
+
+  /**
+   * Setup modal event handlers
+   */
+  _setupIntelligenceBriefModalHandlers(overlay, modal) {
+    const closeModal = () => overlay.remove();
+
+    // Close button
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.modal-cancel').addEventListener('click', closeModal);
+
+    // Click outside to close
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal();
+    });
+
+    // Escape key to close
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    // Generate button
+    modal.querySelector('#generate-brief-btn').addEventListener('click', () => {
+      this._handleGenerateIntelligenceBrief(modal, closeModal);
+    });
+
+    // Enter key in inputs triggers generate
+    modal.querySelectorAll('input').forEach(input => {
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          this._handleGenerateIntelligenceBrief(modal, closeModal);
+        }
+      });
+    });
+  }
+
+  /**
+   * Handle intelligence brief generation
+   */
+  async _handleGenerateIntelligenceBrief(modal, closeModal) {
+    const meetingAttendees = modal.querySelector('#meeting-attendees').value.trim();
+    const meetingObjective = modal.querySelector('#meeting-objective').value.trim();
+    const keyConcerns = modal.querySelector('#key-concerns').value.trim();
+
+    // Validate required fields
+    if (!meetingAttendees) {
+      modal.querySelector('#meeting-attendees').focus();
+      modal.querySelector('#meeting-attendees').classList.add('input-error');
+      setTimeout(() => modal.querySelector('#meeting-attendees').classList.remove('input-error'), 500);
+      return;
+    }
+    if (!meetingObjective) {
+      modal.querySelector('#meeting-objective').focus();
+      modal.querySelector('#meeting-objective').classList.add('input-error');
+      setTimeout(() => modal.querySelector('#meeting-objective').classList.remove('input-error'), 500);
+      return;
+    }
+
+    // Show loading state
+    const formBody = modal.querySelector('.modal-body');
+    const footer = modal.querySelector('.modal-footer');
+    const loading = modal.querySelector('.modal-loading');
+
+    formBody.classList.add('hidden');
+    footer.classList.add('hidden');
+    loading.classList.remove('hidden');
+
+    try {
+      const response = await fetch(`/api/content/${this.sessionId}/intelligence-brief/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meetingAttendees, meetingObjective, keyConcerns })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Generation failed');
+      }
+
+      // Get filename from header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'Pre_Meeting_Brief.docx';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/);
+        if (match) filename = match[1];
+      }
+
+      // Download the file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      // Close modal on success
+      closeModal();
+
+    } catch (error) {
+      console.error('Intelligence brief generation failed:', error);
+
+      // Show error state
+      loading.classList.add('hidden');
+      formBody.classList.remove('hidden');
+      footer.classList.remove('hidden');
+
+      // Show error message
+      let errorMsg = modal.querySelector('.error-message');
+      if (!errorMsg) {
+        errorMsg = document.createElement('p');
+        errorMsg.className = 'error-message';
+        formBody.insertBefore(errorMsg, formBody.firstChild);
+      }
+      errorMsg.textContent = `Error: ${error.message}`;
+    }
   }
 
   /**

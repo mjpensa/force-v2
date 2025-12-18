@@ -4,6 +4,7 @@ import { generateRoadmapPrompt, roadmapSchema } from './prompts/roadmap.js';
 import { generateSlidesPrompt, generateSlidesOutlinePrompt, generateSpeakerNotesPrompt, generateSpeakerNotesOutlinePrompt, slidesSchema, slidesOutlineSchema, speakerNotesSchema, speakerNotesOutlineSchema } from './prompts/slides.js';
 import { generateDocumentPrompt, documentSchema } from './prompts/document.js';
 import { generateResearchAnalysisPrompt, researchAnalysisSchema } from './prompts/research-analysis.js';
+import { generateIntelligenceBriefPrompt, intelligenceBriefSchema } from './prompts/intelligence-brief.js';
 import { CONFIG } from './config.js';
 
 // Initialize Gemini API (using API_KEY from environment to match server/config.js)
@@ -111,6 +112,13 @@ const SPEAKER_NOTES_OUTLINE_CONFIG = {
   temperature: 0.35,       // Low but allows strategic creativity in pushback anticipation
   topP: 0.75,              // Focused but not overly constrained for evidence chain discovery
   thinkingBudget: 20000    // Maximum: This is the DEEP REASONING pass - audience profiling, evidence chain construction, pushback strategy, narrative arc. Quality here determines entire notes quality.
+};
+
+const INTELLIGENCE_BRIEF_CONFIG = {
+  temperature: 0.5,        // Balanced: precise synthesis with room for insightful connections
+  topP: 0.85,              // Broad enough for varied talking points
+  topK: 40,                // Standard vocabulary breadth
+  thinkingBudget: 8192     // Medium-high: needs to synthesize multiple sources, anticipate questions, structure meeting flow
 };
 
 // ============================================================================
@@ -1293,6 +1301,40 @@ async function generateResearchAnalysis(userPrompt, researchFiles) {
     const data = await generateWithGemini(prompt, researchAnalysisSchema, 'ResearchAnalysis', RESEARCH_ANALYSIS_CONFIG);
     return { success: true, data };
   } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Generate pre-meeting intelligence brief from session data
+ * Synthesizes sources, document, roadmap, and slides into meeting prep
+ * @param {Object} sessionData - Contains sources, document, roadmap, slides
+ * @param {Object} meetingContext - Contains meetingAttendees, meetingObjective, keyConcerns
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export async function generateIntelligenceBrief(sessionData, meetingContext) {
+  try {
+    console.log('[IntelligenceBrief] Generating pre-meeting brief...');
+    console.log('[IntelligenceBrief] Session data available:', {
+      sources: sessionData.sources?.length || 0,
+      hasDocument: !!sessionData.document,
+      hasRoadmap: !!sessionData.roadmap,
+      hasSlides: !!sessionData.slides
+    });
+
+    const prompt = generateIntelligenceBriefPrompt(sessionData, meetingContext);
+    const data = await generateWithGemini(prompt, intelligenceBriefSchema, 'IntelligenceBrief', INTELLIGENCE_BRIEF_CONFIG);
+
+    console.log('[IntelligenceBrief] Generated brief:', {
+      keyInsights: data.keyInsights?.length || 0,
+      talkingPoints: data.talkingPoints?.length || 0,
+      anticipatedQuestions: data.anticipatedQuestions?.length || 0,
+      recommendedNextSteps: data.recommendedNextSteps?.length || 0
+    });
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('[IntelligenceBrief] Generation failed:', error.message);
     return { success: false, error: error.message };
   }
 }

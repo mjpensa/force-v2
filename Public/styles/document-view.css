@@ -1669,3 +1669,237 @@
     color: black;
   }
 }
+
+/* ========== INTELLIGENCE BRIEF MODAL ========== */
+
+.intelligence-brief-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.intelligence-brief-modal {
+  width: 90%;
+  max-width: 480px;
+  background: rgba(20, 30, 48, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.intelligence-brief-modal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-5) var(--spacing-6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.intelligence-brief-modal .modal-header h2 {
+  font-family: 'Work Sans', sans-serif;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: var(--glass-text-primary);
+  margin: 0;
+}
+
+.intelligence-brief-modal .modal-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  color: var(--glass-text-secondary);
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.intelligence-brief-modal .modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--glass-text-primary);
+}
+
+.intelligence-brief-modal .modal-body {
+  padding: var(--spacing-6);
+}
+
+.intelligence-brief-modal .modal-description {
+  font-size: var(--text-sm);
+  color: var(--glass-text-secondary);
+  margin: 0 0 var(--spacing-5) 0;
+  line-height: var(--leading-relaxed);
+}
+
+.intelligence-brief-modal .form-group {
+  margin-bottom: var(--spacing-4);
+}
+
+.intelligence-brief-modal .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.intelligence-brief-modal label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--glass-text-primary);
+  margin-bottom: var(--spacing-2);
+}
+
+.intelligence-brief-modal input {
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: var(--glass-text-primary);
+  font-family: 'Work Sans', sans-serif;
+  font-size: var(--text-base);
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.intelligence-brief-modal input::placeholder {
+  color: var(--glass-text-muted);
+}
+
+.intelligence-brief-modal input:focus {
+  outline: none;
+  border-color: rgba(80, 175, 123, 0.6);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(80, 175, 123, 0.15);
+}
+
+.intelligence-brief-modal input.input-error {
+  border-color: rgba(239, 68, 68, 0.6);
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.intelligence-brief-modal .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4) var(--spacing-6);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.intelligence-brief-modal .modal-cancel {
+  padding: var(--spacing-2) var(--spacing-4);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: var(--glass-text-secondary);
+  font-family: 'Work Sans', sans-serif;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.intelligence-brief-modal .modal-cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--glass-text-primary);
+}
+
+.intelligence-brief-modal .modal-generate {
+  padding: var(--spacing-2) var(--spacing-5);
+  background: linear-gradient(135deg, #50AF7B 0%, #3d9463 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-family: 'Work Sans', sans-serif;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.intelligence-brief-modal .modal-generate:hover {
+  background: linear-gradient(135deg, #5dbf88 0%, #50AF7B 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(80, 175, 123, 0.3);
+}
+
+.intelligence-brief-modal .modal-generate:active {
+  transform: translateY(0);
+}
+
+/* Loading State */
+.intelligence-brief-modal .modal-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-12) var(--spacing-6);
+}
+
+.intelligence-brief-modal .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #50AF7B;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.intelligence-brief-modal .modal-loading p {
+  margin-top: var(--spacing-4);
+  color: var(--glass-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.intelligence-brief-modal .error-message {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: var(--spacing-3) var(--spacing-4);
+  color: #f87171;
+  font-size: var(--text-sm);
+  margin-bottom: var(--spacing-4);
+}
+
+.intelligence-brief-modal .hidden {
+  display: none !important;
+}

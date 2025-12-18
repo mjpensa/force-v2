@@ -13,10 +13,10 @@
 
 import express from 'express';
 import crypto from 'crypto';
-import { generateAllContent, regenerateContent } from '../generators.js';
+import { generateAllContent, regenerateContent, generateIntelligenceBrief } from '../generators.js';
 import { uploadMiddleware, handleUploadErrors } from '../middleware.js';
 import { generatePptx } from '../templates/ppt-export-service-v2.js';
-import { generateDocx } from '../templates/docx-export-service.js';
+import { generateDocx, generateIntelligenceBriefDocx } from '../templates/docx-export-service.js';
 import { fileCache } from '../cache/FileCache.js';
 
 const router = express.Router();
@@ -484,6 +484,127 @@ router.get('/:sessionId/document/export', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: 'Failed to generate Word document',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/content/:sessionId/intelligence-brief/generate
+ * Generates a pre-meeting intelligence brief from session data
+ *
+ * Synthesizes data from:
+ * - User's uploaded research sources
+ * - Roadmap analysis (strategic initiatives, phases)
+ * - Slides analysis (key messages, talking points)
+ * - Document analysis (executive summary, insights)
+ *
+ * URL params:
+ * - sessionId: string - Session ID
+ *
+ * Request body:
+ * - meetingAttendees: string (required) - Who will be in the meeting
+ * - meetingObjective: string (required) - What we aim to achieve
+ * - keyConcerns: string (optional) - Key concerns to address
+ *
+ * Response: Word document file (.docx) download
+ */
+router.post('/:sessionId/intelligence-brief/generate', express.json(), async (req, res) => {
+  const BRIEF_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+  req.setTimeout(BRIEF_TIMEOUT_MS);
+  res.setTimeout(BRIEF_TIMEOUT_MS);
+
+  try {
+    const { sessionId } = req.params;
+    const { meetingAttendees, meetingObjective, keyConcerns } = req.body;
+
+    // Validate session exists
+    const session = sessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        error: 'Session not found or expired',
+        message: 'Please generate content first before creating an intelligence brief.'
+      });
+    }
+
+    // Validate required fields
+    if (!meetingAttendees?.trim()) {
+      return res.status(400).json({
+        error: 'Meeting attendees are required',
+        message: 'Please specify who will be in the meeting.'
+      });
+    }
+    if (!meetingObjective?.trim()) {
+      return res.status(400).json({
+        error: 'Meeting objective is required',
+        message: 'Please specify the objective for this meeting.'
+      });
+    }
+
+    touchSession(sessionId);
+
+    // Gather session data from all views
+    const sessionData = {
+      sources: session.researchFiles || [],
+      document: session.content.document?.data || null,
+      roadmap: session.content.roadmap?.data || null,
+      slides: session.content.slides?.data || null
+    };
+
+    // Check that we have at least some data to synthesize
+    const hasData = sessionData.sources.length > 0 ||
+                    sessionData.document ||
+                    sessionData.roadmap ||
+                    sessionData.slides;
+
+    if (!hasData) {
+      return res.status(400).json({
+        error: 'No analysis data available',
+        message: 'Please generate content in at least one view first before creating an intelligence brief.'
+      });
+    }
+
+    console.log(`[Intelligence Brief] Generating for session ${sessionId}`, {
+      sources: sessionData.sources.length,
+      hasDocument: !!sessionData.document,
+      hasRoadmap: !!sessionData.roadmap,
+      hasSlides: !!sessionData.slides
+    });
+
+    const meetingContext = {
+      meetingAttendees: meetingAttendees.trim(),
+      meetingObjective: meetingObjective.trim(),
+      keyConcerns: keyConcerns?.trim() || ''
+    };
+
+    // Generate the intelligence brief
+    const result = await generateIntelligenceBrief(sessionData, meetingContext);
+
+    if (!result.success) {
+      return res.status(500).json({
+        error: 'Generation failed',
+        message: result.error || 'Failed to generate intelligence brief. Please try again.'
+      });
+    }
+
+    // Generate DOCX directly
+    const buffer = await generateIntelligenceBriefDocx(result.data, meetingContext);
+
+    // Return as downloadable file
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = `Pre_Meeting_Brief_${timestamp}.docx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+
+    console.log(`[Intelligence Brief] Generated and sending ${buffer.length} bytes`);
+    res.send(buffer);
+
+  } catch (error) {
+    console.error('[Intelligence Brief] Error:', error);
+    res.status(500).json({
+      error: 'Failed to generate intelligence brief',
       details: error.message
     });
   }
