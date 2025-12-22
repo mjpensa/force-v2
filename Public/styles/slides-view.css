@@ -532,7 +532,7 @@
   color: var(--color-navy-deep);
   margin: 0;
   max-width: 100%;
-  word-break: keep-all;
+  word-break: normal;
   overflow-wrap: normal;
   -webkit-hyphens: none;
   hyphens: none;
@@ -1135,6 +1135,10 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
+.speaker-notes-inline .notes-elapsed {
+  color: #60a5fa;
+}
+
 .speaker-notes-inline .notes-action {
   color: rgba(255, 255, 255, 0.5);
   border-top-color: rgba(255, 255, 255, 0.1);
@@ -1634,6 +1638,17 @@
 .notes-hint {
   font-size: 12px;
   opacity: 0.7;
+}
+
+.notes-elapsed {
+  font-size: 13px;
+  font-weight: 500;
+  color: #3b82f6;
+  margin-top: 4px;
+}
+
+.notes-elapsed span {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Assumptions list */

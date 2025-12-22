@@ -937,7 +937,7 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   const columnTexts = [
     truncateToSentence(normalizeBodyText(data.paragraph1), 400),
     truncateToSentence(normalizeBodyText(data.paragraph2), 400),
-    truncateToSentence(normalizeBodyText(data.paragraph3), 400)
+    truncateToSentence(normalizeBodyText(data.paragraph3 || data.paragraph1), 400)
   ];
 
   columnTexts.forEach((text, index) => {

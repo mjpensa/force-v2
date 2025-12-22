@@ -222,6 +222,8 @@ function renderSectionTitleSlide(slide, index) {
     line-height: 1.1;
     max-width: 80%;
     padding: 0 10%;
+    word-break: normal;
+    overflow-wrap: normal;
   `;
   title.textContent = slide.sectionTitle || slide.title || '';
   el.appendChild(title);
@@ -317,6 +319,8 @@ function renderTwoColumnSlide(slide, index) {
     line-height: 0.95;
     color: #0C2340;
     white-space: pre-line;
+    word-break: normal;
+    overflow-wrap: normal;
   `;
   // Convert to sentence case (preserving acronyms) and enforce exactly 4 lines
   const titleText = slide.title || '';
@@ -481,7 +485,8 @@ function renderThreeColumnSlide(slide, index) {
     line-height: 0.95;
     color: #0C2340;
     white-space: pre-line;
-    word-break: keep-all;
+    word-break: normal;
+    overflow-wrap: normal;
   `;
 
   // Convert to sentence case (preserving acronyms) and enforce exactly 4 lines
@@ -523,7 +528,7 @@ function renderThreeColumnSlide(slide, index) {
   const columnTexts = [
     truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1))),
     truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2))),
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph3)))
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph3 || slide.paragraph1)))
   ];
 
   columnTexts.forEach(text => {
@@ -1022,24 +1027,46 @@ export class SlidesView {
     this.speakerNotesLoading = true;
     this._showSpeakerNotesLoading(true);
 
-    // Show loading state in content area
+    // Show loading state in content area with elapsed time
     const contentEl = document.getElementById('speaker-notes-content');
+    const startTime = Date.now();
+    let elapsedInterval = null;
+
+    const updateElapsedTime = () => {
+      const elapsedEl = document.getElementById('notes-elapsed-time');
+      if (elapsedEl) {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        elapsedEl.textContent = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      }
+    };
+
     if (contentEl) {
       contentEl.innerHTML = `
         <div class="notes-placeholder notes-loading">
           <p>Generating speaker notes...</p>
-          <p class="notes-hint">This may take 5-8 minutes. You can continue navigating slides.</p>
+          <p class="notes-hint">This typically takes 2-3 minutes. You can continue navigating slides.</p>
+          <p class="notes-elapsed">Elapsed: <span id="notes-elapsed-time">0s</span></p>
           <div class="notes-progress-bar"><div class="notes-progress-fill"></div></div>
         </div>
       `;
+      elapsedInterval = setInterval(updateElapsedTime, 1000);
     }
+
+    // Create AbortController with 20-minute timeout to match server
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20 * 60 * 1000);
 
     try {
       const response = await fetch(`/api/content/${this.sessionId}/slides/speaker-notes`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+      if (elapsedInterval) clearInterval(elapsedInterval);
       const result = await response.json();
 
       if (result.status === 'completed' && result.data) {
@@ -1063,12 +1090,22 @@ export class SlidesView {
         }
       }
     } catch (error) {
+      clearTimeout(timeoutId);
+      if (elapsedInterval) clearInterval(elapsedInterval);
       console.error('[SpeakerNotes] Request failed:', error);
+
+      const isTimeout = error.name === 'AbortError';
+      const errorTitle = isTimeout ? 'Generation timed out.' : 'Network error while generating notes.';
+      const errorHint = isTimeout
+        ? 'The AI took too long to respond. Please try again.'
+        : error.message;
+
       if (contentEl) {
         contentEl.innerHTML = `
           <div class="notes-placeholder notes-error">
-            <p>Network error while generating notes.</p>
-            <p class="notes-hint">${error.message}</p>
+            <p>${errorTitle}</p>
+            <p class="notes-hint">${errorHint}</p>
+            <button class="notes-retry-btn" onclick="this.closest('.slides-view-container').__view__._generateSpeakerNotesOnDemand()">Retry</button>
           </div>
         `;
       }

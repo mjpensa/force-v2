@@ -105,13 +105,13 @@ const SLIDES_OUTLINE_CONFIG = {
 const SPEAKER_NOTES_CONFIG = {
   temperature: 0.55,       // Slightly higher: natural conversational tone for verbatim talking points
   topP: 0.88,              // Broad variety for engaging delivery cues and Q&A responses
-  thinkingBudget: 16000    // Matched with outline: needs deep reasoning to execute ACE framework, trace sources precisely, weave narrative
+  thinkingBudget: 6000     // Reduced for speed: outline already did heavy reasoning, this pass executes the plan
 };
 
 const SPEAKER_NOTES_OUTLINE_CONFIG = {
   temperature: 0.35,       // Low but allows strategic creativity in pushback anticipation
   topP: 0.75,              // Focused but not overly constrained for evidence chain discovery
-  thinkingBudget: 20000    // Maximum: This is the DEEP REASONING pass - audience profiling, evidence chain construction, pushback strategy, narrative arc. Quality here determines entire notes quality.
+  thinkingBudget: 8000     // Reduced for speed: focused reasoning on key evidence chains and narrative structure
 };
 
 const INTELLIGENCE_BRIEF_CONFIG = {
@@ -718,6 +718,11 @@ function validateSlideQuality(slidesData) {
 function validateSingleSlide(slide, slideId, issues) {
   const allText = `${slide.paragraph1 || ''} ${slide.paragraph2 || ''} ${slide.paragraph3 || ''}`;
 
+  // Check for missing paragraph3 on threeColumn slides (causes empty third column)
+  if (slide.layout === 'threeColumn' && !slide.paragraph3?.trim()) {
+    issues.push(`${slideId}: threeColumn layout requires paragraph3`);
+  }
+
   // Check for quantified data
   if (!/\d+/.test(allText)) {
     issues.push(`${slideId}: Missing quantified data point`);
@@ -758,6 +763,15 @@ function validateSingleSlide(slide, slideId, issues) {
   for (let i = 0; i < titleLines.length; i++) {
     if (titleLines[i].length > maxLineLength) {
       issues.push(`${slideId}: Title line ${i + 1} too long (${titleLines[i].length} chars, max ${maxLineLength}): "${titleLines[i]}"`);
+    }
+  }
+
+  // Validate individual word lengths in title (long words break narrow columns)
+  const maxWordLength = slide.layout === 'threeColumn' ? 14 : 10;
+  const titleWords = title.replace(/\n/g, ' ').split(/\s+/).filter(w => w);
+  for (const word of titleWords) {
+    if (word.length > maxWordLength) {
+      issues.push(`${slideId}: Title word too long (${word.length} chars, max ${maxWordLength}): "${word}" - use shorter synonym`);
     }
   }
 }
@@ -1221,40 +1235,12 @@ async function generateSpeakerNotes(slidesData, researchFiles, userPrompt) {
       };
       console.log('[Speaker Notes] Pass 1 complete:', outlineMetrics);
 
-      // Quality warnings
+      // Quality warnings (no retry - prioritizing speed)
       if (outlineMetrics.evidenceChains < 3) {
         console.warn('[Speaker Notes] Low evidence chain count in outline:', outlineMetrics.evidenceChains);
       }
       if (outlineMetrics.sources < 2) {
         console.warn('[Speaker Notes] Low source count in outline:', outlineMetrics.sources);
-      }
-
-      // Fix #11: Retry if quality is critically low
-      const MIN_EVIDENCE_CHAINS = 2;
-      if (outline && outlineMetrics.evidenceChains < MIN_EVIDENCE_CHAINS) {
-        console.warn(`[Speaker Notes] Evidence chains (${outlineMetrics.evidenceChains}) below minimum (${MIN_EVIDENCE_CHAINS}), retrying Pass 1...`);
-
-        try {
-          // Retry with slightly higher temperature for more exploration
-          const retryConfig = { ...SPEAKER_NOTES_OUTLINE_CONFIG, temperature: 0.45 };
-          const retryOutline = await generateWithGemini(outlinePrompt, speakerNotesOutlineSchema, 'SpeakerNotesOutline', retryConfig);
-
-          const retryEvidenceChains = retryOutline.reasoning?.keyEvidenceChains?.length || 0;
-          console.log(`[Speaker Notes] Retry yielded ${retryEvidenceChains} evidence chains`);
-
-          // Use retry result if it's better
-          if (retryEvidenceChains > outlineMetrics.evidenceChains) {
-            outline = retryOutline;
-            outlineMetrics.evidenceChains = retryEvidenceChains;
-            outlineMetrics.sources = retryOutline.reasoning?.sourceInventory?.length || 0;
-            outlineMetrics.pushbacks = retryOutline.reasoning?.anticipatedPushback?.length || 0;
-            outlineMetrics.transitions = retryOutline.reasoning?.narrativeTransitions?.length || 0;
-            outlineMetrics.slideOutlines = retryOutline.slideOutlines?.length || 0;
-            console.log('[Speaker Notes] Using retry result with improved metrics:', outlineMetrics);
-          }
-        } catch (retryError) {
-          console.warn('[Speaker Notes] Retry failed:', retryError.message);
-        }
       }
     } catch (pass1Error) {
       console.warn('[Speaker Notes] Pass 1 failed, falling back to single-pass generation:', pass1Error.message);
@@ -1495,9 +1481,15 @@ export async function generateAllContent(userPrompt, researchFiles) {
     // so it may have auto-detected sections that don't match the roadmap's entity swimlanes.
     // This reconciliation ensures entity swimlanes (e.g., "Bank of America", "Citigroup")
     // appear correctly in the slides TOC.
-    const reconciledOutline = slidesOutline.success && swimlanes.length > 0
-      ? reconcileOutlineWithSwimlanes(slidesOutline.data, swimlanes)
-      : slidesOutline.data;
+    let reconciledOutline = slidesOutline.data;
+    if (slidesOutline.success && swimlanes.length > 0) {
+      console.log('[Generation] Reconciling outline with roadmap swimlanes...');
+      console.log('[Generation] Original outline sections:', slidesOutline.data?.sections?.map(s => s.swimlane) || []);
+      reconciledOutline = reconcileOutlineWithSwimlanes(slidesOutline.data, swimlanes);
+      console.log('[Generation] Reconciled outline sections:', reconciledOutline?.sections?.map(s => s.swimlane) || []);
+    } else {
+      console.log('[Generation] Skipping reconciliation - outline success:', slidesOutline.success, 'swimlanes:', swimlanes.length);
+    }
 
     const phase2Tasks = [
       {

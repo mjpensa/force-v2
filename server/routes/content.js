@@ -446,7 +446,8 @@ router.get('/:sessionId/slides/export', async (req, res) => {
  * }
  */
 router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
-  const SPEAKER_NOTES_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+  // 20 minutes: covers worst case of 3 API calls (outline + retry + full notes) at 6 min each
+  const SPEAKER_NOTES_TIMEOUT_MS = 20 * 60 * 1000;
   req.setTimeout(SPEAKER_NOTES_TIMEOUT_MS);
   res.setTimeout(SPEAKER_NOTES_TIMEOUT_MS);
 

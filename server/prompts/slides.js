@@ -37,7 +37,7 @@ const contentSlideSchema = {
     paragraph3: {
       type: "string",
       description: "Third paragraph (threeColumn only). 370-390 characters.",
-      nullable: true
+      nullable: false
     },
     subTopic: {
       type: "string",
@@ -1545,8 +1545,25 @@ TITLE RULES (CRITICAL - HARD LIMIT: 3 OR 4 LINES ONLY):
 - 5+ LINES = REJECTED. 6+ LINES = REJECTED. 7+ LINES = REJECTED. The slide WILL break.
 - If your concept has 5+ words, you MUST combine words onto shared lines
 - REWRITE titles that are too long - use shorter synonyms, remove unnecessary words
-- twoColumn layout: Each line MAX 10 characters - this means 1-2 SHORT words per line only!
+- twoColumn layout: Each line MAX 10 characters - use SHORT words only (5-8 chars ideal)!
 - threeColumn layout: Each line MAX 18 characters
+
+!!! WORD LENGTH WARNING - TITLES BREAK WITH LONG WORDS !!!
+The title column is NARROW. Long words will overflow and look broken.
+BANNED LONG WORDS (12+ chars) - ALWAYS use shorter synonyms:
+- "modernization" → "upgrade" or "reform"
+- "implementation" → "rollout" or "launch"
+- "transformation" → "shift" or "change"
+- "infrastructure" → "systems" or "stack"
+- "standardization" → "standards"
+- "reconciliation" → "matching"
+- "consolidation" → "merger"
+- "organizations" → "firms" or "banks"
+- "opportunities" → "chances" or "gains"
+- "jurisdictions" → "regions"
+- "requirements" → "rules" or "needs"
+- "capabilities" → "skills" or "tools"
+COUNT EVERY WORD: If a word has 10+ characters, find a shorter synonym!
 
 TITLE FAILURE EXAMPLES (NEVER DO THIS):
 - BAD 7-line: "BSA/AML\\norder\\ndelays\\nstrategic\\ntech\\nadoption\\nroadmap" = 6 separators = BROKEN
