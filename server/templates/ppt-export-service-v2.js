@@ -145,11 +145,12 @@ const LAYOUTS = {
       w: 3,
       h: 0.35
     },
-    // Title: top: 7%, left: 1.87%, width: 20.70%, height: 40%
+    // Title: top: 7%, left: 1.87%, width: 24%, height: 40%
+    // Width increased from 20.70% to 24% to accommodate 44pt font
     title: {
       x: pctX(1.87),
       y: pctY(7),
-      w: pctX(20.70),
+      w: pctX(24),
       h: pctY(40)
     },
     // Columns: left: 26.71%, top: 46.13%, width: 68.27%, height: 46.93%
