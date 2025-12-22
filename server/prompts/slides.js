@@ -1441,10 +1441,12 @@ TRANSITION PATTERNS (use in paragraph endings to connect slides):
 - Timeline progression: "Having established X, the Q3 deadline forces..." → next slide addresses timeline
 - Evidence stacking: "Combined with [previous point], this data shows..." → builds cumulative case
 
-ANALYTICAL DEPTH FRAMEWORKS (MANDATORY - NAME YOUR FRAMEWORK):
+ANALYTICAL DEPTH FRAMEWORKS (MANDATORY):
 Go beyond surface-level observations. For EVERY analytical slide, you MUST:
-1. Apply one framework explicitly
-2. Use the framework's signature language patterns so readers can identify which lens drives the analysis
+1. Apply one framework from the list below
+2. Use the framework's SIGNAL PHRASES (not the framework name itself) to express the analysis
+
+CRITICAL: NEVER write framework names like "SECOND_ORDER_EFFECTS", "CONTRARIAN", "COMPETITIVE_DYNAMICS" etc. literally in slide content. These are internal labels only. Instead, use natural language signal phrases to convey the analytical approach.
 
 FRAMEWORK SIGNATURE PATTERNS (use these phrases to signal your framework):
 

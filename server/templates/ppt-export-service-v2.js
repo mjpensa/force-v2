@@ -916,7 +916,7 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
     y: L.title.y,
     w: L.title.w,
     h: L.title.h,
-    fontSize: 33,
+    fontSize: 44,
     fontFace: 'Work Sans Light',
     bold: false,
     color: COLORS.navy,

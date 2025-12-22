@@ -45,7 +45,7 @@ router.post('/get-task-analysis', apiLimiter, async (req, res) => {
       return res.status(404).json({ error: 'Session not found or expired' });
     }
     touchSession(sessionId);
-    researchText = session.researchContent;
+    researchText = session.researchFiles?.map(f => f.content).join('\n\n') || '';
   }
 
   if (!researchText) {
@@ -131,7 +131,7 @@ router.post('/ask-question', apiLimiter, async (req, res) => {
       return res.status(404).json({ error: 'Session not found or expired' });
     }
     touchSession(sessionId);
-    researchText = session.researchContent;
+    researchText = session.researchFiles?.map(f => f.content).join('\n\n') || '';
   }
 
   if (!researchText) {

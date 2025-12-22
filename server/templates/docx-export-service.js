@@ -1,7 +1,7 @@
 /**
  * DOCX Export Service
  * Generates Word documents from document data
- * BIP format (Arial, coral red headings, black body text)
+ * SKILL.md format (Work Sans fonts, red headings, proper table formatting)
  * Supports executive summary, analysis overview, and content sections
  */
 
@@ -18,21 +18,11 @@ import {
   TableCell,
   WidthType,
   ShadingType,
-  Header,
   VerticalAlign,
   TableLayoutType,
-  ImageRun
+  convertInchesToTwip
 } from 'docx';
-import { COLORS, FONTS, STYLES, PAGE, SPACING, DEFAULT_METADATA } from './docx-template-config.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Path to BIP logo
-const BIP_LOGO_PATH = path.join(__dirname, '../../Public/bip_logo.png');
+import { COLORS, FONTS, STYLES, PAGE, SPACING, DEFAULT_METADATA, COLUMN_WIDTHS, FONT_SIZES } from './docx-template-config.js';
 
 // ============================================================================
 // HELPERS
@@ -61,7 +51,7 @@ function styledText(text, style = {}) {
 }
 
 /**
- * Create a heading paragraph (BIP format - coral red)
+ * Create a heading paragraph (SKILL.md format - red, not bold)
  */
 function createHeading(text, level = 1) {
   const headingStyles = {
@@ -72,12 +62,13 @@ function createHeading(text, level = 1) {
 
   const style = headingStyles[level] || headingStyles[2];
 
-  // Larger spacing before major sections
-  const spaceBefore = level === 1 ? SPACING.sectionGap * 1.5 : SPACING.sectionGap;
+  // SKILL.md spacing: 360 before, 160 after for section headers
+  const spaceBefore = level === 1 ? SPACING.sectionLargeBefore : SPACING.sectionSmallBefore;
+  const spaceAfter = level === 1 ? SPACING.sectionLargeAfter : SPACING.sectionSmallAfter;
 
   return new Paragraph({
     heading: style.level,
-    spacing: { before: spaceBefore, after: SPACING.paragraphAfter },
+    spacing: { before: spaceBefore, after: spaceAfter },
     children: [styledText(text, style)]
   });
 }
@@ -108,7 +99,7 @@ function createLabel(text) {
 }
 
 /**
- * Create a key insight callout (BIP format)
+ * Create a key insight callout (navy left border)
  */
 function createKeyInsight(text) {
   return new Paragraph({
@@ -152,11 +143,11 @@ function createQuoteBlock(quote, source) {
 }
 
 /**
- * Create a bullet point
+ * Create a bullet point (SKILL.md format)
  */
 function createBullet(text) {
   return new Paragraph({
-    spacing: { after: 100, line: SPACING.lineSpacing },
+    spacing: { after: SPACING.bulletAfter, line: SPACING.lineSpacing },
     bullet: { level: 0 },
     children: [styledText(text, STYLES.body)]
   });
@@ -171,32 +162,189 @@ function splitIntoParagraphs(text) {
 }
 
 // ============================================================================
+// TABLE HELPERS (SKILL.md compliant)
+// ============================================================================
+
+/**
+ * Create a table header cell (navy background, white bold text)
+ * @param {string} text - Cell text
+ * @param {number} width - Cell width in DXA
+ */
+function createHeaderCell(text, width) {
+  return new TableCell({
+    width: { size: width, type: WidthType.DXA },
+    shading: {
+      fill: hexColor(COLORS.navy),
+      type: ShadingType.CLEAR,
+      color: 'auto'
+    },
+    verticalAlign: VerticalAlign.CENTER,
+    margins: {
+      top: convertInchesToTwip(0.03),
+      bottom: convertInchesToTwip(0.03),
+      left: convertInchesToTwip(0.06),
+      right: convertInchesToTwip(0.06)
+    },
+    children: [new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({
+        text: text || '',
+        bold: true,
+        color: hexColor(COLORS.white),
+        size: FONT_SIZES.tableHeader,
+        font: FONTS.body
+      })]
+    })]
+  });
+}
+
+/**
+ * Create a data cell with alternating row support
+ * @param {string|string[]} content - Cell text or array for multi-paragraph
+ * @param {number} width - Cell width in DXA
+ * @param {boolean} isFirstCol - Bold if first column
+ * @param {boolean} isAlternateRow - Apply gray background
+ * @param {boolean} centered - Center align text
+ */
+function createDataCell(content, width, isFirstCol = false, isAlternateRow = false, centered = false) {
+  const paragraphs = Array.isArray(content) ? content : [content];
+
+  const children = paragraphs.map((para, idx) => new Paragraph({
+    alignment: centered ? AlignmentType.CENTER : AlignmentType.LEFT,
+    spacing: idx > 0 ? { before: SPACING.cellParagraphSpacing } : {},
+    children: [new TextRun({
+      text: para || '',
+      bold: isFirstCol,
+      size: FONT_SIZES.tableData,
+      font: FONTS.body
+    })]
+  }));
+
+  return new TableCell({
+    width: { size: width, type: WidthType.DXA },
+    verticalAlign: VerticalAlign.CENTER,
+    margins: {
+      top: convertInchesToTwip(0.04),
+      bottom: convertInchesToTwip(0.04),
+      left: convertInchesToTwip(0.06),
+      right: convertInchesToTwip(0.06)
+    },
+    shading: isAlternateRow
+      ? { fill: hexColor(COLORS.altRowGray), type: ShadingType.CLEAR, color: 'auto' }
+      : undefined,
+    children: children
+  });
+}
+
+/**
+ * Create a highlight cell (pink background, bold centered)
+ * IMPORTANT: Use placeholder for empty cells to maintain styling
+ * @param {string} text - Cell text (use "\u2014" for empty)
+ * @param {number} width - Cell width in DXA
+ */
+function createHighlightCell(text, width) {
+  return new TableCell({
+    width: { size: width, type: WidthType.DXA },
+    shading: {
+      fill: hexColor(COLORS.highlightPink),
+      type: ShadingType.CLEAR,
+      color: 'auto'
+    },
+    verticalAlign: VerticalAlign.CENTER,
+    margins: {
+      top: convertInchesToTwip(0.03),
+      bottom: convertInchesToTwip(0.03),
+      left: convertInchesToTwip(0.02),
+      right: convertInchesToTwip(0.02)
+    },
+    children: [new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({
+        text: text || '\u2014',  // Em dash placeholder for empty
+        bold: true,
+        color: hexColor(COLORS.black),
+        size: FONT_SIZES.highlightCell,
+        font: FONTS.body
+      })]
+    })]
+  });
+}
+
+/**
+ * Calculate column widths based on content
+ * @param {string[]} headers - Column header texts
+ * @param {string[][]} rows - Data rows
+ * @param {Object} options - Options like hasHighlightColumn
+ * @returns {number[]} Column widths in DXA (sum ~9300 for A4)
+ */
+function calculateColumnWidths(headers, rows, options = {}) {
+  const numCols = headers.length;
+  const { hasHighlightColumn = false } = options;
+
+  // Calculate average content length per column
+  const contentLengths = headers.map((_, colIdx) => {
+    const allContent = [headers[colIdx], ...rows.map(r => r[colIdx] || '')];
+    const avgLength = allContent.reduce((sum, c) => sum + (c?.length || 0), 0) / allContent.length;
+    return avgLength;
+  });
+
+  // Map content lengths to width categories
+  const widths = contentLengths.map((len, idx) => {
+    if (idx === 0) return COLUMN_WIDTHS.rowLabel; // First column gets more space
+    if (hasHighlightColumn && idx === numCols - 1) return COLUMN_WIDTHS.highlight;
+    if (len < 5) return COLUMN_WIDTHS.singleChar;
+    if (len < 10) return COLUMN_WIDTHS.percentage;
+    if (len < 25) return COLUMN_WIDTHS.shortText;
+    if (len < 50) return COLUMN_WIDTHS.mediumText;
+    return COLUMN_WIDTHS.longText;
+  });
+
+  // Normalize to sum to ~9300
+  const total = widths.reduce((a, b) => a + b, 0);
+  const scale = COLUMN_WIDTHS.TOTAL_A4 / total;
+
+  return widths.map(w => Math.round(w * scale));
+}
+
+// ============================================================================
 // SECTION BUILDERS
 // ============================================================================
 
 /**
- * Build the title section (BIP format - centered, coral red)
+ * Build the title section (SKILL.md format - Work Sans Light, centered)
  */
 function buildTitleSection(title, subtitle) {
   const elements = [];
 
-  // Main title - coral red, centered (BIP format)
+  // Main title - Work Sans Light 24pt, centered, NOT bold
   elements.push(new Paragraph({
-    spacing: { before: 400, after: 200 },
+    spacing: { before: 0, after: SPACING.titleAfter },
     alignment: AlignmentType.CENTER,
-    children: [styledText(title, STYLES.title)]
+    children: [new TextRun({
+      text: title || '',
+      font: FONTS.title,           // Work Sans Light
+      size: FONT_SIZES.title,      // 48 (24pt)
+      color: hexColor(COLORS.black),
+      bold: false                  // NOT bold per SKILL.md
+    })]
   }));
 
-  // Subtitle if provided - gray italic
+  // Subtitle if provided - Work Sans 11pt italic gray, centered
   if (subtitle) {
     elements.push(new Paragraph({
-      spacing: { after: 600 },
+      spacing: { after: SPACING.subtitleAfter },
       alignment: AlignmentType.CENTER,
-      children: [styledText(subtitle, STYLES.subtitle)]
+      children: [new TextRun({
+        text: subtitle,
+        font: FONTS.body,
+        size: FONT_SIZES.subtitle,
+        color: hexColor(COLORS.gray),  // Gray #808080
+        italics: true
+      })]
     }));
   } else {
     elements.push(new Paragraph({
-      spacing: { after: 400 },
+      spacing: { after: SPACING.subtitleAfter },
       children: []
     }));
   }
@@ -204,106 +352,82 @@ function buildTitleSection(title, subtitle) {
   return elements;
 }
 
-/**
- * Create header with bip. logo (v19 format - right aligned)
- * Uses the actual PNG logo from Public/bip_logo.png
- */
-function createBipHeader() {
-  let headerChildren;
-
-  try {
-    // Read the actual BIP logo PNG
-    const logoBuffer = fs.readFileSync(BIP_LOGO_PATH);
-    headerChildren = [
-      new Paragraph({
-        alignment: AlignmentType.RIGHT,
-        children: [
-          new ImageRun({
-            data: logoBuffer,
-            transformation: {
-              width: 60,
-              height: 25
-            }
-          })
-        ]
-      })
-    ];
-  } catch (error) {
-    // Fallback to text if logo file not found
-    console.warn('[DOCX Export] BIP logo not found, using text fallback:', error.message);
-    headerChildren = [
-      new Paragraph({
-        alignment: AlignmentType.RIGHT,
-        children: [
-          styledText('bip', {
-            font: FONTS.heading,
-            size: 28,
-            color: 'C54B4B',
-            bold: true
-          }),
-          styledText('.', {
-            font: FONTS.heading,
-            size: 28,
-            color: 'C54B4B',
-            bold: true
-          })
-        ]
-      })
-    ];
-  }
-
-  return new Header({
-    children: headerChildren
-  });
-}
 
 /**
- * Create a styled table with navy headers (BIP format)
+ * Create a styled table with SKILL.md formatting
+ * @param {string[]} headers - Column headers
+ * @param {string[][]} rows - Data rows
+ * @param {Object} options - Table options
+ * @param {number[]} options.columnWidths - Explicit column widths (DXA)
+ * @param {boolean} options.hasHighlightColumn - Last column is highlight style
  */
-function createStyledTable(headers, rows) {
+function createStyledTable(headers, rows, options = {}) {
+  const {
+    columnWidths = null,
+    hasHighlightColumn = false
+  } = options;
+
+  // Calculate column widths if not provided
+  const widths = columnWidths || calculateColumnWidths(headers, rows, { hasHighlightColumn });
+
   const tableRows = [];
 
   // Header row with navy background
   tableRows.push(new TableRow({
     tableHeader: true,
-    children: headers.map(header => new TableCell({
-      shading: { fill: hexColor(COLORS.navy), type: ShadingType.CLEAR },
-      verticalAlign: VerticalAlign.CENTER,
-      children: [new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [styledText(header, STYLES.tableHeader)]
-      })]
-    }))
+    children: headers.map((header, idx) => createHeaderCell(header, widths[idx]))
   }));
 
-  // Data rows
-  rows.forEach(row => {
+  // Data rows with alternating background
+  rows.forEach((row, rowIdx) => {
+    const isAlternateRow = rowIdx % 2 === 1; // Even index = white, odd = gray
+
     tableRows.push(new TableRow({
-      children: row.map(cell => new TableCell({
-        verticalAlign: VerticalAlign.CENTER,
-        children: [new Paragraph({
-          children: [styledText(cell, STYLES.tableCell)]
-        })]
-      }))
+      children: row.map((cell, colIdx) => {
+        // Use highlight cell for last column if specified
+        if (hasHighlightColumn && colIdx === row.length - 1) {
+          return createHighlightCell(cell, widths[colIdx]);
+        }
+        // Use data cell with alternating row support
+        return createDataCell(
+          cell,
+          widths[colIdx],
+          colIdx === 0,      // First column is bold
+          isAlternateRow,    // Alternating gray background
+          false              // Left aligned by default
+        );
+      })
     }));
   });
+
+  // Table borders per SKILL.md
+  const tableBorders = {
+    top: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) },
+    bottom: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) },
+    left: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) },
+    right: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) },
+    insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) },
+    insideVertical: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) }
+  };
 
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     layout: TableLayoutType.FIXED,
+    borders: tableBorders,
+    columnWidths: widths,  // CRITICAL: Explicit columnWidths array
     rows: tableRows
   });
 }
 
 /**
- * Build the executive summary section (BIP format)
+ * Build the executive summary section (SKILL.md format)
  */
 function buildExecutiveSummary(execSummary) {
   if (!execSummary) return [];
 
   const elements = [];
 
-  // Section heading - coral red (BIP format)
+  // Section heading - red (SKILL.md format)
   elements.push(createHeading('Executive Summary', 1));
 
   // Source badge if present
@@ -317,7 +441,7 @@ function buildExecutiveSummary(execSummary) {
     }));
   }
 
-  // Main narrative paragraphs (clean BIP format)
+  // Main narrative paragraphs
   if (execSummary.narrative) {
     const paragraphs = splitIntoParagraphs(execSummary.narrative);
     paragraphs.forEach(p => {
@@ -355,14 +479,14 @@ function buildExecutiveSummary(execSummary) {
 }
 
 /**
- * Build the analysis overview section (BIP format)
+ * Build the analysis overview section (SKILL.md format)
  */
 function buildAnalysisOverview(overview) {
   if (!overview) return [];
 
   const elements = [];
 
-  // Section heading - coral red (BIP format)
+  // Section heading - red (SKILL.md format)
   elements.push(createHeading('Analysis Overview', 1));
 
   // Narrative paragraphs
@@ -426,12 +550,12 @@ function buildAnalysisOverview(overview) {
 }
 
 /**
- * Build a content section (BIP format)
+ * Build a content section (SKILL.md format)
  */
 function buildContentSection(section, index) {
   const elements = [];
 
-  // Section heading with number prefix (BIP format: "Section 1: Title")
+  // Section heading with number prefix ("Section 1: Title")
   const sectionNumber = index + 1;
   const sectionTitle = section.heading || `Section ${sectionNumber}`;
   const formattedTitle = section.swimlaneTopic
@@ -499,7 +623,7 @@ function buildContentSection(section, index) {
     });
   }
 
-  // Subsection/spotlight if present (BIP format: "Implementation Spotlight: ...")
+  // Subsection/spotlight if present ("Implementation Spotlight: ...")
   if (section.spotlight) {
     elements.push(createHeading(section.spotlight.title || 'Implementation Spotlight', 2));
     if (section.spotlight.content) {
@@ -518,7 +642,7 @@ function buildContentSection(section, index) {
 // ============================================================================
 
 /**
- * Generate a Word document from document data (BIP format)
+ * Generate a Word document from document data (SKILL.md format)
  * @param {Object} documentData - Document content object
  * @param {Object} options - Export options
  * @returns {Promise<Buffer>} - Document buffer
@@ -559,7 +683,7 @@ export async function generateDocx(documentData, options = {}) {
     });
   }
 
-  // Create the document with BIP header
+  // Create the document (SKILL.md format - no header graphics)
   const doc = new Document({
     creator: options.creator || DEFAULT_METADATA.creator,
     title: documentData.title || DEFAULT_METADATA.title,
@@ -577,16 +701,19 @@ export async function generateDocx(documentData, options = {}) {
     sections: [{
       properties: {
         page: {
+          size: {
+            width: PAGE.width,     // A4: 11906
+            height: PAGE.height    // A4: 16838
+          },
           margin: {
             top: PAGE.margins.top,
             right: PAGE.margins.right,
             bottom: PAGE.margins.bottom,
-            left: PAGE.margins.left
+            left: PAGE.margins.left,
+            header: PAGE.headerDistance,
+            footer: PAGE.footerDistance
           }
         }
-      },
-      headers: {
-        default: createBipHeader()
       },
       children
     }]
@@ -609,15 +736,15 @@ export async function generateDocx(documentData, options = {}) {
 export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
   const children = [];
 
-  // Title - centered, coral red
+  // Title - centered, red
   children.push(new Paragraph({
     spacing: { before: 0, after: 100 },
     alignment: AlignmentType.CENTER,
     children: [styledText('Pre-Meeting Intelligence Brief', {
       font: FONTS.heading,
       size: 32,
-      color: COLORS.coral,
-      bold: true
+      color: COLORS.red,
+      bold: false  // NOT bold per SKILL.md
     })]
   }));
 
@@ -640,7 +767,7 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
     children: [styledText(meetingContext.meetingObjective, {
       font: FONTS.body,
       size: 22,
-      color: COLORS.darkGray,
+      color: COLORS.gray,
       italics: true
     })]
   }));
@@ -702,7 +829,7 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
           children: [styledText(`→ ${tp.supporting}`, {
             ...STYLES.body,
             size: 20,
-            color: COLORS.darkGray,
+            color: COLORS.gray,
             italics: true
           })]
         }));
@@ -714,11 +841,11 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
   if (briefData.anticipatedQuestions?.length > 0) {
     children.push(createHeading('Anticipated Questions', 2));
     briefData.anticipatedQuestions.forEach(qa => {
-      // Question - coral Q prefix
+      // Question - red Q prefix
       children.push(new Paragraph({
         spacing: { before: 100, after: 50 },
         children: [
-          styledText('Q: ', { ...STYLES.body, bold: true, color: COLORS.coral }),
+          styledText('Q: ', { ...STYLES.body, bold: true, color: COLORS.red }),
           styledText(qa.question, { ...STYLES.body, italics: true })
         ]
       }));
@@ -761,13 +888,13 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
     children.push(new Paragraph({
       spacing: { before: 200, after: 100 },
       border: {
-        top: { style: BorderStyle.SINGLE, size: 1, color: hexColor(COLORS.darkGray) }
+        top: { style: BorderStyle.SINGLE, size: 1, color: hexColor(COLORS.gray) }
       },
       children: [styledText('Caution Areas', {
         ...STYLES.body,
         bold: true,
         size: 20,
-        color: COLORS.coral
+        color: COLORS.red
       })]
     }));
     briefData.cautionAreas.forEach(caution => {
@@ -776,13 +903,13 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
         children: [styledText(`⚠ ${caution}`, {
           ...STYLES.body,
           size: 18,
-          color: COLORS.darkGray
+          color: COLORS.gray
         })]
       }));
     });
   }
 
-  // Create the document with tighter margins to fit on one page
+  // Create the document (SKILL.md format - tighter margins for one-page fit, no header graphics)
   const doc = new Document({
     creator: DEFAULT_METADATA.creator,
     title: 'Pre-Meeting Intelligence Brief',
@@ -800,6 +927,10 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
     sections: [{
       properties: {
         page: {
+          size: {
+            width: PAGE.width,     // A4: 11906
+            height: PAGE.height    // A4: 16838
+          },
           margin: {
             top: 720,    // 0.5 inch (tighter margins for one-page fit)
             right: 720,
@@ -807,9 +938,6 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
             left: 720
           }
         }
-      },
-      headers: {
-        default: createBipHeader()
       },
       children
     }]

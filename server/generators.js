@@ -160,6 +160,115 @@ function extractSwimlanesFromRoadmap(roadmapData) {
   return swimlanes;
 }
 
+// ============================================================================
+// OUTLINE RECONCILIATION - Aligns auto-detected outline sections with roadmap swimlanes
+// ============================================================================
+
+/**
+ * Reconcile outline sections with authoritative swimlanes from roadmap.
+ * The outline is generated in parallel with the roadmap (before swimlanes are available),
+ * so it may have auto-detected sections that don't match the roadmap's entity swimlanes.
+ * This function forces alignment while preserving the outline's reasoning and evidence chains.
+ *
+ * PRESERVES: reasoning object, primaryFramework, keyEvidenceChains, narrativeArcs
+ * REPLACES: section swimlane names with authoritative swimlane names from roadmap
+ *
+ * @param {object} outline - Outline from generateSlidesOutlineOnly (may have auto-detected sections)
+ * @param {Array<{name: string, entity: string, taskCount: number}>} swimlanes - Authoritative swimlanes from roadmap
+ * @returns {object} Reconciled outline with correct section structure
+ */
+function reconcileOutlineWithSwimlanes(outline, swimlanes) {
+  if (!outline || !swimlanes || swimlanes.length === 0) {
+    return outline;
+  }
+
+  const augmentedSwimlanes = [
+    { name: "Overview", taskCount: 0, isFixed: true },
+    ...swimlanes,
+    { name: "Conclusion", taskCount: 0, isFixed: true }
+  ];
+
+  const outlineSections = outline.sections || [];
+  console.log(`[Outline Reconciliation] Input: ${outlineSections.length} outline sections, ${augmentedSwimlanes.length} target swimlanes`);
+
+  // Extract Overview and Conclusion from outline if they exist
+  const overviewSection = outlineSections.find(s =>
+    s.swimlane?.toLowerCase() === 'overview'
+  );
+  const conclusionSection = outlineSections.find(s =>
+    s.swimlane?.toLowerCase() === 'conclusion'
+  );
+
+  // Get middle sections (excluding Overview/Conclusion)
+  const middleOutlineSections = outlineSections.filter(s =>
+    s.swimlane?.toLowerCase() !== 'overview' &&
+    s.swimlane?.toLowerCase() !== 'conclusion'
+  );
+  const middleSwimlanes = augmentedSwimlanes.filter(s => !s.isFixed);
+
+  // Build reconciled sections
+  const reconciledSections = [];
+
+  // 1. Overview section (use outline's or create default)
+  reconciledSections.push({
+    swimlane: "Overview",
+    narrativeArc: overviewSection?.narrativeArc ||
+      "Context establishes urgency → Key themes previewed → Sets up detailed analysis",
+    slides: overviewSection?.slides || createDefaultSlideBlueprints("Overview", 4)
+  });
+
+  // 2. Entity sections from roadmap swimlanes
+  for (let i = 0; i < middleSwimlanes.length; i++) {
+    const targetSwimlane = middleSwimlanes[i];
+
+    // Try to find matching section in outline (fuzzy match by name)
+    const matchingSection = middleOutlineSections.find(os =>
+      os.swimlane?.toLowerCase().includes(targetSwimlane.name.toLowerCase()) ||
+      targetSwimlane.name.toLowerCase().includes(os.swimlane?.toLowerCase())
+    ) || middleOutlineSections[i]; // Fall back to index-based matching
+
+    reconciledSections.push({
+      swimlane: targetSwimlane.name, // FORCE the correct swimlane name from roadmap
+      narrativeArc: matchingSection?.narrativeArc ||
+        `${targetSwimlane.name} analysis reveals key insights → Evidence compounds urgency → Strategic implications emerge`,
+      slides: matchingSection?.slides || createDefaultSlideBlueprints(targetSwimlane.name, 5)
+    });
+  }
+
+  // 3. Conclusion section (use outline's or create default)
+  reconciledSections.push({
+    swimlane: "Conclusion",
+    narrativeArc: conclusionSection?.narrativeArc ||
+      "Synthesis of insights → Strategic implications → Actionable recommendations",
+    slides: conclusionSection?.slides || createDefaultSlideBlueprints("Conclusion", 4)
+  });
+
+  console.log(`[Outline Reconciliation] Output: ${reconciledSections.length} sections: ${reconciledSections.map(s => s.swimlane).join(', ')}`);
+
+  return {
+    reasoning: outline.reasoning, // Preserve all reasoning from original outline
+    sections: reconciledSections
+  };
+}
+
+/**
+ * Create default slide blueprints when outline is missing a section.
+ * These blueprints provide minimal structure for the full slides generation.
+ * @param {string} sectionName - Name of the section
+ * @param {number} count - Number of slides to create
+ * @returns {Array} Array of slide blueprints with basic structure
+ */
+function createDefaultSlideBlueprints(sectionName, count) {
+  return Array.from({ length: count }, (_, i) => ({
+    tagline: "KEY INSIGHT",
+    keyDataPoint: `Key data point for ${sectionName} slide ${i + 1}`,
+    analyticalLens: "COMPETITIVE_DYNAMICS",
+    connectsTo: i < count - 1
+      ? `This insight leads to the next aspect of ${sectionName}`
+      : "This conclusion sets up the following section"
+  }));
+}
+
 /**
  * Validate executive summary quality
  * Enhanced validation with narrative energy, evidence density, and source quality checks
@@ -1380,10 +1489,20 @@ export async function generateAllContent(userPrompt, researchFiles) {
 
     // Phase 2: Slides Pass 2 + Document in parallel (both use swimlanes)
     console.log(`[Generation] Phase 2: Slides Pass 2 + Document (with ${swimlanes.length} swimlanes)...`);
+
+    // CRITICAL FIX: Reconcile outline sections with authoritative roadmap swimlanes.
+    // The outline was generated in Phase 1 without swimlanes (to enable parallel execution),
+    // so it may have auto-detected sections that don't match the roadmap's entity swimlanes.
+    // This reconciliation ensures entity swimlanes (e.g., "Bank of America", "Citigroup")
+    // appear correctly in the slides TOC.
+    const reconciledOutline = slidesOutline.success && swimlanes.length > 0
+      ? reconcileOutlineWithSwimlanes(slidesOutline.data, swimlanes)
+      : slidesOutline.data;
+
     const phase2Tasks = [
       {
         task: () => slidesOutline.success
-          ? generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, slidesOutline.data)
+          ? generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, reconciledOutline)
           : generateSlides(userPrompt, researchFiles, swimlanes), // Fallback to full generation
         name: 'Slides'
       },

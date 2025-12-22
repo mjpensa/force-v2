@@ -23,6 +23,12 @@ const KNOWN_ACRONYMS = [
   'ISDA', 'DLT', 'IT', 'HR', 'PR', 'EMIR', 'OCC', 'BSA', 'AML', 'FINOS'
 ];
 
+// Company/brand names with special capitalization
+const COMPANY_NAMES = {
+  'jpmorgan': 'JPMorgan',
+  'jpm': 'JPM'
+};
+
 /**
  * Check if a single word (no slashes) is an acronym
  * @param {string} word - Word to check
@@ -56,6 +62,11 @@ function checkAcronym(word) {
   const lowerWord = baseWord.toLowerCase();
   if (PROPER_NOUNS[lowerWord]) {
     return { isAcronym: true, value: PROPER_NOUNS[lowerWord] + trailingPunct };
+  }
+
+  // Check company names with special capitalization (e.g., JPMorgan)
+  if (COMPANY_NAMES[lowerWord]) {
+    return { isAcronym: true, value: COMPANY_NAMES[lowerWord] + trailingPunct };
   }
 
   // Handle slashed compound acronyms like "CDM/DRR"
