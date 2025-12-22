@@ -767,7 +767,8 @@ function validateSingleSlide(slide, slideId, issues) {
   }
 
   // Validate individual word lengths in title (long words break narrow columns)
-  const maxWordLength = slide.layout === 'threeColumn' ? 14 : 10;
+  // Max 9 chars for twoColumn (narrow), 12 chars for threeColumn (slightly wider)
+  const maxWordLength = slide.layout === 'threeColumn' ? 12 : 9;
   const titleWords = title.replace(/\n/g, ' ').split(/\s+/).filter(w => w);
   for (const word of titleWords) {
     if (word.length > maxWordLength) {

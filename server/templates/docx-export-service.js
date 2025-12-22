@@ -20,9 +20,58 @@ import {
   ShadingType,
   VerticalAlign,
   TableLayoutType,
-  convertInchesToTwip
+  convertInchesToTwip,
+  LevelFormat
 } from 'docx';
 import { COLORS, FONTS, STYLES, PAGE, SPACING, DEFAULT_METADATA, COLUMN_WIDTHS, FONT_SIZES } from './docx-template-config.js';
+
+// ============================================================================
+// NUMBERING (Custom bullet definitions)
+// ============================================================================
+
+/**
+ * Standard bullet numbering configuration
+ * Uses a small bullet character (•) with proper sizing
+ */
+const BULLET_NUMBERING = {
+  config: [
+    {
+      reference: 'standard-bullets',
+      levels: [
+        {
+          level: 0,
+          format: LevelFormat.BULLET,
+          text: '•',
+          alignment: AlignmentType.LEFT,
+          style: {
+            paragraph: {
+              indent: { left: 720, hanging: 360 }
+            },
+            run: {
+              font: FONTS.body,
+              size: FONT_SIZES.body
+            }
+          }
+        },
+        {
+          level: 1,
+          format: LevelFormat.BULLET,
+          text: '◦',
+          alignment: AlignmentType.LEFT,
+          style: {
+            paragraph: {
+              indent: { left: 1080, hanging: 360 }
+            },
+            run: {
+              font: FONTS.body,
+              size: FONT_SIZES.body
+            }
+          }
+        }
+      ]
+    }
+  ]
+};
 
 // ============================================================================
 // HELPERS
@@ -144,11 +193,15 @@ function createQuoteBlock(quote, source) {
 
 /**
  * Create a bullet point (SKILL.md format)
+ * Uses custom numbering reference for standard-sized bullets
  */
 function createBullet(text) {
   return new Paragraph({
     spacing: { after: SPACING.bulletAfter, line: SPACING.lineSpacing },
-    bullet: { level: 0 },
+    numbering: {
+      reference: 'standard-bullets',
+      level: 0
+    },
     children: [styledText(text, STYLES.body)]
   });
 }
@@ -688,6 +741,7 @@ export async function generateDocx(documentData, options = {}) {
     creator: options.creator || DEFAULT_METADATA.creator,
     title: documentData.title || DEFAULT_METADATA.title,
     description: options.description || DEFAULT_METADATA.description,
+    numbering: BULLET_NUMBERING,
     styles: {
       default: {
         document: {
@@ -914,6 +968,7 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
     creator: DEFAULT_METADATA.creator,
     title: 'Pre-Meeting Intelligence Brief',
     description: 'Meeting preparation brief',
+    numbering: BULLET_NUMBERING,
     styles: {
       default: {
         document: {

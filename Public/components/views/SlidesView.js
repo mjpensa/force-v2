@@ -319,7 +319,7 @@ function renderTwoColumnSlide(slide, index) {
     line-height: 0.95;
     color: #0C2340;
     white-space: pre-line;
-    word-break: normal;
+    word-break: keep-all;
     overflow-wrap: normal;
   `;
   // Convert to sentence case (preserving acronyms) and enforce exactly 4 lines
@@ -485,7 +485,7 @@ function renderThreeColumnSlide(slide, index) {
     line-height: 0.95;
     color: #0C2340;
     white-space: pre-line;
-    word-break: normal;
+    word-break: keep-all;
     overflow-wrap: normal;
   `;
 

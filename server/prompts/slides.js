@@ -1548,22 +1548,31 @@ TITLE RULES (CRITICAL - HARD LIMIT: 3 OR 4 LINES ONLY):
 - twoColumn layout: Each line MAX 10 characters - use SHORT words only (5-8 chars ideal)!
 - threeColumn layout: Each line MAX 18 characters
 
-!!! WORD LENGTH WARNING - TITLES BREAK WITH LONG WORDS !!!
-The title column is NARROW. Long words will overflow and look broken.
-BANNED LONG WORDS (12+ chars) - ALWAYS use shorter synonyms:
-- "modernization" → "upgrade" or "reform"
-- "implementation" → "rollout" or "launch"
-- "transformation" → "shift" or "change"
-- "infrastructure" → "systems" or "stack"
-- "standardization" → "standards"
-- "reconciliation" → "matching"
-- "consolidation" → "merger"
-- "organizations" → "firms" or "banks"
-- "opportunities" → "chances" or "gains"
-- "jurisdictions" → "regions"
-- "requirements" → "rules" or "needs"
-- "capabilities" → "skills" or "tools"
-COUNT EVERY WORD: If a word has 10+ characters, find a shorter synonym!
+!!! CRITICAL: WORD LENGTH LIMIT - MAX 9 CHARACTERS PER WORD IN TITLES !!!
+The title column is VERY NARROW. Words over 9 characters WILL break mid-word and look terrible.
+
+BANNED WORDS (10+ chars) - You MUST use shorter synonyms:
+- "standardized" (12) → "standard" (8) or "unified" (7)
+- "foundation" (10) → "basis" (5) or "core" (4)
+- "modernization" (13) → "upgrade" (7) or "reform" (6)
+- "implementation" (14) → "rollout" (7) or "launch" (6)
+- "transformation" (14) → "shift" (5) or "change" (6)
+- "infrastructure" (14) → "systems" (7) or "stack" (5)
+- "standardization" (15) → "standards" (9)
+- "reconciliation" (14) → "matching" (8)
+- "consolidation" (13) → "merger" (6)
+- "organizations" (13) → "firms" (5) or "banks" (5)
+- "opportunities" (13) → "chances" (7) or "gains" (5)
+- "jurisdictions" (13) → "regions" (7)
+- "requirements" (12) → "rules" (5) or "needs" (5)
+- "capabilities" (12) → "skills" (6) or "tools" (5)
+- "competitive" (11) → "rival" (5)
+- "operational" (11) → "ops" (3)
+- "regulatory" (10) → "rules" (5) or "regs" (4)
+- "compliance" (10) → "comply" (6)
+- "automation" (10) → "auto" (4)
+
+BEFORE WRITING ANY TITLE: Count characters in each word. If ANY word > 9 chars, replace it!
 
 TITLE FAILURE EXAMPLES (NEVER DO THIS):
 - BAD 7-line: "BSA/AML\\norder\\ndelays\\nstrategic\\ntech\\nadoption\\nroadmap" = 6 separators = BROKEN
