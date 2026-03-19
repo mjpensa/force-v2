@@ -137,7 +137,6 @@ export class GanttRenderer {
 
     if (!isSwimlane && row.bar) {
       const bar = row.bar;
-      // Normalize missing/invalid columns (some models omit endCol or both)
       if (bar.startCol == null || isNaN(bar.startCol)) {
         bar.startCol = null; // Will skip rendering
       }
