@@ -69,58 +69,32 @@ export class DocumentView {
     const tocList = document.createElement('ul');
     tocList.className = 'toc-list';
     if (this.documentData.analysisOverview) {
-      const overviewLi = document.createElement('li');
-      const overviewLink = document.createElement('a');
-      overviewLink.className = 'toc-link';
-      overviewLink.href = '#analysis-overview';
-      overviewLink.textContent = 'Overview';
-      overviewLink.setAttribute('data-section-id', 'analysis-overview');
-
-      overviewLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        this._scrollToSection('analysis-overview');
-      });
-
-      this.tocLinks.set('analysis-overview', overviewLink);
-      overviewLi.appendChild(overviewLink);
-      tocList.appendChild(overviewLi);
+      tocList.appendChild(this._createTocEntry('analysis-overview', 'Overview'));
     }
     this.documentData.sections.forEach(section => {
-      if (section.level !== 1) return; // Only top-level sections
-
-      const li = document.createElement('li');
-      const link = document.createElement('a');
-      link.className = 'toc-link';
-      link.href = `#${section.id}`;
-      link.textContent = section.swimlaneTopic || section.heading;
-      link.setAttribute('data-section-id', section.id);
-
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        this._scrollToSection(section.id);
-      });
-      this.tocLinks.set(section.id, link);
-      li.appendChild(link);
-      tocList.appendChild(li);
+      if (section.level !== 1) return;
+      tocList.appendChild(this._createTocEntry(section.id, section.swimlaneTopic || section.heading));
     });
-    const closingLi = document.createElement('li');
-    const closingLink = document.createElement('a');
-    closingLink.className = 'toc-link';
-    closingLink.href = '#document-closing';
-    closingLink.textContent = 'Closing';
-    closingLink.setAttribute('data-section-id', 'document-closing');
-
-    closingLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      this._scrollToSection('document-closing');
-    });
-
-    this.tocLinks.set('document-closing', closingLink);
-    closingLi.appendChild(closingLink);
-    tocList.appendChild(closingLi);
+    tocList.appendChild(this._createTocEntry('document-closing', 'Closing'));
 
     tocContainer.appendChild(tocList);
     return tocContainer;
+  }
+
+  _createTocEntry(sectionId, text) {
+    const li = document.createElement('li');
+    const link = document.createElement('a');
+    link.className = 'toc-link';
+    link.href = `#${sectionId}`;
+    link.textContent = text;
+    link.setAttribute('data-section-id', sectionId);
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      this._scrollToSection(sectionId);
+    });
+    this.tocLinks.set(sectionId, link);
+    li.appendChild(link);
+    return li;
   }
 
   _isSubsectionOf(subsection, parentSection) {
@@ -434,8 +408,7 @@ export class DocumentView {
     const headingLevel = section.swimlaneTopic ? 3 : Math.min(section.level + 1, 6);
     const heading = document.createElement(`h${headingLevel}`);
     heading.className = section.swimlaneTopic ? 'section-subtitle' :
-                        (section.level === 1 ? 'section-heading' :
-                        section.level === 2 ? 'section-subheading' : 'section-subheading');
+                        (section.level === 1 ? 'section-heading' : 'section-subheading');
     heading.textContent = section.heading;
     sectionEl.appendChild(heading);
     if (section.paragraphs && Array.isArray(section.paragraphs)) {
@@ -461,36 +434,14 @@ export class DocumentView {
       sectionEl.appendChild(insight);
     }
     if (section.researchSummary) {
-      const summaryContainer = document.createElement('div');
-      summaryContainer.className = 'research-summary';
-
-      const summaryLabel = document.createElement('span');
-      summaryLabel.className = 'research-summary-label';
-      summaryLabel.textContent = 'Research Findings';
-      summaryContainer.appendChild(summaryLabel);
-
-      const summaryText = document.createElement('p');
-      summaryText.className = 'research-summary-text';
-      summaryText.textContent = section.researchSummary;
-      summaryContainer.appendChild(summaryText);
-
-      sectionEl.appendChild(summaryContainer);
+      sectionEl.appendChild(this._renderLabeledBlock(
+        'research-summary', 'Research Findings', 'research-summary', section.researchSummary
+      ));
     }
     if (section.implications) {
-      const implicationsContainer = document.createElement('div');
-      implicationsContainer.className = 'strategic-implications';
-
-      const implicationsLabel = document.createElement('span');
-      implicationsLabel.className = 'implications-label';
-      implicationsLabel.textContent = 'Strategic Implications';
-      implicationsContainer.appendChild(implicationsLabel);
-
-      const implicationsText = document.createElement('p');
-      implicationsText.className = 'implications-text';
-      implicationsText.textContent = section.implications;
-      implicationsContainer.appendChild(implicationsText);
-
-      sectionEl.appendChild(implicationsContainer);
+      sectionEl.appendChild(this._renderLabeledBlock(
+        'strategic-implications', 'Strategic Implications', 'implications', section.implications
+      ));
     }
     if (section.supportingEvidence && Array.isArray(section.supportingEvidence)) {
       section.supportingEvidence.forEach(evidence => {
@@ -631,6 +582,20 @@ export class DocumentView {
     return evidence;
   }
 
+  _renderLabeledBlock(containerClass, labelText, prefix, text) {
+    const container = document.createElement('div');
+    container.className = containerClass;
+    const label = document.createElement('span');
+    label.className = `${prefix}-label`;
+    label.textContent = labelText;
+    container.appendChild(label);
+    const p = document.createElement('p');
+    p.className = `${prefix}-text`;
+    p.textContent = text;
+    container.appendChild(p);
+    return container;
+  }
+
   _renderEmptyState() {
     const emptyState = document.createElement('div');
     emptyState.className = 'empty-state';
@@ -737,25 +702,29 @@ export class DocumentView {
         const error = await response.json();
         throw new Error(error.message || 'Export failed');
       }
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = 'Executive_Summary.docx';
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename="(.+)"/);
-        if (match) filename = match[1];
-      }
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      await this._downloadResponseBlob(response, 'Executive_Summary.docx');
     } catch (error) {
       console.error('DOCX export failed:', error);
       alert(`Export failed: ${error.message}`);
     }
+  }
+
+  async _downloadResponseBlob(response, defaultFilename) {
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let filename = defaultFilename;
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="(.+)"/);
+      if (match) filename = match[1];
+    }
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   }
 
   _createDocumentMenu() {
@@ -929,23 +898,15 @@ export class DocumentView {
     const meetingAttendees = modal.querySelector('#meeting-attendees').value.trim();
     const meetingObjective = modal.querySelector('#meeting-objective').value.trim();
     const keyConcerns = modal.querySelector('#key-concerns').value.trim();
-    if (!companyName) {
-      modal.querySelector('#company-name').focus();
-      modal.querySelector('#company-name').classList.add('input-error');
-      setTimeout(() => modal.querySelector('#company-name').classList.remove('input-error'), 500);
-      return;
-    }
-    if (!meetingAttendees) {
-      modal.querySelector('#meeting-attendees').focus();
-      modal.querySelector('#meeting-attendees').classList.add('input-error');
-      setTimeout(() => modal.querySelector('#meeting-attendees').classList.remove('input-error'), 500);
-      return;
-    }
-    if (!meetingObjective) {
-      modal.querySelector('#meeting-objective').focus();
-      modal.querySelector('#meeting-objective').classList.add('input-error');
-      setTimeout(() => modal.querySelector('#meeting-objective').classList.remove('input-error'), 500);
-      return;
+    const requiredFields = ['company-name', 'meeting-attendees', 'meeting-objective'];
+    for (const fieldId of requiredFields) {
+      const field = modal.querySelector(`#${fieldId}`);
+      if (!field.value.trim()) {
+        field.focus();
+        field.classList.add('input-error');
+        setTimeout(() => field.classList.remove('input-error'), 500);
+        return;
+      }
     }
     const formBody = modal.querySelector('.modal-body');
     const footer = modal.querySelector('.modal-footer');
@@ -967,21 +928,7 @@ export class DocumentView {
         const errorMessage = error.details || error.message || error.error || 'Generation failed';
         throw new Error(errorMessage);
       }
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = 'Pre_Meeting_Brief.docx';
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename="(.+)"/);
-        if (match) filename = match[1];
-      }
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      await this._downloadResponseBlob(response, 'Pre_Meeting_Brief.docx');
       closeModal();
 
     } catch (error) {
