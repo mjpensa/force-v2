@@ -20,7 +20,6 @@ import {
 import { loadFooterSVG } from './Utils.js'; // For GanttChart footer
 import { TaskAnalyzer } from './analysis/TaskAnalyzer.js'; // For task clicks
 
-// Unified polling service for efficient status checking
 class PollingService {
   constructor() {
     this.polls = new Map(); // viewName -> { timeout, attempt, callback }
@@ -72,7 +71,6 @@ class PollingService {
       return;
     }
 
-    // Execute callback and handle result
     Promise.resolve(callback({ status: 'polling', attempt: poll.attempt, viewName }))
       .then(result => {
         if (result?.done) {
@@ -80,7 +78,6 @@ class PollingService {
           return;
         }
 
-        // Schedule next poll with exponential backoff
         const interval = Math.min(
           config.baseInterval * Math.pow(config.backoffFactor, Math.floor(poll.attempt / 5)),
           config.maxInterval
@@ -90,7 +87,6 @@ class PollingService {
         poll.timeout = setTimeout(() => this._poll(viewName), interval);
       })
       .catch(() => {
-        // On error, continue polling with longer interval
         poll.attempt++;
         poll.timeout = setTimeout(
           () => this._poll(viewName),
@@ -146,7 +142,6 @@ class SSEService {
 
       eventSource.onerror = (error) => {
         console.error('[SSE] Connection error:', error);
-        // Only call onError if connection was never established
         if (eventSource.readyState === EventSource.CLOSED) {
           onError?.('Connection closed');
           this.stop(sessionId);
@@ -194,7 +189,6 @@ class ContentViewer {
     this.footerSVG = '';
     this.taskAnalyzer = new TaskAnalyzer();
 
-    // Performance optimizations
     this.pollingService = new PollingService();
     this.sseService = new SSEService(); // Real-time updates (fallback to polling)
     this._renderQueue = new Map(); // Batch DOM updates
@@ -372,7 +366,6 @@ class ContentViewer {
       const handleTaskClick = (taskIdentifier) => {
         this.taskAnalyzer.showAnalysis(taskIdentifier);
       };
-      // Include sessionId in ganttData so task click handlers can access it
       const ganttDataWithSession = { ...data, sessionId: this.sessionId };
       const ganttChart = new GanttChart(
         chartContainer,      // container element
@@ -609,35 +602,18 @@ class ContentViewer {
     throw new Error('Regeneration timed out. Please try again.');
   }
   _showLegacyChartLimitation(viewName) {
-    this.contentContainer.innerHTML = `
-      <div style="padding: 3rem; text-align: center; max-width: 600px; margin: 0 auto;">
-        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-warning, #f59e0b); margin-bottom: 1.5rem;">
-          <circle cx="12" cy="12" r="10" stroke-width="2"/>
-          <line x1="12" y1="8" x2="12" y2="12" stroke-width="2"/>
-          <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2"/>
-        </svg>
-        <h2 style="margin-bottom: 1rem; color: var(--color-text-primary);">
-          ${viewName.charAt(0).toUpperCase() + viewName.slice(1)} View Not Available
-        </h2>
-        <p style="color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 2rem;">
-          This chart was generated using the older system and only supports the <strong>Roadmap view</strong>.
-          The ${viewName} view is only available for newly generated content.
-        </p>
-        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-          <button onclick="window.location.hash='roadmap'"
-                  style="padding: 0.75rem 1.5rem; background: var(--color-primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 500;">
-            📊 View Roadmap
-          </button>
-          <button onclick="window.location.href='/'"
-                  style="padding: 0.75rem 1.5rem; background: transparent; color: var(--color-text-primary); border: 2px solid var(--color-border); border-radius: 0.5rem; cursor: pointer; font-weight: 500;">
-            Generate New Content
-          </button>
-        </div>
-        <p style="margin-top: 2rem; font-size: 0.875rem; color: var(--color-text-tertiary);">
-          💡 Tip: Generate new content to access all three views (Roadmap, Slides, and Document)
-        </p>
-      </div>
-    `;
+    const label = viewName.charAt(0).toUpperCase() + viewName.slice(1);
+    this._statusScreen({
+      icon: '<circle cx="12" cy="12" r="10" stroke-width="2"/><line x1="12" y1="8" x2="12" y2="12" stroke-width="2"/><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2"/>',
+      color: '--color-warning, #f59e0b',
+      title: `${label} View Not Available`,
+      message: `This chart was generated using the older system and only supports the <strong>Roadmap view</strong>. The ${viewName} view is only available for newly generated content.`,
+      buttons: [
+        { text: 'View Roadmap', primary: true, onclick: "window.location.hash='roadmap'" },
+        { text: 'Generate New Content', onclick: "window.location.href='/'" }
+      ],
+      footer: 'Tip: Generate new content to access all three views (Roadmap, Slides, and Document)'
+    });
   }
   _showError(title, message) {
     this.appRoot.innerHTML = `
@@ -672,34 +648,24 @@ class ContentViewer {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('sessionId');
   }
-  _addStatusIndicatorStyles() {
-
-  }
-  _updateProgressLine() {
-  }
   _updateTabStatus(viewName, status) {
     if (this.sidebarNav) {
       this.sidebarNav.updateStatus(viewName, status);
     }
-    this._updateProgressLine();
   }
   _startBackgroundStatusPolling() {
     const views = ['roadmap', 'slides', 'document', 'research-analysis'];
     views.forEach(view => this._updateTabStatus(view, 'loading'));
 
-    // Try SSE first for real-time updates, fallback to polling
     if (this._useSSE) {
       const sseStarted = this.sseService.start(
         this.sessionId,
-        // onProgress: Update tab statuses based on SSE events
         (content) => {
           for (const [viewName, viewStatus] of Object.entries(content)) {
-            // Map SSE view names to internal view names
             const internalViewName = viewName === 'researchAnalysis' ? 'research-analysis' : viewName;
 
             if (viewStatus.status === 'completed' && viewStatus.ready) {
               this._updateTabStatus(internalViewName, 'ready');
-              // Fetch the actual content if not already cached
               this._fetchAndCacheContent(internalViewName);
             } else if (viewStatus.status === 'error') {
               this._updateTabStatus(internalViewName, 'failed');
@@ -710,13 +676,10 @@ class ContentViewer {
             }
           }
         },
-        // onComplete: All content ready
         (data) => {
           console.log('[SSE] All content generation complete');
-          // Fetch any content not yet cached
           views.forEach(viewName => this._fetchAndCacheContent(viewName));
         },
-        // onError: Fallback to polling
         (error) => {
           console.warn('[SSE] Error, falling back to polling:', error);
           this._useSSE = false;
@@ -725,18 +688,15 @@ class ContentViewer {
       );
 
       if (!sseStarted) {
-        // SSE failed to start, use polling
         this._useSSE = false;
         this._startPollingFallback(views);
       }
     } else {
-      // Use polling directly
       this._startPollingFallback(views);
     }
   }
 
   async _fetchAndCacheContent(viewName) {
-    // Skip if already cached
     if (this.stateManager.state.content[viewName]) {
       return;
     }
@@ -782,7 +742,6 @@ class ContentViewer {
               return { done: true };
             }
             this._updateTabStatus(viewName, 'ready');
-            // Use batched state updates for performance
             if (!this.stateManager.state.content[viewName]) {
               this.stateManager.batchSetState({
                 content: { ...this.stateManager.state.content, [viewName]: data.data }
@@ -810,7 +769,6 @@ class ContentViewer {
     });
   }
   destroy() {
-    // Clean up SSE and polling services
     this.sseService.stopAll();
     this.pollingService.stopAll();
 
