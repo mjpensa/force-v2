@@ -1,4 +1,4 @@
-import { getCurrentDateContext, assembleResearchContent } from './common.js';
+import { getCurrentDateContext, assembleResearchContent, getAcronymRules } from './common.js';
 
 export const documentSchema = {
   type: "object",
@@ -221,19 +221,7 @@ SOURCE EXTRACTION (Reference Material):
 
 ACRONYMS (CRITICAL - USE EXACT STANDARD CAPITALIZATION IN ALL TEXT):
 
-ALL CAPS acronyms:
-- Tech: API, SDK, UI, UX, AI, ML, REST, SQL, JSON, XML, ETL, AWS, GCP, DLT, NFT, DAO, LLM
-- Finance: CDM, CRM, DRR, ROI, KPI, ESG, AML, KYC, OTC, ISDA, EMIR, MiFID, CFTC, SEC, FCA, GDPR
-- General: B2B, P2P, M&A, IPO
-
-MIXED CASE acronyms (preserve exact capitalization):
-- FpML, SaaS, PaaS, IaaS, RegTech, FinTech, InsurTech, SupTech, PropTech, DeFi, TradFi, DevOps, GenAI
-
-CAPITALIZATION RULES:
-- NEVER alter acronym capitalization: "fpml" or "Fpml" is WRONG, "FpML" is CORRECT
-- "saas" or "SAAS" is WRONG, "SaaS" is CORRECT
-- "cdm" or "Cdm" is WRONG, "CDM" is CORRECT
-- For acronyms not listed above, preserve capitalization exactly as found in research documents
+${getAcronymRules()}
 
 CHAIN-OF-THOUGHT REASONING PROCESS (CRITICAL - Complete FIRST):
 

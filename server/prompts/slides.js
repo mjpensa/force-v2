@@ -1,4 +1,79 @@
-import { getCurrentDateContext, assembleResearchContent, validatePromptInputs } from './common.js';
+import { getCurrentDateContext, assembleResearchContent, validatePromptInputs, getAcronymRules } from './common.js';
+
+// Shared sub-schemas used in both speakerNotesSchema and speakerNotesOutlineSchema
+const narrativeTransitionsSchema = {
+  type: "array",
+  items: {
+    type: "object",
+    properties: {
+      fromSlide: { type: "string", description: "Slide tagline transitioning FROM" },
+      toSlide: { type: "string", description: "Slide tagline transitioning TO" },
+      transitionLogic: { type: "string", description: "Why this transition makes narrative sense" },
+      bridgePhrase: { type: "string", description: "Actual phrase to use: 'This leads us to...' or 'Building on this...'" }
+    }
+  },
+  description: "Planned transitions between slides for narrative coherence"
+};
+
+const competitivePositioningSchema = {
+  type: "object",
+  description: "Ammunition for 'why not [competitor]?' questions",
+  properties: {
+    primaryCompetitors: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Competitor name (McKinsey, Deloitte, internal team, etc.)" },
+          theirStrength: { type: "string", description: "What they're known for - acknowledge it" },
+          ourCounter: { type: "string", description: "Why we're better for THIS engagement" },
+          bridgePhrase: { type: "string", description: "Transition phrase: 'While X excels at..., what you need is...'" }
+        }
+      },
+      description: "Top 2-3 competitors and how to position against them"
+    },
+    internalTeamResponse: {
+      type: "string",
+      description: "Response to 'why not do this in-house?' - the classic objection"
+    },
+    doNothingRisk: {
+      type: "string",
+      description: "Cost of inaction - critical for hostile audiences who want to delay"
+    }
+  }
+};
+
+const bridgePhrasesSchema = {
+  type: "object",
+  description: "Pre-written phrases for difficult presentation moments",
+  properties: {
+    dontKnowAnswer: {
+      type: "array",
+      items: { type: "string" },
+      description: "Phrases when you don't have an answer ready"
+    },
+    hostileInterruption: {
+      type: "array",
+      items: { type: "string" },
+      description: "Phrases to handle aggressive pushback"
+    },
+    goingOffTopic: {
+      type: "array",
+      items: { type: "string" },
+      description: "Phrases to redirect wandering discussions"
+    },
+    technicalDive: {
+      type: "array",
+      items: { type: "string" },
+      description: "Phrases to defer deep technical questions"
+    },
+    losingTheRoom: {
+      type: "array",
+      items: { type: "string" },
+      description: "Recovery phrases when engagement drops"
+    }
+  }
+};
 
 // Schema for individual content slides
 const contentSlideSchema = {
@@ -237,77 +312,9 @@ export const speakerNotesSchema = {
           },
           description: "Hardest pushbacks and how to handle them"
         },
-        narrativeTransitions: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              fromSlide: { type: "string", description: "Slide tagline transitioning FROM" },
-              toSlide: { type: "string", description: "Slide tagline transitioning TO" },
-              transitionLogic: { type: "string", description: "Why this transition makes narrative sense" },
-              bridgePhrase: { type: "string", description: "Actual phrase to use: 'This leads us to...' or 'Building on this...'" }
-            }
-          },
-          description: "Planned transitions between slides for narrative coherence"
-        },
-        competitivePositioning: {
-          type: "object",
-          description: "Ammunition for 'why not [competitor]?' questions",
-          properties: {
-            primaryCompetitors: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string", description: "Competitor name (McKinsey, Deloitte, internal team, etc.)" },
-                  theirStrength: { type: "string", description: "What they're known for - acknowledge it" },
-                  ourCounter: { type: "string", description: "Why we're better for THIS engagement" },
-                  bridgePhrase: { type: "string", description: "Transition phrase: 'While X excels at..., what you need is...'" }
-                }
-              },
-              description: "Top 2-3 competitors and how to position against them"
-            },
-            internalTeamResponse: {
-              type: "string",
-              description: "Response to 'why not do this in-house?' - the classic objection"
-            },
-            doNothingRisk: {
-              type: "string",
-              description: "Cost of inaction - critical for hostile audiences who want to delay"
-            }
-          }
-        },
-        bridgePhrases: {
-          type: "object",
-          description: "Pre-written phrases for difficult presentation moments",
-          properties: {
-            dontKnowAnswer: {
-              type: "array",
-              items: { type: "string" },
-              description: "Phrases when you don't have an answer ready"
-            },
-            hostileInterruption: {
-              type: "array",
-              items: { type: "string" },
-              description: "Phrases to handle aggressive pushback"
-            },
-            goingOffTopic: {
-              type: "array",
-              items: { type: "string" },
-              description: "Phrases to redirect wandering discussions"
-            },
-            technicalDive: {
-              type: "array",
-              items: { type: "string" },
-              description: "Phrases to defer deep technical questions"
-            },
-            losingTheRoom: {
-              type: "array",
-              items: { type: "string" },
-              description: "Recovery phrases when engagement drops"
-            }
-          }
-        }
+        narrativeTransitions: narrativeTransitionsSchema,
+        competitivePositioning: competitivePositioningSchema,
+        bridgePhrases: bridgePhrasesSchema
       }
     },
     slides: {
@@ -690,19 +697,7 @@ export const speakerNotesOutlineSchema = {
           },
           description: "Inventory of sources to cite in speaker notes"
         },
-        narrativeTransitions: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              fromSlide: { type: "string", description: "Slide tagline transitioning FROM" },
-              toSlide: { type: "string", description: "Slide tagline transitioning TO" },
-              transitionLogic: { type: "string", description: "Why this transition makes narrative sense" },
-              bridgePhrase: { type: "string", description: "Actual phrase to use: 'This leads us to...' or 'Building on this...'" }
-            }
-          },
-          description: "Planned transitions between slides for narrative coherence"
-        },
+        narrativeTransitions: narrativeTransitionsSchema,
         anticipatedPushback: {
           type: "array",
           items: {
@@ -716,64 +711,8 @@ export const speakerNotesOutlineSchema = {
           },
           description: "3-5 hardest pushbacks and how to handle them"
         },
-        competitivePositioning: {
-          type: "object",
-          description: "Ammunition for 'why not [competitor]?' questions",
-          properties: {
-            primaryCompetitors: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string", description: "Competitor name (McKinsey, Deloitte, internal team, etc.)" },
-                  theirStrength: { type: "string", description: "What they're known for - acknowledge it" },
-                  ourCounter: { type: "string", description: "Why we're better for THIS engagement" },
-                  bridgePhrase: { type: "string", description: "Transition phrase: 'While X excels at..., what you need is...'" }
-                }
-              },
-              description: "Top 2-3 competitors and how to position against them"
-            },
-            internalTeamResponse: {
-              type: "string",
-              description: "Response to 'why not do this in-house?' - the classic objection"
-            },
-            doNothingRisk: {
-              type: "string",
-              description: "Cost of inaction - critical for hostile audiences who want to delay"
-            }
-          }
-        },
-        bridgePhrases: {
-          type: "object",
-          description: "Pre-written phrases for difficult presentation moments",
-          properties: {
-            dontKnowAnswer: {
-              type: "array",
-              items: { type: "string" },
-              description: "Phrases when you don't have an answer ready"
-            },
-            hostileInterruption: {
-              type: "array",
-              items: { type: "string" },
-              description: "Phrases to handle aggressive pushback"
-            },
-            goingOffTopic: {
-              type: "array",
-              items: { type: "string" },
-              description: "Phrases to redirect wandering discussions"
-            },
-            technicalDive: {
-              type: "array",
-              items: { type: "string" },
-              description: "Phrases to defer deep technical questions"
-            },
-            losingTheRoom: {
-              type: "array",
-              items: { type: "string" },
-              description: "Recovery phrases when engagement drops"
-            }
-          }
-        }
+        competitivePositioning: competitivePositioningSchema,
+        bridgePhrases: bridgePhrasesSchema
       },
       required: ["presentationNarrativeArc", "keyEvidenceChains", "sourceInventory", "anticipatedPushback"]
     },
@@ -945,9 +884,7 @@ CONCLUSION SECTION (LAST SECTION - REQUIRED):
 Your goal: Define the STRUCTURE and NARRATIVE FLOW before any detailed content is written.
 
 ## ACRONYM CAPITALIZATION (CRITICAL - applies to all text including swimlane names, taglines, and narratives)
-- MIXED CASE acronyms: FpML, SaaS, PaaS, IaaS, RegTech, FinTech, DeFi, TradFi, DevOps, GenAI
-- ALL CAPS acronyms: CDM, DRR, API, ROI, KPI, ISDA, EMIR, MiFID, CFTC, SEC
-- NEVER alter: "Fpml" is WRONG → "FpML" is CORRECT; "Saas" is WRONG → "SaaS" is CORRECT
+${getAcronymRules(true)}
 
 ## CHAIN OF THOUGHT: REASON BEFORE STRUCTURING
 
@@ -1375,26 +1312,7 @@ COMMON RULES FOR ALL CONTENT SLIDES:
 ACRONYMS (CRITICAL - USE EXACT STANDARD CAPITALIZATION IN ALL FIELDS):
 Applies to: title, sectionTitle, tagline, paragraph1, paragraph2, paragraph3
 
-ALL CAPS acronyms:
-- Tech: API, SDK, UI, UX, AI, ML, REST, SQL, JSON, XML, ETL, AWS, GCP, DLT, NFT, DAO, LLM
-- Finance: CDM, CRM, DRR, ROI, KPI, ESG, AML, KYC, OTC, ISDA, EMIR, MiFID, CFTC, SEC, FCA, GDPR
-- General: B2B, P2P, M&A, IPO
-
-MIXED CASE acronyms (preserve exact capitalization):
-- FpML, SaaS, PaaS, IaaS, RegTech, FinTech, InsurTech, SupTech, PropTech, DeFi, TradFi, DevOps, GenAI
-
-CAPITALIZATION RULES:
-- NEVER alter acronym capitalization: "fpml" or "Fpml" is WRONG, "FpML" is CORRECT
-- "saas" or "SAAS" is WRONG, "SaaS" is CORRECT
-- "cdm" or "Cdm" is WRONG, "CDM" is CORRECT
-- NEVER split acronyms across lines in titles
-
-TAGLINE EXCEPTION: In taglines, mixed-case acronyms keep their standard form even though surrounding text is uppercase
-- WRONG: "SAAS MIGRATION" - SAAS is incorrect
-- CORRECT: "SaaS MIGRATION" - SaaS keeps standard capitalization
-- CORRECT: "CDM ADOPTION" - CDM is already all caps
-
-FALLBACK RULE: For acronyms not listed above, preserve capitalization exactly as found in research documents
+${getAcronymRules()}
 
 TAGLINE: 2-word uppercase label, MAX 21 characters. Example: "MARGIN EROSION"
 
