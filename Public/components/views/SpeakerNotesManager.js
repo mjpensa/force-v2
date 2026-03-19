@@ -143,7 +143,6 @@ export class SpeakerNotesManager {
 
       if (result.status === 'completed' && result.data) {
         this.speakerNotes = result.data;
-        console.log('[SpeakerNotes] On-demand generation complete:', result.data.slides?.length || 0, 'notes');
         if (this.speakerNotesVisible) {
           this.updateContent();
         }

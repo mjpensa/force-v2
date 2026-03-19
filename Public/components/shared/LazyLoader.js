@@ -52,42 +52,6 @@ function loadAllImages(selector) {
   const images = document.querySelectorAll(selector);
   images.forEach(img => loadImage(img));
 }
-export function lazyLoadComponent(element, loadCallback, options = {}) {
-  const defaultOptions = {
-    root: null,
-    rootMargin: '100px',
-    threshold: 0.01
-  };
-  const config = { ...defaultOptions, ...options };
-  if (!('IntersectionObserver' in window)) {
-    loadCallback();
-    return null;
-  }
-  const observer = new IntersectionObserver((entries, obs) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        loadCallback();
-        obs.unobserve(element);
-      }
-    });
-  }, config);
-  observer.observe(element);
-  return observer;
-}
-export function preloadImages(urls) {
-  return Promise.all(
-    urls.map(url => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(url);
-        img.onerror = () => {
-          resolve(url); // Resolve anyway to not block other images
-        };
-        img.src = url;
-      });
-    })
-  );
-}
 export function addLazyLoadingStyles() {
   if (document.getElementById('lazy-loading-styles')) {
     return; // Already added
@@ -141,7 +105,5 @@ export function addLazyLoadingStyles() {
 }
 export default {
   initLazyLoading,
-  lazyLoadComponent,
-  preloadImages,
   addLazyLoadingStyles
 };

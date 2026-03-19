@@ -6,8 +6,7 @@ import { addLazyLoadingStyles, initLazyLoading } from './components/shared/LazyL
 import { SidebarNav } from './components/SidebarNav.js';
 import {
   markPerformance,
-  measurePerformance,
-  reportWebVitals
+  measurePerformance
 } from './components/shared/Performance.js';
 import {
   initAccessibility,
@@ -116,10 +115,7 @@ class SSEService {
       const eventSource = new EventSource(`/api/content/stream/${sessionId}`);
       this.eventSources.set(sessionId, eventSource);
 
-      eventSource.addEventListener('connected', (event) => {
-        const data = JSON.parse(event.data);
-        console.log('[SSE] Connected:', data.message);
-      });
+      eventSource.addEventListener('connected', () => {});
 
       eventSource.addEventListener('progress', (event) => {
         const data = JSON.parse(event.data);
@@ -128,7 +124,6 @@ class SSEService {
 
       eventSource.addEventListener('complete', (event) => {
         const data = JSON.parse(event.data);
-        console.log('[SSE] All content complete:', data.summary);
         onComplete?.(data);
         this.stop(sessionId);
       });
@@ -208,10 +203,6 @@ class ContentViewer {
         validateImages: true,
         focusManagement: true
       });
-      if (window.location.search.includes('debug=true')) {
-        reportWebVitals((vital) => {
-        });
-      }
       this.sessionId = this._getSessionIdFromURL();
       if (!this.sessionId) {
         this._showError('No session ID provided', 'Please return to the home page and generate content first.');
@@ -577,30 +568,6 @@ class ContentViewer {
       ]
     });
   }
-  async _pollForRegeneration(viewName, maxAttempts = 120, intervalMs = 2000) {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      try {
-        const response = await fetch(`/api/content/${this.sessionId}/${viewName}`);
-        if (!response.ok) {
-          throw new Error(`Server error: ${response.status}`);
-        }
-        const data = await response.json();
-        if (data.status === 'completed' && data.data) {
-          return data;
-        }
-        if (data.status === 'error') {
-          throw new Error(data.error || 'Generation failed');
-        }
-        await new Promise(resolve => setTimeout(resolve, intervalMs));
-      } catch (error) {
-        if (attempt === maxAttempts - 1) {
-          throw error;
-        }
-        await new Promise(resolve => setTimeout(resolve, intervalMs));
-      }
-    }
-    throw new Error('Regeneration timed out. Please try again.');
-  }
   _showLegacyChartLimitation(viewName) {
     const label = viewName.charAt(0).toUpperCase() + viewName.slice(1);
     this._statusScreen({
@@ -677,7 +644,6 @@ class ContentViewer {
           }
         },
         (data) => {
-          console.log('[SSE] All content generation complete');
           views.forEach(viewName => this._fetchAndCacheContent(viewName));
         },
         (error) => {

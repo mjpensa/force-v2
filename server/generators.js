@@ -106,7 +106,6 @@ function extractSwimlanesFromRoadmap(roadmapData) {
     swimlanes.push({ ...currentSwimlane, taskCount });
   }
 
-  console.log(`[Swimlane Extraction] Found ${swimlanes.length} swimlanes:`, swimlanes.map(s => s.name));
   return swimlanes;
 }
 
@@ -121,7 +120,6 @@ function reconcileOutlineWithSwimlanes(outline, swimlanes) {
   const augmentedSwimlanes = createAugmentedSwimlanes(swimlanes);
 
   const outlineSections = outline.sections || [];
-  console.log(`[Outline Reconciliation] Input: ${outlineSections.length} outline sections, ${augmentedSwimlanes.length} target swimlanes`);
 
   const overviewSection = outlineSections.find(s => s.swimlane?.toLowerCase() === 'overview');
   const conclusionSection = outlineSections.find(s => s.swimlane?.toLowerCase() === 'conclusion');
@@ -160,7 +158,6 @@ function reconcileOutlineWithSwimlanes(outline, swimlanes) {
     slides: conclusionSection?.slides || createDefaultSlideBlueprints("Conclusion", 4)
   });
 
-  console.log(`[Outline Reconciliation] Output: ${reconciledSections.length} sections: ${reconciledSections.map(s => s.swimlane).join(', ')}`);
 
   return { reasoning: outline.reasoning, sections: reconciledSections };
 }
@@ -648,7 +645,6 @@ function withTimeout(promise, timeoutMs, operationName) {
 }
 async function generateWithGemini(prompt, schema, contentType, configOverrides = {}) {
   try {
-    console.log(`[${contentType}] Starting generation with model: ${CONFIG.API.GEMINI_MODEL}`);
     const {
       temperature,
       topP,
@@ -671,7 +667,6 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     if (maxOutputTokens !== undefined) generationConfig.maxOutputTokens = maxOutputTokens;
     if (frequencyPenalty !== undefined) generationConfig.frequencyPenalty = frequencyPenalty;
     if (presencePenalty !== undefined) generationConfig.presencePenalty = presencePenalty;
-    console.log(`[${contentType}] Generation config:`, JSON.stringify({ temperature, topP, topK, thinkingBudget }));
     const model = genAI.getGenerativeModel({
       model: CONFIG.API.GEMINI_MODEL,
       generationConfig
@@ -683,20 +678,15 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     );
     const response = result.response;
     const text = response.text();
-    console.log(`[${contentType}] Received response, length: ${text.length} chars`);
     try {
       const data = JSON.parse(text);
-      console.log(`[${contentType}] Successfully parsed JSON`);
       return data;
     } catch (parseError) {
-      console.log(`[${contentType}] JSON parse error: ${parseError.message}`);
       try {
         const repairedJsonText = jsonrepair(text);
         const repairedData = JSON.parse(repairedJsonText);
-        console.log(`[${contentType}] Successfully repaired and parsed JSON`);
         return repairedData;
       } catch (repairError) {
-        console.log(`[${contentType}] JSON repair also failed`);
         throw parseError;
       }
     }
@@ -716,51 +706,23 @@ async function generateRoadmap(userPrompt, researchFiles) {
 }
 async function generateSlides(userPrompt, researchFiles, swimlanes = []) {
   try {
-    console.log(`[Slides] Two-pass generation (${swimlanes.length} swimlanes)`);
     const augmentedSwimlanes = createAugmentedSwimlanes(swimlanes);
 
-    console.log(`[Slides] Pass 1: Generating narrative outline...`);
     const outlinePrompt = generateSlidesOutlinePrompt(userPrompt, researchFiles, augmentedSwimlanes);
     const outline = await generateWithGemini(outlinePrompt, slidesOutlineSchema, 'SlideOutline', SLIDES_OUTLINE_CONFIG);
 
     const totalOutlineSlides = outline.sections?.reduce((sum, s) => sum + (s.slides?.length || 0), 0) || 0;
-    console.log(`[Slides] Outline generated: ${outline.sections?.length || 0} sections, ${totalOutlineSlides} slide blueprints`);
 
     const outlineValidation = validateOutlineStructure(outline, augmentedSwimlanes);
-    if (!outlineValidation.valid) {
-      console.warn('[Slides] Outline validation issues:', outlineValidation.errors);
-    } else {
-      console.log('[Slides] Outline validation passed');
-    }
 
-    console.log(`[Slides] Pass 2: Generating full slides with outline constraint...`);
     const fullPrompt = generateSlidesPrompt(userPrompt, researchFiles, augmentedSwimlanes, outline);
     const data = await generateWithGemini(fullPrompt, slidesSchema, 'Slides', SLIDES_CONFIG);
 
     const slideQualityValidation = validateSlideQuality(data);
-    if (!slideQualityValidation.valid) {
-      console.log(`[Slides] Quality validation issues:`, slideQualityValidation.issues);
-    } else {
-      console.log(`[Slides] Quality validation passed`);
-    }
 
     const frameworkValidation = validateFrameworkConsistency(outline, data);
-    if (!frameworkValidation.valid) {
-      console.log(`[Slides] Framework consistency issues:`, frameworkValidation.issues);
-    } else {
-      console.log(`[Slides] Framework consistency: ${frameworkValidation.consistency}%`);
-    }
 
-    // Validate evidence chain usage
     const evidenceChainValidation = validateEvidenceChainUsage(outline, data);
-    if (!evidenceChainValidation.valid) {
-      console.log(`[Slides] Evidence chain issues:`, evidenceChainValidation.issues);
-      if (evidenceChainValidation.missingChains?.length > 0) {
-        console.log(`[Slides] Missing evidence chains:`, evidenceChainValidation.missingChains);
-      }
-    } else {
-      console.log(`[Slides] Evidence chain usage: ${evidenceChainValidation.coverage}% (${evidenceChainValidation.usedChains}/${evidenceChainValidation.totalChains})`);
-    }
 
     const allValidationIssues = [
       ...slideQualityValidation.issues,
@@ -787,13 +749,11 @@ async function generateSlides(userPrompt, researchFiles, swimlanes = []) {
 
 async function generateSlidesOutlineOnly(userPrompt, researchFiles, swimlanes = []) {
   try {
-    console.log(`[Slides Outline] Generating narrative outline (${swimlanes.length} swimlanes)...`);
     const augmentedSwimlanes = createAugmentedSwimlanes(swimlanes);
     const outlinePrompt = generateSlidesOutlinePrompt(userPrompt, researchFiles, augmentedSwimlanes);
     const outline = await generateWithGemini(outlinePrompt, slidesOutlineSchema, 'SlideOutline', SLIDES_OUTLINE_CONFIG);
 
     const totalOutlineSlides = outline.sections?.reduce((sum, s) => sum + (s.slides?.length || 0), 0) || 0;
-    console.log(`[Slides Outline] Generated: ${outline.sections?.length || 0} sections, ${totalOutlineSlides} slide blueprints`);
 
     return { success: true, data: outline };
   } catch (error) {
@@ -804,13 +764,9 @@ async function generateSlidesOutlineOnly(userPrompt, researchFiles, swimlanes = 
 
 async function generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, outline) {
   try {
-    console.log(`[Slides Pass 2] Generating full slides from outline...`);
     const augmentedSwimlanes = createAugmentedSwimlanes(swimlanes);
 
     const outlineValidation = validateOutlineStructure(outline, augmentedSwimlanes);
-    if (!outlineValidation.valid) {
-      console.warn('[Slides Pass 2] Outline validation issues:', outlineValidation.errors);
-    }
 
     const fullPrompt = generateSlidesPrompt(userPrompt, researchFiles, augmentedSwimlanes, outline);
     const data = await generateWithGemini(fullPrompt, slidesSchema, 'Slides', SLIDES_CONFIG);
@@ -819,15 +775,6 @@ async function generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, o
     const frameworkValidation = validateFrameworkConsistency(outline, data);
     const evidenceChainValidation = validateEvidenceChainUsage(outline, data);
 
-    if (!slideQualityValidation.valid) {
-      console.log(`[Slides Pass 2] Quality validation issues:`, slideQualityValidation.issues);
-    }
-    if (frameworkValidation.valid) {
-      console.log(`[Slides Pass 2] Framework consistency: ${frameworkValidation.consistency}%`);
-    }
-    if (evidenceChainValidation.valid) {
-      console.log(`[Slides Pass 2] Evidence chain usage: ${evidenceChainValidation.coverage}%`);
-    }
 
     const allValidationIssues = [
       ...slideQualityValidation.issues,
@@ -857,13 +804,11 @@ async function generateSpeakerNotes(slidesData, researchFiles, userPrompt) {
   try {
     const totalSlides = slidesData.sections?.reduce((sum, section) =>
       sum + (section.slides?.length || 0), 0) || 0;
-    console.log(`[Speaker Notes] Generating notes for ${totalSlides} slides across ${slidesData.sections?.length || 0} sections`);
 
     let outline = null;
     let outlineMetrics = { evidenceChains: 0, sources: 0, pushbacks: 0, transitions: 0, slideOutlines: 0 };
 
     try {
-      console.log('[Speaker Notes] Pass 1: Generating reasoning outline with CoT...');
       const outlinePrompt = generateSpeakerNotesOutlinePrompt(slidesData, researchFiles, userPrompt);
       outline = await generateWithGemini(outlinePrompt, speakerNotesOutlineSchema, 'SpeakerNotesOutline', SPEAKER_NOTES_OUTLINE_CONFIG);
       outlineMetrics = {
@@ -873,32 +818,17 @@ async function generateSpeakerNotes(slidesData, researchFiles, userPrompt) {
         transitions: outline.reasoning?.narrativeTransitions?.length || 0,
         slideOutlines: outline.slideOutlines?.length || 0
       };
-      console.log('[Speaker Notes] Pass 1 complete:', outlineMetrics);
 
-      if (outlineMetrics.evidenceChains < 3) {
-        console.warn('[Speaker Notes] Low evidence chain count in outline:', outlineMetrics.evidenceChains);
-      }
-      if (outlineMetrics.sources < 2) {
-        console.warn('[Speaker Notes] Low source count in outline:', outlineMetrics.sources);
-      }
     } catch (pass1Error) {
-      console.warn('[Speaker Notes] Pass 1 failed, falling back to single-pass generation:', pass1Error.message);
       outline = null;
     }
 
-    console.log(`[Speaker Notes] Pass 2: Generating full notes ${outline ? 'with outline' : 'WITHOUT outline (fallback)'}...`);
     const fullPrompt = generateSpeakerNotesPrompt(slidesData, researchFiles, userPrompt, outline);
     const data = await generateWithGemini(fullPrompt, speakerNotesSchema, 'SpeakerNotes', SPEAKER_NOTES_CONFIG);
 
     const notesCount = data.slides?.length || 0;
-    if (notesCount < totalSlides) {
-      console.warn(`[Speaker Notes] Generated ${notesCount} notes for ${totalSlides} slides - some slides may be missing notes`);
-    } else {
-      console.log(`[Speaker Notes] Pass 2 complete: ${notesCount} speaker notes generated`);
-    }
 
     if (data.reasoning) {
-      console.log('[Speaker Notes] Reasoning block included in output');
     } else if (outline?.reasoning) {
       data.reasoning = outline.reasoning;
     }
@@ -909,11 +839,7 @@ async function generateSpeakerNotes(slidesData, researchFiles, userPrompt) {
     ).length || 0;
 
     if (slidesWithCues === 0) {
-      console.warn('[Speaker Notes] No delivery cues detected in any talking points');
     } else if (slidesWithCues < Math.floor((data.slides?.length || 0) / 2)) {
-      console.warn(`[Speaker Notes] Delivery cues found in only ${slidesWithCues}/${data.slides?.length} slides`);
-    } else {
-      console.log(`[Speaker Notes] Delivery cues present in ${slidesWithCues}/${data.slides?.length} slides`);
     }
 
     return { success: true, data, outline };
@@ -929,9 +855,6 @@ async function generateDocument(userPrompt, researchFiles, swimlanes = []) {
   let lastValidation = null;
   let lastCoherenceValidation = null;
 
-  if (swimlanes.length > 0) {
-    console.log(`[Document] Generating with ${swimlanes.length} swimlane-aligned sections`);
-  }
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
@@ -939,9 +862,6 @@ async function generateDocument(userPrompt, researchFiles, swimlanes = []) {
       const data = await generateWithGemini(prompt, documentSchema, 'Document', DOCUMENT_CONFIG);
       const validation = validateExecutiveSummary(data.executiveSummary);
       const coherenceValidation = validateReasoningCoherence(data.reasoning, data.executiveSummary);
-      if (!coherenceValidation.coherent) {
-        console.log(`[Document] Reasoning coherence issues:`, coherenceValidation.issues);
-      }
 
       lastResult = data;
       lastValidation = validation;
@@ -949,14 +869,11 @@ async function generateDocument(userPrompt, researchFiles, swimlanes = []) {
 
       if (data.sections && Array.isArray(data.sections)) {
         const sectionIssues = data.sections.flatMap((s, i) => validateSectionQuality(s, i));
-        if (sectionIssues.length > 0) console.log(`[Document] Section quality issues:`, sectionIssues);
       }
 
       const combinedValid = validation.valid && coherenceValidation.coherent;
       if (combinedValid) {
-        console.log(`[Document] Validation passed on attempt ${attempt + 1}`);
         const qualityScore = calculateQualityScore(data);
-        console.log(`[Document] Quality score: ${qualityScore.overall}/100 (${qualityScore.rating})`);
         const qualityTier = getQualityTier(qualityScore.overall);
 
         return {
@@ -971,20 +888,14 @@ async function generateDocument(userPrompt, researchFiles, swimlanes = []) {
       }
 
       const allIssues = [...validation.issues, ...coherenceValidation.issues];
-      console.log(`[Document] Validation issues on attempt ${attempt + 1}:`, allIssues);
 
-      if (attempt < MAX_RETRIES - 1) {
-        console.log(`[Document] Retrying generation...`);
-      }
     } catch (error) {
       return { success: false, error: error.message };
     }
   }
 
   const allValidationIssues = [...(lastValidation?.issues || []), ...(lastCoherenceValidation?.issues || [])];
-  console.log(`[Document] Returning result despite validation issues:`, allValidationIssues);
   const qualityScore = calculateQualityScore(lastResult);
-  console.log(`[Document] Quality score: ${qualityScore.overall}/100 (${qualityScore.rating})`);
   const qualityTier = getQualityTier(qualityScore.overall);
 
   return {
@@ -1010,23 +921,10 @@ async function generateResearchAnalysis(userPrompt, researchFiles) {
 
 export async function generateIntelligenceBrief(sessionData, meetingContext) {
   try {
-    console.log('[IntelligenceBrief] Generating pre-meeting brief...');
-    console.log('[IntelligenceBrief] Session data available:', {
-      sources: sessionData.sources?.length || 0,
-      hasDocument: !!sessionData.document,
-      hasRoadmap: !!sessionData.roadmap,
-      hasSlides: !!sessionData.slides
-    });
 
     const prompt = generateIntelligenceBriefPrompt(sessionData, meetingContext);
     const data = await generateWithGemini(prompt, intelligenceBriefSchema, 'IntelligenceBrief', INTELLIGENCE_BRIEF_CONFIG);
 
-    console.log('[IntelligenceBrief] Generated brief:', {
-      keyInsights: data.keyInsights?.length || 0,
-      talkingPoints: data.talkingPoints?.length || 0,
-      anticipatedQuestions: data.anticipatedQuestions?.length || 0,
-      recommendedNextSteps: data.recommendedNextSteps?.length || 0
-    });
 
     return { success: true, data };
   } catch (error) {
@@ -1039,14 +937,12 @@ export async function generateIntelligenceBrief(sessionData, meetingContext) {
 // Speaker notes generated on-demand via generateSpeakerNotesAsync()
 export async function generateAllContent(userPrompt, researchFiles) {
   try {
-    console.log('[Generation] Starting 3-phase pipeline...');
     const startTime = Date.now();
 
     const researchAnalysisPromise = apiQueue.add(
       () => generateResearchAnalysis(userPrompt, researchFiles), 'ResearchAnalysis'
     );
 
-    console.log('[Generation] Phase 1: Roadmap + Slides Outline (parallel)...');
     const phase1Tasks = [
       { task: () => generateRoadmap(userPrompt, researchFiles), name: 'Roadmap' },
       { task: () => generateSlidesOutlineOnly(userPrompt, researchFiles, []), name: 'SlidesOutline' }
@@ -1054,19 +950,12 @@ export async function generateAllContent(userPrompt, researchFiles) {
     const [roadmap, slidesOutline] = await apiQueue.runAll(phase1Tasks);
 
     const swimlanes = roadmap.success ? extractSwimlanesFromRoadmap(roadmap.data) : [];
-    console.log(`[Generation] Extracted ${swimlanes.length} swimlanes from roadmap`);
 
-    console.log(`[Generation] Phase 2: Slides Pass 2 + Document (with ${swimlanes.length} swimlanes)...`);
 
     // CRITICAL: Reconcile outline with authoritative roadmap swimlanes for correct TOC
     let reconciledOutline = slidesOutline.data;
     if (slidesOutline.success && swimlanes.length > 0) {
-      console.log('[Generation] Reconciling outline with roadmap swimlanes...');
-      console.log('[Generation] Original outline sections:', slidesOutline.data?.sections?.map(s => s.swimlane) || []);
       reconciledOutline = reconcileOutlineWithSwimlanes(slidesOutline.data, swimlanes);
-      console.log('[Generation] Reconciled outline sections:', reconciledOutline?.sections?.map(s => s.swimlane) || []);
-    } else {
-      console.log('[Generation] Skipping reconciliation - outline success:', slidesOutline.success, 'swimlanes:', swimlanes.length);
     }
 
     const phase2Tasks = [
@@ -1093,21 +982,11 @@ export async function generateAllContent(userPrompt, researchFiles) {
         )
       );
 
-      if (mismatchedSwimlanes.length > 0) {
-        console.warn('[Generation] Swimlane mismatch detected:', {
-          roadmap: roadmapSwimlanes,
-          slides: slideSwimlanes,
-          unmatched: mismatchedSwimlanes
-        });
-      } else {
-        console.log(`[Generation] Swimlane alignment verified: ${slideSwimlanes.length} sections match roadmap`);
-      }
     }
 
     const speakerNotes = { success: false, error: 'Speaker notes available on-demand', deferred: true };
 
     const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`[Generation] Core content complete in ${totalTime}s (speaker notes deferred)`);
 
     return { roadmap, slides, document, researchAnalysis, speakerNotes };
   } catch (error) {
@@ -1120,7 +999,6 @@ export async function generateSpeakerNotesAsync(slidesData, researchFiles, userP
     return { success: false, error: 'Slides data required for speaker notes generation' };
   }
 
-  console.log('[Speaker Notes Async] Starting on-demand generation...');
   const startTime = Date.now();
 
   const result = await apiQueue.add(
@@ -1129,11 +1007,6 @@ export async function generateSpeakerNotesAsync(slidesData, researchFiles, userP
   );
 
   const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
-  if (result.success) {
-    console.log(`[Speaker Notes Async] Complete in ${totalTime}s (${result.data?.slides?.length || 0} notes)`);
-  } else {
-    console.warn(`[Speaker Notes Async] Failed after ${totalTime}s:`, result.error);
-  }
 
   return result;
 }

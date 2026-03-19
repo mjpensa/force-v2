@@ -45,25 +45,6 @@
   );
 }
 
-/* Custom scrollbar for TOC */
-.document-toc::-webkit-scrollbar {
-  width: 6px;
-}
-
-.document-toc::-webkit-scrollbar-track {
-  background: var(--glass-white-5);
-  border-radius: var(--radius-full);
-}
-
-.document-toc::-webkit-scrollbar-thumb {
-  background: var(--glass-white-20);
-  border-radius: var(--radius-full);
-}
-
-.document-toc::-webkit-scrollbar-thumb:hover {
-  background: var(--glass-white-30);
-}
-
 .toc-title {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
@@ -863,32 +844,13 @@
 /* ========== EMPTY STATE ========== */
 
 .document-view .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   padding: var(--spacing-16);
-  text-align: center;
   color: var(--glass-text-secondary);
 }
 
 .document-view .empty-state svg {
-  margin-bottom: var(--spacing-6);
   opacity: 0.6;
   stroke: var(--glass-text-muted);
-}
-
-.document-view .empty-state h2 {
-  font-size: var(--text-2xl);
-  font-weight: var(--weight-medium);
-  color: var(--glass-text-primary);
-  margin: 0 0 var(--spacing-4) 0;
-}
-
-.document-view .empty-state p {
-  font-size: var(--text-base);
-  color: var(--glass-text-secondary);
-  margin: 0;
 }
 
 /* ========== RESPONSIVE ========== */
@@ -959,61 +921,6 @@
     border-radius: 0;
     border-left: none;
     border-right: none;
-  }
-
-  /* Executive summary mobile */
-  .executive-summary {
-    padding: var(--spacing-3) var(--spacing-4);
-  }
-
-  .executive-summary-header {
-    flex-wrap: wrap;
-    gap: var(--spacing-2);
-  }
-
-  .executive-summary-source {
-    font-size: 10px;
-  }
-
-  .executive-summary-text {
-    font-size: var(--text-base);
-  }
-
-  /* At a Glance mobile */
-  .glance-grid {
-    gap: var(--spacing-3);
-  }
-
-  .glance-block {
-    padding: var(--spacing-2) var(--spacing-3);
-    padding-left: var(--spacing-4);
-  }
-
-  .glance-label {
-    font-size: 10px;
-    padding: 1px 6px;
-  }
-
-  .glance-text {
-    font-size: var(--text-sm);
-  }
-
-  .executive-summary-situation {
-    font-size: var(--text-sm);
-  }
-
-  .executive-summary-insight {
-    font-size: var(--text-sm);
-    padding: var(--spacing-2);
-  }
-
-  .executive-summary-stakes {
-    font-size: var(--text-base);
-  }
-
-  .executive-summary-finding,
-  .executive-summary-action {
-    font-size: var(--text-sm);
   }
 
   /* Analysis overview mobile */
@@ -1091,12 +998,6 @@
     font-size: var(--text-base);
   }
 
-  /* Swimlane topic badge mobile */
-  .swimlane-topic-badge {
-    font-size: 10px;
-    padding: var(--spacing-1) var(--spacing-2);
-  }
-
   /* Research summary mobile */
   .research-summary {
     padding: var(--spacing-3);
@@ -1165,87 +1066,6 @@
 
   .section-quote {
     page-break-inside: avoid;
-  }
-
-  /* Print styles for new elements */
-  .executive-summary {
-    background: #f5f5f5;
-    border-left-color: #333;
-    page-break-inside: avoid;
-  }
-
-  .executive-summary-header {
-    margin-bottom: 8px;
-  }
-
-  .executive-summary-label {
-    color: #FFFFFF;
-  }
-
-  .executive-summary-source {
-    color: #FFFFFF;
-    background: #e0e0e0;
-    border-color: #ccc;
-  }
-
-  .executive-summary-text {
-    color: #FFFFFF;
-  }
-
-  .executive-summary-situation {
-    color: #FFFFFF;
-    font-weight: bold;
-  }
-
-  .executive-summary-insight {
-    border-left-color: #666;
-    background: #f0f0f0;
-    color: #FFFFFF;
-  }
-
-  .executive-summary-stakes {
-    color: #FFFFFF;
-    font-weight: bold;
-  }
-
-  .executive-summary-finding {
-    border-left-color: #666;
-    color: #FFFFFF;
-  }
-
-  .executive-summary-action {
-    color: #FFFFFF;
-  }
-
-  /* At a Glance print styles */
-  .glance-grid {
-    gap: 12px;
-  }
-
-  .glance-block {
-    background: #f8f8f8;
-    page-break-inside: avoid;
-  }
-
-  .glance-label {
-    color: #333;
-    background: #e8e8e8;
-  }
-
-  .glance-text {
-    color: #000;
-  }
-
-  .glance-context {
-    border-left-color: #2563eb;
-  }
-
-  .glance-insight {
-    border-left-color: #d97706;
-  }
-
-  .glance-action {
-    border-left-color: #16a34a;
   }
 
   /* Analysis overview print */
@@ -1394,15 +1214,6 @@
   .recommendation-timeframe {
     color: #666;
     background: #eee;
-  }
-
-  /* Swimlane topic badge print */
-  .swimlane-topic-badge {
-    color: #666;
-    background: #f0f0f0;
-    border-color: #ccc;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
   }
 
   /* Research summary print */

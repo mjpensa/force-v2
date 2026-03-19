@@ -76,20 +76,6 @@
   overflow-y: auto;
   color: var(--glass-text-primary);
 }
-.modal-body::-webkit-scrollbar {
-  width: 6px;
-}
-.modal-body::-webkit-scrollbar-track {
-  background: var(--glass-white-5, rgba(255, 255, 255, 0.05));
-  border-radius: 9999px;
-}
-.modal-body::-webkit-scrollbar-thumb {
-  background: var(--glass-white-20, rgba(255, 255, 255, 0.20));
-  border-radius: 9999px;
-}
-.modal-body::-webkit-scrollbar-thumb:hover {
-  background: var(--glass-white-30, rgba(255, 255, 255, 0.30));
-}
 .modal-spinner {
   width: 32px;
   height: 32px;
@@ -202,20 +188,6 @@
   padding: 12px;
   background-color: var(--color-navy-deep); 
   margin-bottom: 12px;
-}
-.chat-history::-webkit-scrollbar {
-  width: 6px;
-}
-.chat-history::-webkit-scrollbar-track {
-  background: var(--glass-white-5, rgba(255, 255, 255, 0.05));
-  border-radius: 9999px;
-}
-.chat-history::-webkit-scrollbar-thumb {
-  background: var(--glass-white-20, rgba(255, 255, 255, 0.20));
-  border-radius: 9999px;
-}
-.chat-history::-webkit-scrollbar-thumb:hover {
-  background: var(--glass-white-30, rgba(255, 255, 255, 0.30));
 }
 .chat-message {
   font-size: 18px; 
@@ -759,20 +731,6 @@
     align-self: flex-start;
     max-height: calc(90vh - 140px);
     overflow-y: auto;
-  }
-  .analysis-sidebar::-webkit-scrollbar {
-    width: 6px;
-  }
-  .analysis-sidebar::-webkit-scrollbar-track {
-    background: var(--glass-white-5, rgba(255, 255, 255, 0.05));
-    border-radius: 9999px;
-  }
-  .analysis-sidebar::-webkit-scrollbar-thumb {
-    background: var(--glass-white-20, rgba(255, 255, 255, 0.20));
-    border-radius: 9999px;
-  }
-  .analysis-sidebar::-webkit-scrollbar-thumb:hover {
-    background: var(--glass-white-30, rgba(255, 255, 255, 0.30));
   }
   .analysis-main {
     flex: 1;

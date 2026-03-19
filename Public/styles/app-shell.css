@@ -2,37 +2,8 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(
-      ellipse 80% 60% at 15% 20%,
-      rgba(218, 41, 28, 0.18) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse 70% 50% at 85% 40%,
-      rgba(42, 85, 128, 0.25) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse 60% 70% at 25% 80%,
-      rgba(80, 175, 123, 0.12) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse 50% 40% at 90% 90%,
-      rgba(20, 48, 82, 0.32) 0%,
-      transparent 50%
-    ),
-    linear-gradient(
-      135deg,
-      var(--color-navy-deep) 0%,
-      var(--color-navy-brand) 25%,
-      var(--color-navy-mid) 50%,
-      var(--color-navy-brand) 75%,
-      var(--color-navy-deep) 100%
-    );
+  background: inherit;
   background-attachment: fixed;
-  background-color: var(--color-navy-brand);
   overflow: hidden;
 }
 .app-main {
@@ -47,20 +18,6 @@ body.view-roadmap .app-shell {
 }
 body.view-roadmap .app-main {
   overflow: visible;
-}
-.app-main::-webkit-scrollbar {
-  width: 6px;
-}
-.app-main::-webkit-scrollbar-track {
-  background: var(--glass-white-5);
-  border-radius: var(--radius-full);
-}
-.app-main::-webkit-scrollbar-thumb {
-  background: var(--glass-white-20);
-  border-radius: var(--radius-full);
-}
-.app-main::-webkit-scrollbar-thumb:hover {
-  background: var(--glass-white-30);
 }
 .document-title {
   font-size: var(--text-base);

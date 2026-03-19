@@ -150,8 +150,4 @@ function sendEvent(res, eventType, data) {
   }
 }
 
-export function getActiveConnectionCount() {
-  return activeConnections.size;
-}
-
 export default router;

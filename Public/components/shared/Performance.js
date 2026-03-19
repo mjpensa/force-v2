@@ -13,8 +13,6 @@ export function measurePerformance(name, startMark, endMark) {
   metrics.measures.set(name, duration);
   return duration;
 }
-export function logPerformanceMetrics(label = 'Performance Metrics') {
-}
 export function reportWebVitals(callback) {
   if (!('PerformanceObserver' in window)) return;
   const getRating = (value, thresholds) => value <= thresholds[0] ? 'good' : value <= thresholds[1] ? 'needs-improvement' : 'poor';
@@ -36,12 +34,4 @@ export function reportWebVitals(callback) {
     }).observe({ entryTypes: ['layout-shift'] });
   } catch (e) {}
 }
-export function debounce(func, wait) {
-  let timeout;
-  return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func(...args), wait); };
-}
-export function throttle(func, limit) {
-  let inThrottle;
-  return (...args) => { if (!inThrottle) { func(...args); inThrottle = true; setTimeout(() => (inThrottle = false), limit); } };
-}
-export default { markPerformance, measurePerformance, logPerformanceMetrics, reportWebVitals, debounce, throttle };
+export default { markPerformance, measurePerformance, reportWebVitals };

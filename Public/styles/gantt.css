@@ -262,73 +262,6 @@
   filter: brightness(1.15);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
-.export-container {
-  display: flex;
-  justify-content: center;
-  gap: 6px; 
-  padding: 8px 0 6px 0; 
-  font-family: 'Work Sans', sans-serif; 
-}
-.export-button {
-  font-family: 'Work Sans', sans-serif; 
-  font-size: 0.1875rem; 
-  font-weight: 600; 
-  color: var(--glass-text-primary);
-  background-color: var(--color-glass-success); 
-  border: none;
-  border-radius: 1px; 
-  padding: 1.5px 3.5px; 
-  cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.25); 
-  transition: all 0.2s; 
-}
-.export-button:hover {
-  background-color: #3C8D62;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.4); 
-  transform: translateY(-2px); 
-}
-.export-button:disabled {
-  background-color: #4a4a4a;
-  cursor: not-allowed;
-  transform: none; 
-}
-.edit-mode-toggle-button {
-  font-family: 'Work Sans', sans-serif;
-  font-size: 0.75rem; 
-  font-weight: 600; 
-  color: var(--glass-text-primary);
-  background-color: var(--color-accent-red, #BA3930); 
-  border: none;
-  border-radius: 4px; 
-  padding: 6px 14px; 
-  cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.25); 
-  transition: all 0.2s;
-}
-.edit-mode-toggle-button:hover {
-  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-  transform: translateY(-2px);
-  filter: brightness(1.1); 
-}
-.copy-url-button {
-  font-family: 'Work Sans', sans-serif;
-  font-size: 0.1875rem; 
-  font-weight: 600; 
-  color: var(--glass-text-primary);
-  background-color: #1976D2; 
-  border: none;
-  border-radius: 1px; 
-  padding: 1.5px 3.5px; 
-  cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.25); 
-  transition: all 0.2s;
-}
-.copy-url-button:hover {
-  background-color: #1565C0;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-  transform: translateY(-2px);
-}
-
 /* ==========================================================================
    Glassmorphic Header Menu (Three-dot menu)
    ========================================================================== */
@@ -706,42 +639,6 @@ body.dragging {
   color: var(--glass-text-primary);
 }
 
-@media (max-width: 1024px) {
-  .intelligence-grid {
-    grid-template-columns: 1fr;
-  }
-  .insight-card {
-    min-width: 250px;
-  }
-}
-@media (max-width: 768px) {
-  .summary-title {
-    font-size: 48px;
-  }
-  .summary-title .icon {
-    font-size: 54px;
-  }
-  .elevator-pitch {
-    font-size: 26px;
-  }
-  .value-proposition {
-    font-size: 26px;
-  }
-  .intel-card h3 {
-    font-size: 33px;
-  }
-  .value-metrics {
-    flex-direction: column;
-    gap: 8px;
-  }
-  .insights-carousel {
-    flex-direction: column;
-  }
-  .insight-card {
-    min-width: 100%;
-    max-width: 100%;
-  }
-}
 @media (max-width: 1024px) {
   .export-container button {
     min-width: 32px; 
