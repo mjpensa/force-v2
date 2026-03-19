@@ -846,29 +846,6 @@
   font-weight: 700;
   font-size: 16px;
 }
-.confidence-badge-header {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 12px;
-  text-transform: uppercase;
-  margin-left: 12px;
-  letter-spacing: 0.5px;
-  display: inline-block;
-  vertical-align: middle;
-}
-.confidence-badge-header.confidence-high {
-  background-color: #1A3025;
-  color: var(--color-glass-success);
-}
-.confidence-badge-header.confidence-medium {
-  background-color: #382A13;
-  color: #EE9E20;
-}
-.confidence-badge-header.confidence-low {
-  background-color: #2F120F;
-  color: var(--color-accent-red, #BA3930);
-}
 .timeline-scenarios-section,
 .risks-section,
 .impact-section,

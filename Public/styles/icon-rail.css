@@ -74,72 +74,6 @@
   padding: 16px;
   justify-content: flex-start;
 }
-.icon-rail-logo {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(
-    135deg,
-    var(--glass-white-15) 0%,
-    var(--glass-white-8) 100%
-  );
-  border: 1px solid var(--glass-white-20);
-  border-radius: 12px;
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 var(--glass-white-15);
-  transition: all var(--icon-rail-transition);
-  flex-shrink: 0;
-}
-.icon-rail-logo svg {
-  width: 22px;
-  height: 22px;
-  color: var(--color-accent-red);
-  transition: transform var(--icon-rail-transition);
-}
-.icon-rail:hover .icon-rail-logo,
-.icon-rail.expanded .icon-rail-logo {
-  background: linear-gradient(
-    135deg,
-    rgba(218, 41, 28, 0.2) 0%,
-    rgba(218, 41, 28, 0.1) 100%
-  );
-  border-color: rgba(218, 41, 28, 0.3);
-  box-shadow:
-    0 4px 20px rgba(218, 41, 28, 0.25),
-    inset 0 1px 0 var(--glass-white-20);
-}
-.icon-rail:hover .icon-rail-logo svg,
-.icon-rail.expanded .icon-rail-logo svg {
-  transform: scale(1.1);
-}
-.icon-rail-brand {
-  margin-left: 14px;
-  opacity: 0;
-  transform: translateX(-10px);
-  transition: all var(--icon-rail-transition);
-  white-space: nowrap;
-  overflow: hidden;
-}
-.icon-rail:hover .icon-rail-brand,
-.icon-rail.expanded .icon-rail-brand {
-  opacity: 1;
-  transform: translateX(0);
-}
-.icon-rail-brand-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--glass-text-primary);
-  letter-spacing: -0.01em;
-  line-height: 1.2;
-}
-.icon-rail-brand-subtitle {
-  font-size: 11px;
-  color: var(--glass-text-muted);
-  letter-spacing: 0.02em;
-}
 .icon-rail-nav {
   flex: 1;
   padding: 16px 14px;
@@ -378,16 +312,6 @@
 .icon-rail-item.active .icon-rail-item-subtitle {
   color: var(--color-glass-success);
 }
-.icon-rail-divider {
-  height: 1px;
-  margin: 12px 14px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--glass-white-15) 50%,
-    transparent 100%
-  );
-}
 .icon-rail-section-label {
   padding: 8px 14px 4px;
   font-size: 10px;
@@ -403,13 +327,6 @@
 .icon-rail.expanded .icon-rail-section-label {
   opacity: 1;
   transform: translateX(0);
-}
-.icon-rail-footer {
-  padding: 16px 12px;
-  border-top: 1px solid var(--glass-white-8);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 .icon-rail-home {
   display: flex;
@@ -524,36 +441,6 @@
 .icon-rail.expanded .icon-rail-toggle svg {
   transform: rotate(180deg);
 }
-.icon-rail-shortcut {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 10px;
-  background: var(--glass-white-8);
-  border: 1px solid var(--glass-white-10);
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--glass-text-muted);
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity var(--icon-rail-transition);
-}
-.icon-rail:hover .icon-rail-shortcut,
-.icon-rail.expanded .icon-rail-shortcut {
-  opacity: 0.7;
-}
-.icon-rail-shortcut kbd {
-  display: inline-block;
-  padding: 2px 6px;
-  margin: 0 2px;
-  background: var(--glass-white-10);
-  border: 1px solid var(--glass-white-15);
-  border-radius: 4px;
-  font-family: inherit;
-  font-size: 9px;
-}
 .icon-rail-tooltip {
   position: fixed;
   padding: 8px 14px;
@@ -617,17 +504,11 @@
     width: 40px;
     height: 40px;
   }
-  .icon-rail-logo {
-    width: 36px;
-    height: 36px;
-  }
 }
 @media (max-width: 900px) {
   :root {
     --icon-rail-width-collapsed: 60px;
     --icon-rail-width-expanded: 200px;
-  }
-  .icon-rail {
   }
   .icon-rail-item {
     height: 52px;
@@ -659,12 +540,8 @@
       inset 0 1px 0 var(--glass-white-10);
   }
   .icon-rail-header,
-  .icon-rail-footer,
-  .icon-rail-divider,
   .icon-rail-section-label,
   .icon-rail-toggle,
-  .icon-rail-shortcut,
-  .icon-rail-brand,
   .icon-rail-item-label {
     display: none !important;
   }
@@ -714,7 +591,6 @@
   .icon-rail-item,
   .icon-rail-item-icon,
   .icon-rail-item-label,
-  .icon-rail-brand,
   .icon-rail-toggle,
   .icon-rail-tooltip,
   .icon-rail-status {
