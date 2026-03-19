@@ -1,111 +1,6 @@
-// Proper nouns with periods (place names must always be capitalized)
-const PROPER_NOUNS = {
-  'u.s.': 'U.S.',
-  'u.k.': 'U.K.',
-  'e.u.': 'E.U.'
-};
-const KNOWN_ACRONYMS = [
-  'CDM', 'DRR', 'API', 'ROI', 'KPI', 'CEO', 'CTO', 'CFO', 'COO', 'CIO',
-  'AI', 'ML', 'CFTC', 'SEC', 'FDA', 'EPA', 'UTI', 'UPI', 'ESG', 'DEI',
-  'IPO', 'ETF', 'GDP', 'CPMI', 'IOSCO', 'OTC', 'FX', 'USD', 'EUR', 'GBP',
-  'ISDA', 'DLT', 'IT', 'HR', 'PR', 'EMIR', 'OCC', 'BSA', 'AML', 'FINOS'
-];
-const COMPANY_NAMES = {
-  'jpmorgan': 'JPMorgan',
-  'jpm': 'JPM'
-};
+import { toSentenceCasePreservingAcronyms, sanitizeText, normalizeBodyText } from './text.js';
+import { SpeakerNotesManager } from './SpeakerNotesManager.js';
 
-function isAcronymWord(word) {
-  if (!word) return false;
-  if (KNOWN_ACRONYMS.some(a => a.toLowerCase() === word.toLowerCase())) {
-    return true;
-  }
-  return /^[A-Z][A-Z0-9]{1,4}$/.test(word);
-}
-
-function checkAcronym(word) {
-  if (!word) return { isAcronym: false, value: word };
-  const punctMatch = word.match(/^(.+?)([.:,;!?]+)$/);
-  const baseWord = punctMatch ? punctMatch[1] : word;
-  const trailingPunct = punctMatch ? punctMatch[2] : '';
-  const lowerWord = baseWord.toLowerCase();
-  if (PROPER_NOUNS[lowerWord]) {
-    return { isAcronym: true, value: PROPER_NOUNS[lowerWord] + trailingPunct };
-  }
-  if (COMPANY_NAMES[lowerWord]) {
-    return { isAcronym: true, value: COMPANY_NAMES[lowerWord] + trailingPunct };
-  }
-  if (baseWord.includes('/')) {
-    const parts = baseWord.split('/');
-    const allAcronyms = parts.every(part => isAcronymWord(part));
-
-    if (allAcronyms) {
-      return { isAcronym: true, value: parts.map(p => p.toUpperCase()).join('/') + trailingPunct };
-    }
-    return { isAcronym: false, value: word };
-  }
-
-  if (isAcronymWord(baseWord)) {
-    return { isAcronym: true, value: baseWord.toUpperCase() + trailingPunct };
-  }
-
-  return { isAcronym: false, value: word };
-}
-
-function toSentenceCasePreservingAcronyms(text) {
-  if (!text) return '';
-  return text.split('\n').map((line, lineIndex) => {
-    const words = line.split(/(\s+)/); // Keep whitespace as separate elements
-
-    return words.map((word, wordIndex) => {
-      if (/^\s*$/.test(word)) return word;
-      const acronymCheck = checkAcronym(word);
-
-      if (acronymCheck.isAcronym) {
-        return acronymCheck.value;
-      } else if (lineIndex === 0 && wordIndex === 0) {
-        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-      } else {
-        return word.toLowerCase();
-      }
-    }).join('');
-  }).join('\n');
-}
-
-/**
- * Sanitize text by removing markdown and converting placeholder terms
- * - Removes **bold** markers
- * - Converts UNDERSCORE_TERMS to lowercase "underscore terms"
- * @param {string} text - Text to sanitize
- * @returns {string} - Cleaned text
- */
-function sanitizeText(text) {
-  if (!text) return '';
-
-  return text
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    // Remove markdown italic markers: *text* → text (but not ** which is already handled)
-    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
-    // Convert UNDERSCORE_TERMS to lowercase spaced words
-    .replace(/\b([A-Z]+(?:_[A-Z]+)+)\b/g, (match) => {
-      return match.toLowerCase().replace(/_/g, ' ');
-    });
-}
-
-function normalizeBodyText(text) {
-  if (!text) return '';
-
-  // Match all-caps words (3+ letters) that aren't known acronyms
-  return text.replace(/\b([A-Z]{3,})\b/g, (match) => {
-    const acronymCheck = checkAcronym(match);
-    if (acronymCheck.isAcronym) {
-      return acronymCheck.value; // Keep as-is
-    }
-    return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase();
-  });
-}
-
-// Dispatcher - routes to correct renderer based on layout
 function renderSlide(slide, index) {
   const layout = slide.layout || 'twoColumn';
   if (layout === 'sectionTitle') {
@@ -116,8 +11,7 @@ function renderSlide(slide, index) {
   }
   return renderTwoColumnSlide(slide, index);
 }
-// SECTION TITLE SLIDE RENDERER
-// Full-bleed title slide for section breaks
+
 function renderSectionTitleSlide(slide, index) {
   const el = document.createElement('div');
   el.style.cssText = `
@@ -133,7 +27,6 @@ function renderSectionTitleSlide(slide, index) {
     align-items: center;
   `;
 
-  // Section number / swimlane indicator (top left)
   const sectionLabel = document.createElement('div');
   sectionLabel.style.cssText = `
     position: absolute;
@@ -149,7 +42,6 @@ function renderSectionTitleSlide(slide, index) {
   sectionLabel.textContent = slide.swimlane || '';
   el.appendChild(sectionLabel);
 
-  // Main section title (centered, large)
   const title = document.createElement('div');
   title.style.cssText = `
     font-family: 'Work Sans', sans-serif;
@@ -166,7 +58,6 @@ function renderSectionTitleSlide(slide, index) {
   title.textContent = slide.sectionTitle || slide.title || '';
   el.appendChild(title);
 
-  // Decorative line under title
   const line = document.createElement('div');
   line.style.cssText = `
     width: 15%;
@@ -176,7 +67,6 @@ function renderSectionTitleSlide(slide, index) {
   `;
   el.appendChild(line);
 
-  // BIP LOGO - bottom right (white version or filtered)
   const bipLogo = document.createElement('img');
   bipLogo.src = 'Red BIP Logo.png';
   bipLogo.style.cssText = `
@@ -188,7 +78,6 @@ function renderSectionTitleSlide(slide, index) {
   `;
   el.appendChild(bipLogo);
 
-  // SLIDE NUMBER - bottom left
   const footer = document.createElement('div');
   footer.style.cssText = `
     position: absolute;
@@ -216,14 +105,6 @@ function renderTwoColumnSlide(slide, index) {
     overflow: hidden;
   `;
 
-  // Use container query units (cqw/cqh) for scalable text
-  // Fallback to vw-based calculations for older browsers
-  // Base reference: 1200px slide width, so 1% = 12px at full size
-
-  // EYEBROW (red tagline) - EXACT from XML:
-  // x=257175/12192000 = 2.11%, y=235177/6858000 = 3.43%
-  // width=2039291/12192000 = 16.73%
-  // Font: 12pt Work Sans SemiBold, #DA291C (12pt = 1% of 1200px width)
   const tagline = document.createElement('div');
   tagline.style.cssText = `
     position: absolute;
@@ -240,10 +121,6 @@ function renderTwoColumnSlide(slide, index) {
   tagline.textContent = slide.tagline || '';
   el.appendChild(tagline);
 
-  // TITLE - EXACT from XML:
-  // x=228208/12192000 = 1.87%, y=613997/6858000 = 8.95%
-  // width=5435991/12192000 = 44.59%, height=2150574/6858000 = 31.36%
-  // Font: 72pt Work Sans Thin, #0C2340
   const title = document.createElement('div');
   title.style.cssText = `
     position: absolute;
@@ -260,12 +137,10 @@ function renderTwoColumnSlide(slide, index) {
     word-break: keep-all;
     overflow-wrap: normal;
   `;
-  // Convert to sentence case (preserving acronyms) and enforce exactly 4 lines
   const titleText = slide.title || '';
   const sentenceCase = toSentenceCasePreservingAcronyms(titleText);
   let lines = sentenceCase.split('\n').map(l => l.trim()).filter(l => l);
 
-  // Enforce exactly 4 lines
   if (lines.length > 4) {
     lines = lines.slice(0, 4);
   }
@@ -276,11 +151,6 @@ function renderTwoColumnSlide(slide, index) {
   title.textContent = lines.join('\n');
   el.appendChild(title);
 
-  // BODY (right side) - EXACT from XML:
-  // x=6167437/12192000 = 50.59%, y=3159889/6858000 = 46.08%
-  // width=5400675/12192000 = 44.30%, height=3221861/6858000 = 46.98%
-  // Font: 12pt Work Sans, #0C2340, line-height 120%
-  // Top aligned with bottom of title (accounting for descenders on last line)
   const body = document.createElement('div');
   body.style.cssText = `
     position: absolute;
@@ -298,8 +168,6 @@ function renderTwoColumnSlide(slide, index) {
     overflow: hidden;
   `;
 
-  // Body text - uses paragraph1 and paragraph2 fields (or falls back to body for compatibility)
-  // Hard limit: 415 chars per paragraph - truncate at sentence boundary if AI exceeds
   const MAX_CHARS = 415;
 
   const truncateToSentence = (text) => {
@@ -310,21 +178,16 @@ function renderTwoColumnSlide(slide, index) {
     const lastExclaim = truncated.lastIndexOf('!');
     const lastSentenceEnd = Math.max(lastPeriod, lastQuestion, lastExclaim);
     if (lastSentenceEnd > MAX_CHARS * 0.6) {
-      // Found a sentence end in the last 40% of allowed text
       return text.substring(0, lastSentenceEnd + 1);
     }
-    // No good sentence break, cut at word boundary
     return truncated.replace(/\s+\S*$/, '') + '.';
   };
 
   let paragraphs = [];
   if (slide.paragraph1 || slide.paragraph2) {
-    // New schema with separate paragraph fields
-    // Pipeline: clean whitespace → sanitize markdown → normalize caps → truncate
     if (slide.paragraph1) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1.trim().replace(/\n/g, ' ')))));
     if (slide.paragraph2) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2.trim().replace(/\n/g, ' ')))));
   } else if (slide.body) {
-    // Legacy schema with combined body field
     paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(normalizeBodyText(sanitizeText(p.trim().replace(/\n/g, ' ')))));
   }
   body.innerHTML = paragraphs.map(p => {
@@ -333,7 +196,6 @@ function renderTwoColumnSlide(slide, index) {
 
   el.appendChild(body);
 
-  // CORNER GRAPHIC - top right (1.45" x 1.45" on 13.33" x 7.5" slide)
   const cornerGraphic = document.createElement('img');
   cornerGraphic.src = 'bip corner graphic.svg';
   cornerGraphic.style.cssText = `
@@ -345,7 +207,6 @@ function renderTwoColumnSlide(slide, index) {
   `;
   el.appendChild(cornerGraphic);
 
-  // BIP LOGO - bottom right
   const bipLogo = document.createElement('img');
   bipLogo.src = 'Red BIP Logo.png';
   bipLogo.style.cssText = `
@@ -357,7 +218,6 @@ function renderTwoColumnSlide(slide, index) {
   `;
   el.appendChild(bipLogo);
 
-  // SLIDE NUMBER - bottom left, matching eyebrow position
   const footer = document.createElement('div');
   footer.style.cssText = `
     position: absolute;
@@ -373,8 +233,7 @@ function renderTwoColumnSlide(slide, index) {
 
   return el;
 }
-// THREE COLUMN LAYOUT RENDERER
-// Measurements from ppt-template-config.js (13.33" x 7.5" slide)
+
 function renderThreeColumnSlide(slide, index) {
   const el = document.createElement('div');
   el.style.cssText = `
@@ -386,7 +245,6 @@ function renderThreeColumnSlide(slide, index) {
     overflow: hidden;
   `;
 
-  // TAGLINE - PPT: x=0.28", y=0.26" → 2.10%, 3.47%
   const tagline = document.createElement('div');
   tagline.style.cssText = `
     position: absolute;
@@ -403,9 +261,6 @@ function renderThreeColumnSlide(slide, index) {
   tagline.textContent = slide.tagline || '';
   el.appendChild(tagline);
 
-  // TITLE - PPT: x=0.25", y=0.67", w=2.76", h=2.35" → 1.88%, 8.93%, 20.70%, 31.33%
-  // Font: Work Sans Light (weight 300) - template 2 uses heavier weight
-  // NOTE: Width increased to 24% and font reduced to prevent choppy mid-word breaks
   const title = document.createElement('div');
   title.style.cssText = `
     position: absolute;
@@ -423,7 +278,6 @@ function renderThreeColumnSlide(slide, index) {
     overflow-wrap: normal;
   `;
 
-  // Convert to sentence case (preserving acronyms) and enforce exactly 4 lines
   const titleText = slide.title || '';
   const sentenceCase = toSentenceCasePreservingAcronyms(titleText);
   let lines = sentenceCase.split('\n').map(l => l.trim()).filter(l => l);
@@ -432,8 +286,6 @@ function renderThreeColumnSlide(slide, index) {
   title.textContent = lines.join('\n');
   el.appendChild(title);
 
-  // THREE COLUMNS - PPT: x=3.56", y=3.46", w=9.10", h=3.52" → 26.71%, 46.13%, 68.27%, 46.93%
-  // Font: 11pt Work Sans, lineSpacing: 120 (1.2 line-height), columnGap: 0.59" → 4.43%
   const MAX_CHARS = 400;
   const truncateToSentence = (text) => {
     if (!text || text.length <= MAX_CHARS) return text || '';
@@ -481,7 +333,6 @@ function renderThreeColumnSlide(slide, index) {
   });
   el.appendChild(columnsContainer);
 
-  // CORNER GRAPHIC - top right
   const cornerGraphic = document.createElement('img');
   cornerGraphic.src = 'bip corner graphic.svg';
   cornerGraphic.style.cssText = `
@@ -493,7 +344,6 @@ function renderThreeColumnSlide(slide, index) {
   `;
   el.appendChild(cornerGraphic);
 
-  // BIP LOGO - bottom right
   const bipLogo = document.createElement('img');
   bipLogo.src = 'Red BIP Logo.png';
   bipLogo.style.cssText = `
@@ -505,7 +355,6 @@ function renderThreeColumnSlide(slide, index) {
   `;
   el.appendChild(bipLogo);
 
-  // SLIDE NUMBER - bottom left
   const footer = document.createElement('div');
   footer.style.cssText = `
     position: absolute;
@@ -521,7 +370,7 @@ function renderThreeColumnSlide(slide, index) {
 
   return el;
 }
-// DEMO SLIDES - Template references
+
 const DEMO_SLIDE_TWO_COL = {
   layout: 'twoColumn',
   tagline: 'LOREM IPSUM',
@@ -538,29 +387,24 @@ const DEMO_SLIDE_THREE_COL = {
   paragraph2: 'minim veniam, quis nostrud exercitation Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitationLorem ipsum dolor sit amet, consectetur adipiscing',
   paragraph3: 'elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitationLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor'
 };
-// SLIDES VIEW CLASS
+
 export class SlidesView {
   constructor(data, sessionId = null) {
     this.sessionId = sessionId;
 
-    // ALWAYS show demo slides first for template reference
     this.slides = [DEMO_SLIDE_TWO_COL, DEMO_SLIDE_THREE_COL];
 
-    // Store sections for TOC generation
     this.sections = data?.sections || [];
 
-    // Store speaker notes data (from separate generation pass)
     this.speakerNotes = data?.speakerNotes || null;
-    this.speakerNotesVisible = false; // Hidden by default
-    this.speakerNotesLoading = false; // Track loading state for on-demand generation
+    this.speakerNotesVisible = false;
+    this.speakerNotesLoading = false;
 
-    // Track section start indices for TOC navigation
     this.sectionStartIndices = new Map();
-    this.sectionStartIndices.set('demo', 0); // Demo slides start at index 0
+    this.sectionStartIndices.set('demo', 0);
 
-    // NEW: Track individual slides for sub-topic navigation (two-level TOC)
-    this.slideIndices = new Map();      // slideId -> global index
-    this.sectionSlides = new Map();     // sectionId -> [{slideId, subTopic, index}]
+    this.slideIndices = new Map();
+    this.sectionSlides = new Map();
     if (this.sections.length) {
       const flattenedSlides = this._flattenSections(this.sections);
       this.slides = this.slides.concat(flattenedSlides);
@@ -569,20 +413,19 @@ export class SlidesView {
     this.index = 0;
     this.slideEl = null;
     this.counter = null;
-    this.speakerNotesPanel = null; // Speaker notes panel element
+    this.speakerNotesPanel = null;
 
-    // TOC management
     this.tocLinks = new Map();
     this.tocContainer = null;
+
+    this._notesManager = new SpeakerNotesManager(this);
   }
 
   _flattenSections(sections) {
     const flatSlides = [];
-    // Start after demo slides (2 demo slides at indices 0 and 1)
     let currentIndex = 2;
 
     for (const section of sections) {
-      // Track section start index for TOC navigation
       const sectionId = section.swimlane.toLowerCase().replace(/\s+/g, '-');
       this.sectionStartIndices.set(sectionId, currentIndex);
       this.sectionSlides.set(sectionId, []);
@@ -596,10 +439,8 @@ export class SlidesView {
       if (section.slides?.length) {
         section.slides.forEach((slide, slideIdx) => {
           const slideId = `${sectionId}-slide-${slideIdx}`;
-          // Fallback: subTopic → tagline → generic label
           const subTopic = slide.subTopic || slide.tagline || `Slide ${slideIdx + 1}`;
 
-          // Track for TOC navigation
           this.slideIndices.set(slideId, currentIndex);
           this.sectionSlides.get(sectionId).push({
             slideId,
@@ -633,7 +474,6 @@ export class SlidesView {
     const tocList = document.createElement('ul');
     tocList.className = 'toc-list';
 
-    // 1. Demo templates link
     const demoLi = document.createElement('li');
     const demoLink = document.createElement('a');
     demoLink.className = 'toc-link';
@@ -650,13 +490,11 @@ export class SlidesView {
     demoLi.appendChild(demoLink);
     tocList.appendChild(demoLi);
 
-    // 2. Section links with nested sub-topic (slide) lists
     this.sections.forEach(section => {
       const sectionId = section.swimlane.toLowerCase().replace(/\s+/g, '-');
 
       const li = document.createElement('li');
 
-      // Section header link
       const sectionLink = document.createElement('a');
       sectionLink.className = 'toc-link toc-section-link';
       sectionLink.href = `#${sectionId}`;
@@ -671,7 +509,6 @@ export class SlidesView {
       this.tocLinks.set(sectionId, sectionLink);
       li.appendChild(sectionLink);
 
-      // Sub-topic nested list (slides within section)
       const sectionSlideData = this.sectionSlides.get(sectionId) || [];
       if (sectionSlideData.length > 0) {
         const subList = document.createElement('ul');
@@ -728,7 +565,6 @@ export class SlidesView {
     let activeSectionId = 'demo';
     let activeSlideId = null;
 
-    // Determine which section and slide the current position belongs to
     if (this.index < 2) {
       activeSectionId = 'demo';
     } else if (currentSlide) {
@@ -739,20 +575,17 @@ export class SlidesView {
       link.classList.remove('active', 'active-section');
     });
 
-    // Highlight active section
     const activeSectionLink = this.tocLinks.get(activeSectionId);
     if (activeSectionLink) {
       activeSectionLink.classList.add('active-section');
     }
 
-    // Highlight active slide (sub-topic)
     if (activeSlideId) {
       const activeSlideLink = this.tocLinks.get(activeSlideId);
       if (activeSlideLink) {
         activeSlideLink.classList.add('active');
       }
     } else if (activeSectionLink) {
-      // If on section title slide, highlight section itself as active
       activeSectionLink.classList.add('active');
     }
   }
@@ -763,15 +596,12 @@ export class SlidesView {
     const menu = this._createHeaderMenu();
     container.appendChild(menu);
 
-    // Main layout wrapper (slides area + TOC)
     const mainLayout = document.createElement('div');
     mainLayout.className = 'slides-main-layout';
 
-    // Slides area (wrapper + nav + speaker notes)
     const slidesArea = document.createElement('div');
     slidesArea.className = 'slides-area';
 
-    // Slide wrapper (centered, 16:9)
     const wrapper = document.createElement('div');
     wrapper.className = 'slides-wrapper';
 
@@ -779,12 +609,11 @@ export class SlidesView {
     this.slideEl.className = 'slide-viewport';
     wrapper.appendChild(this.slideEl);
 
-    // Navigation bar (without export button - moved to menu)
     const nav = document.createElement('div');
     nav.className = 'slides-nav';
 
-    const prevBtn = this._btn('← Prev', () => this.go(-1));
-    const nextBtn = this._btn('Next →', () => this.go(1));
+    const prevBtn = this._btn('\u2190 Prev', () => this.go(-1));
+    const nextBtn = this._btn('Next \u2192', () => this.go(1));
 
     this.counter = document.createElement('span');
     this.counter.style.cssText = 'color: white; font-size: 14px; min-width: 60px; text-align: center;';
@@ -795,10 +624,9 @@ export class SlidesView {
 
     slidesArea.appendChild(wrapper);
     slidesArea.appendChild(nav);
-    this.speakerNotesPanel = this._renderSpeakerNotesPanel();
+    this.speakerNotesPanel = this._notesManager.renderPanel();
     slidesArea.appendChild(this.speakerNotesPanel);
 
-    // Add TOC sidebar first (for proper DOM order on tablets when static)
     const toc = this._renderTableOfContents();
     mainLayout.appendChild(toc);
 
@@ -810,964 +638,10 @@ export class SlidesView {
     return container;
   }
 
-  _renderSpeakerNotesPanel() {
-    const panel = document.createElement('div');
-    panel.className = 'speaker-notes-panel speaker-notes-inline';
-    panel.setAttribute('aria-label', 'Speaker notes');
-
-    // Collapsible header (click to toggle)
-    const header = document.createElement('button');
-    header.className = 'speaker-notes-header speaker-notes-toggle';
-    header.setAttribute('aria-expanded', 'false');
-    header.setAttribute('aria-controls', 'speaker-notes-content');
-    header.addEventListener('click', () => this._toggleSpeakerNotes());
-
-    const headerLeft = document.createElement('div');
-    headerLeft.className = 'speaker-notes-header-left';
-
-    const icon = document.createElement('span');
-    icon.className = 'speaker-notes-icon';
-    icon.innerHTML = '📝';
-
-    const title = document.createElement('span');
-    title.className = 'speaker-notes-title';
-    title.textContent = 'Speaker Notes';
-
-    const slideIndicator = document.createElement('span');
-    slideIndicator.className = 'speaker-notes-slide-indicator';
-    slideIndicator.id = 'speaker-notes-slide-indicator';
-    slideIndicator.textContent = '';
-
-    headerLeft.appendChild(icon);
-    headerLeft.appendChild(title);
-    headerLeft.appendChild(slideIndicator);
-
-    // Loading spinner (hidden by default, shown during on-demand generation)
-    const spinner = document.createElement('span');
-    spinner.className = 'speaker-notes-spinner';
-    spinner.id = 'speaker-notes-spinner';
-    spinner.innerHTML = '';
-    spinner.style.display = 'none';
-
-    const chevron = document.createElement('span');
-    chevron.className = 'speaker-notes-chevron';
-    chevron.innerHTML = '▼';
-
-    header.appendChild(headerLeft);
-    header.appendChild(spinner);
-    header.appendChild(chevron);
-
-    // Content area (hidden by default)
-    const content = document.createElement('div');
-    content.className = 'speaker-notes-content';
-    content.id = 'speaker-notes-content';
-
-    panel.appendChild(header);
-    panel.appendChild(content);
-
-    return panel;
-  }
-
-  _toggleSpeakerNotes() {
-    this.speakerNotesVisible = !this.speakerNotesVisible;
-
-    if (this.speakerNotesPanel) {
-      this.speakerNotesPanel.classList.toggle('expanded', this.speakerNotesVisible);
-      const toggleHeader = this.speakerNotesPanel.querySelector('.speaker-notes-toggle');
-      if (toggleHeader) {
-        toggleHeader.setAttribute('aria-expanded', this.speakerNotesVisible);
-      }
-    }
-    const toggleBtn = document.getElementById('toggle-notes-btn');
-    if (toggleBtn) {
-      const textSpan = toggleBtn.querySelector('.menu-item-text');
-      if (textSpan) {
-        textSpan.textContent = this.speakerNotesVisible ? 'Hide Notes' : 'Show Notes';
-      }
-    }
-    if (this.speakerNotesVisible) {
-      if (!this.speakerNotes?.slides?.length && !this.speakerNotesLoading && this.sessionId) {
-        this._generateSpeakerNotesOnDemand();
-      } else {
-        this._updateSpeakerNotesContent();
-      }
-    }
-  }
-
-  async _generateSpeakerNotesOnDemand() {
-    if (this.speakerNotesLoading || !this.sessionId) return;
-
-    this.speakerNotesLoading = true;
-    this._showSpeakerNotesLoading(true);
-
-    // Show loading state in content area with elapsed time
-    const contentEl = document.getElementById('speaker-notes-content');
-    const startTime = Date.now();
-    let elapsedInterval = null;
-
-    const updateElapsedTime = () => {
-      const elapsedEl = document.getElementById('notes-elapsed-time');
-      if (elapsedEl) {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const mins = Math.floor(elapsed / 60);
-        const secs = elapsed % 60;
-        elapsedEl.textContent = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-      }
-    };
-
-    if (contentEl) {
-      contentEl.innerHTML = `
-        <div class="notes-placeholder notes-loading">
-          <p>Generating speaker notes...</p>
-          <p class="notes-hint">This typically takes 2-3 minutes. You can continue navigating slides.</p>
-          <p class="notes-elapsed">Elapsed: <span id="notes-elapsed-time">0s</span></p>
-          <div class="notes-progress-bar"><div class="notes-progress-fill"></div></div>
-        </div>
-      `;
-      elapsedInterval = setInterval(updateElapsedTime, 1000);
-    }
-
-    // Create AbortController with 20-minute timeout to match server
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20 * 60 * 1000);
-
-    try {
-      const response = await fetch(`/api/content/${this.sessionId}/slides/speaker-notes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-      if (elapsedInterval) clearInterval(elapsedInterval);
-      const result = await response.json();
-
-      if (result.status === 'completed' && result.data) {
-        this.speakerNotes = result.data;
-        console.log('[SpeakerNotes] On-demand generation complete:', result.data.slides?.length || 0, 'notes');
-        if (this.speakerNotesVisible) {
-          this._updateSpeakerNotesContent();
-        }
-      } else {
-        console.error('[SpeakerNotes] Generation failed:', result.error);
-        if (contentEl) {
-          contentEl.innerHTML = `
-            <div class="notes-placeholder notes-error">
-              <p>Failed to generate speaker notes.</p>
-              <p class="notes-hint">${result.error || 'Unknown error occurred.'}</p>
-              <button class="notes-retry-btn" onclick="this.closest('.slides-view-container').__view__._generateSpeakerNotesOnDemand()">Retry</button>
-            </div>
-          `;
-        }
-      }
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (elapsedInterval) clearInterval(elapsedInterval);
-      console.error('[SpeakerNotes] Request failed:', error);
-
-      const isTimeout = error.name === 'AbortError';
-      const errorTitle = isTimeout ? 'Generation timed out.' : 'Network error while generating notes.';
-      const errorHint = isTimeout
-        ? 'The AI took too long to respond. Please try again.'
-        : error.message;
-
-      if (contentEl) {
-        contentEl.innerHTML = `
-          <div class="notes-placeholder notes-error">
-            <p>${errorTitle}</p>
-            <p class="notes-hint">${errorHint}</p>
-            <button class="notes-retry-btn" onclick="this.closest('.slides-view-container').__view__._generateSpeakerNotesOnDemand()">Retry</button>
-          </div>
-        `;
-      }
-    } finally {
-      this.speakerNotesLoading = false;
-      this._showSpeakerNotesLoading(false);
-    }
-  }
-
-  _showSpeakerNotesLoading(show) {
-    const spinner = document.getElementById('speaker-notes-spinner');
-    if (spinner) {
-      spinner.style.display = show ? 'inline-block' : 'none';
-    }
-
-    // Also update the panel class for styling
-    if (this.speakerNotesPanel) {
-      this.speakerNotesPanel.classList.toggle('loading', show);
-    }
-  }
-
-  _updateSpeakerNotesContent() {
-    const contentEl = document.getElementById('speaker-notes-content');
-    if (!contentEl) return;
-
-    const currentSlide = this.slides[this.index];
-    const slideIndicator = document.getElementById('speaker-notes-slide-indicator');
-    if (slideIndicator) {
-      if (currentSlide?.tagline) {
-        slideIndicator.textContent = `— ${currentSlide.tagline}`;
-      } else if (currentSlide?.layout === 'sectionTitle') {
-        slideIndicator.textContent = `— ${currentSlide.sectionTitle || currentSlide.swimlane || 'Section'}`;
-      } else {
-        slideIndicator.textContent = `— Slide ${this.index + 1}`;
-      }
-    }
-
-    // Case 1: Section title slides don't have notes
-    if (currentSlide?.layout === 'sectionTitle') {
-      contentEl.innerHTML = `
-        <div class="notes-placeholder">
-          <p>Section title slides do not have speaker notes.</p>
-          <p class="notes-hint">Navigate to a content slide to view notes.</p>
-        </div>
-      `;
-      return;
-    }
-
-    // Case 2: No speaker notes data loaded at all
-    if (!this.speakerNotes?.slides || this.speakerNotes.slides.length === 0) {
-      contentEl.innerHTML = `
-        <div class="notes-placeholder notes-error">
-          <p>Speaker notes not available.</p>
-          <p class="notes-hint">Notes may not have been generated for this presentation, or generation may have failed.</p>
-          <p class="notes-action">Try regenerating the slides to include speaker notes.</p>
-        </div>
-      `;
-      return;
-    }
-
-    // Case 3: Try to get notes for current slide
-    const { notes, matchInfo } = this._getSpeakerNotesForCurrentSlide();
-
-    if (!notes) {
-      // Provide specific feedback based on why matching failed
-      let errorMessage = 'No speaker notes found for this slide.';
-      let hintMessage = 'Notes may not have been generated for this specific slide.';
-
-      if (matchInfo.reason === 'duplicate_taglines') {
-        errorMessage = `Multiple slides share the tagline "${matchInfo.tagline}".`;
-        hintMessage = `Found ${matchInfo.duplicateCount} slides with this tagline across different sections. Unable to determine which notes apply.`;
-      } else if (matchInfo.reason === 'no_tagline_match') {
-        errorMessage = `No notes match tagline "${matchInfo.tagline}".`;
-        hintMessage = 'The slide tagline may have changed after notes were generated.';
-      }
-
-      contentEl.innerHTML = `
-        <div class="notes-placeholder notes-warning">
-          <p>${errorMessage}</p>
-          <p class="notes-hint">${hintMessage}</p>
-          ${matchInfo.reason === 'duplicate_taglines' ? `
-            <details class="notes-debug">
-              <summary>Sections with this tagline</summary>
-              <ul>${matchInfo.duplicateSections.map(s => `<li>${s}</li>`).join('')}</ul>
-            </details>
-          ` : ''}
-        </div>
-      `;
-      return;
-    }
-
-    // Case 4: Success - render notes with match quality indicator
-    try {
-      const reasoningHTML = this._renderReasoningSection();
-      const slideNotesHTML = this._renderSpeakerNotesHTML(notes);
-      let matchIndicator = '';
-      if (matchInfo.matchType === 'partial_section') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Matched via partial section name">Partial match</div>`;
-      } else if (matchInfo.matchType === 'tagline_only') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-fallback" title="Matched by tagline only - verify correct slide">Fallback match</div>`;
-      } else if (matchInfo.matchType === 'index_disambiguated') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Resolved duplicate taglines using slide index">Index matched</div>`;
-      } else if (matchInfo.matchType === 'position_disambiguated') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-fallback" title="Matched by position - low confidence">Position guess</div>`;
-      } else if (matchInfo.matchType === 'fuzzy_tagline') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Matched via similar tagline text">Fuzzy match</div>`;
-      } else if (matchInfo.matchType === 'fuzzy_section') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Matched via similar tagline and section">Fuzzy + section</div>`;
-      } else if (matchInfo.matchType === 'section_index_fallback') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-fallback" title="Matched by position in section - verify correct notes (expected: ${matchInfo.tagline}, got: ${matchInfo.matchedTagline})">Index fallback</div>`;
-      }
-
-      contentEl.innerHTML = matchIndicator + reasoningHTML + slideNotesHTML;
-      this._attachCollapsibleToggleHandlers(contentEl);
-    } catch (renderError) {
-      console.error('[SpeakerNotes] Failed to render notes:', renderError);
-      contentEl.innerHTML = `
-        <div class="notes-placeholder notes-error">
-          <p>Failed to render speaker notes.</p>
-          <p class="notes-hint">Error: ${renderError.message}</p>
-          <p class="notes-action">Try refreshing the page or regenerating notes.</p>
-        </div>
-      `;
-    }
-  }
-
-  _attachCollapsibleToggleHandlers(container) {
-    const toggles = container.querySelectorAll('.notes-section-toggle');
-    toggles.forEach(toggle => {
-      toggle.addEventListener('click', (e) => {
-        const section = e.target.closest('.notes-section');
-        if (section) {
-          section.classList.toggle('notes-section-collapsed');
-          const isCollapsed = section.classList.contains('notes-section-collapsed');
-          toggle.setAttribute('aria-expanded', !isCollapsed);
-        }
-      });
-    });
-  }
-
-  _getSpeakerNotesForCurrentSlide() {
-    const noMatch = (reason, extra = {}) => ({
-      notes: null,
-      matchInfo: { matchType: 'none', reason, ...extra }
-    });
-
-    if (!this.speakerNotes?.slides) {
-      return noMatch('no_data');
-    }
-
-    const currentSlide = this.slides[this.index];
-    if (!currentSlide || currentSlide.layout === 'sectionTitle') {
-      return noMatch('section_title');
-    }
-
-    const sectionName = currentSlide._sectionId?.replace(/-/g, ' ') || '';
-    const slideTagline = (currentSlide.tagline || '').toLowerCase().trim();
-    const slideIndex = currentSlide._slideId ? parseInt(currentSlide._slideId.split('-').pop(), 10) : -1;
-
-    if (!slideTagline) {
-      return noMatch('no_tagline');
-    }
-
-    // Strategy 1: Exact match on both section and tagline (most reliable)
-    const exactMatch = this.speakerNotes.slides.find(note =>
-      note.slideTagline?.toLowerCase().trim() === slideTagline &&
-      note.sectionName?.toLowerCase().trim() === sectionName.toLowerCase().trim()
-    );
-    if (exactMatch) {
-      return { notes: exactMatch, matchInfo: { matchType: 'exact', tagline: slideTagline } };
-    }
-
-    // Strategy 2: Section contains match + exact tagline (handles section name variations)
-    const partialSectionMatch = this.speakerNotes.slides.find(note =>
-      note.slideTagline?.toLowerCase().trim() === slideTagline &&
-      (note.sectionName?.toLowerCase().includes(sectionName.toLowerCase()) ||
-       sectionName.toLowerCase().includes(note.sectionName?.toLowerCase() || ''))
-    );
-    if (partialSectionMatch) {
-      return { notes: partialSectionMatch, matchInfo: { matchType: 'partial_section', tagline: slideTagline } };
-    }
-
-    // Strategy 3: Tagline-only matches
-    const taglineOnlyMatches = this.speakerNotes.slides.filter(note =>
-      note.slideTagline?.toLowerCase().trim() === slideTagline
-    );
-
-    // 3a: Single tagline match - safe to use
-    if (taglineOnlyMatches.length === 1) {
-      console.warn(`[SpeakerNotes] Using tagline-only match for "${slideTagline}" - section mismatch`);
-      return { notes: taglineOnlyMatches[0], matchInfo: { matchType: 'tagline_only', tagline: slideTagline } };
-    }
-
-    // 3b: Multiple tagline matches - try to disambiguate using slide index
-    if (taglineOnlyMatches.length > 1) {
-      // Try matching by slideIndex if available
-      const indexMatch = taglineOnlyMatches.find(note => note.slideIndex === slideIndex);
-      if (indexMatch) {
-        console.warn(`[SpeakerNotes] Resolved duplicate tagline "${slideTagline}" using slideIndex ${slideIndex}`);
-        return { notes: indexMatch, matchInfo: { matchType: 'index_disambiguated', tagline: slideTagline } };
-      }
-
-      // Try matching by position within section (heuristic)
-      // Count how many slides with this tagline come before this one in the same section
-      const slidesInSection = this.slides.filter(s =>
-        s._sectionId === currentSlide._sectionId &&
-        (s.tagline || '').toLowerCase().trim() === slideTagline
-      );
-      const positionInSection = slidesInSection.findIndex(s => s === currentSlide);
-
-      if (positionInSection >= 0 && positionInSection < taglineOnlyMatches.length) {
-        // Use position as a best-guess match
-        const positionalMatch = taglineOnlyMatches[positionInSection];
-        console.warn(`[SpeakerNotes] Resolved duplicate tagline "${slideTagline}" using position ${positionInSection}`);
-        return {
-          notes: positionalMatch,
-          matchInfo: {
-            matchType: 'position_disambiguated',
-            tagline: slideTagline,
-            confidence: 'low'
-          }
-        };
-      }
-
-      // Cannot disambiguate - report duplicates for UI feedback
-      const duplicateSections = [...new Set(taglineOnlyMatches.map(n => n.sectionName || 'Unknown'))];
-      console.warn(`[SpeakerNotes] Ambiguous match: ${taglineOnlyMatches.length} notes with tagline "${slideTagline}" in sections: ${duplicateSections.join(', ')}`);
-      return noMatch('duplicate_taglines', {
-        tagline: slideTagline,
-        duplicateCount: taglineOnlyMatches.length,
-        duplicateSections
-      });
-    }
-
-    // Strategy 4: Partial/fuzzy tagline matching (handles minor variations)
-    const fuzzyTaglineMatches = this.speakerNotes.slides.filter(note => {
-      const noteTagline = (note.slideTagline || '').toLowerCase().trim();
-      if (!noteTagline) return false;
-      // Check if either contains the other (handles truncation, extra words, etc.)
-      return slideTagline.includes(noteTagline) || noteTagline.includes(slideTagline);
-    });
-
-    if (fuzzyTaglineMatches.length === 1) {
-      console.warn(`[SpeakerNotes] Using fuzzy tagline match for "${slideTagline}" → "${fuzzyTaglineMatches[0].slideTagline}"`);
-      return { notes: fuzzyTaglineMatches[0], matchInfo: { matchType: 'fuzzy_tagline', tagline: slideTagline } };
-    }
-
-    // If multiple fuzzy matches, try to disambiguate by section
-    if (fuzzyTaglineMatches.length > 1) {
-      const fuzzyWithSection = fuzzyTaglineMatches.find(note =>
-        note.sectionName?.toLowerCase().includes(sectionName.toLowerCase()) ||
-        sectionName.toLowerCase().includes(note.sectionName?.toLowerCase() || '')
-      );
-      if (fuzzyWithSection) {
-        console.warn(`[SpeakerNotes] Resolved fuzzy tagline "${slideTagline}" using section match`);
-        return { notes: fuzzyWithSection, matchInfo: { matchType: 'fuzzy_section', tagline: slideTagline } };
-      }
-    }
-
-    // Strategy 5: Use slide index within section as last resort
-    // Count content slides (non-section-title) before this one in the same section
-    let contentSlideIndex = 0;
-    for (let i = 0; i < this.slides.length && i < this.index; i++) {
-      const s = this.slides[i];
-      if (s._sectionId === currentSlide._sectionId && s.layout !== 'sectionTitle') {
-        contentSlideIndex++;
-      }
-    }
-    const sectionNotes = this.speakerNotes.slides.filter(note =>
-      note.sectionName?.toLowerCase().includes(sectionName.toLowerCase()) ||
-      sectionName.toLowerCase().includes(note.sectionName?.toLowerCase() || '')
-    );
-
-    if (sectionNotes.length > 0) {
-      // Sort by slideIndex and use position
-      const sortedSectionNotes = [...sectionNotes].sort((a, b) => (a.slideIndex || 0) - (b.slideIndex || 0));
-      if (contentSlideIndex < sortedSectionNotes.length) {
-        const indexMatch = sortedSectionNotes[contentSlideIndex];
-        console.warn(`[SpeakerNotes] Using section index fallback for "${slideTagline}" → matched to "${indexMatch.slideTagline}" at position ${contentSlideIndex}`);
-        return {
-          notes: indexMatch,
-          matchInfo: {
-            matchType: 'section_index_fallback',
-            tagline: slideTagline,
-            matchedTagline: indexMatch.slideTagline,
-            confidence: 'low'
-          }
-        };
-      }
-    }
-
-    // No matches found at all
-    return noMatch('no_tagline_match', { tagline: slideTagline });
-  }
-
-  _renderSpeakerNotesHTML(notes) {
-    // Defensive check for notes object
-    if (!notes || typeof notes !== 'object') {
-      console.warn('[SpeakerNotes] Invalid notes object received');
-      return '<p class="notes-placeholder">No notes available.</p>';
-    }
-
-    const sections = [];
-
-    // 1. Talking Points (highest priority)
-    if (notes.narrative?.talkingPoints?.length) {
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">💬 Talking Points</h4>
-          <ul class="notes-list">
-            ${notes.narrative.talkingPoints.map(point => `<li>${this._escapeHtml(point)}</li>`).join('')}
-          </ul>
-          ${notes.narrative.keyPhrase ? `
-            <div class="key-phrase">
-              <strong>Key Phrase:</strong> "${this._escapeHtml(notes.narrative.keyPhrase)}"
-            </div>
-          ` : ''}
-        </div>
-      `);
-    }
-
-    // Transitions
-    if (notes.narrative?.transitionIn || notes.narrative?.transitionOut) {
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">🔄 Transitions</h4>
-          ${notes.narrative.transitionIn ? `<p><strong>← From previous:</strong> ${this._escapeHtml(notes.narrative.transitionIn)}</p>` : ''}
-          ${notes.narrative.transitionOut ? `<p><strong>→ To next:</strong> ${this._escapeHtml(notes.narrative.transitionOut)}</p>` : ''}
-        </div>
-      `);
-    }
-
-    // 2. Stakeholder Angles (Enhancement #1)
-    if (notes.stakeholderAngles) {
-      const angles = notes.stakeholderAngles;
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">👥 Stakeholder Angles</h4>
-          <div class="stakeholder-tabs">
-            ${angles.cfo ? `
-              <div class="stakeholder-tab" data-role="cfo">
-                <span class="stakeholder-icon">💰</span>
-                <span class="stakeholder-label">CFO</span>
-                <p class="stakeholder-angle">${this._escapeHtml(angles.cfo)}</p>
-              </div>
-            ` : ''}
-            ${angles.cto ? `
-              <div class="stakeholder-tab" data-role="cto">
-                <span class="stakeholder-icon">⚙️</span>
-                <span class="stakeholder-label">CTO</span>
-                <p class="stakeholder-angle">${this._escapeHtml(angles.cto)}</p>
-              </div>
-            ` : ''}
-            ${angles.ceo ? `
-              <div class="stakeholder-tab" data-role="ceo">
-                <span class="stakeholder-icon">🎯</span>
-                <span class="stakeholder-label">CEO</span>
-                <p class="stakeholder-angle">${this._escapeHtml(angles.ceo)}</p>
-              </div>
-            ` : ''}
-            ${angles.operations ? `
-              <div class="stakeholder-tab" data-role="ops">
-                <span class="stakeholder-icon">🔧</span>
-                <span class="stakeholder-label">Ops</span>
-                <p class="stakeholder-angle">${this._escapeHtml(angles.operations)}</p>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-      `);
-    }
-
-    // 3. Anticipated Questions (Enhanced with severity tiers - Enhancement #2)
-    if (notes.anticipatedQuestions?.length) {
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">❓ Anticipated Questions</h4>
-          ${notes.anticipatedQuestions.map(qa => `
-            <div class="qa-item qa-severity-${qa.severity || 'probing'}">
-              <div class="qa-header">
-                <span class="severity-badge severity-${qa.severity || 'probing'}">${(qa.severity || 'probing').replace(/_/g, ' ')}</span>
-                <span class="pushback-type">${qa.pushbackType?.replace(/_/g, ' ')}</span>
-              </div>
-              <p class="question"><strong>Q:</strong> ${this._escapeHtml(qa.question)}</p>
-              <p class="response"><strong>A:</strong> ${this._escapeHtml(qa.response)}</p>
-              ${qa.escalationResponse ? `
-                <div class="escalation-response">
-                  <strong>If they push back:</strong> ${this._escapeHtml(qa.escalationResponse)}
-                </div>
-              ` : ''}
-              ${qa.bridgeToStrength ? `
-                <div class="bridge-to-strength">
-                  <strong>Pivot to strength:</strong> ${this._escapeHtml(qa.bridgeToStrength)}
-                </div>
-              ` : ''}
-              ${qa.deferralOption ? `
-                <div class="deferral-option">
-                  <strong>Defer with:</strong> "${this._escapeHtml(qa.deferralOption)}"
-                </div>
-              ` : ''}
-            </div>
-          `).join('')}
-        </div>
-      `);
-    }
-
-    // 4. Story Context (Enhanced with CTA variants #8 and Time Guidance #9)
-    if (notes.storyContext) {
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">📖 Story Context</h4>
-          <p class="narrative-position"><strong>Position:</strong> ${notes.storyContext.narrativePosition?.replace(/_/g, ' ')}</p>
-          ${notes.storyContext.precededBy ? `<p><strong>Preceded by:</strong> ${this._escapeHtml(notes.storyContext.precededBy)}</p>` : ''}
-          ${notes.storyContext.followedBy ? `<p><strong>Followed by:</strong> ${this._escapeHtml(notes.storyContext.followedBy)}</p>` : ''}
-          ${notes.storyContext.soWhat ? `<p class="so-what"><strong>So What:</strong> ${this._escapeHtml(notes.storyContext.soWhat)}</p>` : ''}
-          ${notes.storyContext.timeGuidance ? `
-            <div class="time-guidance">
-              <span class="time-badge">⏱️ ${notes.storyContext.timeGuidance.suggestedDuration || '2-3 min'}</span>
-              ${notes.storyContext.timeGuidance.canCondense ? '<span class="condensable-badge">Can condense</span>' : ''}
-              ${notes.storyContext.timeGuidance.condensedVersion ? `
-                <p class="condensed-version"><strong>Short version:</strong> "${this._escapeHtml(notes.storyContext.timeGuidance.condensedVersion)}"</p>
-              ` : ''}
-              ${notes.storyContext.timeGuidance.mustInclude?.length ? `
-                <p class="must-include"><strong>Must include:</strong> ${notes.storyContext.timeGuidance.mustInclude.join(' • ')}</p>
-              ` : ''}
-            </div>
-          ` : ''}
-          ${notes.storyContext.callToAction ? `
-            <div class="cta-variants">
-              <h5>Call-to-Action Options:</h5>
-              ${notes.storyContext.callToAction.warmAudience ? `
-                <div class="cta-option cta-warm">
-                  <span class="cta-label">🟢 Warm</span>
-                  <p>${this._escapeHtml(notes.storyContext.callToAction.warmAudience.ask)}</p>
-                  ${notes.storyContext.callToAction.warmAudience.timeline ? `<p class="cta-timeline">${this._escapeHtml(notes.storyContext.callToAction.warmAudience.timeline)}</p>` : ''}
-                </div>
-              ` : ''}
-              ${notes.storyContext.callToAction.neutralAudience ? `
-                <div class="cta-option cta-neutral">
-                  <span class="cta-label">🟡 Neutral</span>
-                  <p>${this._escapeHtml(notes.storyContext.callToAction.neutralAudience.ask)}</p>
-                  ${notes.storyContext.callToAction.neutralAudience.nextStep ? `<p class="cta-next-step">${this._escapeHtml(notes.storyContext.callToAction.neutralAudience.nextStep)}</p>` : ''}
-                </div>
-              ` : ''}
-              ${notes.storyContext.callToAction.hostileAudience ? `
-                <div class="cta-option cta-hostile">
-                  <span class="cta-label">🔴 Hostile</span>
-                  <p>${this._escapeHtml(notes.storyContext.callToAction.hostileAudience.ask)}</p>
-                  ${notes.storyContext.callToAction.hostileAudience.fallback ? `<p class="cta-fallback"><em>Fallback: ${this._escapeHtml(notes.storyContext.callToAction.hostileAudience.fallback)}</em></p>` : ''}
-                </div>
-              ` : ''}
-            </div>
-          ` : ''}
-        </div>
-      `);
-    }
-
-    // 4. Source Attribution
-    if (notes.sourceAttribution?.length) {
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">📚 Sources</h4>
-          ${notes.sourceAttribution.map(src => `
-            <div class="source-item">
-              <p class="claim">"${this._escapeHtml(src.claim)}"</p>
-              <p class="source"><strong>Source:</strong> ${this._escapeHtml(src.source)}</p>
-              <span class="confidence confidence-${src.confidence}">${src.confidence?.replace(/_/g, ' ')}</span>
-            </div>
-          `).join('')}
-        </div>
-      `);
-    }
-
-    // 5. Generation Transparency
-    if (notes.generationTransparency) {
-      sections.push(`
-        <div class="notes-section notes-section-collapsed">
-          <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">🔍 Content Derivation</h4>
-          <div class="notes-section-body">
-            <p><strong>Sources:</strong> ${notes.generationTransparency.primarySources?.join(', ') || 'N/A'}</p>
-            <p><strong>Method:</strong> ${notes.generationTransparency.derivationMethod || 'N/A'}</p>
-            ${notes.generationTransparency.dataLineage ? `<p><strong>Lineage:</strong> ${this._escapeHtml(notes.generationTransparency.dataLineage)}</p>` : ''}
-            ${notes.generationTransparency.assumptions?.length ? `
-              <p><strong>Assumptions:</strong></p>
-              <ul class="assumptions-list">
-                ${notes.generationTransparency.assumptions.map(a => `<li>${this._escapeHtml(a)}</li>`).join('')}
-              </ul>
-            ` : ''}
-          </div>
-        </div>
-      `);
-    }
-
-    // 6. Credibility Anchors (Enhancement #6)
-    if (notes.credibilityAnchors?.length) {
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">🏆 Credibility Anchors</h4>
-          ${notes.credibilityAnchors.map(anchor => `
-            <div class="credibility-item credibility-${anchor.type || 'research'}">
-              <span class="credibility-type">${(anchor.type || 'research').replace(/_/g, ' ')}</span>
-              <p class="credibility-statement">${this._escapeHtml(anchor.statement)}</p>
-              <p class="drop-phrase"><strong>Say:</strong> "${this._escapeHtml(anchor.dropPhrase)}"</p>
-              <p class="full-citation"><em>${this._escapeHtml(anchor.fullCitation)}</em></p>
-            </div>
-          `).join('')}
-        </div>
-      `);
-    }
-
-    // 7. Risk Mitigation (Enhancement #7)
-    if (notes.riskMitigation) {
-      const rm = notes.riskMitigation;
-      const hasContent = rm.implementationRisk || rm.reputationalRisk || rm.careerRisk;
-      if (hasContent) {
-        sections.push(`
-          <div class="notes-section notes-section-collapsed">
-            <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">🛡️ Risk Mitigation</h4>
-            <div class="notes-section-body">
-              ${rm.implementationRisk ? `
-                <div class="risk-block">
-                  <h5>Implementation Risk</h5>
-                  <p class="risk-concern"><em>"${this._escapeHtml(rm.implementationRisk.concern)}"</em></p>
-                  <p class="risk-response">${this._escapeHtml(rm.implementationRisk.response)}</p>
-                  ${rm.implementationRisk.proofPoint ? `<p class="risk-proof">Proof: ${this._escapeHtml(rm.implementationRisk.proofPoint)}</p>` : ''}
-                </div>
-              ` : ''}
-              ${rm.reputationalRisk ? `
-                <div class="risk-block">
-                  <h5>Reputational Risk</h5>
-                  <p class="risk-concern"><em>"${this._escapeHtml(rm.reputationalRisk.concern)}"</em></p>
-                  <p class="risk-response">${this._escapeHtml(rm.reputationalRisk.response)}</p>
-                </div>
-              ` : ''}
-              ${rm.careerRisk ? `
-                <div class="risk-block">
-                  <h5>Career Risk</h5>
-                  <p class="risk-concern"><em>"${this._escapeHtml(rm.careerRisk.concern)}"</em></p>
-                  <p class="risk-response">${this._escapeHtml(rm.careerRisk.response)}</p>
-                </div>
-              ` : ''}
-            </div>
-          </div>
-        `);
-      }
-    }
-
-    // 8. Audience Signals / Room Temperature (Enhancement #4)
-    if (notes.audienceSignals) {
-      const signals = notes.audienceSignals;
-      sections.push(`
-        <div class="notes-section notes-section-collapsed">
-          <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">🌡️ Room Temperature</h4>
-          <div class="notes-section-body">
-            ${signals.losingThem ? `
-              <div class="signal-block signal-losing">
-                <h5>⚠️ Losing Them</h5>
-                <p><strong>Watch for:</strong> ${signals.losingThem.signs?.join(', ') || 'N/A'}</p>
-                <p><strong>Pivot:</strong> ${this._escapeHtml(signals.losingThem.pivotStrategy)}</p>
-                ${signals.losingThem.emergencyBridge ? `<p class="emergency-bridge"><strong>Emergency exit:</strong> "${this._escapeHtml(signals.losingThem.emergencyBridge)}"</p>` : ''}
-              </div>
-            ` : ''}
-            ${signals.winningThem ? `
-              <div class="signal-block signal-winning">
-                <h5>✅ Winning Them</h5>
-                <p><strong>Look for:</strong> ${signals.winningThem.signs?.join(', ') || 'N/A'}</p>
-                <p><strong>Accelerate:</strong> ${this._escapeHtml(signals.winningThem.accelerationOption)}</p>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-      `);
-    }
-
-    // 9. Quick Reference / Cheat Sheet (Enhancement #5) - Add at beginning for prominence
-    if (notes.quickReference) {
-      const qr = notes.quickReference;
-      const quickRefSection = `
-        <div class="notes-section quick-reference-section">
-          <h4 class="notes-section-title">⚡ Quick Reference</h4>
-          <div class="cheat-sheet">
-            ${qr.keyNumber ? `<div class="cheat-item cheat-number"><span class="cheat-label">Key Number</span>${this._escapeHtml(qr.keyNumber)}</div>` : ''}
-            ${qr.keyPhrase ? `<div class="cheat-item cheat-phrase"><span class="cheat-label">Key Phrase</span>"${this._escapeHtml(qr.keyPhrase)}"</div>` : ''}
-            ${qr.keyProof ? `<div class="cheat-item cheat-proof"><span class="cheat-label">Proof Point</span>${this._escapeHtml(qr.keyProof)}</div>` : ''}
-            ${qr.keyAsk ? `<div class="cheat-item cheat-ask"><span class="cheat-label">Ask For</span>${this._escapeHtml(qr.keyAsk)}</div>` : ''}
-          </div>
-        </div>
-      `;
-      // Insert at beginning for visibility
-      sections.unshift(quickRefSection);
-    }
-
-    return sections.join('') || '<p class="notes-placeholder">No notes available.</p>';
-  }
-
-  _renderReasoningSection() {
-    const reasoning = this.speakerNotes?.reasoning;
-    if (!reasoning || typeof reasoning !== 'object') return '';
-
-    const sections = [];
-
-    // Presentation Narrative Arc
-    if (reasoning.presentationNarrativeArc) {
-      sections.push(`
-        <div class="reasoning-item">
-          <h5 class="reasoning-label">🎯 Narrative Arc</h5>
-          <p class="reasoning-value">${this._escapeHtml(reasoning.presentationNarrativeArc)}</p>
-        </div>
-      `);
-    }
-
-    // Audience Profile
-    if (reasoning.audienceProfile) {
-      const profile = reasoning.audienceProfile;
-      sections.push(`
-        <div class="reasoning-item">
-          <h5 class="reasoning-label">👤 Audience Profile</h5>
-          ${profile.primaryStakeholder ? `<p><strong>Decision Maker:</strong> ${this._escapeHtml(profile.primaryStakeholder)}</p>` : ''}
-          ${profile.painPoints?.length ? `
-            <p><strong>Pain Points:</strong></p>
-            <ul class="reasoning-list">
-              ${profile.painPoints.map(p => `<li>${this._escapeHtml(p)}</li>`).join('')}
-            </ul>
-          ` : ''}
-          ${profile.decisionCriteria?.length ? `
-            <p><strong>Decision Criteria:</strong></p>
-            <ul class="reasoning-list">
-              ${profile.decisionCriteria.map(c => `<li>${this._escapeHtml(c)}</li>`).join('')}
-            </ul>
-          ` : ''}
-        </div>
-      `);
-    }
-
-    // Key Evidence Chains
-    if (reasoning.keyEvidenceChains?.length) {
-      sections.push(`
-        <div class="reasoning-item">
-          <h5 class="reasoning-label">📊 Key Evidence Chains</h5>
-          ${reasoning.keyEvidenceChains.map((chain, i) => `
-            <div class="evidence-chain">
-              <p class="chain-number">Chain ${i + 1}</p>
-              <p><strong>Evidence:</strong> ${this._escapeHtml(chain.evidence)}</p>
-              <p><strong>Insight:</strong> ${this._escapeHtml(chain.insight)}</p>
-              ${chain.anticipatedQuestion ? `<p><strong>Q:</strong> ${this._escapeHtml(chain.anticipatedQuestion)}</p>` : ''}
-              ${chain.preparedResponse ? `<p><strong>A:</strong> ${this._escapeHtml(chain.preparedResponse)}</p>` : ''}
-            </div>
-          `).join('')}
-        </div>
-      `);
-    }
-
-    // Source Inventory
-    if (reasoning.sourceInventory?.length) {
-      sections.push(`
-        <div class="reasoning-item">
-          <h5 class="reasoning-label">📚 Source Inventory</h5>
-          ${reasoning.sourceInventory.map(src => `
-            <div class="source-inventory-item">
-              <p class="source-name"><strong>${this._escapeHtml(src.sourceName)}</strong>
-                <span class="confidence-badge confidence-${src.confidenceLevel}">${src.confidenceLevel}</span>
-              </p>
-              ${src.keyFindings?.length ? `
-                <ul class="findings-list">
-                  ${src.keyFindings.map(f => `<li>${this._escapeHtml(f)}</li>`).join('')}
-                </ul>
-              ` : ''}
-            </div>
-          `).join('')}
-        </div>
-      `);
-    }
-
-    // Anticipated Pushback
-    if (reasoning.anticipatedPushback?.length) {
-      sections.push(`
-        <div class="reasoning-item">
-          <h5 class="reasoning-label">⚡ Anticipated Pushback</h5>
-          ${reasoning.anticipatedPushback.map(pb => `
-            <div class="pushback-item">
-              <span class="pushback-type-badge">${pb.pushbackType?.replace(/_/g, ' ')}</span>
-              <p class="objection"><strong>Objection:</strong> "${this._escapeHtml(pb.specificObjection)}"</p>
-              <p><strong>Counter:</strong> ${this._escapeHtml(pb.evidenceToCounter)}</p>
-              <p><strong>Reframe:</strong> ${this._escapeHtml(pb.reframingStrategy)}</p>
-            </div>
-          `).join('')}
-        </div>
-      `);
-    }
-
-    // Competitive Positioning (Enhancement #3)
-    if (reasoning.competitivePositioning) {
-      const cp = reasoning.competitivePositioning;
-      sections.push(`
-        <div class="reasoning-item">
-          <h5 class="reasoning-label">⚔️ Competitive Positioning</h5>
-          ${cp.primaryCompetitors?.length ? `
-            <div class="competitors-list">
-              ${cp.primaryCompetitors.map(comp => `
-                <div class="competitor-card">
-                  <p class="competitor-name"><strong>${this._escapeHtml(comp.name)}</strong></p>
-                  <p class="competitor-strength"><em>Their strength:</em> ${this._escapeHtml(comp.theirStrength)}</p>
-                  <p class="our-counter"><em>Our counter:</em> ${this._escapeHtml(comp.ourCounter)}</p>
-                  <p class="bridge-phrase">"${this._escapeHtml(comp.bridgePhrase)}"</p>
-                </div>
-              `).join('')}
-            </div>
-          ` : ''}
-          ${cp.internalTeamResponse ? `
-            <div class="internal-team-block">
-              <strong>If they ask "why not in-house?":</strong>
-              <p>${this._escapeHtml(cp.internalTeamResponse)}</p>
-            </div>
-          ` : ''}
-          ${cp.doNothingRisk ? `
-            <div class="do-nothing-risk">
-              <strong>Cost of inaction:</strong>
-              <p>${this._escapeHtml(cp.doNothingRisk)}</p>
-            </div>
-          ` : ''}
-        </div>
-      `);
-    }
-
-    // Bridge Phrases Library (Enhancement #10)
-    if (reasoning.bridgePhrases) {
-      const bp = reasoning.bridgePhrases;
-      sections.push(`
-        <div class="reasoning-item">
-          <h5 class="reasoning-label">🌉 Bridge Phrases</h5>
-          <div class="bridge-phrases-grid">
-            ${bp.dontKnowAnswer?.length ? `
-              <div class="phrase-category">
-                <h6>Don't Know Answer</h6>
-                <ul>${bp.dontKnowAnswer.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
-              </div>
-            ` : ''}
-            ${bp.hostileInterruption?.length ? `
-              <div class="phrase-category phrase-hostile">
-                <h6>Hostile Interruption</h6>
-                <ul>${bp.hostileInterruption.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
-              </div>
-            ` : ''}
-            ${bp.goingOffTopic?.length ? `
-              <div class="phrase-category">
-                <h6>Going Off Topic</h6>
-                <ul>${bp.goingOffTopic.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
-              </div>
-            ` : ''}
-            ${bp.technicalDive?.length ? `
-              <div class="phrase-category">
-                <h6>Technical Deep-Dive</h6>
-                <ul>${bp.technicalDive.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
-              </div>
-            ` : ''}
-            ${bp.losingTheRoom?.length ? `
-              <div class="phrase-category phrase-warning">
-                <h6>Losing the Room</h6>
-                <ul>${bp.losingTheRoom.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-      `);
-    }
-
-    if (sections.length === 0) return '';
-
-    return `
-      <div class="notes-section notes-section-collapsed reasoning-section">
-        <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">🧠 Presentation Reasoning (CoT)</h4>
-        <div class="notes-section-body">
-          <p class="reasoning-intro">Chain-of-thought analysis from two-pass generation:</p>
-          ${sections.join('')}
-        </div>
-      </div>
-    `;
-  }
-
-  _escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
   _createHeaderMenu() {
     const menuContainer = document.createElement('div');
     menuContainer.className = 'slides-header-menu';
 
-    // Three-dot trigger button
     const triggerBtn = document.createElement('button');
     triggerBtn.className = 'slides-menu-trigger';
     triggerBtn.setAttribute('aria-label', 'Open slides menu');
@@ -1779,25 +653,22 @@ export class SlidesView {
       <span class="menu-dot"></span>
     `;
 
-    // Dropdown menu
     const dropdown = document.createElement('div');
     dropdown.className = 'slides-menu-dropdown';
     dropdown.setAttribute('role', 'menu');
 
-    // Toggle Speaker Notes
     const toggleNotesItem = this._createMenuItem({
       id: 'toggle-notes-btn',
-      icon: '📝',
+      icon: '\ud83d\udcdd',
       text: 'Show Notes',
       ariaLabel: 'Toggle speaker notes panel'
     });
-    toggleNotesItem.addEventListener('click', () => this._toggleSpeakerNotes());
+    toggleNotesItem.addEventListener('click', () => this._notesManager.toggle());
     dropdown.appendChild(toggleNotesItem);
 
-    // Export to PowerPoint
     const exportPptItem = this._createMenuItem({
       id: 'export-ppt-btn',
-      icon: '📊',
+      icon: '\ud83d\udcca',
       text: 'Export to PowerPoint',
       ariaLabel: 'Export slides as PowerPoint presentation'
     });
@@ -1848,14 +719,12 @@ export class SlidesView {
       }
     });
 
-    // Close when clicking outside
     document.addEventListener('click', (e) => {
       if (isOpen && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
         closeMenu();
       }
     });
 
-    // Close menu when a menu item is clicked
     dropdown.addEventListener('click', (e) => {
       const menuItem = e.target.closest('.menu-item');
       if (menuItem) {
@@ -1896,7 +765,6 @@ export class SlidesView {
         if (match) filename = match[1];
       }
 
-      // Download the file
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1925,30 +793,13 @@ export class SlidesView {
     this.slideEl.innerHTML = '';
     const content = renderSlide(this.slides[this.index], this.index);
     this.slideEl.appendChild(content);
-    // Update TOC active state
     this._updateActiveTocSection();
-    // Always update slide indicator in speaker notes header
-    this._updateSlideIndicator();
+    this._notesManager.updateSlideIndicator();
     if (this.speakerNotesVisible) {
-      this._updateSpeakerNotesContent();
-    }
-  }
-
-  _updateSlideIndicator() {
-    const slideIndicator = document.getElementById('speaker-notes-slide-indicator');
-    if (!slideIndicator) return;
-
-    const currentSlide = this.slides[this.index];
-    if (currentSlide?.tagline) {
-      slideIndicator.textContent = `— ${currentSlide.tagline}`;
-    } else if (currentSlide?.layout === 'sectionTitle') {
-      slideIndicator.textContent = `— ${currentSlide.sectionTitle || currentSlide.swimlane || 'Section'}`;
-    } else {
-      slideIndicator.textContent = `— Slide ${this.index + 1}`;
+      this._notesManager.updateContent();
     }
   }
 
   destroy() {
-    // Cleanup if needed
   }
 }
