@@ -1,4 +1,4 @@
-import { getCurrentDateContext, assembleResearchContent, getAcronymRules } from './common.js';
+import { getCurrentDateContext, assembleResearchContent, getAcronymRules, extractKeyStats } from './common.js';
 
 export const documentSchema = {
   type: "object",
@@ -535,74 +535,6 @@ NEW SCHEMA FIELDS (Use these to demonstrate quality):
 - evidenceChain: For each key claim, explicitly trace data → source → implication
 - counterargument: What's the strongest objection? Addressing it shows rigor.
 - synthesisNote: How does this section connect to others? Build the narrative arc.`;
-
-function extractKeyStats(content) {
-  if (!content) return { stats: '', contextualStats: [], sources: [] };
-
-  // Split into sentences for context extraction
-  const sentences = content.split(/(?<=[.!?])\s+/);
-
-  const statPatterns = [
-    /\d+\.?\d*\s*%/g,                          // Percentages: 23%, 4.5%
-    /\$\d[\d,]*\.?\d*\s*[MBK]?(?:illion)?/gi,  // Currency: $4M, $2.5 billion
-    /\d+x\b/gi,                                // Multipliers: 3x, 10x
-    /\d{1,3}(?:,\d{3})+/g,                     // Large numbers: 1,000,000
-    /Q[1-4]\s*20\d{2}/gi                       // Quarters: Q3 2024
-  ];
-
-  // Extract stats WITH their surrounding sentence context
-  const contextualStats = [];
-  const seenSentences = new Set();
-
-  for (const sentence of sentences) {
-    if (seenSentences.has(sentence) || sentence.length < 20 || sentence.length > 300) continue;
-
-    for (const pattern of statPatterns) {
-      pattern.lastIndex = 0; // Reset regex state
-      if (pattern.test(sentence)) {
-        contextualStats.push(sentence.trim());
-        seenSentences.add(sentence);
-        break;
-      }
-    }
-    if (contextualStats.length >= 25) break;  // Increased for richer context
-  }
-
-  // Extract raw stats for backward compatibility
-  const rawMatches = new Set();
-  for (const pattern of statPatterns) {
-    pattern.lastIndex = 0;
-    const found = content.match(pattern) || [];
-    found.slice(0, 5).forEach(m => rawMatches.add(m.trim()));
-  }
-
-  // Extract mentioned authoritative sources from research
-  const sourcePatterns = [
-    /according to ([^,.\n]+)/gi,
-    /per ([^,.\n]+(?:report|study|analysis|survey|data)[^,.\n]*)/gi,
-    /([A-Z][a-zA-Z]+ (?:Q[1-4] )?\d{4} (?:Annual |Quarterly )?Report)/g,
-    /((?:Gartner|McKinsey|Forrester|Deloitte|BCG|Bain|Bloomberg|Reuters)[^,.\n]{0,50})/gi,
-    /\[([^\]]+(?:Report|Study|Analysis|Survey|Data)[^\]]*)\]/gi
-  ];
-
-  const sources = new Set();
-  for (const pattern of sourcePatterns) {
-    pattern.lastIndex = 0;
-    let match;
-    while ((match = pattern.exec(content)) !== null && sources.size < 15) {  // Increased for multi-source research
-      const source = match[1]?.trim();
-      if (source && source.length > 5 && source.length < 100) {
-        sources.add(source);
-      }
-    }
-  }
-
-  return {
-    stats: Array.from(rawMatches).slice(0, 15).join(', '),
-    contextualStats: contextualStats.slice(0, 15),  // Increased from 10
-    sources: Array.from(sources).slice(0, 15)       // Increased from 8
-  };
-}
 
 function extractCausalRelationships(content) {
   if (!content) return { relationships: [], comparisons: [], trajectories: [], windows: [] };

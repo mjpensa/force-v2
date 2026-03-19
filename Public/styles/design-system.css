@@ -197,10 +197,6 @@ body.view-roadmap.bg-glass-gradient {
   background: var(--color-navy-deep);
   background-attachment: initial;
 }
-body.view-roadmap .app-shell {
-  background: var(--color-navy-deep);
-  background-attachment: initial;
-}
 .ambient-logo-container {
   position: fixed;
   top: 0;
@@ -742,21 +738,16 @@ body.view-roadmap .ambient-logo-container {
     transform: none;
     filter: none;
   }
-  .header-title a {
-    transition: none;
-  }
 }
 @media (prefers-contrast: high) {
-  .title-glass,
-  .header-title {
+  .title-glass {
     text-shadow: none;
     font-weight: var(--weight-bold);
   }
 }
 @media (forced-colors: active) {
   .title-glass,
-  .subtitle-glass,
-  .header-title {
+  .subtitle-glass {
     color: CanvasText;
     text-shadow: none;
   }

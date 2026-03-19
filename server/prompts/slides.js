@@ -1,4 +1,4 @@
-import { getCurrentDateContext, assembleResearchContent, validatePromptInputs, getAcronymRules } from './common.js';
+import { getCurrentDateContext, assembleResearchContent, validatePromptInputs, getAcronymRules, extractKeyStats } from './common.js';
 
 // Shared sub-schemas used in both speakerNotesSchema and speakerNotesOutlineSchema
 const narrativeTransitionsSchema = {
@@ -751,76 +751,6 @@ export const speakerNotesOutlineSchema = {
   },
   required: ["reasoning", "slideOutlines"]
 };
-
-function extractKeyStats(content) {
-  if (!content) return { stats: '', sources: [], contextualStats: [] };
-  const statPatterns = [
-    /\d+\.?\d*\s*%/g,                          // Percentages: 23%, 4.5%
-    /\$\d[\d,]*\.?\d*\s*[MBK]?(?:illion)?/gi,  // Currency: $4M, $2.5 billion
-    /\d+x\b/gi,                                // Multipliers: 3x, 10x
-    /\d{1,3}(?:,\d{3})+/g,                     // Large numbers with commas: 1,000,000
-    /\b\d{4,}\b/g,                             // Plain large numbers: 50000, 100000
-    /Q[1-4]\s*20\d{2}/gi,                      // Quarters: Q3 2024
-    /\b20\d{2}\b/g,                            // Years: 2024, 2025 (word boundary)
-    /\d+\s*bps\b/gi,                           // Basis points: 150 bps, 25bps
-    /\b\d+:1\b/g,                              // Ratios: 3:1, 10:1
-    /\d+\s*(?:months?|years?|days?|weeks?)\b/gi // Durations: 18 months, 3 years
-  ];
-  const sourcePatterns = [
-    /according to ([^,.\n]+)/gi,
-    /per ([^,.\n]+(?:report|study|analysis|survey|data)[^,.\n]*)/gi,
-    /([A-Z][a-zA-Z]+ (?:Q[1-4] )?\d{4} (?:Annual |Quarterly )?Report)/g,
-    /((?:Gartner|McKinsey|Forrester|Deloitte|BCG|Bain|Bloomberg|Reuters|ISDA|Federal Reserve)[^,.\n]{0,50})/gi,
-    /\[([^\]]+(?:Report|Study|Analysis|Survey|Data)[^\]]*)\]/gi,
-    /(?:published by|released by) ([^,.\n]+)/gi
-  ];
-  const sentences = content.split(/(?<=[.!?])\s+/);
-  const contextualStats = [];
-  const seenSentences = new Set();
-
-  for (const sentence of sentences) {
-    if (seenSentences.has(sentence) || sentence.length < 20 || sentence.length > 300) continue;
-
-    for (const pattern of statPatterns) {
-      pattern.lastIndex = 0; // Reset regex state
-      if (pattern.test(sentence)) {
-        contextualStats.push(sentence.trim());
-        seenSentences.add(sentence);
-        break;
-      }
-    }
-    if (contextualStats.length >= 15) break;
-  }
-  const rawMatches = new Set();
-  for (const pattern of statPatterns) {
-    pattern.lastIndex = 0;
-    const found = content.match(pattern) || [];
-    found.slice(0, 5).forEach(m => rawMatches.add(m.trim()));
-  }
-  const sources = new Set();
-  for (const pattern of sourcePatterns) {
-    pattern.lastIndex = 0;
-    let match;
-    while ((match = pattern.exec(content)) !== null && sources.size < 12) {
-      const source = match[1]?.trim();
-      if (source && source.length > 5 && source.length < 100) {
-        const lowerSource = source.toLowerCase();
-        if (!lowerSource.includes('this') &&
-            !lowerSource.includes('that') &&
-            !lowerSource.includes('which') &&
-            !lowerSource.startsWith('the ')) {
-          sources.add(source);
-        }
-      }
-    }
-  }
-
-  return {
-    stats: Array.from(rawMatches).slice(0, 15).join(', '),
-    sources: Array.from(sources),
-    contextualStats: contextualStats.slice(0, 12)
-  };
-}
 
 export function generateSlidesOutlinePrompt(userPrompt, researchFiles, swimlanes = []) {
   const validFiles = validatePromptInputs(userPrompt, researchFiles, 'outline generation');

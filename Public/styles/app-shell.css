@@ -69,19 +69,6 @@ body.view-roadmap .app-main {
 .has-icon-rail .app-shell {
   padding-left: 0;
 }
-.has-icon-rail .app-main {
-  margin-left: var(--icon-rail-width-collapsed, 72px);
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.has-icon-rail.rail-expanded .app-main {
-  margin-left: var(--icon-rail-width-expanded, 240px);
-}
-@media (max-width: 640px) {
-  .has-icon-rail .app-main {
-    margin-left: 0;
-    margin-bottom: 80px;
-  }
-}
 @media print {
   .app-main {
     padding: 0;
