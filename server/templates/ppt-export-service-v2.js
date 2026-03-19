@@ -159,15 +159,11 @@ function loadAssets() {
   if (fs.existsSync(logoPath)) {
     const logoData = fs.readFileSync(logoPath);
     ASSETS.logo = `image/png;base64,${logoData.toString('base64')}`;
-    console.log('[PPT Export v2] Loaded logo asset');
-  } else {
-    console.warn('[PPT Export v2] Logo not found at:', logoPath);
   }
   const cornerPath = path.join(publicDir, 'bip corner graphic.svg');
   if (fs.existsSync(cornerPath)) {
     const svgData = fs.readFileSync(cornerPath);
     ASSETS.cornerGraphic = `image/svg+xml;base64,${svgData.toString('base64')}`;
-    console.log('[PPT Export v2] Loaded corner graphic asset');
   }
 
   assetsLoaded = true;
@@ -264,12 +260,7 @@ function toSentenceCase(text) {
   }).join('\n');
 }
 
-/**
- * Enforce 3-4 lines for title (merge if >4, keep as-is if 3-4)
- * Does NOT pad to 4 lines - allows clean 3-line titles
- * @param {string} title - The title text with \n separators
- * @param {number} maxCharsPerLine - Maximum characters per line (10 for twoColumn, 18 for threeColumn)
- */
+// Enforce 3-4 lines for title (merge if >4, keep as-is if 3-4)
 function enforceTitleLineCount(title, maxCharsPerLine = 10) {
   if (!title) return '';
 
@@ -302,7 +293,6 @@ function enforceTitleLineCount(title, maxCharsPerLine = 10) {
 
     if (bestMergeIndex === -1) {
       // No valid merge possible without exceeding char limit - truncate to 4 lines
-      console.warn(`[PPT Export] Title has ${lines.length} lines, cannot merge within ${maxCharsPerLine} char limit. Truncating to 4 lines. Original: "${lines.join(' | ')}"`);
       lines = lines.slice(0, 4);
       break;
     }
@@ -314,11 +304,7 @@ function enforceTitleLineCount(title, maxCharsPerLine = 10) {
   return lines.join('\n');
 }
 
-/**
- * Format title: sentence case + enforce 3-4 lines
- * @param {string} title - The title text
- * @param {number} maxCharsPerLine - Maximum characters per line (10 for twoColumn, 18 for threeColumn)
- */
+// Format title: sentence case + enforce 3-4 lines
 function formatTitle(title, maxCharsPerLine = 10) {
   const sentenceCase = toSentenceCase(title);
   return enforceTitleLineCount(sentenceCase, maxCharsPerLine);
@@ -338,13 +324,7 @@ function formatSectionTitle(title) {
   }).join('');
 }
 
-/**
- * Truncate text to a character limit at sentence boundary
- * Matches browser behavior in SlidesView.js
- * @param {string} text - Text to truncate
- * @param {number} maxChars - Maximum characters allowed
- * @returns {string} Truncated text
- */
+// Truncate text to a character limit at sentence boundary (matches SlidesView.js)
 function truncateToSentence(text, maxChars = 415) {
   if (!text) return '';
   text = text.trim().replace(/\n/g, ' '); // Normalize whitespace
@@ -365,12 +345,7 @@ function truncateToSentence(text, maxChars = 415) {
   return truncated.replace(/\s+\S*$/, '') + '.';
 }
 
-/**
- * Normalize body text by converting all-caps words to proper case
- * Preserves known acronyms
- * @param {string} text - Body text to normalize
- * @returns {string} Normalized text
- */
+// Normalize body text: all-caps words to proper case, preserves known acronyms
 function normalizeBodyText(text) {
   if (!text) return '';
 
@@ -385,12 +360,7 @@ function normalizeBodyText(text) {
   });
 }
 
-/**
- * Format body paragraphs with proper spacing, normalization, and truncation
- * @param {string} p1 - First paragraph
- * @param {string} p2 - Second paragraph
- * @param {number} maxChars - Max chars per paragraph (default 415 for two-column)
- */
+// Format body paragraphs with normalization and truncation
 function formatBody(p1, p2, maxChars = 415) {
   const parts = [];
   // Pipeline: normalize caps → truncate
@@ -419,15 +389,7 @@ function addCornerGraphic(pptx, slide, layout, isDarkBackground = false) {
   }
 }
 
-/**
- * Format speaker notes for PowerPoint notes field
- * Priority ordering: Quick Ref > Talking Points > Q&A > CTA > Sources (truncate if needed)
- * Enhanced with sentence-boundary truncation for graceful overflow handling
- * Updated with sales enhancements for consulting executives
- * @param {object} notes - Speaker notes object for a slide
- * @param {number} maxLength - Maximum characters (PPTX practical limit ~3000)
- * @returns {string} Formatted notes text for PPTX
- */
+// Format speaker notes for PPTX (priority: Quick Ref > Talking Points > Q&A > CTA > Sources)
 function formatSpeakerNotesForPptx(notes, maxLength = 3000) {
   if (!notes) return '';
 
@@ -593,6 +555,42 @@ function formatSpeakerNotesForPptx(notes, maxLength = 3000) {
   return sections.join('').trim();
 }
 
+// --- Shared slide element helpers ---
+
+function _addLogo(slide, layout) {
+  if (ASSETS.logo) {
+    slide.addImage({
+      data: ASSETS.logo,
+      x: layout.logo.x,
+      y: layout.logo.y,
+      w: layout.logo.w,
+      h: layout.logo.h
+    });
+  }
+}
+
+function _addPageNumber(slide, layout, slideNumber, color = COLORS.darkGray) {
+  slide.addText(String(slideNumber), {
+    x: layout.pageNumber.x,
+    y: layout.pageNumber.y,
+    w: layout.pageNumber.w,
+    h: layout.pageNumber.h,
+    fontSize: 10,
+    fontFace: 'Work Sans',
+    color,
+    align: 'left'
+  });
+}
+
+function _addSpeakerNotes(slide, speakerNotes) {
+  if (speakerNotes) {
+    const notesText = formatSpeakerNotesForPptx(speakerNotes);
+    if (notesText) {
+      slide.addNotes(notesText);
+    }
+  }
+}
+
 function addSectionTitleSlide(pptx, data, slideNumber) {
   const L = LAYOUTS.sectionTitle;
   const slide = pptx.addSlide();
@@ -634,25 +632,8 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
     fill: { color: COLORS.red },
     line: { color: COLORS.red, width: 0 }
   });
-  if (ASSETS.logo) {
-    slide.addImage({
-      data: ASSETS.logo,
-      x: L.logo.x,
-      y: L.logo.y,
-      w: L.logo.w,
-      h: L.logo.h
-    });
-  }
-  slide.addText(String(slideNumber), {
-    x: L.pageNumber.x,
-    y: L.pageNumber.y,
-    w: L.pageNumber.w,
-    h: L.pageNumber.h,
-    fontSize: 10,
-    fontFace: 'Work Sans',
-    color: COLORS.mutedWhite,
-    align: 'left'
-  });
+  _addLogo(slide, L);
+  _addPageNumber(slide, L, slideNumber, COLORS.mutedWhite);
 }
 
 function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
@@ -707,31 +688,9 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
     });
   }
   addCornerGraphic(pptx, slide, L, false);
-  if (ASSETS.logo) {
-    slide.addImage({
-      data: ASSETS.logo,
-      x: L.logo.x,
-      y: L.logo.y,
-      w: L.logo.w,
-      h: L.logo.h
-    });
-  }
-  slide.addText(String(slideNumber), {
-    x: L.pageNumber.x,
-    y: L.pageNumber.y,
-    w: L.pageNumber.w,
-    h: L.pageNumber.h,
-    fontSize: 10,
-    fontFace: 'Work Sans',
-    color: COLORS.darkGray,
-    align: 'left'
-  });
-  if (speakerNotes) {
-    const notesText = formatSpeakerNotesForPptx(speakerNotes);
-    if (notesText) {
-      slide.addNotes(notesText);
-    }
-  }
+  _addLogo(slide, L);
+  _addPageNumber(slide, L, slideNumber);
+  _addSpeakerNotes(slide, speakerNotes);
 }
 
 function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
@@ -795,41 +754,16 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
     }
   });
   addCornerGraphic(pptx, slide, L, false);
-  if (ASSETS.logo) {
-    slide.addImage({
-      data: ASSETS.logo,
-      x: L.logo.x,
-      y: L.logo.y,
-      w: L.logo.w,
-      h: L.logo.h
-    });
-  }
-  slide.addText(String(slideNumber), {
-    x: L.pageNumber.x,
-    y: L.pageNumber.y,
-    w: L.pageNumber.w,
-    h: L.pageNumber.h,
-    fontSize: 10,
-    fontFace: 'Work Sans',
-    color: COLORS.darkGray,
-    align: 'left'
-  });
-  if (speakerNotes) {
-    const notesText = formatSpeakerNotesForPptx(speakerNotes);
-    if (notesText) {
-      slide.addNotes(notesText);
-    }
-  }
+  _addLogo(slide, L);
+  _addPageNumber(slide, L, slideNumber);
+  _addSpeakerNotes(slide, speakerNotes);
 }
 
 function flattenSections(sections) {
   const flatSlides = [];
 
   for (const section of sections) {
-    if (!section.swimlane) {
-      console.warn('[PPT Export v2] Skipping section with no swimlane');
-      continue;
-    }
+    if (!section.swimlane) continue;
     flatSlides.push({
       layout: 'sectionTitle',
       swimlane: section.swimlane,
@@ -837,20 +771,13 @@ function flattenSections(sections) {
     });
     if (section.slides && Array.isArray(section.slides) && section.slides.length > 0) {
       flatSlides.push(...section.slides);
-    } else {
-      console.warn(`[PPT Export v2] Section "${section.swimlane}" has no content slides`);
     }
   }
 
   return flatSlides;
 }
 
-/**
- * Generate PowerPoint presentation from slides data
- * @param {Object} slidesData - Slides data with sections array
- * @param {Object} options - Optional metadata overrides
- * @returns {Promise<Buffer>} PowerPoint file as Node buffer
- */
+// Generate PowerPoint presentation from slides data
 export async function generatePptx(slidesData, options = {}) {
   if (!slidesData || typeof slidesData !== 'object') {
     throw new Error('Invalid slides data: expected object');
@@ -871,20 +798,10 @@ export async function generatePptx(slidesData, options = {}) {
   pptx.layout = 'CUSTOM_16_9';
   let slidesArray = [];
   if (slidesData.sections && Array.isArray(slidesData.sections) && slidesData.sections.length > 0) {
-    console.log(`[PPT Export v2] Processing ${slidesData.sections.length} sections`);
     slidesArray = flattenSections(slidesData.sections);
-  } else {
-    console.warn('[PPT Export v2] No sections found in slides data - generating empty presentation');
-  }
-  if (slidesArray.length === 0) {
-    console.warn('[PPT Export v2] Warning: No slides to render');
   }
   const speakerNotesData = slidesData.speakerNotes?.slides || [];
   const hasSpeakerNotes = speakerNotesData.length > 0;
-  if (hasSpeakerNotes) {
-    console.log(`[PPT Export v2] Including speaker notes for ${speakerNotesData.length} slides`);
-  }
-
   // Helper to find speaker notes for a slide (three-tier matching strategy)
   const findSpeakerNotes = (slideData, sectionName) => {
     if (!hasSpeakerNotes || slideData.layout === 'sectionTitle') return null;
@@ -911,10 +828,7 @@ export async function generatePptx(slidesData, options = {}) {
     const taglineMatches = speakerNotesData.filter(note =>
       note.slideTagline?.toLowerCase().trim() === tagline
     );
-    if (taglineMatches.length === 1) {
-      console.warn(`[PPT Export] Using tagline-only match for "${tagline}"`);
-      return taglineMatches[0];
-    }
+    if (taglineMatches.length === 1) return taglineMatches[0];
 
     return null;
   };
@@ -928,8 +842,6 @@ export async function generatePptx(slidesData, options = {}) {
     }
     const speakerNotes = findSpeakerNotes(slideData, currentSectionName);
 
-    console.log(`[PPT Export v2] Rendering slide ${slideNumber}: ${layout}${speakerNotes ? ' (with notes)' : ''}`);
-
     if (layout === 'sectionTitle') {
       addSectionTitleSlide(pptx, slideData, slideNumber);
     } else if (layout === 'threeColumn') {
@@ -939,7 +851,6 @@ export async function generatePptx(slidesData, options = {}) {
     }
   }
 
-  console.log(`[PPT Export v2] Generated ${slidesArray.length} slides${hasSpeakerNotes ? ' with speaker notes' : ''}`);
   return await pptx.write({ outputType: 'nodebuffer' });
 }
 

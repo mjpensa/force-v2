@@ -8,6 +8,35 @@ import { fileCache } from '../cache/FileCache.js';
 
 const router = express.Router();
 
+// --- Route helpers ---
+
+function getSessionOrFail(req, res, message) {
+  const { sessionId } = req.params;
+  const session = sessions.get(sessionId);
+  if (!session) {
+    res.status(404).json({
+      error: 'Session not found',
+      message: message || 'Session may have expired. Please generate new content.'
+    });
+    return null;
+  }
+  return session;
+}
+
+function handleGenerationError(error, res, context = 'process request') {
+  res.status(500).json({
+    error: `Failed to ${context}`,
+    details: error.message
+  });
+}
+
+function exportFile(res, buffer, filename, contentType) {
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Length', buffer.length);
+  res.send(buffer);
+}
+
 export const sessions = new Map();
 const MAX_SESSIONS = 100;
 const SESSION_TTL_MS = 60 * 60 * 1000;
@@ -127,10 +156,7 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
     });
 
   } catch (error) {
-    res.status(500).json({
-      error: 'Internal server error',
-      details: error.message
-    });
+    handleGenerationError(error, res, 'generate content');
   }
 });
 
@@ -176,10 +202,7 @@ router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), as
     });
 
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to regenerate content',
-      details: error.message
-    });
+    handleGenerationError(error, res, 'regenerate content');
   }
 });
 
@@ -197,13 +220,8 @@ router.post('/:sessionId/regenerate/:viewType', express.json(), async (req, res)
         error: `Invalid view type. Must be one of: ${validViewTypes.join(', ')}`
       });
     }
-    const session = sessions.get(sessionId);
-    if (!session) {
-      return res.status(404).json({
-        error: 'Session not found or expired',
-        message: 'Please upload files again to regenerate content.'
-      });
-    }
+    const session = getSessionOrFail(req, res, 'Please upload files again to regenerate content.');
+    if (!session) return;
     if (!session.researchFiles || session.researchFiles.length === 0) {
       return res.status(400).json({
         error: 'Session has no cached research files',
@@ -214,8 +232,6 @@ router.post('/:sessionId/regenerate/:viewType', express.json(), async (req, res)
     touchSession(sessionId);
     const researchFiles = session.researchFiles;
     const prompt = newPrompt || session.prompt;
-
-    console.log(`[Session Regenerate] ${viewType} using ${researchFiles.length} cached files from session ${sessionId}`);
     const result = await regenerateContent(viewType, prompt, researchFiles);
     const contentKey = viewType === 'research-analysis' ? 'researchAnalysis' : viewType;
     if (result.success) {
@@ -231,35 +247,15 @@ router.post('/:sessionId/regenerate/:viewType', express.json(), async (req, res)
     });
 
   } catch (error) {
-    console.error('[Session Regenerate] Error:', error);
-    res.status(500).json({
-      error: 'Failed to regenerate content',
-      details: error.message
-    });
+    handleGenerationError(error, res, 'regenerate content');
   }
 });
 
-/**
- * GET /api/content/:sessionId/slides/export
- * Exports slides from a session as a branded PowerPoint file
- *
- * NOTE: This route MUST be defined before /:sessionId/:viewType to avoid being shadowed
- *
- * URL params:
- * - sessionId: string - Session ID
- *
- * Response: PowerPoint file (.pptx) download
- */
+// GET /:sessionId/slides/export — MUST be before /:sessionId/:viewType
 router.get('/:sessionId/slides/export', async (req, res) => {
   try {
-    const { sessionId } = req.params;
-    const session = sessions.get(sessionId);
-    if (!session) {
-      return res.status(404).json({
-        error: 'Session not found',
-        message: 'Session may have expired. Please generate new content.'
-      });
-    }
+    const session = getSessionOrFail(req, res);
+    if (!session) return;
 
     const slidesResult = session.content.slides;
     if (!slidesResult || !slidesResult.success || !slidesResult.data) {
@@ -278,18 +274,10 @@ router.get('/:sessionId/slides/export', async (req, res) => {
     });
     const title = slides.title || 'Presentation';
     const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
-    const filename = `${safeTitle}.pptx`;
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Length', pptxBuffer.length);
-
-    res.send(pptxBuffer);
+    exportFile(res, pptxBuffer, `${safeTitle}.pptx`, 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
 
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to generate PowerPoint file',
-      details: error.message
-    });
+    handleGenerationError(error, res, 'generate PowerPoint file');
   }
 });
 
@@ -300,16 +288,10 @@ router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
   res.setTimeout(SPEAKER_NOTES_TIMEOUT_MS);
 
   try {
-    const { sessionId } = req.params;
-    const session = sessions.get(sessionId);
-    if (!session) {
-      return res.status(404).json({
-        error: 'Session not found',
-        message: 'Session may have expired. Please generate new content.'
-      });
-    }
+    const session = getSessionOrFail(req, res);
+    if (!session) return;
 
-    touchSession(sessionId);
+    touchSession(req.params.sessionId);
     const slidesResult = session.content.slides;
     if (!slidesResult || !slidesResult.success || !slidesResult.data) {
       return res.status(400).json({
@@ -318,7 +300,6 @@ router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
       });
     }
     if (slidesResult.speakerNotes?.slides?.length > 0) {
-      console.log(`[Speaker Notes] Returning cached notes for session ${sessionId}`);
       return res.json({
         status: 'completed',
         data: slidesResult.speakerNotes,
@@ -331,8 +312,6 @@ router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
         message: 'Session research files have expired. Please regenerate content.'
       });
     }
-
-    console.log(`[Speaker Notes] Generating on-demand for session ${sessionId}`);
     const result = await generateSpeakerNotesAsync(
       slidesResult.data,
       session.researchFiles,
@@ -355,35 +334,15 @@ router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
     }
 
   } catch (error) {
-    console.error('[Speaker Notes] Error:', error);
-    res.status(500).json({
-      error: 'Failed to generate speaker notes',
-      details: error.message
-    });
+    handleGenerationError(error, res, 'generate speaker notes');
   }
 });
 
-/**
- * GET /api/content/:sessionId/document/export
- * Exports document from a session as a Word file (.docx)
- *
- * NOTE: This route MUST be defined before /:sessionId/:viewType to avoid being shadowed
- *
- * URL params:
- * - sessionId: string - Session ID
- *
- * Response: Word document file (.docx) download
- */
+// GET /:sessionId/document/export — MUST be before /:sessionId/:viewType
 router.get('/:sessionId/document/export', async (req, res) => {
   try {
-    const { sessionId } = req.params;
-    const session = sessions.get(sessionId);
-    if (!session) {
-      return res.status(404).json({
-        error: 'Session not found',
-        message: 'Session may have expired. Please generate new content.'
-      });
-    }
+    const session = getSessionOrFail(req, res);
+    if (!session) return;
 
     const documentResult = session.content.document;
     if (!documentResult || !documentResult.success || !documentResult.data) {
@@ -399,18 +358,10 @@ router.get('/:sessionId/document/export', async (req, res) => {
     });
     const title = documentData.title || 'Executive_Summary';
     const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
-    const filename = `${safeTitle}.docx`;
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Length', docxBuffer.length);
-
-    res.send(docxBuffer);
+    exportFile(res, docxBuffer, `${safeTitle}.docx`, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to generate Word document',
-      details: error.message
-    });
+    handleGenerationError(error, res, 'generate Word document');
   }
 });
 
@@ -422,13 +373,8 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
   try {
     const { sessionId } = req.params;
     const { companyName, meetingAttendees, meetingObjective, keyConcerns } = req.body;
-    const session = sessions.get(sessionId);
-    if (!session) {
-      return res.status(404).json({
-        error: 'Session not found or expired',
-        message: 'Please generate content first before creating an intelligence brief.'
-      });
-    }
+    const session = getSessionOrFail(req, res, 'Please generate content first before creating an intelligence brief.');
+    if (!session) return;
     if (!companyName?.trim()) {
       return res.status(400).json({
         error: 'Company name is required',
@@ -467,13 +413,6 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
       });
     }
 
-    console.log(`[Intelligence Brief] Generating for session ${sessionId}`, {
-      sources: sessionData.sources.length,
-      hasDocument: !!sessionData.document,
-      hasRoadmap: !!sessionData.roadmap,
-      hasSlides: !!sessionData.slides
-    });
-
     const meetingContext = {
       companyName: companyName.trim(),
       meetingAttendees: meetingAttendees.trim(),
@@ -490,35 +429,18 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
     }
     const buffer = await generateIntelligenceBriefDocx(result.data, meetingContext);
     const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = `Pre_Meeting_Brief_${timestamp}.docx`;
-
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Length', buffer.length);
-
-    console.log(`[Intelligence Brief] Generated and sending ${buffer.length} bytes`);
-    res.send(buffer);
+    exportFile(res, buffer, `Pre_Meeting_Brief_${timestamp}.docx`, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
   } catch (error) {
-    console.error('[Intelligence Brief] Error:', error);
-    res.status(500).json({
-      error: 'Failed to generate intelligence brief',
-      details: error.message
-    });
+    handleGenerationError(error, res, 'generate intelligence brief');
   }
 });
 
 router.get('/:sessionId/:viewType', (req, res) => {
   try {
     const { sessionId, viewType } = req.params;
-    const session = sessions.get(sessionId);
-    if (!session) {
-      return res.status(404).json({
-        error: 'Session not found',
-        message: 'Session may have expired or does not exist. Please generate new content.',
-        hint: 'Sessions expire after 1 hour'
-      });
-    }
+    const session = getSessionOrFail(req, res, 'Session may have expired or does not exist. Please generate new content.');
+    if (!session) return;
     touchSession(sessionId);
     const viewTypeMap = {
       'roadmap': 'roadmap',
@@ -546,7 +468,6 @@ router.get('/:sessionId/:viewType', (req, res) => {
       res.set('Cache-Control', 'private, max-age=300');
       res.set('ETag', `"${sessionId}-${viewType}-${session.lastAccessed}"`);
 
-      // Include speaker notes for slides view
       const responseData = viewType === 'slides' && contentResult.speakerNotes
         ? { ...contentResult.data, speakerNotes: contentResult.speakerNotes }
         : contentResult.data;
@@ -564,10 +485,7 @@ router.get('/:sessionId/:viewType', (req, res) => {
     }
 
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to retrieve content',
-      details: error.message
-    });
+    handleGenerationError(error, res, 'retrieve content');
   }
 });
 
@@ -587,18 +505,10 @@ router.post('/slides/export', express.json({ limit: '50mb' }), async (req, res) 
     });
     const title = slides.title || 'Presentation';
     const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
-    const filename = `${safeTitle}.pptx`;
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Length', pptxBuffer.length);
-
-    res.send(pptxBuffer);
+    exportFile(res, pptxBuffer, `${safeTitle}.pptx`, 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
 
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to generate PowerPoint file',
-      details: error.message
-    });
+    handleGenerationError(error, res, 'generate PowerPoint file');
   }
 });
 
@@ -617,18 +527,10 @@ router.post('/document/export', express.json({ limit: '50mb' }), async (req, res
     });
     const title = document.title || 'Executive_Summary';
     const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
-    const filename = `${safeTitle}.docx`;
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Length', docxBuffer.length);
-
-    res.send(docxBuffer);
+    exportFile(res, docxBuffer, `${safeTitle}.docx`, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to generate Word document',
-      details: error.message
-    });
+    handleGenerationError(error, res, 'generate Word document');
   }
 });
 
@@ -641,9 +543,7 @@ router.post('/update-task-dates', express.json(), (req, res) => {
     }
 
     const session = sessions.get(sessionId);
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
-    }
+    if (!session) return res.status(404).json({ error: 'Session not found' });
 
     touchSession(sessionId);
     const roadmapData = session.content.roadmap?.data;
@@ -656,10 +556,9 @@ router.post('/update-task-dates', express.json(), (req, res) => {
       if (newStartCol !== undefined) task.bar.startCol = newStartCol;
       if (newEndCol !== undefined) task.bar.endCol = newEndCol;
     }
-
     res.json({ success: true, task });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update task dates', details: error.message });
+    handleGenerationError(error, res, 'update task dates');
   }
 });
 
@@ -672,9 +571,7 @@ router.post('/update-task-color', express.json(), (req, res) => {
     }
 
     const session = sessions.get(sessionId);
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
-    }
+    if (!session) return res.status(404).json({ error: 'Session not found' });
 
     touchSession(sessionId);
     const roadmapData = session.content.roadmap?.data;
@@ -686,10 +583,9 @@ router.post('/update-task-color', express.json(), (req, res) => {
     if (task.bar) {
       task.bar.color = color;
     }
-
     res.json({ success: true, task });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update task color', details: error.message });
+    handleGenerationError(error, res, 'update task color');
   }
 });
 router.use(handleUploadErrors);
