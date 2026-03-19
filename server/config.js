@@ -43,7 +43,7 @@ export const CONFIG = {
     TRUST_PROXY_HOPS: 1 // Railway uses single proxy layer
   },
   API: {
-    GEMINI_MODEL: 'gemini-2.5-flash-preview-09-2025',
+    GEMINI_MODEL: 'gemini-2.5-flash-lite',
     BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
     RETRY_COUNT: 3,
     RETRY_BASE_DELAY_MS: 1000, // 1 second base delay

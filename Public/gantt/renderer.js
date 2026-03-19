@@ -156,13 +156,22 @@ export class GanttRenderer {
     }
     barAreaEl.appendChild(cellsFragment);
 
-    if (!isSwimlane && row.bar && row.bar.startCol != null) {
+    if (!isSwimlane && row.bar) {
       const bar = row.bar;
-      const barEl = document.createElement('div');
-      barEl.className = 'gantt-bar';
-      barEl.setAttribute('data-color', bar.color || 'default');
-      barEl.style.gridColumn = `${bar.startCol} / ${bar.endCol}`;
-      barAreaEl.appendChild(barEl);
+      // Normalize missing/invalid columns (some models omit endCol or both)
+      if (bar.startCol == null || isNaN(bar.startCol)) {
+        bar.startCol = null; // Will skip rendering
+      }
+      if (bar.startCol != null) {
+        if (bar.endCol == null || isNaN(bar.endCol)) {
+          bar.endCol = bar.startCol + 1;
+        }
+        const barEl = document.createElement('div');
+        barEl.className = 'gantt-bar';
+        barEl.setAttribute('data-color', bar.color || 'default');
+        barEl.style.gridColumn = `${bar.startCol} / ${bar.endCol}`;
+        barAreaEl.appendChild(barEl);
+      }
     }
 
     return barAreaEl;

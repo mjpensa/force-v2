@@ -903,7 +903,7 @@ router.post('/document/export', express.json({ limit: '50mb' }), async (req, res
  */
 router.post('/update-task-dates', express.json(), (req, res) => {
   try {
-    const { sessionId, taskIndex, startCol, endCol } = req.body;
+    const { sessionId, taskIndex, newStartCol, newEndCol } = req.body;
 
     if (!sessionId || taskIndex === undefined) {
       return res.status(400).json({ error: 'sessionId and taskIndex are required' });
@@ -924,8 +924,8 @@ router.post('/update-task-dates', express.json(), (req, res) => {
 
     const task = roadmapData.data[taskIndex];
     if (task.bar) {
-      if (startCol !== undefined) task.bar.startCol = startCol;
-      if (endCol !== undefined) task.bar.endCol = endCol;
+      if (newStartCol !== undefined) task.bar.startCol = newStartCol;
+      if (newEndCol !== undefined) task.bar.endCol = newEndCol;
     }
 
     res.json({ success: true, task });

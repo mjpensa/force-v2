@@ -40,7 +40,10 @@ export class InteractiveGanttHandler {
    */
   parseGridColumn(gridColumnStyle) {
     const [startCol, endCol] = gridColumnStyle.split('/').map(v => parseInt(v.trim()));
-    return { startCol, endCol };
+    return {
+      startCol: isNaN(startCol) ? 1 : startCol,
+      endCol: isNaN(endCol) ? startCol + 1 : endCol
+    };
   }
 
   /**

@@ -69,7 +69,8 @@ const DOCUMENT_CONFIG = {
   temperature: 0.65,       // Balanced for reasoning diversity
   topP: 0.9,               // High: allows diverse token selection for engaging prose
   topK: 40,                // Standard: good vocabulary breadth
-  thinkingBudget: 20000    // High: 7-step COT reasoning, exec summary synthesis, counterargument development
+  thinkingBudget: 20000,   // High: 7-step COT reasoning, exec summary synthesis, counterargument development
+  maxOutputTokens: 65536   // Explicit: document JSON is large, default model limit causes truncation
 };
 
 const STRUCTURED_DEFAULT_CONFIG = {
@@ -93,7 +94,8 @@ const RESEARCH_ANALYSIS_CONFIG = {
 const SLIDES_CONFIG = {
   temperature: 0.55,       // Slightly lower: more precise execution of outline
   topP: 0.85,              // Focused selection while maintaining engagement
-  thinkingBudget: 12000    // Increased: needs to execute outline faithfully, maintain evidence chains, format titles correctly
+  thinkingBudget: 12000,   // Increased: needs to execute outline faithfully, maintain evidence chains, format titles correctly
+  maxOutputTokens: 65536   // Explicit: slides JSON is large, default model limit causes truncation
 };
 
 const SLIDES_OUTLINE_CONFIG = {
