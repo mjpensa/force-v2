@@ -711,8 +711,6 @@ async function generateSlides(userPrompt, researchFiles, swimlanes = []) {
     const outlinePrompt = generateSlidesOutlinePrompt(userPrompt, researchFiles, augmentedSwimlanes);
     const outline = await generateWithGemini(outlinePrompt, slidesOutlineSchema, 'SlideOutline', SLIDES_OUTLINE_CONFIG);
 
-    const totalOutlineSlides = outline.sections?.reduce((sum, s) => sum + (s.slides?.length || 0), 0) || 0;
-
     const outlineValidation = validateOutlineStructure(outline, augmentedSwimlanes);
 
     const fullPrompt = generateSlidesPrompt(userPrompt, researchFiles, augmentedSwimlanes, outline);
@@ -752,8 +750,6 @@ async function generateSlidesOutlineOnly(userPrompt, researchFiles, swimlanes = 
     const augmentedSwimlanes = createAugmentedSwimlanes(swimlanes);
     const outlinePrompt = generateSlidesOutlinePrompt(userPrompt, researchFiles, augmentedSwimlanes);
     const outline = await generateWithGemini(outlinePrompt, slidesOutlineSchema, 'SlideOutline', SLIDES_OUTLINE_CONFIG);
-
-    const totalOutlineSlides = outline.sections?.reduce((sum, s) => sum + (s.slides?.length || 0), 0) || 0;
 
     return { success: true, data: outline };
   } catch (error) {
@@ -828,18 +824,8 @@ async function generateSpeakerNotes(slidesData, researchFiles, userPrompt) {
 
     const notesCount = data.slides?.length || 0;
 
-    if (data.reasoning) {
-    } else if (outline?.reasoning) {
+    if (!data.reasoning && outline?.reasoning) {
       data.reasoning = outline.reasoning;
-    }
-
-    const deliveryCuePattern = /\[(pause|emphasize|gesture|lean in|lower voice|rhetorical)\]/i;
-    const slidesWithCues = data.slides?.filter(s =>
-      s.narrative?.talkingPoints?.some(tp => deliveryCuePattern.test(tp))
-    ).length || 0;
-
-    if (slidesWithCues === 0) {
-    } else if (slidesWithCues < Math.floor((data.slides?.length || 0) / 2)) {
     }
 
     return { success: true, data, outline };
@@ -866,10 +852,6 @@ async function generateDocument(userPrompt, researchFiles, swimlanes = []) {
       lastResult = data;
       lastValidation = validation;
       lastCoherenceValidation = coherenceValidation;
-
-      if (data.sections && Array.isArray(data.sections)) {
-        const sectionIssues = data.sections.flatMap((s, i) => validateSectionQuality(s, i));
-      }
 
       const combinedValid = validation.valid && coherenceValidation.coherent;
       if (combinedValid) {
@@ -936,62 +918,40 @@ export async function generateIntelligenceBrief(sessionData, meetingContext) {
 // 3-phase pipeline: Phase 0 (Research), Phase 1 (Roadmap + Outline), Phase 2 (Slides + Document)
 // Speaker notes generated on-demand via generateSpeakerNotesAsync()
 export async function generateAllContent(userPrompt, researchFiles) {
-  try {
-    const startTime = Date.now();
+  const researchAnalysisPromise = apiQueue.add(
+    () => generateResearchAnalysis(userPrompt, researchFiles), 'ResearchAnalysis'
+  );
 
-    const researchAnalysisPromise = apiQueue.add(
-      () => generateResearchAnalysis(userPrompt, researchFiles), 'ResearchAnalysis'
-    );
+  const phase1Tasks = [
+    { task: () => generateRoadmap(userPrompt, researchFiles), name: 'Roadmap' },
+    { task: () => generateSlidesOutlineOnly(userPrompt, researchFiles, []), name: 'SlidesOutline' }
+  ];
+  const [roadmap, slidesOutline] = await apiQueue.runAll(phase1Tasks);
 
-    const phase1Tasks = [
-      { task: () => generateRoadmap(userPrompt, researchFiles), name: 'Roadmap' },
-      { task: () => generateSlidesOutlineOnly(userPrompt, researchFiles, []), name: 'SlidesOutline' }
-    ];
-    const [roadmap, slidesOutline] = await apiQueue.runAll(phase1Tasks);
+  const swimlanes = roadmap.success ? extractSwimlanesFromRoadmap(roadmap.data) : [];
 
-    const swimlanes = roadmap.success ? extractSwimlanesFromRoadmap(roadmap.data) : [];
-
-
-    // CRITICAL: Reconcile outline with authoritative roadmap swimlanes for correct TOC
-    let reconciledOutline = slidesOutline.data;
-    if (slidesOutline.success && swimlanes.length > 0) {
-      reconciledOutline = reconcileOutlineWithSwimlanes(slidesOutline.data, swimlanes);
-    }
-
-    const phase2Tasks = [
-      {
-        task: () => slidesOutline.success
-          ? generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, reconciledOutline)
-          : generateSlides(userPrompt, researchFiles, swimlanes),
-        name: 'Slides'
-      },
-      { task: () => generateDocument(userPrompt, researchFiles, swimlanes), name: 'Document' }
-    ];
-    const [slides, document] = await apiQueue.runAll(phase2Tasks);
-
-    const researchAnalysis = await researchAnalysisPromise;
-
-    if (slides.success && swimlanes.length > 0) {
-      const slideSwimlanes = slides.data?.sections?.map(s => s.swimlane) || [];
-      const roadmapSwimlanes = swimlanes.map(s => s.name);
-
-      const mismatchedSwimlanes = slideSwimlanes.filter(
-        ss => !roadmapSwimlanes.some(rs =>
-          rs.toLowerCase().includes(ss.toLowerCase()) ||
-          ss.toLowerCase().includes(rs.toLowerCase())
-        )
-      );
-
-    }
-
-    const speakerNotes = { success: false, error: 'Speaker notes available on-demand', deferred: true };
-
-    const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
-
-    return { roadmap, slides, document, researchAnalysis, speakerNotes };
-  } catch (error) {
-    throw error;
+  // CRITICAL: Reconcile outline with authoritative roadmap swimlanes for correct TOC
+  let reconciledOutline = slidesOutline.data;
+  if (slidesOutline.success && swimlanes.length > 0) {
+    reconciledOutline = reconcileOutlineWithSwimlanes(slidesOutline.data, swimlanes);
   }
+
+  const phase2Tasks = [
+    {
+      task: () => slidesOutline.success
+        ? generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, reconciledOutline)
+        : generateSlides(userPrompt, researchFiles, swimlanes),
+      name: 'Slides'
+    },
+    { task: () => generateDocument(userPrompt, researchFiles, swimlanes), name: 'Document' }
+  ];
+  const [slides, document] = await apiQueue.runAll(phase2Tasks);
+
+  const researchAnalysis = await researchAnalysisPromise;
+
+  const speakerNotes = { success: false, error: 'Speaker notes available on-demand', deferred: true };
+
+  return { roadmap, slides, document, researchAnalysis, speakerNotes };
 }
 
 export async function generateSpeakerNotesAsync(slidesData, researchFiles, userPrompt) {
@@ -999,36 +959,25 @@ export async function generateSpeakerNotesAsync(slidesData, researchFiles, userP
     return { success: false, error: 'Slides data required for speaker notes generation' };
   }
 
-  const startTime = Date.now();
-
-  const result = await apiQueue.add(
+  return await apiQueue.add(
     () => generateSpeakerNotes(slidesData, researchFiles, userPrompt),
     'SpeakerNotes'
   );
-
-  const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
-
-  return result;
 }
 export async function regenerateContent(viewType, prompt, researchFiles) {
-  try {
-    const taskName = `Regenerate-${viewType}`;
-    const task = async () => {
-      switch (viewType) {
-        case 'roadmap':
-          return generateRoadmap(prompt, researchFiles);
-        case 'slides':
-          return generateSlides(prompt, researchFiles);
-        case 'document':
-          return generateDocument(prompt, researchFiles);
-        case 'research-analysis':
-          return generateResearchAnalysis(prompt, researchFiles);
-        default:
-          throw new Error(`Invalid view type: ${viewType}`);
-      }
-    };
-    return await apiQueue.add(task, taskName);
-  } catch (error) {
-    throw error;
-  }
+  const task = async () => {
+    switch (viewType) {
+      case 'roadmap':
+        return generateRoadmap(prompt, researchFiles);
+      case 'slides':
+        return generateSlides(prompt, researchFiles);
+      case 'document':
+        return generateDocument(prompt, researchFiles);
+      case 'research-analysis':
+        return generateResearchAnalysis(prompt, researchFiles);
+      default:
+        throw new Error(`Invalid view type: ${viewType}`);
+    }
+  };
+  return await apiQueue.add(task, `Regenerate-${viewType}`);
 }
