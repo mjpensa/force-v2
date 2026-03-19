@@ -1,3 +1,5 @@
+import { getCurrentDateContext, assembleResearchContent } from './common.js';
+
 export const documentSchema = {
   type: "object",
   properties: {
@@ -768,30 +770,8 @@ ANTI-PATTERNS FOR SWIMLANE SECTIONS:
 `;
 }
 
-function getCurrentDateContext() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1; // 0-indexed
-  const quarter = Math.ceil(month / 3);
-  const nextQuarter = quarter === 4 ? 1 : quarter + 1;
-  const nextQuarterYear = quarter === 4 ? year + 1 : year;
-
-  return {
-    fullDate: now.toISOString().split('T')[0], // YYYY-MM-DD
-    month: now.toLocaleString('en-US', { month: 'long' }),
-    year,
-    currentQuarter: `Q${quarter} ${year}`,
-    nextQuarter: `Q${nextQuarter} ${nextQuarterYear}`,
-    quarterPlusTwo: `Q${((quarter + 1) % 4) + 1} ${quarter >= 3 ? year + 1 : year}`,
-    endOfYear: `Q4 ${year}`,
-    nextYear: year + 1
-  };
-}
-
 export function generateDocumentPrompt(userPrompt, researchFiles, swimlanes = []) {
-  const researchContent = researchFiles
-    .map(file => `=== ${file.filename} ===\n${file.content}`)
-    .join('\n\n');
+  const researchContent = assembleResearchContent(researchFiles);
 
   // Enhanced research pre-processing
   const { stats, contextualStats, sources } = extractKeyStats(researchContent);

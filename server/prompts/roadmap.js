@@ -1,3 +1,5 @@
+import { assembleResearchContent } from './common.js';
+
 export const roadmapSchema = {
   type: "object",
   properties: {
@@ -275,9 +277,7 @@ You MUST respond with *only* a valid JSON object matching the schema.
     g.  **IMPORTANT:** Topics that were NOT included as swimlanes (due to zero overlapping tasks or lack of date data) MUST still appear in this analysis with includedinChart=false and explanation of why.`;
 
 export function generateRoadmapPrompt(userPrompt, researchFiles) {
-  const researchContent = researchFiles
-    .map(file => `=== ${file.filename} ===\n${file.content}`)
-    .join('\n\n');
+  const researchContent = assembleResearchContent(researchFiles);
 
   return `${roadmapPrompt}
 

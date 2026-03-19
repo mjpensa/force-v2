@@ -1,3 +1,5 @@
+import { getCurrentDateContext, assembleResearchContent, validatePromptInputs } from './common.js';
+
 // Schema for individual content slides
 const contentSlideSchema = {
   type: "object",
@@ -811,26 +813,6 @@ export const speakerNotesOutlineSchema = {
   required: ["reasoning", "slideOutlines"]
 };
 
-function getCurrentDateContext() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1; // 0-indexed
-  const quarter = Math.ceil(month / 3);
-  const nextQuarter = quarter === 4 ? 1 : quarter + 1;
-  const nextQuarterYear = quarter === 4 ? year + 1 : year;
-
-  return {
-    fullDate: now.toISOString().split('T')[0], // YYYY-MM-DD
-    month: now.toLocaleString('en-US', { month: 'long' }),
-    year,
-    currentQuarter: `Q${quarter} ${year}`,
-    nextQuarter: `Q${nextQuarter} ${nextQuarterYear}`,
-    quarterPlusTwo: `Q${((quarter + 1) % 4) + 1} ${quarter >= 3 ? year + 1 : year}`,
-    endOfYear: `Q4 ${year}`,
-    nextYear: year + 1
-  };
-}
-
 function extractKeyStats(content) {
   if (!content) return { stats: '', sources: [], contextualStats: [] };
   const statPatterns = [
@@ -902,27 +884,10 @@ function extractKeyStats(content) {
 }
 
 export function generateSlidesOutlinePrompt(userPrompt, researchFiles, swimlanes = []) {
-  if (!userPrompt || userPrompt.trim() === '') {
-    throw new Error('userPrompt is required for outline generation');
-  }
-  if (!researchFiles || researchFiles.length === 0) {
-    throw new Error('At least one research file is required for outline generation');
-  }
-  const validFiles = researchFiles.filter(file => {
-    if (!file || typeof file.filename !== 'string' || typeof file.content !== 'string') {
-      return false;
-    }
-    return file.content.trim().length > 0;
-  });
-
-  if (validFiles.length === 0) {
-    throw new Error('At least one research file with content is required for outline generation');
-  }
+  const validFiles = validatePromptInputs(userPrompt, researchFiles, 'outline generation');
 
   // Convert array to formatted string
-  const researchContent = validFiles
-    .map(file => `=== ${file.filename} ===\n${file.content}`)
-    .join('\n\n');
+  const researchContent = assembleResearchContent(validFiles);
 
   // Extract key statistics
   const { stats, sources, contextualStats } = extractKeyStats(researchContent);
@@ -1129,22 +1094,7 @@ function getFrameworkSignalPhrases(framework) {
  * @returns {string} Complete prompt for AI
  */
 export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = [], outline = null) {
-  if (!userPrompt || userPrompt.trim() === '') {
-    throw new Error('userPrompt is required for slide generation');
-  }
-  if (!researchFiles || researchFiles.length === 0) {
-    throw new Error('At least one research file is required for slide generation');
-  }
-  const validFiles = researchFiles.filter(file => {
-    if (!file || typeof file.filename !== 'string' || typeof file.content !== 'string') {
-      return false; // Skip malformed file objects
-    }
-    return file.content.trim().length > 0; // Skip empty content
-  });
-
-  if (validFiles.length === 0) {
-    throw new Error('At least one research file with content is required for slide generation');
-  }
+  const validFiles = validatePromptInputs(userPrompt, researchFiles, 'slide generation');
 
   // Validate swimlane objects if provided (allowing isFixed property for Overview/Conclusion)
   if (swimlanes && swimlanes.length > 0) {
@@ -1155,9 +1105,7 @@ export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = [], 
   }
 
   // Convert array to formatted string (consistent with other generators)
-  const researchContent = validFiles
-    .map(file => `=== ${file.filename} ===\n${file.content}`)
-    .join('\n\n');
+  const researchContent = assembleResearchContent(validFiles);
 
   // Extract key statistics to force AI to use real data
   const { stats, sources, contextualStats } = extractKeyStats(researchContent);
@@ -1712,10 +1660,8 @@ ${sectionSlides}`;
   }).join('\n\n');
 
   // Format research content
-  const researchContent = researchFiles
-    .filter(file => file?.filename && file?.content?.trim())
-    .map(file => `=== ${file.filename} ===\n${file.content}`)
-    .join('\n\n');
+  const validResearchFiles = researchFiles.filter(file => file?.filename && file?.content?.trim());
+  const researchContent = assembleResearchContent(validResearchFiles);
 
   // Extract source document names for reference
   const sourceDocuments = researchFiles
@@ -2081,10 +2027,8 @@ ${sectionSlides}`;
   }).join('\n\n');
 
   // Format research content
-  const researchContent = researchFiles
-    .filter(file => file?.filename && file?.content?.trim())
-    .map(file => `=== ${file.filename} ===\n${file.content}`)
-    .join('\n\n');
+  const validResearchFiles = researchFiles.filter(file => file?.filename && file?.content?.trim());
+  const researchContent = assembleResearchContent(validResearchFiles);
 
   // Extract source document names for reference
   const sourceDocuments = researchFiles

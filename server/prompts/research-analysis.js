@@ -1,3 +1,4 @@
+import { assembleResearchContent } from './common.js';
 
 const themeAnalysisSchema = {
   type: "object",
@@ -314,9 +315,7 @@ Calculate the overall score as a weighted average:
 - **insufficient**: No themes are Gantt-ready, or overall score < 4`;
 
 export function generateResearchAnalysisPrompt(userPrompt, researchFiles) {
-  const researchContent = researchFiles
-    .map(file => `=== ${file.filename} ===\n${file.content}`)
-    .join('\n\n');
+  const researchContent = assembleResearchContent(researchFiles);
 
   const timestamp = new Date().toISOString();
 
