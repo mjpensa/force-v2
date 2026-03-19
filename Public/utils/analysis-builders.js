@@ -1,15 +1,23 @@
 import { isSafeUrl } from './dom.js';
 
-export function buildAnalysisSection(title, content) {
-  if (!content) return '';
-  const safeTitle = DOMPurify.sanitize(title);
-  const safeContent = DOMPurify.sanitize(content);
+function wrapSection(sectionClass, title, innerHTML) {
   return `
-    <div class="analysis-section">
-      <h4>${safeTitle}</h4>
-      <p>${safeContent}</p>
+    <div class="analysis-section ${sectionClass}">
+      <h4>${title}</h4>
+      ${innerHTML}
     </div>
   `;
+}
+
+function buildSanitizedList(items, itemClass = '') {
+  if (!items || items.length === 0) return '';
+  const cls = itemClass ? ` class="${itemClass}"` : '';
+  return items.map(item => `<li${cls}>${DOMPurify.sanitize(item)}</li>`).join('');
+}
+
+export function buildAnalysisSection(title, content) {
+  if (!content) return '';
+  return wrapSection('', DOMPurify.sanitize(title), `<p>${DOMPurify.sanitize(content)}</p>`);
 }
 
 export function buildAnalysisList(title, items, itemKey, sourceKey) {
@@ -28,15 +36,7 @@ export function buildAnalysisList(title, items, itemKey, sourceKey) {
       </li>
     `;
   }).join('');
-  const safeTitle = DOMPurify.sanitize(title);
-  return `
-    <div class="analysis-section">
-      <h4>${safeTitle}</h4>
-      <ul class="analysis-list">
-        ${listItems}
-      </ul>
-    </div>
-  `;
+  return wrapSection('', DOMPurify.sanitize(title), `<ul class="analysis-list">${listItems}</ul>`);
 }
 
 export function buildTimelineScenarios(timelineScenarios) {
@@ -87,26 +87,16 @@ export function buildTimelineScenarios(timelineScenarios) {
 
   let delayFactorsHTML = '';
   if (likelyDelayFactors && likelyDelayFactors.length > 0) {
-    const factorItems = likelyDelayFactors.map(factor =>
-      `<li>${DOMPurify.sanitize(factor)}</li>`
-    ).join('');
     delayFactorsHTML = `
       <div class="delay-factors">
         <h5>Most Likely Delay Factors:</h5>
-        <ul>${factorItems}</ul>
+        <ul>${buildSanitizedList(likelyDelayFactors)}</ul>
       </div>
     `;
   }
 
-  return `
-    <div class="analysis-section timeline-scenarios-section">
-      <h4>📅 Timeline Scenarios</h4>
-      <div class="scenarios-container">
-        ${scenariosHTML}
-      </div>
-      ${delayFactorsHTML}
-    </div>
-  `;
+  return wrapSection('timeline-scenarios-section', '📅 Timeline Scenarios',
+    `<div class="scenarios-container">${scenariosHTML}</div>${delayFactorsHTML}`);
 }
 
 export function buildRiskAnalysis(risks) {
@@ -129,14 +119,8 @@ export function buildRiskAnalysis(risks) {
       </div>
     `;
   }).join('');
-  return `
-    <div class="analysis-section risks-section">
-      <h4>🚨 Risks & Roadblocks</h4>
-      <div class="risks-container">
-        ${riskCards}
-      </div>
-    </div>
-  `;
+  return wrapSection('risks-section', '🚨 Risks & Roadblocks',
+    `<div class="risks-container">${riskCards}</div>`);
 }
 
 export function buildImpactAnalysis(impact) {
@@ -181,14 +165,8 @@ export function buildImpactAnalysis(impact) {
   }
 
   if (!contentHTML) return '';
-  return `
-    <div class="analysis-section impact-section">
-      <h4>📊 Impact Analysis</h4>
-      <div class="impact-content">
-        ${contentHTML}
-      </div>
-    </div>
-  `;
+  return wrapSection('impact-section', '📊 Impact Analysis',
+    `<div class="impact-content">${contentHTML}</div>`);
 }
 
 export function buildSchedulingContext(schedulingContext) {
@@ -204,28 +182,15 @@ export function buildSchedulingContext(schedulingContext) {
     `;
   }
 
-  if (schedulingContext.predecessors && schedulingContext.predecessors.length > 0) {
-    const predList = schedulingContext.predecessors.map(p =>
-      `<li>${DOMPurify.sanitize(p)}</li>`
-    ).join('');
-    contentHTML += `
-      <div class="scheduling-item">
-        <strong>Depends On:</strong>
-        <ul class="dependency-list">${predList}</ul>
-      </div>
-    `;
-  }
-
-  if (schedulingContext.successors && schedulingContext.successors.length > 0) {
-    const succList = schedulingContext.successors.map(s =>
-      `<li>${DOMPurify.sanitize(s)}</li>`
-    ).join('');
-    contentHTML += `
-      <div class="scheduling-item">
-        <strong>Blocks:</strong>
-        <ul class="dependency-list">${succList}</ul>
-      </div>
-    `;
+  for (const [key, label] of [['predecessors', 'Depends On:'], ['successors', 'Blocks:']]) {
+    if (schedulingContext[key] && schedulingContext[key].length > 0) {
+      contentHTML += `
+        <div class="scheduling-item">
+          <strong>${label}</strong>
+          <ul class="dependency-list">${buildSanitizedList(schedulingContext[key])}</ul>
+        </div>
+      `;
+    }
   }
 
   if (schedulingContext.slackDays !== undefined && schedulingContext.slackDays !== null) {
@@ -238,14 +203,8 @@ export function buildSchedulingContext(schedulingContext) {
   }
 
   if (!contentHTML) return '';
-  return `
-    <div class="analysis-section scheduling-section">
-      <h4>🎯 Why This Task Starts Now</h4>
-      <div class="scheduling-content">
-        ${contentHTML}
-      </div>
-    </div>
-  `;
+  return wrapSection('scheduling-section', '🎯 Why This Task Starts Now',
+    `<div class="scheduling-content">${contentHTML}</div>`);
 }
 
 export function buildProgressIndicators(progress, taskStatus) {
@@ -297,87 +256,41 @@ export function buildProgressIndicators(progress, taskStatus) {
   }
 
   if (progress.activeBlockers && progress.activeBlockers.length > 0) {
-    const blockerItems = progress.activeBlockers.map(blocker =>
-      `<li>🚫 ${DOMPurify.sanitize(blocker)}</li>`
-    ).join('');
     contentHTML += `
       <div class="blockers-section">
         <h5>Active Blockers</h5>
-        <ul class="blockers-list">${blockerItems}</ul>
+        <ul class="blockers-list">${progress.activeBlockers.map(b => `<li>🚫 ${DOMPurify.sanitize(b)}</li>`).join('')}</ul>
       </div>
     `;
   }
 
   if (!contentHTML) return '';
-  return `
-    <div class="analysis-section progress-section">
-      <h4>📈 Progress Tracking</h4>
-      <div class="progress-content">
-        ${contentHTML}
-      </div>
-    </div>
-  `;
+  return wrapSection('progress-section', '📈 Progress Tracking',
+    `<div class="progress-content">${contentHTML}</div>`);
 }
 
 export function buildAccelerators(accelerators) {
   if (!accelerators) return '';
-  let contentHTML = '';
 
-  if (accelerators.externalDrivers && accelerators.externalDrivers.length > 0) {
-    const driverItems = accelerators.externalDrivers.map(driver =>
-      `<li>${DOMPurify.sanitize(driver)}</li>`
-    ).join('');
-    contentHTML += `
+  const subsections = [
+    ['externalDrivers', 'External Drivers'],
+    ['internalIncentives', 'Internal Incentives'],
+    ['efficiencyOpportunities', 'Efficiency Opportunities'],
+    ['successFactors', 'Success Factors']
+  ];
+
+  const contentHTML = subsections.map(([key, title]) => {
+    const items = accelerators[key];
+    if (!items || items.length === 0) return '';
+    return `
       <div class="accelerator-subsection">
-        <h5>External Drivers</h5>
-        <ul class="accelerator-list">${driverItems}</ul>
+        <h5>${title}</h5>
+        <ul class="accelerator-list">${buildSanitizedList(items)}</ul>
       </div>
     `;
-  }
-
-  if (accelerators.internalIncentives && accelerators.internalIncentives.length > 0) {
-    const incentiveItems = accelerators.internalIncentives.map(incentive =>
-      `<li>${DOMPurify.sanitize(incentive)}</li>`
-    ).join('');
-    contentHTML += `
-      <div class="accelerator-subsection">
-        <h5>Internal Incentives</h5>
-        <ul class="accelerator-list">${incentiveItems}</ul>
-      </div>
-    `;
-  }
-
-  if (accelerators.efficiencyOpportunities && accelerators.efficiencyOpportunities.length > 0) {
-    const opportunityItems = accelerators.efficiencyOpportunities.map(opportunity =>
-      `<li>${DOMPurify.sanitize(opportunity)}</li>`
-    ).join('');
-    contentHTML += `
-      <div class="accelerator-subsection">
-        <h5>Efficiency Opportunities</h5>
-        <ul class="accelerator-list">${opportunityItems}</ul>
-      </div>
-    `;
-  }
-
-  if (accelerators.successFactors && accelerators.successFactors.length > 0) {
-    const factorItems = accelerators.successFactors.map(factor =>
-      `<li>${DOMPurify.sanitize(factor)}</li>`
-    ).join('');
-    contentHTML += `
-      <div class="accelerator-subsection">
-        <h5>Success Factors</h5>
-        <ul class="accelerator-list">${factorItems}</ul>
-      </div>
-    `;
-  }
+  }).join('');
 
   if (!contentHTML) return '';
-  return `
-    <div class="analysis-section accelerators-section">
-      <h4>⚡ Motivators & Accelerators</h4>
-      <div class="accelerators-content">
-        ${contentHTML}
-      </div>
-    </div>
-  `;
+  return wrapSection('accelerators-section', '⚡ Motivators & Accelerators',
+    `<div class="accelerators-content">${contentHTML}</div>`);
 }
