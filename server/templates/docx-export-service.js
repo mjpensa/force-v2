@@ -161,6 +161,38 @@ function splitIntoParagraphs(text) {
   return text.split(/\n\n+/).filter(p => p.trim());
 }
 
+function buildDocument({ creator, title, description, margins, children }) {
+  return new Document({
+    creator: creator || DEFAULT_METADATA.creator,
+    title: title || DEFAULT_METADATA.title,
+    description: description || DEFAULT_METADATA.description,
+    numbering: BULLET_NUMBERING,
+    styles: {
+      default: {
+        document: {
+          run: { font: FONTS.body, size: STYLES.body.size }
+        }
+      }
+    },
+    sections: [{
+      properties: {
+        page: {
+          size: { width: PAGE.width, height: PAGE.height },
+          margin: margins || {
+            top: PAGE.margins.top,
+            right: PAGE.margins.right,
+            bottom: PAGE.margins.bottom,
+            left: PAGE.margins.left,
+            header: PAGE.headerDistance,
+            footer: PAGE.footerDistance
+          }
+        }
+      },
+      children
+    }]
+  });
+}
+
 function createHeaderCell(text, width) {
   return new TableCell({
     width: { size: width, type: WidthType.DXA },
@@ -543,45 +575,13 @@ export async function generateDocx(documentData, options = {}) {
       children.push(new Paragraph({ spacing: { after: 300 }, children: [] }));
     });
   }
-  const doc = new Document({
-    creator: options.creator || DEFAULT_METADATA.creator,
-    title: documentData.title || DEFAULT_METADATA.title,
-    description: options.description || DEFAULT_METADATA.description,
-    numbering: BULLET_NUMBERING,
-    styles: {
-      default: {
-        document: {
-          run: {
-            font: FONTS.body,
-            size: STYLES.body.size
-          }
-        }
-      }
-    },
-    sections: [{
-      properties: {
-        page: {
-          size: {
-            width: PAGE.width,     // A4: 11906
-            height: PAGE.height    // A4: 16838
-          },
-          margin: {
-            top: PAGE.margins.top,
-            right: PAGE.margins.right,
-            bottom: PAGE.margins.bottom,
-            left: PAGE.margins.left,
-            header: PAGE.headerDistance,
-            footer: PAGE.footerDistance
-          }
-        }
-      },
-      children
-    }]
+  const doc = buildDocument({
+    creator: options.creator,
+    title: documentData.title,
+    description: options.description,
+    children
   });
-  const buffer = await Packer.toBuffer(doc);
-  console.log(`[DOCX Export] Generated document: ${documentData.title || 'Untitled'} (${buffer.length} bytes)`);
-
-  return buffer;
+  return Packer.toBuffer(doc);
 }
 
 export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
@@ -731,44 +731,13 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
       }));
     });
   }
-  const doc = new Document({
-    creator: DEFAULT_METADATA.creator,
+  const doc = buildDocument({
     title: 'Pre-Meeting Intelligence Brief',
     description: 'Meeting preparation brief',
-    numbering: BULLET_NUMBERING,
-    styles: {
-      default: {
-        document: {
-          run: {
-            font: FONTS.body,
-            size: STYLES.body.size
-          }
-        }
-      }
-    },
-    sections: [{
-      properties: {
-        page: {
-          size: {
-            width: PAGE.width,     // A4: 11906
-            height: PAGE.height    // A4: 16838
-          },
-          margin: {
-            top: 720,    // 0.5 inch (tighter margins for one-page fit)
-            right: 720,
-            bottom: 720,
-            left: 720
-          }
-        }
-      },
-      children
-    }]
+    margins: { top: 720, right: 720, bottom: 720, left: 720 },
+    children
   });
-
-  const buffer = await Packer.toBuffer(doc);
-  console.log(`[DOCX Export] Generated intelligence brief (${buffer.length} bytes)`);
-
-  return buffer;
+  return Packer.toBuffer(doc);
 }
 
 export default { generateDocx, generateIntelligenceBriefDocx, createStyledTable };
