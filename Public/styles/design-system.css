@@ -1,37 +1,17 @@
 :root {
   --color-primary: #1a73e8;
-  --color-primary-hover: #1557b0;
-  --color-primary-light: #e8f0fe;
-  --color-primary-dark: #0d47a1;
-  --color-surface: #ffffff;
   --color-background: #f8f9fa;
-  --color-background-alt: #f1f3f4;
   --color-border: #dadce0;
-  --color-border-light: #e8eaed;
   --color-border-dark: #c4c7c9;
   --color-text-primary: #202124;
   --color-text-secondary: #5f6368;
   --color-text-tertiary: #80868b;
-  --color-text-disabled: #9aa0a6;
   --color-success: #34a853;
-  --color-success-light: #e6f4ea;
   --color-warning: #fbbc04;
-  --color-warning-light: #fef7e0;
   --color-error: #ea4335;
-  --color-error-light: #fce8e6;
-  --color-info: #4285f4;
-  --color-info-light: #e8f0fe;
-  --color-hover: #f1f3f4;
-  --color-active: #e8eaed;
-  --color-focus: rgba(26, 115, 232, 0.12);
-  --color-selected: #e8f0fe;
-  --color-overlay: rgba(0, 0, 0, 0.32);
-  --color-overlay-light: rgba(0, 0, 0, 0.08);
   --color-navy-deep: #0c2340;
   --color-navy-brand: #002040;
   --color-navy-mid: #143052;
-  --color-navy-light: #1d4168;
-  --color-navy-pale: #2a5580;
   --color-accent-red: #da291c;
   --color-accent-red-hover: #b82317;
   --color-glass-success: #50AF7B;
@@ -45,17 +25,9 @@
   --glass-white-20: rgba(255, 255, 255, 0.20);
   --glass-white-25: rgba(255, 255, 255, 0.25);
   --glass-white-30: rgba(255, 255, 255, 0.30);
-  --glass-white-40: rgba(255, 255, 255, 0.40);
-  --glass-navy-10: rgba(12, 35, 64, 0.10);
-  --glass-navy-15: rgba(12, 35, 64, 0.15);
-  --glass-navy-20: rgba(12, 35, 64, 0.20);
-  --glass-navy-25: rgba(12, 35, 64, 0.25);
-  --glass-navy-30: rgba(12, 35, 64, 0.30);
-  --glass-navy-50: rgba(12, 35, 64, 0.50);
   --glass-text-primary: #FFFFFF;
   --glass-text-secondary: rgba(255, 255, 255, 0.80);
   --glass-text-muted: rgba(255, 255, 255, 0.60);
-  --glass-text-disabled: rgba(255, 255, 255, 0.40);
   --blur-xs: 4px;
   --blur-sm: 8px;
   --blur-md: 12px;
@@ -66,8 +38,6 @@
   --radius-glass-md: 12px;
   --radius-glass-lg: 16px;
   --radius-glass-xl: 24px;
-  --radius-glass-2xl: 32px;
-  --radius-glass-full: 9999px;
   --shadow-glass-1:
     0 4px 16px rgba(12, 35, 64, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -77,22 +47,12 @@
   --shadow-glass-3:
     0 12px 48px rgba(12, 35, 64, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  --shadow-glass-4:
     0 24px 64px rgba(12, 35, 64, 0.30),
     inset 0 2px 0 rgba(255, 255, 255, 0.15);
   --border-glass: 1px solid rgba(255, 255, 255, 0.15);
   --border-glass-strong: 1px solid rgba(255, 255, 255, 0.25);
-  --border-glass-active: 1px solid rgba(255, 255, 255, 0.40);
-  --border-glass-dashed: 2px dashed rgba(255, 255, 255, 0.30);
-  --border-glass-success: 2px solid rgba(80, 175, 123, 0.60);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --ease-in-out-quad: cubic-bezier(0.455, 0.03, 0.515, 0.955);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --transition-glass-fast: 0.15s ease;
-  --transition-glass-normal: 0.2s ease;
-  --transition-glass-slow: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --font-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
   --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
     "Courier New", monospace;
@@ -104,78 +64,42 @@
   --text-2xl: 1.5rem;     
   --text-3xl: 1.875rem;   
   --text-4xl: 2.25rem;    
-  --text-5xl: 3rem;       
-  --text-6xl: 3.75rem;    
-  --weight-light: 300;
   --weight-normal: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
   --weight-bold: 700;
-  --leading-none: 1;
   --leading-tight: 1.25;
   --leading-snug: 1.375;
   --leading-normal: 1.5;
   --leading-relaxed: 1.75;
-  --leading-loose: 2;
-  --tracking-tighter: -0.05em;
-  --tracking-tight: -0.025em;
-  --tracking-normal: 0;
   --tracking-wide: 0.025em;
-  --tracking-wider: 0.05em;
-  --spacing-0: 0;
   --spacing-1: 0.25rem;   
   --spacing-2: 0.5rem;    
   --spacing-3: 0.75rem;   
   --spacing-4: 1rem;      
   --spacing-5: 1.25rem;   
   --spacing-6: 1.5rem;    
-  --spacing-7: 1.75rem;   
   --spacing-8: 2rem;      
   --spacing-10: 2.5rem;   
   --spacing-12: 3rem;     
   --spacing-16: 4rem;     
-  --spacing-20: 5rem;     
-  --spacing-24: 6rem;     
-  --shadow-none: none;
-  --shadow-sm: 0 1px 2px 0 rgba(60, 64, 67, 0.1),
     0 1px 3px 1px rgba(60, 64, 67, 0.05);
-  --shadow-md: 0 1px 3px 0 rgba(60, 64, 67, 0.1),
     0 4px 8px 3px rgba(60, 64, 67, 0.05);
-  --shadow-lg: 0 4px 6px 0 rgba(60, 64, 67, 0.1),
     0 10px 20px 3px rgba(60, 64, 67, 0.1);
   --shadow-xl: 0 8px 12px 0 rgba(60, 64, 67, 0.15),
     0 16px 24px 6px rgba(60, 64, 67, 0.1);
   --shadow-2xl: 0 16px 24px 0 rgba(60, 64, 67, 0.2),
     0 24px 48px 12px rgba(60, 64, 67, 0.15);
-  --shadow-focus: 0 0 0 3px var(--color-focus);
-  --radius-none: 0;
-  --radius-sm: 4px;
   --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 24px;
   --radius-full: 9999px;
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  --container-xs: 640px;
-  --container-sm: 768px;
-  --container-md: 1024px;
   --container-lg: 1280px;
-  --container-xl: 1536px;
   --content-width: 800px;
   --sidebar-width: 280px;
-  --sidebar-collapsed: 64px;
   --header-height: 64px;
-  --z-base: 0;
-  --z-dropdown: 1000;
-  --z-sticky: 1100;
   --z-fixed: 1200;
-  --z-modal-backdrop: 1300;
   --z-modal: 1400;
-  --z-popover: 1500;
-  --z-tooltip: 1600;
 }
 *,
 *::before,
