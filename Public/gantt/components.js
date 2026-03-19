@@ -8,18 +8,8 @@ export class GanttComponents {
     this._legendDblClickHandler = null;
   }
 
-  addHeaderSVG(chartWrapper, footerSVG) {
-    if (!footerSVG) return;
-
-    const encodedFooterSVG = encodeURIComponent(footerSVG.replace(/(\r\n|\n|\r)/gm, ''));
-
-    const headerSvgEl = document.createElement('div');
-    headerSvgEl.className = 'gantt-header-svg';
-
-    // Store SVG data for html2canvas export (as data attribute)
-    headerSvgEl.dataset.svgSrc = `data:image/svg+xml,${encodedFooterSVG}`;
-    // CSS handles display with background-repeat: repeat-x for proper tiling
-    chartWrapper.appendChild(headerSvgEl);
+  addHeaderSVG(chartWrapper, svgMarkup) {
+    this._addSVGBand(chartWrapper, svgMarkup, 'gantt-header-svg');
   }
 
   addTitle(chartWrapper, ganttData, headerMenu = null) {
@@ -74,18 +64,17 @@ export class GanttComponents {
     }
   }
 
-  addFooterSVG(chartWrapper, footerSVG) {
-    if (!footerSVG) return;
+  addFooterSVG(chartWrapper, svgMarkup) {
+    this._addSVGBand(chartWrapper, svgMarkup, 'gantt-footer-svg');
+  }
 
-    const encodedFooterSVG = encodeURIComponent(footerSVG.replace(/(\r\n|\n|\r)/gm, ''));
-
-    const footerSvgEl = document.createElement('div');
-    footerSvgEl.className = 'gantt-footer-svg';
-
-    // Store SVG data for html2canvas export (as data attribute)
-    footerSvgEl.dataset.svgSrc = `data:image/svg+xml,${encodedFooterSVG}`;
-    // CSS handles display with background-repeat: repeat-x for proper tiling
-    chartWrapper.appendChild(footerSvgEl);
+  _addSVGBand(chartWrapper, svgMarkup, className) {
+    if (!svgMarkup) return;
+    const encoded = encodeURIComponent(svgMarkup.replace(/(\r\n|\n|\r)/gm, ''));
+    const el = document.createElement('div');
+    el.className = className;
+    el.dataset.svgSrc = `data:image/svg+xml,${encoded}`;
+    chartWrapper.appendChild(el);
   }
 
   addLegend(chartWrapper, ganttData) {
@@ -220,7 +209,6 @@ export class GanttComponents {
     const menuContainer = document.createElement('div');
     menuContainer.className = 'gantt-header-menu';
 
-    // Three-dot trigger button
     const triggerBtn = document.createElement('button');
     triggerBtn.className = 'gantt-menu-trigger';
     triggerBtn.setAttribute('aria-label', 'Open chart menu');
@@ -232,12 +220,10 @@ export class GanttComponents {
       <span class="menu-dot"></span>
     `;
 
-    // Dropdown menu
     const dropdown = document.createElement('div');
     dropdown.className = 'gantt-menu-dropdown';
     dropdown.setAttribute('role', 'menu');
 
-    // Edit Mode Toggle
     const editModeItem = this._createMenuItem({
       id: 'edit-mode-toggle-btn',
       icon: isEditMode ? '🔓' : '🔒',
@@ -247,10 +233,8 @@ export class GanttComponents {
     });
     dropdown.appendChild(editModeItem);
 
-    // Divider
     dropdown.appendChild(this._createMenuDivider());
 
-    // Export PNG
     const exportPngItem = this._createMenuItem({
       id: 'export-png-btn',
       icon: '📷',
@@ -260,7 +244,6 @@ export class GanttComponents {
     });
     dropdown.appendChild(exportPngItem);
 
-    // Export SVG
     const exportSvgItem = this._createMenuItem({
       id: 'export-svg-btn',
       icon: '🎨',
@@ -270,10 +253,8 @@ export class GanttComponents {
     });
     dropdown.appendChild(exportSvgItem);
 
-    // Divider
     dropdown.appendChild(this._createMenuDivider());
 
-    // Copy URL
     const copyUrlItem = this._createMenuItem({
       id: 'copy-url-btn',
       icon: '🔗',
@@ -334,18 +315,15 @@ export class GanttComponents {
       }
     });
 
-    // Close when clicking outside
     document.addEventListener('click', (e) => {
       if (isOpen && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
         closeMenu();
       }
     });
 
-    // Close menu when a menu item is clicked
     dropdown.addEventListener('click', (e) => {
       const menuItem = e.target.closest('.menu-item');
       if (menuItem) {
-        // Don't close for edit mode toggle (let it update visually first)
         if (menuItem.id !== 'edit-mode-toggle-btn') {
           closeMenu();
         }
