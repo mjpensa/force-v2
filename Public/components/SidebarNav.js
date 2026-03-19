@@ -1,3 +1,12 @@
+const ICONS = {
+  roadmap: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"></rect><rect x="3" y="10" width="12" height="4" rx="1"></rect><rect x="3" y="16" width="15" height="4" rx="1"></rect></svg>',
+  slides: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 8l3 2-3 2"></path></svg>',
+  document: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>',
+  analysis: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path><path d="M11 8v6"></path><path d="M8 11h6"></path></svg>',
+  home: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 9h-3v9h-5v-6H11v6H6v-9H3l9-9z"></path></svg>',
+  chevron: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>'
+};
+
 export class SidebarNav {
   constructor(options = {}) {
     this.onNavigate = options.onNavigate || (() => {});
@@ -9,30 +18,10 @@ export class SidebarNav {
     this.tooltip = null;
     this.tooltipTimeout = null;
     this.navItems = [
-      {
-        id: 'roadmap',
-        title: 'Roadmap',
-        subtitle: 'Gantt Chart View',
-        icon: this._getRoadmapIcon()
-      },
-      {
-        id: 'document',
-        title: 'Document',
-        subtitle: 'Article View',
-        icon: this._getDocumentIcon()
-      },
-      {
-        id: 'slides',
-        title: 'Slides',
-        subtitle: 'Presentation View',
-        icon: this._getSlidesIcon()
-      },
-      {
-        id: 'research-analysis',
-        title: 'Research QA',
-        subtitle: 'Research Quality',
-        icon: this._getAnalysisIcon()
-      }
+      { id: 'roadmap', title: 'Roadmap', subtitle: 'Gantt Chart View', icon: ICONS.roadmap },
+      { id: 'document', title: 'Document', subtitle: 'Article View', icon: ICONS.document },
+      { id: 'slides', title: 'Slides', subtitle: 'Presentation View', icon: ICONS.slides },
+      { id: 'research-analysis', title: 'Research QA', subtitle: 'Research Quality', icon: ICONS.analysis }
     ];
     this.statuses = {};
     this.navItems.forEach(item => {
@@ -50,7 +39,7 @@ export class SidebarNav {
       <div class="icon-rail-header">
         <a href="/" class="icon-rail-home" title="Create New Roadmap">
           <div class="icon-rail-home-icon">
-            ${this._getHomeIcon()}
+            ${ICONS.home}
           </div>
           <span class="icon-rail-home-text">New Roadmap</span>
         </a>
@@ -60,7 +49,7 @@ export class SidebarNav {
         ${this._renderNavItems()}
       </div>
       <button class="icon-rail-toggle" title="Pin sidebar" aria-label="Toggle sidebar">
-        ${this._getChevronIcon()}
+        ${ICONS.chevron}
       </button>
     `;
     this._createTooltip();
@@ -219,65 +208,6 @@ export class SidebarNav {
     this.tooltip = null;
   }
 
-  _getRoadmapIcon() {
-    return `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="4" width="18" height="4" rx="1"></rect>
-        <rect x="3" y="10" width="12" height="4" rx="1"></rect>
-        <rect x="3" y="16" width="15" height="4" rx="1"></rect>
-      </svg>
-    `;
-  }
-
-  _getSlidesIcon() {
-    return `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2"></rect>
-        <path d="M8 21h8"></path>
-        <path d="M12 17v4"></path>
-        <path d="M7 8l3 2-3 2"></path>
-      </svg>
-    `;
-  }
-
-  _getDocumentIcon() {
-    return `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-        <polyline points="14 2 14 8 20 8"></polyline>
-        <line x1="16" y1="13" x2="8" y2="13"></line>
-        <line x1="16" y1="17" x2="8" y2="17"></line>
-        <line x1="10" y1="9" x2="8" y2="9"></line>
-      </svg>
-    `;
-  }
-
-  _getAnalysisIcon() {
-    return `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"></circle>
-        <path d="M21 21l-4.35-4.35"></path>
-        <path d="M11 8v6"></path>
-        <path d="M8 11h6"></path>
-      </svg>
-    `;
-  }
-
-  _getHomeIcon() {
-    return `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 3l9 9h-3v9h-5v-6H11v6H6v-9H3l9-9z"></path>
-      </svg>
-    `;
-  }
-
-  _getChevronIcon() {
-    return `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="9 18 15 12 9 6"></polyline>
-      </svg>
-    `;
-  }
 }
 
 export default SidebarNav;

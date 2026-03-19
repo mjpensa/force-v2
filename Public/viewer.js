@@ -317,20 +317,11 @@ class ContentViewer {
         throw error;
       }
       markPerformance(`render-${viewName}-start`);
-      switch (viewName) {
-        case 'slides':
-          await this._renderSlidesView(viewData);
-          break;
-        case 'document':
-          await this._renderDocumentView(viewData);
-          break;
-        case 'research-analysis':
-          await this._renderResearchAnalysisView(viewData);
-          break;
-        case 'roadmap':
-        default:
-          await this._renderRoadmapView(viewData);
-          break;
+      const viewClasses = { slides: SlidesView, document: DocumentView, 'research-analysis': ResearchAnalysisView };
+      if (viewClasses[viewName]) {
+        this._renderView(viewClasses[viewName], viewData);
+      } else {
+        await this._renderRoadmapView(viewData);
       }
       markPerformance(`render-${viewName}-end`);
       const renderTime = measurePerformance(`render-${viewName}`, `render-${viewName}-start`, `render-${viewName}-end`);
@@ -354,26 +345,12 @@ class ContentViewer {
       }
     }
   }
-  async _renderSlidesView(data) {
-    const slidesView = new SlidesView(data, this.sessionId);
-    const container = slidesView.render();
+  _renderView(ViewClass, data) {
+    const view = new ViewClass(data, this.sessionId);
+    const container = view.render();
     this.contentContainer.innerHTML = '';
     this.contentContainer.appendChild(container);
-    this.currentViewComponent = slidesView;
-  }
-  async _renderDocumentView(data) {
-    const documentView = new DocumentView(data, this.sessionId);
-    const container = documentView.render();
-    this.contentContainer.innerHTML = '';
-    this.contentContainer.appendChild(container);
-    this.currentViewComponent = documentView;
-  }
-  async _renderResearchAnalysisView(data) {
-    const analysisView = new ResearchAnalysisView(data, this.sessionId);
-    const container = analysisView.render();
-    this.contentContainer.innerHTML = '';
-    this.contentContainer.appendChild(container);
-    this.currentViewComponent = analysisView;
+    this.currentViewComponent = view;
   }
   async _renderRoadmapView(data) {
     this.contentContainer.innerHTML = '';
@@ -548,102 +525,64 @@ class ContentViewer {
       }, interval * 2);
     }
   }
-  _showGenerationTimeout(viewName) {
-    const viewNameCapitalized = viewName.charAt(0).toUpperCase() + viewName.slice(1);
+  _statusScreen({ icon, color, title, message, buttons, footer }) {
     this.contentContainer.innerHTML = `
       <div style="padding: 3rem; text-align: center; max-width: 600px; margin: 0 auto;">
-        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-warning, #f59e0b); margin-bottom: 1.5rem;">
-          <circle cx="12" cy="12" r="10" stroke-width="2"/>
-          <polyline points="12 6 12 12 16 14" stroke-width="2"/>
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(${color}); margin-bottom: 1.5rem;">
+          ${icon}
         </svg>
-        <h2 style="margin-bottom: 1rem; color: var(--color-text-primary);">
-          ${viewNameCapitalized} Generation Taking Too Long
-        </h2>
-        <p style="color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 2rem;">
-          The content is still being generated but it's taking longer than expected.
-          This could be due to complex source material or server load.
-        </p>
+        <h2 style="margin-bottom: 1rem; color: var(--color-text-primary);">${title}</h2>
+        <p style="color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 2rem;">${message}</p>
         <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-          <button id="continue-waiting-btn"
-                  style="padding: 0.75rem 1.5rem; background: var(--color-primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 500;">
-            Continue Waiting
-          </button>
-          <button id="retry-generation-btn"
-                  style="padding: 0.75rem 1.5rem; background: transparent; color: var(--color-text-primary); border: 2px solid var(--color-border); border-radius: 0.5rem; cursor: pointer; font-weight: 500;">
-            🔄 Retry Generation
-          </button>
+          ${buttons.map(b => `<button id="${b.id || ''}" ${b.onclick ? `onclick="${b.onclick}"` : ''}
+            style="padding: 0.75rem 1.5rem; background: ${b.primary ? 'var(--color-primary)' : 'transparent'}; color: ${b.primary ? 'white' : 'var(--color-text-primary)'}; border: ${b.primary ? 'none' : '2px solid var(--color-border)'}; border-radius: 0.5rem; cursor: pointer; font-weight: 500;">
+            ${b.text}</button>`).join('')}
         </div>
+        ${footer ? `<p style="margin-top: 2rem; font-size: 0.875rem; color: var(--color-text-tertiary);">${footer}</p>` : ''}
       </div>
     `;
-    const continueBtn = document.getElementById('continue-waiting-btn');
-    const retryBtn = document.getElementById('retry-generation-btn');
-    if (continueBtn) {
-      continueBtn.addEventListener('click', () => {
-        this._showProcessing(viewName);
-      });
-    }
-    if (retryBtn) {
-      retryBtn.addEventListener('click', () => this._retryGeneration(viewName));
-    }
+  }
+  _showGenerationTimeout(viewName) {
+    const label = viewName.charAt(0).toUpperCase() + viewName.slice(1);
+    this._statusScreen({
+      icon: '<circle cx="12" cy="12" r="10" stroke-width="2"/><polyline points="12 6 12 12 16 14" stroke-width="2"/>',
+      color: '--color-warning, #f59e0b',
+      title: `${label} Generation Taking Too Long`,
+      message: 'The content is still being generated but it\'s taking longer than expected. This could be due to complex source material or server load.',
+      buttons: [
+        { id: 'continue-waiting-btn', text: 'Continue Waiting', primary: true },
+        { id: 'retry-generation-btn', text: 'Retry Generation' }
+      ]
+    });
+    document.getElementById('continue-waiting-btn')?.addEventListener('click', () => this._showProcessing(viewName));
+    document.getElementById('retry-generation-btn')?.addEventListener('click', () => this._retryGeneration(viewName));
   }
   _showGenerationFailed(viewName, errorMessage) {
-    const viewNameCapitalized = viewName.charAt(0).toUpperCase() + viewName.slice(1);
-    this.contentContainer.innerHTML = `
-      <div style="padding: 3rem; text-align: center; max-width: 600px; margin: 0 auto;">
-        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-error, #ef4444); margin-bottom: 1.5rem;">
-          <circle cx="12" cy="12" r="10" stroke-width="2"/>
-          <line x1="15" y1="9" x2="9" y2="15" stroke-width="2"/>
-          <line x1="9" y1="9" x2="15" y2="15" stroke-width="2"/>
-        </svg>
-        <h2 style="margin-bottom: 1rem; color: var(--color-text-primary);">
-          ${viewNameCapitalized} Generation Failed
-        </h2>
-        <p style="color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 2rem;">
-          ${errorMessage}
-        </p>
-        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-          <button id="retry-generation-btn"
-                  style="padding: 0.75rem 1.5rem; background: var(--color-primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 500;">
-            🔄 Retry Generation
-          </button>
-          <button onclick="window.location.href='/'"
-                  style="padding: 0.75rem 1.5rem; background: transparent; color: var(--color-text-primary); border: 2px solid var(--color-border); border-radius: 0.5rem; cursor: pointer; font-weight: 500;">
-            Generate New Content
-          </button>
-        </div>
-        <p style="margin-top: 2rem; font-size: 0.875rem; color: var(--color-text-tertiary);">
-          If the problem persists, try generating new content with different source files.
-        </p>
-      </div>
-    `;
-    const retryBtn = document.getElementById('retry-generation-btn');
-    if (retryBtn) {
-      retryBtn.addEventListener('click', () => this._retryGeneration(viewName));
-    }
+    const label = viewName.charAt(0).toUpperCase() + viewName.slice(1);
+    this._statusScreen({
+      icon: '<circle cx="12" cy="12" r="10" stroke-width="2"/><line x1="15" y1="9" x2="9" y2="15" stroke-width="2"/><line x1="9" y1="9" x2="15" y2="15" stroke-width="2"/>',
+      color: '--color-error, #ef4444',
+      title: `${label} Generation Failed`,
+      message: errorMessage,
+      buttons: [
+        { id: 'retry-generation-btn', text: 'Retry Generation', primary: true },
+        { text: 'Generate New Content', onclick: "window.location.href='/'" }
+      ],
+      footer: 'If the problem persists, try generating new content with different source files.'
+    });
+    document.getElementById('retry-generation-btn')?.addEventListener('click', () => this._retryGeneration(viewName));
   }
-  async _retryGeneration(viewName) {
-    // Note: Regeneration requires re-uploading the original files.
-    // Since we don't store files in the viewer session, redirect to home page.
-    const viewNameCapitalized = viewName.charAt(0).toUpperCase() + viewName.slice(1);
-    this.contentContainer.innerHTML = `
-      <div style="padding: 3rem; text-align: center; max-width: 600px; margin: 0 auto;">
-        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-primary); margin-bottom: 1.5rem;">
-          <path d="M21 12a9 9 0 11-6.219-8.56" stroke-width="2"/>
-          <polyline points="21 3 21 9 15 9" stroke-width="2"/>
-        </svg>
-        <h2 style="margin-bottom: 1rem; color: var(--color-text-primary);">
-          Regenerate ${viewNameCapitalized}
-        </h2>
-        <p style="color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 2rem;">
-          To regenerate this content, you'll need to upload your research files again.
-          This ensures the AI has the full source material to work with.
-        </p>
-        <button onclick="window.location.href='/'"
-                style="padding: 0.75rem 1.5rem; background: var(--color-primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 500;">
-          🔄 Upload Files & Regenerate
-        </button>
-      </div>
-    `;
+  _retryGeneration(viewName) {
+    const label = viewName.charAt(0).toUpperCase() + viewName.slice(1);
+    this._statusScreen({
+      icon: '<path d="M21 12a9 9 0 11-6.219-8.56" stroke-width="2"/><polyline points="21 3 21 9 15 9" stroke-width="2"/>',
+      color: '--color-primary',
+      title: `Regenerate ${label}`,
+      message: 'To regenerate this content, you\'ll need to upload your research files again. This ensures the AI has the full source material to work with.',
+      buttons: [
+        { text: 'Upload Files & Regenerate', primary: true, onclick: "window.location.href='/'" }
+      ]
+    });
   }
   async _pollForRegeneration(viewName, maxAttempts = 120, intervalMs = 2000) {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
