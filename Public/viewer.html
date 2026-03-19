@@ -8,11 +8,6 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/bip_logo.png">
 
-    <!-- Google Fonts - Work Sans for section headings -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-
     <!-- Load html2canvas for exporting -->
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
@@ -20,79 +15,47 @@
       referrerpolicy="no-referrer"
     ></script>
 
-    <!-- Load Phase 1 Design System CSS -->
+    <!-- Design System + Layout CSS -->
+    <link rel="stylesheet" href="/styles/base.css">
     <link rel="stylesheet" href="/styles/design-system.css">
     <link rel="stylesheet" href="/styles/app-shell.css">
+    <link rel="stylesheet" href="/styles/icon-rail.css">
+    <link rel="stylesheet" href="/styles/modal.css">
+    <link rel="stylesheet" href="/styles/gantt.css">
+    <!-- View-specific CSS -->
     <link rel="stylesheet" href="/styles/slides-view.css">
     <link rel="stylesheet" href="/styles/document-view.css">
     <link rel="stylesheet" href="/styles/analysis-view.css">
 
-    <!-- Legacy chart styles (for backward compatibility) -->
-    <script>
-      const head = document.getElementsByTagName('head')[0];
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.type = 'text/css';
-      link.href = '/style.css?t=' + new Date().getTime();
-      head.appendChild(link);
-    </script>
-
     <style>
-      /* Ensure full height layout with scroll containment */
       html, body {
         margin: 0;
         padding: 0;
         height: 100%;
-        overflow: hidden; /* Prevent body scroll - scroll happens in .app-main */
+        overflow: hidden;
       }
-
       #app-root {
         height: 100%;
         display: flex;
         flex-direction: column;
       }
-
-      /* Loading state - Glassmorphic */
-      .loading-screen {
+      .loading-screen,
+      .error-screen {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         height: 100vh;
-        /* Glassmorphic gradient background */
         background:
-          radial-gradient(
-            ellipse 80% 60% at 15% 20%,
-            rgba(218, 41, 28, 0.12) 0%,
-            transparent 50%
-          ),
-          radial-gradient(
-            ellipse 70% 50% at 85% 40%,
-            rgba(42, 85, 128, 0.20) 0%,
-            transparent 50%
-          ),
-          radial-gradient(
-            ellipse 60% 70% at 25% 80%,
-            rgba(80, 175, 123, 0.08) 0%,
-            transparent 50%
-          ),
-          radial-gradient(
-            ellipse 50% 40% at 90% 90%,
-            rgba(20, 48, 82, 0.30) 0%,
-            transparent 50%
-          ),
-          linear-gradient(
-            135deg,
-            var(--color-navy-deep) 0%,
-            var(--color-navy-brand) 25%,
-            var(--color-navy-mid) 50%,
-            var(--color-navy-brand) 75%,
-            var(--color-navy-deep) 100%
-          );
+          radial-gradient(ellipse 80% 60% at 15% 20%, rgba(218, 41, 28, 0.12) 0%, transparent 50%),
+          radial-gradient(ellipse 70% 50% at 85% 40%, rgba(42, 85, 128, 0.20) 0%, transparent 50%),
+          radial-gradient(ellipse 60% 70% at 25% 80%, rgba(80, 175, 123, 0.08) 0%, transparent 50%),
+          radial-gradient(ellipse 50% 40% at 90% 90%, rgba(20, 48, 82, 0.30) 0%, transparent 50%),
+          linear-gradient(135deg, var(--color-navy-deep) 0%, var(--color-navy-brand) 25%, var(--color-navy-mid) 50%, var(--color-navy-brand) 75%, var(--color-navy-deep) 100%);
         background-attachment: fixed;
         background-color: var(--color-navy-brand);
       }
-
+      .error-screen { padding: var(--spacing-8); text-align: center; }
       .loading-spinner {
         width: 48px;
         height: 48px;
@@ -101,92 +64,26 @@
         border-radius: 50%;
         animation: spin 1s linear infinite;
       }
-
-      .loading-screen p {
-        color: var(--glass-text-secondary);
-      }
-
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-
-      /* Error state - Glassmorphic */
-      .error-screen {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        /* Glassmorphic gradient background */
-        background:
-          radial-gradient(
-            ellipse 80% 60% at 15% 20%,
-            rgba(218, 41, 28, 0.12) 0%,
-            transparent 50%
-          ),
-          radial-gradient(
-            ellipse 70% 50% at 85% 40%,
-            rgba(42, 85, 128, 0.20) 0%,
-            transparent 50%
-          ),
-          radial-gradient(
-            ellipse 60% 70% at 25% 80%,
-            rgba(80, 175, 123, 0.08) 0%,
-            transparent 50%
-          ),
-          radial-gradient(
-            ellipse 50% 40% at 90% 90%,
-            rgba(20, 48, 82, 0.30) 0%,
-            transparent 50%
-          ),
-          linear-gradient(
-            135deg,
-            var(--color-navy-deep) 0%,
-            var(--color-navy-brand) 25%,
-            var(--color-navy-mid) 50%,
-            var(--color-navy-brand) 75%,
-            var(--color-navy-deep) 100%
-          );
-        background-attachment: fixed;
-        background-color: var(--color-navy-brand);
-        padding: var(--spacing-8);
-        text-align: center;
-      }
-
-      .error-screen h1 {
-        color: var(--color-accent-red);
-        margin-bottom: var(--spacing-4);
-      }
-
-      .error-screen p {
-        color: var(--glass-text-secondary);
-      }
-
+      .loading-screen p { color: var(--glass-text-secondary); }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .error-screen h1 { color: var(--color-accent-red); margin-bottom: var(--spacing-4); }
+      .error-screen p { color: var(--glass-text-secondary); }
       .error-screen button {
         margin-top: var(--spacing-4);
         padding: var(--spacing-3) var(--spacing-6);
-        background: linear-gradient(
-          135deg,
-          var(--color-accent-red) 0%,
-          var(--color-accent-red-hover) 100%
-        );
+        background: linear-gradient(135deg, var(--color-accent-red) 0%, var(--color-accent-red-hover) 100%);
         color: white;
         border: 1px solid var(--glass-white-15);
         border-radius: var(--radius-glass-md);
         cursor: pointer;
         font-size: var(--text-base);
         font-weight: 600;
-        box-shadow:
-          0 4px 16px rgba(218, 41, 28, 0.30),
-          inset 0 1px 0 var(--glass-white-15);
+        box-shadow: 0 4px 16px rgba(218, 41, 28, 0.30), inset 0 1px 0 var(--glass-white-15);
         transition: all 0.2s ease;
       }
-
       .error-screen button:hover {
         transform: translateY(-2px);
-        box-shadow:
-          0 8px 24px rgba(218, 41, 28, 0.40),
-          inset 0 1px 0 var(--glass-white-20);
+        box-shadow: 0 8px 24px rgba(218, 41, 28, 0.40), inset 0 1px 0 var(--glass-white-20);
       }
     </style>
 </head>

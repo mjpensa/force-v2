@@ -1880,10 +1880,6 @@
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 .intelligence-brief-modal .modal-loading p {
   margin-top: var(--spacing-4);
   color: var(--glass-text-secondary);
