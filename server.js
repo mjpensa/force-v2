@@ -5,8 +5,7 @@
  * - server/config.js - Configuration and environment validation
  * - server/middleware.js - Security, rate limiting, file upload
  * - server/gemini.js - Gemini API integration
- * - server/prompts.js - AI prompts and schemas
- * - server/routes/charts.js - Chart generation endpoints
+ * - server/prompts/ - AI prompts and schemas
  * - server/routes/analysis.js - Task analysis and Q&A endpoints
  * - server/utils.js - Utility functions
  *
@@ -31,7 +30,6 @@ import {
 } from './server/middleware.js';
 
 // Import routes
-import chartRoutes from './server/routes/charts.js';
 import analysisRoutes from './server/routes/analysis.js';
 import contentRoutes from './server/routes/content.js';
 import sseContentRoutes from './server/routes/sse-content.js';
@@ -99,7 +97,6 @@ app.get('/api/health', (req, res) => {
 });
 
 // --- Mount Routes ---
-app.use('/', chartRoutes);
 app.use('/', analysisRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/content', sseContentRoutes); // SSE streaming for real-time progress

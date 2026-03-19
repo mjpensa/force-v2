@@ -38,3 +38,6 @@ data/*.db-journal
 # Code analysis reports
 reports/
 nul
+
+# Office temp lock files
+~$*

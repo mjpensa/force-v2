@@ -4,9 +4,7 @@
     "server.js",
     "Public/main.js",
     "Public/viewer.js",
-    "Public/chart-renderer.js",
     "Public/GanttChart.js",
-    "Public/Router.js",
     "scripts/build-js.mjs"
   ],
   "project": [

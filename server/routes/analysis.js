@@ -10,7 +10,7 @@
 import express from 'express';
 import { CONFIG } from '../config.js';
 import { callGeminiForJson, callGeminiForText } from '../gemini.js';
-import { TASK_ANALYSIS_SYSTEM_PROMPT, TASK_ANALYSIS_SCHEMA, getQASystemPrompt } from '../prompts.js';
+import { TASK_ANALYSIS_SYSTEM_PROMPT, TASK_ANALYSIS_SCHEMA, getQASystemPrompt } from '../prompts/analysis.js';
 import { apiLimiter } from '../middleware.js';
 import { sanitizePrompt } from '../utils.js';
 import { sessions, touchSession } from './content.js';
