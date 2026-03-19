@@ -1,8 +1,4 @@
 /**
- * Performance measurement utilities
- */
-
-/**
  * Performance timer for measuring operations
  */
 export class PerformanceTimer {
@@ -39,12 +35,6 @@ export class PerformanceTimer {
   }
 }
 
-/**
- * Measure an async operation
- * @param {string} label - Label for the operation
- * @param {Function} fn - Async function to measure
- * @returns {Promise<any>} - Result of the function
- */
 export async function measureAsync(label, fn) {
   const timer = new PerformanceTimer(label);
   try {

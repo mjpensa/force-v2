@@ -1,16 +1,3 @@
-/**
- * Unified Content Generation Routes
- * Handles synchronous generation of all three content types
- * (Roadmap, Slides, Document)
- *
- * Note: In-memory session storage (cleared on server restart)
- *
- * Performance optimizations:
- * - LRU-style session cache with memory pressure handling
- * - Efficient file processing with streaming
- * - Response caching headers
- */
-
 import express from 'express';
 import crypto from 'crypto';
 import { generateAllContent, regenerateContent, generateIntelligenceBrief, generateSpeakerNotesAsync } from '../generators.js';
@@ -21,13 +8,10 @@ import { fileCache } from '../cache/FileCache.js';
 
 const router = express.Router();
 
-// In-memory session storage with LRU-style management
-// Map<sessionId, { prompt, researchFiles, content, createdAt, lastAccessed }>
 export const sessions = new Map();
-const MAX_SESSIONS = 100; // Limit max sessions to prevent memory issues
-const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour
+const MAX_SESSIONS = 100;
+const SESSION_TTL_MS = 60 * 60 * 1000;
 
-// Performance: Track access for LRU eviction
 export function touchSession(sessionId) {
   const session = sessions.get(sessionId);
   if (session) {
@@ -35,11 +19,9 @@ export function touchSession(sessionId) {
   }
 }
 
-// Performance: LRU-style cleanup when over capacity
 function enforceSessionLimit() {
   if (sessions.size <= MAX_SESSIONS) return;
 
-  // Sort by lastAccessed (oldest first) and remove excess
   const sortedSessions = [...sessions.entries()]
     .sort((a, b) => (a[1].lastAccessed || a[1].createdAt) - (b[1].lastAccessed || b[1].createdAt));
 
@@ -49,36 +31,24 @@ function enforceSessionLimit() {
   }
 }
 
-// Clean up old sessions (older than 1 hour since last access) and enforce limits
 setInterval(() => {
   const now = Date.now();
   for (const [sessionId, session] of sessions) {
-    // Use lastAccessed time (not createdAt) so active sessions don't expire
     const lastActivity = session.lastAccessed || session.createdAt;
     if (now - lastActivity > SESSION_TTL_MS) {
       sessions.delete(sessionId);
     }
   }
   enforceSessionLimit();
-}, 5 * 60 * 1000); // Run cleanup every 5 minutes
+}, 5 * 60 * 1000);
 
-/**
- * Generate a unique session ID
- */
 function generateSessionId() {
   return crypto.randomUUID();
 }
 
-/**
- * Format raw error messages into user-friendly text
- * @param {string} rawError - Raw error message
- * @param {string} viewType - Content type (roadmap, slides, document)
- * @returns {string} User-friendly error message
- */
 function formatUserError(rawError, viewType) {
   if (!rawError) return `Failed to generate ${viewType}. Please try again.`;
 
-  // Map common error patterns to user-friendly messages
   const errorMappings = [
     { pattern: /JSON.*parse.*position/i, message: 'The AI response was malformed. Please try again.' },
     { pattern: /timeout|timed out/i, message: 'Generation took too long. Please try again with simpler content.' },
@@ -95,41 +65,17 @@ function formatUserError(rawError, viewType) {
     }
   }
 
-  // Default: Return sanitized version of original error (limit length)
   const sanitized = rawError.substring(0, 150);
   return `Failed to generate ${viewType}: ${sanitized}${rawError.length > 150 ? '...' : ''}`;
 }
 
-/**
- * POST /api/content/generate
- * Generates all content types (roadmap, slides, document, research-analysis) synchronously
- *
- * Request (multipart/form-data):
- * - prompt: string (form field)
- * - researchFiles: File[] (uploaded files)
- *
- * Response:
- * {
- *   status: 'completed' | 'error',
- *   content: {
- *     roadmap: { success, data, error },
- *     slides: { success, data, error },
- *     document: { success, data, error },
- *     researchAnalysis: { success, data, error }
- *   }
- * }
- */
 router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, res) => {
-  // Extend timeout for long-running generation (4 sequential AI calls, each up to 5 min)
-  // Default timeout is 2 minutes which is insufficient
-  const GENERATE_TIMEOUT_MS = 25 * 60 * 1000; // 25 minutes
+  const GENERATE_TIMEOUT_MS = 25 * 60 * 1000;
   req.setTimeout(GENERATE_TIMEOUT_MS);
   res.setTimeout(GENERATE_TIMEOUT_MS);
   try {
     const { prompt } = req.body;
     const files = req.files;
-
-    // Validate input
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({
         error: 'Invalid request. Required: prompt (string)'
@@ -141,13 +87,8 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
         error: 'At least one research file is required'
       });
     }
-
-    // Process uploaded files to extract content
     const sortedFiles = files.sort((a, b) => a.originalname.localeCompare(b.originalname));
-
-    // Process files in parallel with caching for DOCX extraction
     const fileProcessingPromises = sortedFiles.map(async (file) => {
-      // Use cached extraction for better performance on repeated files
       const content = await fileCache.get(file.buffer, file.mimetype, file.originalname);
 
       return {
@@ -155,19 +96,12 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
         content: content
       };
     });
-
-    // Wait for all files to be processed
     const researchFiles = await Promise.all(fileProcessingPromises);
-
-    // Generate all content synchronously
     const results = await generateAllContent(prompt, researchFiles);
-
-    // Create session and store content (including full research files for regeneration)
     const sessionId = generateSessionId();
     const now = Date.now();
     sessions.set(sessionId, {
       prompt,
-      // Store full research files to enable session-based regeneration without re-upload
       researchFiles: researchFiles.map(f => ({ filename: f.filename, content: f.content })),
       content: {
         roadmap: results.roadmap,
@@ -178,11 +112,7 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
       createdAt: now,
       lastAccessed: now
     });
-
-    // Enforce session limit after adding new session
     enforceSessionLimit();
-
-    // Return sessionId for frontend to poll/fetch content
     res.json({
       status: 'completed',
       sessionId,
@@ -204,25 +134,7 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
   }
 });
 
-/**
- * POST /api/content/regenerate/:viewType
- * Regenerates content for a specific view type
- *
- * Request (multipart/form-data):
- * - prompt: string (form field)
- * - researchFiles: File[] (uploaded files)
- * - viewType (URL param): 'roadmap', 'slides', 'document', or 'research-analysis'
- *
- * Response:
- * {
- *   viewType: string,
- *   status: 'completed' | 'error',
- *   data: object | null,
- *   error: string | null
- * }
- */
 router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), async (req, res) => {
-  // Extend timeout for long-running AI generation (up to 5 min per content type)
   const REGENERATE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
   req.setTimeout(REGENERATE_TIMEOUT_MS);
   res.setTimeout(REGENERATE_TIMEOUT_MS);
@@ -231,16 +143,12 @@ router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), as
     const { viewType } = req.params;
     const { prompt } = req.body;
     const files = req.files;
-
-    // Validate view type
     const validViewTypes = ['roadmap', 'slides', 'document', 'research-analysis'];
     if (!validViewTypes.includes(viewType)) {
       return res.status(400).json({
         error: `Invalid view type. Must be one of: ${validViewTypes.join(', ')}`
       });
     }
-
-    // Validate input
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({
         error: 'Invalid request. Required: prompt (string)'
@@ -252,16 +160,12 @@ router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), as
         error: 'At least one research file is required'
       });
     }
-
-    // Process uploaded files with caching
     const sortedFiles = files.sort((a, b) => a.originalname.localeCompare(b.originalname));
     const fileProcessingPromises = sortedFiles.map(async (file) => {
       const content = await fileCache.get(file.buffer, file.mimetype, file.originalname);
       return { filename: file.originalname, content };
     });
     const researchFiles = await Promise.all(fileProcessingPromises);
-
-    // Regenerate content
     const result = await regenerateContent(viewType, prompt, researchFiles);
 
     res.json({
@@ -279,25 +183,6 @@ router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), as
   }
 });
 
-/**
- * POST /api/content/:sessionId/regenerate/:viewType
- * Regenerates content using cached session research files (no file upload needed)
- *
- * URL params:
- * - sessionId: string - Session ID with cached research files
- * - viewType: 'roadmap', 'slides', 'document', or 'research-analysis'
- *
- * Request body (optional):
- * - prompt: string - New prompt (uses session prompt if not provided)
- *
- * Response:
- * {
- *   viewType: string,
- *   status: 'completed' | 'error',
- *   data: object | null,
- *   error: string | null
- * }
- */
 router.post('/:sessionId/regenerate/:viewType', express.json(), async (req, res) => {
   const REGENERATE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
   req.setTimeout(REGENERATE_TIMEOUT_MS);
@@ -306,16 +191,12 @@ router.post('/:sessionId/regenerate/:viewType', express.json(), async (req, res)
   try {
     const { sessionId, viewType } = req.params;
     const { prompt: newPrompt } = req.body;
-
-    // Validate view type
     const validViewTypes = ['roadmap', 'slides', 'document', 'research-analysis'];
     if (!validViewTypes.includes(viewType)) {
       return res.status(400).json({
         error: `Invalid view type. Must be one of: ${validViewTypes.join(', ')}`
       });
     }
-
-    // Check session exists
     const session = sessions.get(sessionId);
     if (!session) {
       return res.status(404).json({
@@ -323,8 +204,6 @@ router.post('/:sessionId/regenerate/:viewType', express.json(), async (req, res)
         message: 'Please upload files again to regenerate content.'
       });
     }
-
-    // Validate session has research files
     if (!session.researchFiles || session.researchFiles.length === 0) {
       return res.status(400).json({
         error: 'Session has no cached research files',
@@ -333,17 +212,11 @@ router.post('/:sessionId/regenerate/:viewType', express.json(), async (req, res)
     }
 
     touchSession(sessionId);
-
-    // Use session's cached research files
     const researchFiles = session.researchFiles;
     const prompt = newPrompt || session.prompt;
 
     console.log(`[Session Regenerate] ${viewType} using ${researchFiles.length} cached files from session ${sessionId}`);
-
-    // Regenerate specific content type
     const result = await regenerateContent(viewType, prompt, researchFiles);
-
-    // Update session with regenerated content
     const contentKey = viewType === 'research-analysis' ? 'researchAnalysis' : viewType;
     if (result.success) {
       session.content[contentKey] = result;
@@ -380,8 +253,6 @@ router.post('/:sessionId/regenerate/:viewType', express.json(), async (req, res)
 router.get('/:sessionId/slides/export', async (req, res) => {
   try {
     const { sessionId } = req.params;
-
-    // Check if session exists
     const session = sessions.get(sessionId);
     if (!session) {
       return res.status(404).json({
@@ -397,25 +268,17 @@ router.get('/:sessionId/slides/export', async (req, res) => {
         message: slidesResult?.error || 'Slides generation failed or not yet complete'
       });
     }
-
-    // Include speaker notes if available
     const slides = {
       ...slidesResult.data,
       speakerNotes: slidesResult.speakerNotes || null
     };
-
-    // Generate the PowerPoint file
     const pptxBuffer = await generatePptx(slides, {
       author: 'BIP',
       company: 'BIP'
     });
-
-    // Create filename from presentation title
     const title = slides.title || 'Presentation';
     const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
     const filename = `${safeTitle}.pptx`;
-
-    // Set headers for file download
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', pptxBuffer.length);
@@ -430,21 +293,6 @@ router.get('/:sessionId/slides/export', async (req, res) => {
   }
 });
 
-/**
- * POST /api/content/:sessionId/slides/speaker-notes
- * Generates speaker notes on-demand for a session's slides
- * This is called separately from main generation to avoid blocking the initial response
- *
- * URL params:
- * - sessionId: string - Session ID
- *
- * Response:
- * {
- *   status: 'completed' | 'error',
- *   data: object | null,
- *   error: string | null
- * }
- */
 router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
   // 20 minutes: covers worst case of 3 API calls (outline + retry + full notes) at 6 min each
   const SPEAKER_NOTES_TIMEOUT_MS = 20 * 60 * 1000;
@@ -453,8 +301,6 @@ router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
 
   try {
     const { sessionId } = req.params;
-
-    // Check if session exists
     const session = sessions.get(sessionId);
     if (!session) {
       return res.status(404).json({
@@ -464,8 +310,6 @@ router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
     }
 
     touchSession(sessionId);
-
-    // Check if slides exist
     const slidesResult = session.content.slides;
     if (!slidesResult || !slidesResult.success || !slidesResult.data) {
       return res.status(400).json({
@@ -473,8 +317,6 @@ router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
         message: 'Slides must be generated before speaker notes can be created.'
       });
     }
-
-    // Check if speaker notes already exist
     if (slidesResult.speakerNotes?.slides?.length > 0) {
       console.log(`[Speaker Notes] Returning cached notes for session ${sessionId}`);
       return res.json({
@@ -483,8 +325,6 @@ router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
         cached: true
       });
     }
-
-    // Check if research files are available
     if (!session.researchFiles || session.researchFiles.length === 0) {
       return res.status(400).json({
         error: 'Research files not available',
@@ -493,8 +333,6 @@ router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
     }
 
     console.log(`[Speaker Notes] Generating on-demand for session ${sessionId}`);
-
-    // Generate speaker notes
     const result = await generateSpeakerNotesAsync(
       slidesResult.data,
       session.researchFiles,
@@ -502,7 +340,6 @@ router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
     );
 
     if (result.success && result.data) {
-      // Cache the speaker notes in the session
       session.content.slides.speakerNotes = result.data;
       session.lastAccessed = Date.now();
 
@@ -540,8 +377,6 @@ router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
 router.get('/:sessionId/document/export', async (req, res) => {
   try {
     const { sessionId } = req.params;
-
-    // Check if session exists
     const session = sessions.get(sessionId);
     if (!session) {
       return res.status(404).json({
@@ -559,18 +394,12 @@ router.get('/:sessionId/document/export', async (req, res) => {
     }
 
     const documentData = documentResult.data;
-
-    // Generate the Word document
     const docxBuffer = await generateDocx(documentData, {
       creator: 'BIP'
     });
-
-    // Create filename from document title
     const title = documentData.title || 'Executive_Summary';
     const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
     const filename = `${safeTitle}.docx`;
-
-    // Set headers for file download
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', docxBuffer.length);
@@ -585,26 +414,6 @@ router.get('/:sessionId/document/export', async (req, res) => {
   }
 });
 
-/**
- * POST /api/content/:sessionId/intelligence-brief/generate
- * Generates a pre-meeting intelligence brief from session data
- *
- * Synthesizes data from:
- * - User's uploaded research sources
- * - Roadmap analysis (strategic initiatives, phases)
- * - Slides analysis (key messages, talking points)
- * - Document analysis (executive summary, insights)
- *
- * URL params:
- * - sessionId: string - Session ID
- *
- * Request body:
- * - meetingAttendees: string (required) - Who will be in the meeting
- * - meetingObjective: string (required) - What we aim to achieve
- * - keyConcerns: string (optional) - Key concerns to address
- *
- * Response: Word document file (.docx) download
- */
 router.post('/:sessionId/intelligence-brief/generate', express.json(), async (req, res) => {
   const BRIEF_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
   req.setTimeout(BRIEF_TIMEOUT_MS);
@@ -613,8 +422,6 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
   try {
     const { sessionId } = req.params;
     const { companyName, meetingAttendees, meetingObjective, keyConcerns } = req.body;
-
-    // Validate session exists
     const session = sessions.get(sessionId);
     if (!session) {
       return res.status(404).json({
@@ -622,8 +429,6 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
         message: 'Please generate content first before creating an intelligence brief.'
       });
     }
-
-    // Validate required fields
     if (!companyName?.trim()) {
       return res.status(400).json({
         error: 'Company name is required',
@@ -644,16 +449,12 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
     }
 
     touchSession(sessionId);
-
-    // Gather session data from all views
     const sessionData = {
       sources: session.researchFiles || [],
       document: session.content.document?.data || null,
       roadmap: session.content.roadmap?.data || null,
       slides: session.content.slides?.data || null
     };
-
-    // Check that we have at least some data to synthesize
     const hasData = sessionData.sources.length > 0 ||
                     sessionData.document ||
                     sessionData.roadmap ||
@@ -679,8 +480,6 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
       meetingObjective: meetingObjective.trim(),
       keyConcerns: keyConcerns?.trim() || ''
     };
-
-    // Generate the intelligence brief
     const result = await generateIntelligenceBrief(sessionData, meetingContext);
 
     if (!result.success) {
@@ -689,11 +488,7 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
         message: result.error || 'Failed to generate intelligence brief. Please try again.'
       });
     }
-
-    // Generate DOCX directly
     const buffer = await generateIntelligenceBriefDocx(result.data, meetingContext);
-
-    // Return as downloadable file
     const timestamp = new Date().toISOString().slice(0, 10);
     const filename = `Pre_Meeting_Brief_${timestamp}.docx`;
 
@@ -713,23 +508,9 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
   }
 });
 
-/**
- * GET /api/content/:sessionId/:viewType
- * Retrieves content for a specific view type from a session
- *
- * URL params:
- * - sessionId: string - Session ID from /generate response
- * - viewType: 'roadmap' | 'slides' | 'document' | 'research-analysis'
- *
- * Response:
- * - For roadmap: Returns the gantt data directly
- * - For other views: Returns { success, data, error }
- */
 router.get('/:sessionId/:viewType', (req, res) => {
   try {
     const { sessionId, viewType } = req.params;
-
-    // Check if session exists
     const session = sessions.get(sessionId);
     if (!session) {
       return res.status(404).json({
@@ -738,11 +519,7 @@ router.get('/:sessionId/:viewType', (req, res) => {
         hint: 'Sessions expire after 1 hour'
       });
     }
-
-    // Performance: Track access for LRU management
     touchSession(sessionId);
-
-    // Map viewType to content key
     const viewTypeMap = {
       'roadmap': 'roadmap',
       'slides': 'slides',
@@ -765,10 +542,7 @@ router.get('/:sessionId/:viewType', (req, res) => {
         message: `No ${viewType} content available for this session`
       });
     }
-
-    // Performance: Add cache control headers for completed content
     if (contentResult.success && contentResult.data) {
-      // Cache successful responses for 5 minutes on the client
       res.set('Cache-Control', 'private, max-age=300');
       res.set('ETag', `"${sessionId}-${viewType}-${session.lastAccessed}"`);
 
@@ -782,7 +556,6 @@ router.get('/:sessionId/:viewType', (req, res) => {
         data: responseData
       });
     } else {
-      // Don't cache error responses
       res.set('Cache-Control', 'no-store');
       return res.json({
         status: 'error',
@@ -798,15 +571,6 @@ router.get('/:sessionId/:viewType', (req, res) => {
   }
 });
 
-/**
- * POST /api/content/slides/export
- * Exports slides as a branded PowerPoint file (direct POST, no session)
- *
- * Request body:
- * - slides: object (slides data to export)
- *
- * Response: PowerPoint file (.pptx) download
- */
 router.post('/slides/export', express.json({ limit: '50mb' }), async (req, res) => {
   try {
     const { slides } = req.body;
@@ -817,24 +581,16 @@ router.post('/slides/export', express.json({ limit: '50mb' }), async (req, res) 
         message: 'Request must include slides object with sections array'
       });
     }
-
-
-    // Generate the PowerPoint file
     const pptxBuffer = await generatePptx(slides, {
       author: 'BIP',
       company: 'BIP'
     });
-
-    // Create filename from presentation title
     const title = slides.title || 'Presentation';
     const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
     const filename = `${safeTitle}.pptx`;
-
-    // Set headers for file download
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', pptxBuffer.length);
-
 
     res.send(pptxBuffer);
 
@@ -846,15 +602,6 @@ router.post('/slides/export', express.json({ limit: '50mb' }), async (req, res) 
   }
 });
 
-/**
- * POST /api/content/document/export
- * Exports document as a Word file (direct POST, no session)
- *
- * Request body:
- * - document: object (document data to export)
- *
- * Response: Word document file (.docx) download
- */
 router.post('/document/export', express.json({ limit: '50mb' }), async (req, res) => {
   try {
     const { document } = req.body;
@@ -865,18 +612,12 @@ router.post('/document/export', express.json({ limit: '50mb' }), async (req, res
         message: 'Request must include document object with at least a title'
       });
     }
-
-    // Generate the Word document
     const docxBuffer = await generateDocx(document, {
       creator: 'BIP'
     });
-
-    // Create filename from document title
     const title = document.title || 'Executive_Summary';
     const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
     const filename = `${safeTitle}.docx`;
-
-    // Set headers for file download
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', docxBuffer.length);
@@ -891,16 +632,6 @@ router.post('/document/export', express.json({ limit: '50mb' }), async (req, res
   }
 });
 
-/**
- * POST /api/content/update-task-dates
- * Updates task bar positions (start/end columns) in the session
- *
- * Request body:
- * - sessionId: string
- * - taskIndex: number (index in ganttData.data array)
- * - startCol: number (new start column)
- * - endCol: number (new end column)
- */
 router.post('/update-task-dates', express.json(), (req, res) => {
   try {
     const { sessionId, taskIndex, newStartCol, newEndCol } = req.body;
@@ -915,8 +646,6 @@ router.post('/update-task-dates', express.json(), (req, res) => {
     }
 
     touchSession(sessionId);
-
-    // Update the task in roadmap data
     const roadmapData = session.content.roadmap?.data;
     if (!roadmapData || !roadmapData.data || !roadmapData.data[taskIndex]) {
       return res.status(400).json({ error: 'Task not found in roadmap data' });
@@ -934,15 +663,6 @@ router.post('/update-task-dates', express.json(), (req, res) => {
   }
 });
 
-/**
- * POST /api/content/update-task-color
- * Updates task bar color in the session
- *
- * Request body:
- * - sessionId: string
- * - taskIndex: number (index in ganttData.data array)
- * - color: string (new color class)
- */
 router.post('/update-task-color', express.json(), (req, res) => {
   try {
     const { sessionId, taskIndex, color } = req.body;
@@ -957,8 +677,6 @@ router.post('/update-task-color', express.json(), (req, res) => {
     }
 
     touchSession(sessionId);
-
-    // Update the task in roadmap data
     const roadmapData = session.content.roadmap?.data;
     if (!roadmapData || !roadmapData.data || !roadmapData.data[taskIndex]) {
       return res.status(400).json({ error: 'Task not found in roadmap data' });
@@ -974,8 +692,6 @@ router.post('/update-task-color', express.json(), (req, res) => {
     res.status(500).json({ error: 'Failed to update task color', details: error.message });
   }
 });
-
-// Apply upload error handling middleware
 router.use(handleUploadErrors);
 
 export default router;

@@ -1,8 +1,4 @@
 /**
- * DOM utilities
- */
-
-/**
  * Safely get an element by ID
  * @param {string} id - Element ID
  * @param {string} context - Context for logging
@@ -13,22 +9,11 @@ export function safeGetElement(id, context = '') {
   return element;
 }
 
-/**
- * Safely query select an element
- * @param {string} selector - CSS selector
- * @param {string} context - Context for logging
- * @returns {Element|null}
- */
 export function safeQuerySelector(selector, context = '') {
   const element = document.querySelector(selector);
   return element;
 }
 
-/**
- * Check if a URL is safe (http/https)
- * @param {string} url - URL to check
- * @returns {boolean}
- */
 export function isSafeUrl(url) {
   try {
     const parsed = new URL(url);
@@ -38,18 +23,6 @@ export function isSafeUrl(url) {
   }
 }
 
-/**
- * Create a button element with the given configuration
- * @param {Object} config - Button configuration
- * @param {string} config.id - Button ID
- * @param {string} config.className - CSS class name
- * @param {string} config.text - Button text content
- * @param {string} [config.title] - Tooltip text
- * @param {string} [config.ariaLabel] - Accessibility label
- * @param {Object} [config.style] - Inline styles
- * @param {Object} [config.attributes] - Additional attributes
- * @returns {HTMLButtonElement}
- */
 export function createButton(config) {
   const btn = document.createElement('button');
   if (config.id) btn.id = config.id;
@@ -68,17 +41,6 @@ export function createButton(config) {
   return btn;
 }
 
-/**
- * Create a modal dialog with standard structure and close behavior
- * @param {Object} config - Modal configuration
- * @param {string} [config.id] - Modal overlay ID
- * @param {string} [config.title] - Modal title text
- * @param {string} [config.content] - Initial body content HTML
- * @param {string} [config.bodyId] - ID for the modal body element
- * @param {Array} [config.actions] - Header action buttons [{id, label, title, className}]
- * @param {boolean} [config.showSpinner] - Show loading spinner initially
- * @returns {{overlay: HTMLElement, body: HTMLElement, close: Function}}
- */
 export function createModal(config = {}) {
   const {
     id = 'modal-overlay',

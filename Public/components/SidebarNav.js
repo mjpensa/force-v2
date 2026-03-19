@@ -1,38 +1,13 @@
-/**
- * SidebarNav - Glassmorphic Icon Rail Navigation
- * A beautiful, persistent vertical navigation bar with icons that expands on hover.
- * Features glassmorphic design with blur, transparency, glow effects, and smooth animations.
- * Features:
- * - Collapsed state shows only icons (72px width)
- * - Expands on hover to show labels (240px width)
- * - Status indicators (loading, processing, ready, failed)
- * - Keyboard shortcuts support
- * - Smooth animations and micro-interactions
- * - Responsive design (bottom dock on mobile)
- * - Accessibility compliant (ARIA, keyboard navigation)
- */
-
 export class SidebarNav {
-  /**
-   * Creates a new SidebarNav instance
-   * @param {Object} options - Configuration options
-   * @param {Function} options.onNavigate - Callback when navigation item is clicked
-   * @param {string} options.activeView - Initial active view
-   * @param {string} options.sessionId - Current session ID
-   */
   constructor(options = {}) {
     this.onNavigate = options.onNavigate || (() => {});
     this.activeView = options.activeView || 'roadmap';
     this.sessionId = options.sessionId || '';
     this.isExpanded = false;
     this.isPinned = false;
-
-    // DOM references
     this.container = null;
     this.tooltip = null;
     this.tooltipTimeout = null;
-
-    // Navigation items configuration
     this.navItems = [
       {
         id: 'roadmap',
@@ -59,31 +34,19 @@ export class SidebarNav {
         icon: this._getAnalysisIcon()
       }
     ];
-
-    // Status tracking
     this.statuses = {};
     this.navItems.forEach(item => {
       this.statuses[item.id] = 'loading';
     });
-
-    // Bind methods
     this._handleMouseLeave = this._handleMouseLeave.bind(this);
   }
 
-  /**
-   * Render the icon rail navigation
-   * @returns {HTMLElement} The icon rail container element
-   */
   render() {
-    // Create main container
     this.container = document.createElement('nav');
     this.container.className = 'icon-rail';
     this.container.setAttribute('role', 'navigation');
     this.container.setAttribute('aria-label', 'Main navigation');
-
-    // Build inner HTML
     this.container.innerHTML = `
-      <!-- Header with Home Link -->
       <div class="icon-rail-header">
         <a href="/" class="icon-rail-home" title="Create New Roadmap">
           <div class="icon-rail-home-icon">
@@ -92,35 +55,21 @@ export class SidebarNav {
           <span class="icon-rail-home-text">New Roadmap</span>
         </a>
       </div>
-
-      <!-- Navigation Items -->
       <div class="icon-rail-nav" role="menu">
         <div class="icon-rail-section-label">Views</div>
         ${this._renderNavItems()}
       </div>
-
-      <!-- Toggle Button -->
       <button class="icon-rail-toggle" title="Pin sidebar" aria-label="Toggle sidebar">
         ${this._getChevronIcon()}
       </button>
     `;
-
-    // Create tooltip element
     this._createTooltip();
-
-    // Attach event listeners
     this._attachEventListeners();
-
-    // Add class to body for layout adjustment
     document.body.classList.add('has-icon-rail');
 
     return this.container;
   }
 
-  /**
-   * Render navigation items HTML
-   * @private
-   */
   _renderNavItems() {
     return this.navItems.map(item => `
       <button
@@ -143,10 +92,6 @@ export class SidebarNav {
     `).join('');
   }
 
-  /**
-   * Create tooltip element
-   * @private
-   */
   _createTooltip() {
     this.tooltip = document.createElement('div');
     this.tooltip.className = 'icon-rail-tooltip';
@@ -155,67 +100,36 @@ export class SidebarNav {
     document.body.appendChild(this.tooltip);
   }
 
-  /**
-   * Attach event listeners
-   * @private
-   */
   _attachEventListeners() {
-    // Navigation item clicks
     const navItems = this.container.querySelectorAll('.icon-rail-item');
     navItems.forEach(item => {
       item.addEventListener('click', (e) => {
         const view = item.dataset.view;
         this._handleNavClick(view);
       });
-
-      // Tooltip on hover (only when collapsed)
       item.addEventListener('mouseenter', (e) => this._showTooltip(item, e));
       item.addEventListener('mouseleave', () => this._hideTooltip());
     });
-
-    // Toggle button (pin/unpin)
     const toggleBtn = this.container.querySelector('.icon-rail-toggle');
     if (toggleBtn) {
       toggleBtn.addEventListener('click', () => this._togglePinned());
     }
-
-    // Track hover state for pinning behavior
     this.container.addEventListener('mouseleave', this._handleMouseLeave);
   }
 
-  /**
-   * Handle navigation item click
-   * @private
-   */
   _handleNavClick(view) {
     if (view === this.activeView) return;
-
-    // Update active state
     this._setActiveView(view);
-
-    // Call navigation callback
     this.onNavigate(view);
-
-    // Update URL hash
     window.location.hash = view;
   }
 
-  /**
-   * Set the active view
-   * @param {string} view - The view to set as active
-   */
   setActiveView(view) {
     this._setActiveView(view);
   }
 
-  /**
-   * Internal method to update active view UI
-   * @private
-   */
   _setActiveView(view) {
     this.activeView = view;
-
-    // Update item states
     const items = this.container.querySelectorAll('.icon-rail-item');
     items.forEach(item => {
       const isActive = item.dataset.view === view;
@@ -224,22 +138,13 @@ export class SidebarNav {
     });
   }
 
-  /**
-   * Update status indicator for a view
-   * @param {string} view - The view ID
-   * @param {string} status - Status: 'loading', 'processing', 'ready', 'failed'
-   */
   updateStatus(view, status) {
     this.statuses[view] = status;
 
     const statusEl = this.container?.querySelector(`#rail-status-${view}`);
     if (statusEl) {
-      // Remove all status classes
       statusEl.classList.remove('loading', 'processing', 'ready', 'failed');
-      // Add new status class
       statusEl.classList.add(status);
-
-      // Update title for accessibility
       const titles = {
         loading: 'Checking status...',
         processing: 'Generating...',
@@ -250,15 +155,8 @@ export class SidebarNav {
     }
   }
 
-  /**
-   * Show tooltip for an item
-   * @private
-   */
   _showTooltip(item, event) {
-    // Only show tooltip when collapsed
     if (this.isExpanded || this.isPinned) return;
-
-    // Don't show on mobile
     if (window.innerWidth <= 640) return;
 
     clearTimeout(this.tooltipTimeout);
@@ -267,8 +165,6 @@ export class SidebarNav {
     if (!navItem) return;
 
     this.tooltip.textContent = navItem.title;
-
-    // Position tooltip
     const rect = item.getBoundingClientRect();
     const tooltipRect = this.tooltip.getBoundingClientRect();
 
@@ -280,10 +176,6 @@ export class SidebarNav {
     this.tooltip.setAttribute('aria-hidden', 'false');
   }
 
-  /**
-   * Hide tooltip
-   * @private
-   */
   _hideTooltip() {
     clearTimeout(this.tooltipTimeout);
     this.tooltipTimeout = setTimeout(() => {
@@ -292,54 +184,33 @@ export class SidebarNav {
     }, 100);
   }
 
-  /**
-   * Toggle pinned state
-   * @private
-   */
   _togglePinned() {
     this.isPinned = !this.isPinned;
     this.isExpanded = this.isPinned;
 
     this.container.classList.toggle('expanded', this.isPinned);
     document.body.classList.toggle('rail-expanded', this.isPinned);
-
-    // Update toggle button
     const toggleBtn = this.container.querySelector('.icon-rail-toggle');
     if (toggleBtn) {
       toggleBtn.title = this.isPinned ? 'Collapse sidebar' : 'Pin sidebar';
       toggleBtn.setAttribute('aria-pressed', this.isPinned.toString());
     }
-
-    // Hide tooltip when expanded
     if (this.isPinned) {
       this._hideTooltip();
     }
   }
 
-  /**
-   * Handle mouse leave
-   * @private
-   */
   _handleMouseLeave() {
-    // If not pinned, ensure collapsed state
     if (!this.isPinned) {
       this.isExpanded = false;
     }
   }
 
-  /**
-   * Destroy the sidebar and clean up
-   */
   destroy() {
-    // Remove tooltip
     if (this.tooltip && this.tooltip.parentNode) {
       this.tooltip.parentNode.removeChild(this.tooltip);
     }
-
-    // Remove body classes
     document.body.classList.remove('has-icon-rail', 'rail-expanded');
-
-    // Remove container
     if (this.container && this.container.parentNode) {
       this.container.parentNode.removeChild(this.container);
     }
@@ -347,8 +218,6 @@ export class SidebarNav {
     this.container = null;
     this.tooltip = null;
   }
-
-  // ========== SVG ICONS ==========
 
   _getRoadmapIcon() {
     return `

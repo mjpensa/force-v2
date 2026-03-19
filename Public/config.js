@@ -9,13 +9,6 @@ import {
   ERROR_MESSAGES
 } from './config/shared.js';
 
-/**
- * Client Configuration
- *
- * Client-specific UI settings. Shared patterns are imported from
- * config/shared.js to maintain a single source of truth.
- */
-
 export const CONFIG = {
   COLORS: {
     TODAY_LINE: '#BA3930',

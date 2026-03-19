@@ -10,13 +10,6 @@ import {
   ERROR_MESSAGES
 } from '../Public/config/shared.js';
 
-/**
- * Server Configuration
- *
- * Server-specific settings. Shared patterns are imported from
- * Public/config/shared.js to maintain a single source of truth.
- */
-
 function validateEnvironment() {
   if (process.env.NODE_ENV === 'test') {
     if (!process.env.API_KEY) {

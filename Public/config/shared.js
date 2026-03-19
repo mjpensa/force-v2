@@ -1,13 +1,3 @@
-/**
- * Shared Configuration
- *
- * Common patterns and values used by both server and client.
- * This is the single source of truth for duplicated configurations.
- */
-
-/**
- * Security injection patterns to detect and sanitize prompt injection attempts
- */
 export const INJECTION_PATTERNS = [
   { pattern: /ignore\s+(all\s+)?(previous|prior|above)\s+instructions?/gi, replacement: '[REDACTED]' },
   { pattern: /disregard\s+(all\s+)?(previous|prior|above)\s+instructions?/gi, replacement: '[REDACTED]' },
@@ -22,18 +12,12 @@ export const INJECTION_PATTERNS = [
   { pattern: /pretend\s+(you\s+are|to\s+be)\s+/gi, replacement: '[REDACTED]' }
 ];
 
-/**
- * ID validation patterns
- */
 export const ID_PATTERNS = {
   CHART_ID: /^[a-f0-9]{32}$/i,
   JOB_ID: /^[a-f0-9]{32}$/i,
   SESSION_ID: /^[a-f0-9]{32}$/i
 };
 
-/**
- * Supported file types for upload
- */
 export const FILE_TYPES = {
   MIMES: [
     'text/markdown',
@@ -54,17 +38,11 @@ export const RATE_LIMITS = {
   STRICT_MAX_REQUESTS: 20 // For resource-intensive endpoints
 };
 
-/**
- * Request timeouts
- */
 export const TIMEOUTS = {
   REQUEST_MS: 120000, // 2 minutes
   RESPONSE_MS: 120000
 };
 
-/**
- * File size limits
- */
 export const FILE_LIMITS = {
   MAX_SIZE_BYTES: 10 * 1024 * 1024, // 10MB per file
   MAX_SIZE_MB: 10,
@@ -74,16 +52,10 @@ export const FILE_LIMITS = {
   MAX_FIELD_SIZE_BYTES: 200 * 1024 * 1024 // 200MB total
 };
 
-/**
- * Validation limits
- */
 export const VALIDATION = {
   MAX_QUESTION_LENGTH: 1000
 };
 
-/**
- * Common error messages used by both server and client
- */
 export const ERROR_MESSAGES = {
   SESSION_NOT_FOUND: 'Session not found or expired. Please regenerate the chart.',
   INVALID_CHART_ID: 'Invalid chart ID format',

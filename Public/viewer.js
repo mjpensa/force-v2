@@ -100,10 +100,6 @@ class PollingService {
   }
 }
 
-/**
- * SSE Service for real-time progress updates
- * Falls back to polling if SSE is not supported or connection fails
- */
 class SSEService {
   constructor() {
     this.eventSources = new Map();
@@ -112,17 +108,8 @@ class SSEService {
     this.onError = null;
   }
 
-  /**
-   * Start SSE connection for a session
-   * @param {string} sessionId - Session ID to stream
-   * @param {Function} onProgress - Callback for progress updates
-   * @param {Function} onComplete - Callback when all content is complete
-   * @param {Function} onError - Callback for errors (triggers fallback to polling)
-   */
   start(sessionId, onProgress, onComplete, onError) {
     this.stop(sessionId);
-
-    // Check if EventSource is supported
     if (typeof EventSource === 'undefined') {
       console.warn('[SSE] EventSource not supported, falling back to polling');
       onError?.('EventSource not supported');
@@ -174,9 +161,6 @@ class SSEService {
     }
   }
 
-  /**
-   * Stop SSE connection for a session
-   */
   stop(sessionId) {
     const eventSource = this.eventSources.get(sessionId);
     if (eventSource) {
@@ -185,18 +169,12 @@ class SSEService {
     }
   }
 
-  /**
-   * Stop all SSE connections
-   */
   stopAll() {
     for (const sessionId of this.eventSources.keys()) {
       this.stop(sessionId);
     }
   }
 
-  /**
-   * Check if SSE is connected for a session
-   */
   isConnected(sessionId) {
     const eventSource = this.eventSources.get(sessionId);
     return eventSource?.readyState === EventSource.OPEN;
@@ -524,7 +502,6 @@ class ContentViewer {
       const response = await fetch(`/api/content/${this.sessionId}/${viewName}`);
       const data = await response.json();
       if (data.status === 'completed' && data.data) {
-        // Validate data structure before caching
         const isValidData = this._validateViewData(viewName, data.data);
         if (!isValidData) {
           if (this._processingPollTimeouts && this._processingPollTimeouts[viewName]) {
@@ -757,7 +734,7 @@ class ContentViewer {
     return urlParams.get('sessionId');
   }
   _addStatusIndicatorStyles() {
-    
+
   }
   _updateProgressLine() {
   }
@@ -819,9 +796,6 @@ class ContentViewer {
     }
   }
 
-  /**
-   * Fetch and cache content for a view (called when SSE reports content is ready)
-   */
   async _fetchAndCacheContent(viewName) {
     // Skip if already cached
     if (this.stateManager.state.content[viewName]) {
@@ -846,9 +820,6 @@ class ContentViewer {
     }
   }
 
-  /**
-   * Fallback polling when SSE is not available or fails
-   */
   _startPollingFallback(views) {
     views.forEach(viewName => {
       this.pollingService.start(`bg-${viewName}`, async ({ status, attempt }) => {
@@ -866,7 +837,6 @@ class ContentViewer {
 
           const data = await response.json();
           if (data.status === 'completed' && data.data) {
-            // Validate data structure before caching
             const isValidData = this._validateViewData(viewName, data.data);
             if (!isValidData) {
               this._updateTabStatus(viewName, 'failed');
@@ -916,7 +886,6 @@ class ContentViewer {
       this.sidebarNav.destroy();
       this.sidebarNav = null;
     }
-    // Clear render queue
     this._renderQueue.clear();
   }
 }

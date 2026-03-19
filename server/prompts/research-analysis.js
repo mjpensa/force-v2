@@ -1,21 +1,4 @@
-/**
- * Research Quality Analysis Prompt
- * Analyzes uploaded research for fitness to create Gantt charts
- *
- * This module evaluates research content to identify:
- * - Key themes and topics
- * - Quality of event-level data (dates, milestones, deadlines)
- * - Gaps in timeline information
- * - Actionable recommendations for improving research
- */
 
-// ============================================================================
-// SCHEMA DEFINITIONS
-// ============================================================================
-
-/**
- * Theme analysis schema - detailed breakdown of each identified theme
- */
 const themeAnalysisSchema = {
   type: "object",
   properties: {
@@ -80,9 +63,6 @@ const themeAnalysisSchema = {
   required: ["name", "description", "fitnessScore", "eventDataQuality", "datesCounted", "tasksPotential", "includeableInGantt", "strengths", "gaps", "recommendations", "sampleEvents"]
 };
 
-/**
- * Data completeness metrics schema
- */
 const dataCompletenessSchema = {
   type: "object",
   properties: {
@@ -127,9 +107,6 @@ const dataCompletenessSchema = {
   required: ["totalDatesFound", "totalEventsIdentified", "eventsWithDates", "eventsWithoutDates", "dateSpecificityBreakdown", "timelineSpan"]
 };
 
-/**
- * Suggested source schema - recommendations for additional research
- */
 const suggestedSourceSchema = {
   type: "object",
   properties: {
@@ -154,13 +131,6 @@ const suggestedSourceSchema = {
   required: ["sourceType", "reason", "expectedImprovement", "priority"]
 };
 
-// ============================================================================
-// MAIN SCHEMA
-// ============================================================================
-
-/**
- * Complete Research Analysis Schema
- */
 export const researchAnalysisSchema = {
   type: "object",
   properties: {
@@ -264,10 +234,6 @@ export const researchAnalysisSchema = {
   ]
 };
 
-// ============================================================================
-// SYSTEM PROMPT
-// ============================================================================
-
 export const researchAnalysisPrompt = `You are an expert research analyst specializing in evaluating research quality for project timeline and Gantt chart creation. Your job is to analyze uploaded research documents and provide a comprehensive assessment of how well the research supports creating accurate, detailed Gantt charts.
 
 You MUST respond with *only* a valid JSON object matching the schema.
@@ -347,16 +313,6 @@ Calculate the overall score as a weighted average:
 - **needs-improvement**: 1-2 themes are Gantt-ready, or overall score 4-5.9
 - **insufficient**: No themes are Gantt-ready, or overall score < 4`;
 
-// ============================================================================
-// PROMPT GENERATOR
-// ============================================================================
-
-/**
- * Generate the complete research analysis prompt with user context
- * @param {string} userPrompt - The user's analysis request
- * @param {Array<{filename: string, content: string}>} researchFiles - Research files to analyze
- * @returns {string} Complete prompt for AI
- */
 export function generateResearchAnalysisPrompt(userPrompt, researchFiles) {
   const researchContent = researchFiles
     .map(file => `=== ${file.filename} ===\n${file.content}`)
@@ -387,21 +343,10 @@ Analyze this research thoroughly and provide a comprehensive quality assessment 
 Respond with ONLY the JSON object.`;
 }
 
-// ============================================================================
-// VALIDATION HELPER
-// ============================================================================
-
-/**
- * Validate research analysis structure
- * @param {object} data - The generated analysis data
- * @returns {boolean} True if valid
- */
 export function validateResearchAnalysisStructure(data) {
   if (!data || typeof data !== 'object') {
     return false;
   }
-
-  // Check required top-level fields
   const requiredFields = [
     'title',
     'overallScore',
@@ -417,31 +362,21 @@ export function validateResearchAnalysisStructure(data) {
       return false;
     }
   }
-
-  // Validate themes array
   if (!Array.isArray(data.themes) || data.themes.length === 0) {
     return false;
   }
-
-  // Validate each theme has required fields
   for (let i = 0; i < data.themes.length; i++) {
     const theme = data.themes[i];
     if (!theme.name || typeof theme.fitnessScore !== 'number') {
       return false;
     }
   }
-
-  // Validate overall score range
   if (data.overallScore < 1 || data.overallScore > 10) {
     return false;
   }
 
   return true;
 }
-
-// ============================================================================
-// EXPORTS
-// ============================================================================
 
 export default {
   researchAnalysisSchema,

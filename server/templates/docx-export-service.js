@@ -1,10 +1,3 @@
-/**
- * DOCX Export Service
- * Generates Word documents from document data
- * SKILL.md format (Work Sans fonts, red headings, proper table formatting)
- * Supports executive summary, analysis overview, and content sections
- */
-
 import {
   Document,
   Packer,
@@ -25,14 +18,6 @@ import {
 } from 'docx';
 import { COLORS, FONTS, STYLES, PAGE, SPACING, DEFAULT_METADATA, COLUMN_WIDTHS, FONT_SIZES } from './docx-template-config.js';
 
-// ============================================================================
-// NUMBERING (Custom bullet definitions)
-// ============================================================================
-
-/**
- * Standard bullet numbering configuration
- * Uses a small bullet character (•) with proper sizing
- */
 const BULLET_NUMBERING = {
   config: [
     {
@@ -73,20 +58,10 @@ const BULLET_NUMBERING = {
   ]
 };
 
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-/**
- * Convert hex color to docx format (without #)
- */
 function hexColor(color) {
   return color.replace('#', '');
 }
 
-/**
- * Create a styled text run
- */
 function styledText(text, style = {}) {
   return new TextRun({
     text: text || '',
@@ -99,9 +74,6 @@ function styledText(text, style = {}) {
   });
 }
 
-/**
- * Create a heading paragraph (SKILL.md format - red, not bold)
- */
 function createHeading(text, level = 1) {
   const headingStyles = {
     1: { level: HeadingLevel.HEADING_1, ...STYLES.heading1 },
@@ -110,8 +82,6 @@ function createHeading(text, level = 1) {
   };
 
   const style = headingStyles[level] || headingStyles[2];
-
-  // SKILL.md spacing: 360 before, 160 after for section headers
   const spaceBefore = level === 1 ? SPACING.sectionLargeBefore : SPACING.sectionSmallBefore;
   const spaceAfter = level === 1 ? SPACING.sectionLargeAfter : SPACING.sectionSmallAfter;
 
@@ -122,9 +92,6 @@ function createHeading(text, level = 1) {
   });
 }
 
-/**
- * Create a body paragraph
- */
 function createParagraph(text, options = {}) {
   return new Paragraph({
     spacing: {
@@ -137,9 +104,6 @@ function createParagraph(text, options = {}) {
   });
 }
 
-/**
- * Create a label paragraph (black bold, uppercase - v19)
- */
 function createLabel(text) {
   return new Paragraph({
     spacing: { before: SPACING.sectionGap, after: 100 },
@@ -147,9 +111,6 @@ function createLabel(text) {
   });
 }
 
-/**
- * Create a key insight callout (navy left border)
- */
 function createKeyInsight(text) {
   return new Paragraph({
     spacing: { before: 200, after: 200 },
@@ -161,13 +122,8 @@ function createKeyInsight(text) {
   });
 }
 
-/**
- * Create a quote/evidence block
- */
 function createQuoteBlock(quote, source) {
   const children = [];
-
-  // Quote text
   children.push(new Paragraph({
     spacing: { before: 150, after: 100 },
     indent: { left: 400 },
@@ -177,8 +133,6 @@ function createQuoteBlock(quote, source) {
       styledText('"', { ...STYLES.quote, size: 28 })
     ]
   }));
-
-  // Source attribution
   if (source) {
     children.push(new Paragraph({
       spacing: { after: 150 },
@@ -191,10 +145,6 @@ function createQuoteBlock(quote, source) {
   return children;
 }
 
-/**
- * Create a bullet point (SKILL.md format)
- * Uses custom numbering reference for standard-sized bullets
- */
 function createBullet(text) {
   return new Paragraph({
     spacing: { after: SPACING.bulletAfter, line: SPACING.lineSpacing },
@@ -206,23 +156,11 @@ function createBullet(text) {
   });
 }
 
-/**
- * Split text into paragraphs by double newlines
- */
 function splitIntoParagraphs(text) {
   if (!text) return [];
   return text.split(/\n\n+/).filter(p => p.trim());
 }
 
-// ============================================================================
-// TABLE HELPERS (SKILL.md compliant)
-// ============================================================================
-
-/**
- * Create a table header cell (navy background, white bold text)
- * @param {string} text - Cell text
- * @param {number} width - Cell width in DXA
- */
 function createHeaderCell(text, width) {
   return new TableCell({
     width: { size: width, type: WidthType.DXA },
@@ -251,14 +189,6 @@ function createHeaderCell(text, width) {
   });
 }
 
-/**
- * Create a data cell with alternating row support
- * @param {string|string[]} content - Cell text or array for multi-paragraph
- * @param {number} width - Cell width in DXA
- * @param {boolean} isFirstCol - Bold if first column
- * @param {boolean} isAlternateRow - Apply gray background
- * @param {boolean} centered - Center align text
- */
 function createDataCell(content, width, isFirstCol = false, isAlternateRow = false, centered = false) {
   const paragraphs = Array.isArray(content) ? content : [content];
 
@@ -289,12 +219,6 @@ function createDataCell(content, width, isFirstCol = false, isAlternateRow = fal
   });
 }
 
-/**
- * Create a highlight cell (pink background, bold centered)
- * IMPORTANT: Use placeholder for empty cells to maintain styling
- * @param {string} text - Cell text (use "\u2014" for empty)
- * @param {number} width - Cell width in DXA
- */
 function createHighlightCell(text, width) {
   return new TableCell({
     width: { size: width, type: WidthType.DXA },
@@ -323,25 +247,14 @@ function createHighlightCell(text, width) {
   });
 }
 
-/**
- * Calculate column widths based on content
- * @param {string[]} headers - Column header texts
- * @param {string[][]} rows - Data rows
- * @param {Object} options - Options like hasHighlightColumn
- * @returns {number[]} Column widths in DXA (sum ~9300 for A4)
- */
 function calculateColumnWidths(headers, rows, options = {}) {
   const numCols = headers.length;
   const { hasHighlightColumn = false } = options;
-
-  // Calculate average content length per column
   const contentLengths = headers.map((_, colIdx) => {
     const allContent = [headers[colIdx], ...rows.map(r => r[colIdx] || '')];
     const avgLength = allContent.reduce((sum, c) => sum + (c?.length || 0), 0) / allContent.length;
     return avgLength;
   });
-
-  // Map content lengths to width categories
   const widths = contentLengths.map((len, idx) => {
     if (idx === 0) return COLUMN_WIDTHS.rowLabel; // First column gets more space
     if (hasHighlightColumn && idx === numCols - 1) return COLUMN_WIDTHS.highlight;
@@ -351,25 +264,14 @@ function calculateColumnWidths(headers, rows, options = {}) {
     if (len < 50) return COLUMN_WIDTHS.mediumText;
     return COLUMN_WIDTHS.longText;
   });
-
-  // Normalize to sum to ~9300
   const total = widths.reduce((a, b) => a + b, 0);
   const scale = COLUMN_WIDTHS.TOTAL_A4 / total;
 
   return widths.map(w => Math.round(w * scale));
 }
 
-// ============================================================================
-// SECTION BUILDERS
-// ============================================================================
-
-/**
- * Build the title section (SKILL.md format - Work Sans Light, centered)
- */
 function buildTitleSection(title, subtitle) {
   const elements = [];
-
-  // Main title - Work Sans Light 24pt, centered, NOT bold
   elements.push(new Paragraph({
     spacing: { before: 0, after: SPACING.titleAfter },
     alignment: AlignmentType.CENTER,
@@ -381,8 +283,6 @@ function buildTitleSection(title, subtitle) {
       bold: false                  // NOT bold per SKILL.md
     })]
   }));
-
-  // Subtitle if provided - Work Sans 11pt italic gray, centered
   if (subtitle) {
     elements.push(new Paragraph({
       spacing: { after: SPACING.subtitleAfter },
@@ -405,15 +305,6 @@ function buildTitleSection(title, subtitle) {
   return elements;
 }
 
-
-/**
- * Create a styled table with SKILL.md formatting
- * @param {string[]} headers - Column headers
- * @param {string[][]} rows - Data rows
- * @param {Object} options - Table options
- * @param {number[]} options.columnWidths - Explicit column widths (DXA)
- * @param {boolean} options.hasHighlightColumn - Last column is highlight style
- */
 function createStyledTable(headers, rows, options = {}) {
   const {
     columnWidths = null,
@@ -424,24 +315,18 @@ function createStyledTable(headers, rows, options = {}) {
   const widths = columnWidths || calculateColumnWidths(headers, rows, { hasHighlightColumn });
 
   const tableRows = [];
-
-  // Header row with navy background
   tableRows.push(new TableRow({
     tableHeader: true,
     children: headers.map((header, idx) => createHeaderCell(header, widths[idx]))
   }));
-
-  // Data rows with alternating background
   rows.forEach((row, rowIdx) => {
     const isAlternateRow = rowIdx % 2 === 1; // Even index = white, odd = gray
 
     tableRows.push(new TableRow({
       children: row.map((cell, colIdx) => {
-        // Use highlight cell for last column if specified
         if (hasHighlightColumn && colIdx === row.length - 1) {
           return createHighlightCell(cell, widths[colIdx]);
         }
-        // Use data cell with alternating row support
         return createDataCell(
           cell,
           widths[colIdx],
@@ -452,8 +337,6 @@ function createStyledTable(headers, rows, options = {}) {
       })
     }));
   });
-
-  // Table borders per SKILL.md
   const tableBorders = {
     top: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) },
     bottom: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) },
@@ -472,18 +355,11 @@ function createStyledTable(headers, rows, options = {}) {
   });
 }
 
-/**
- * Build the executive summary section (SKILL.md format)
- */
 function buildExecutiveSummary(execSummary) {
   if (!execSummary) return [];
 
   const elements = [];
-
-  // Section heading - red (SKILL.md format)
   elements.push(createHeading('Executive Summary', 1));
-
-  // Source badge if present
   if (execSummary.source) {
     elements.push(new Paragraph({
       spacing: { after: 200 },
@@ -493,31 +369,21 @@ function buildExecutiveSummary(execSummary) {
       ]
     }));
   }
-
-  // Main narrative paragraphs
   if (execSummary.narrative) {
     const paragraphs = splitIntoParagraphs(execSummary.narrative);
     paragraphs.forEach(p => {
       elements.push(createParagraph(p));
     });
   }
-
-  // Context/Situation as clean paragraph
   if (execSummary.situation) {
     elements.push(createParagraph(execSummary.situation));
   }
-
-  // Key Insight as clean paragraph
   if (execSummary.insight) {
     elements.push(createParagraph(execSummary.insight));
   }
-
-  // Recommended Action
   if (execSummary.action) {
     elements.push(createParagraph(execSummary.action));
   }
-
-  // Legacy format support
   if (!execSummary.situation && execSummary.stakes) {
     elements.push(createParagraph(execSummary.stakes));
   }
@@ -531,45 +397,31 @@ function buildExecutiveSummary(execSummary) {
   return elements;
 }
 
-/**
- * Build the analysis overview section (SKILL.md format)
- */
 function buildAnalysisOverview(overview) {
   if (!overview) return [];
 
   const elements = [];
-
-  // Section heading - red (SKILL.md format)
   elements.push(createHeading('Analysis Overview', 1));
-
-  // Narrative paragraphs
   if (overview.narrative) {
     const paragraphs = splitIntoParagraphs(overview.narrative);
     paragraphs.forEach(p => {
       elements.push(createParagraph(p));
     });
   }
-
-  // Key Themes
   if (overview.keyThemes && overview.keyThemes.length > 0) {
     elements.push(createHeading('Key Themes', 2));
 
     overview.keyThemes.forEach(theme => {
-      // Theme name - bold black
       elements.push(new Paragraph({
         spacing: { before: 200, after: 100 },
         children: [styledText(theme.theme, { ...STYLES.body, bold: true })]
       }));
-
-      // Theme description
       if (theme.description) {
         elements.push(createParagraph(theme.description, {
           style: STYLES.body,
           spaceBefore: 0
         }));
       }
-
-      // Affected topics
       if (theme.affectedTopics && theme.affectedTopics.length > 0) {
         elements.push(new Paragraph({
           spacing: { after: 150 },
@@ -581,16 +433,12 @@ function buildAnalysisOverview(overview) {
       }
     });
   }
-
-  // Critical Findings
   if (overview.criticalFindings && overview.criticalFindings.length > 0) {
     elements.push(createHeading('Critical Findings', 3));
     overview.criticalFindings.forEach(finding => {
       elements.push(createBullet(finding));
     });
   }
-
-  // Strategic Context
   if (overview.strategicContext) {
     elements.push(createHeading('Strategic Context', 3));
     const paragraphs = splitIntoParagraphs(overview.strategicContext);
@@ -602,13 +450,8 @@ function buildAnalysisOverview(overview) {
   return elements;
 }
 
-/**
- * Build a content section (SKILL.md format)
- */
 function buildContentSection(section, index) {
   const elements = [];
-
-  // Section heading with number prefix ("Section 1: Title")
   const sectionNumber = index + 1;
   const sectionTitle = section.heading || `Section ${sectionNumber}`;
   const formattedTitle = section.swimlaneTopic
@@ -616,16 +459,12 @@ function buildContentSection(section, index) {
     : sectionTitle;
 
   elements.push(createHeading(formattedTitle, 1));
-
-  // Key insight as emphasized paragraph
   if (section.keyInsight) {
     elements.push(new Paragraph({
       spacing: { before: 200, after: 200 },
       children: [styledText(section.keyInsight, { ...STYLES.body, bold: true })]
     }));
   }
-
-  // Research summary
   if (section.researchSummary) {
     elements.push(new Paragraph({
       spacing: { before: 200, after: 150 },
@@ -635,8 +474,6 @@ function buildContentSection(section, index) {
       ]
     }));
   }
-
-  // Implications
   if (section.implications) {
     elements.push(new Paragraph({
       spacing: { before: 150, after: 200 },
@@ -646,8 +483,6 @@ function buildContentSection(section, index) {
       ]
     }));
   }
-
-  // Body paragraphs
   if (section.paragraphs && section.paragraphs.length > 0) {
     section.paragraphs.forEach(para => {
       if (typeof para === 'string') {
@@ -655,28 +490,21 @@ function buildContentSection(section, index) {
       }
     });
   }
-
-  // Supporting evidence
   if (section.supportingEvidence && section.supportingEvidence.length > 0) {
     elements.push(createHeading('Supporting Evidence', 2));
 
     section.supportingEvidence.forEach(evidence => {
-      // Claim
       if (evidence.claim) {
         elements.push(new Paragraph({
           spacing: { before: 200, after: 100 },
           children: [styledText(evidence.claim, { ...STYLES.body, bold: true })]
         }));
       }
-
-      // Quote and source
       if (evidence.quote) {
         elements.push(...createQuoteBlock(evidence.quote, evidence.source));
       }
     });
   }
-
-  // Subsection/spotlight if present ("Implementation Spotlight: ...")
   if (section.spotlight) {
     elements.push(createHeading(section.spotlight.title || 'Implementation Spotlight', 2));
     if (section.spotlight.content) {
@@ -690,42 +518,22 @@ function buildContentSection(section, index) {
   return elements;
 }
 
-// ============================================================================
-// MAIN EXPORT
-// ============================================================================
-
-/**
- * Generate a Word document from document data (SKILL.md format)
- * @param {Object} documentData - Document content object
- * @param {Object} options - Export options
- * @returns {Promise<Buffer>} - Document buffer
- */
 export async function generateDocx(documentData, options = {}) {
   const children = [];
-
-  // Title with optional subtitle
   if (documentData.title) {
     children.push(...buildTitleSection(documentData.title, documentData.subtitle));
   }
-
-  // Executive Summary
   if (documentData.executiveSummary) {
     children.push(...buildExecutiveSummary(documentData.executiveSummary));
   }
-
-  // Analysis Overview
   if (documentData.analysisOverview) {
     children.push(...buildAnalysisOverview(documentData.analysisOverview));
   }
-
-  // Content Sections
   if (documentData.sections && documentData.sections.length > 0) {
     documentData.sections.forEach((section, index) => {
       children.push(...buildContentSection(section, index));
     });
   }
-
-  // Tables if provided
   if (documentData.tables && documentData.tables.length > 0) {
     documentData.tables.forEach(tableData => {
       if (tableData.title) {
@@ -735,8 +543,6 @@ export async function generateDocx(documentData, options = {}) {
       children.push(new Paragraph({ spacing: { after: 300 }, children: [] }));
     });
   }
-
-  // Create the document (SKILL.md format - no header graphics)
   const doc = new Document({
     creator: options.creator || DEFAULT_METADATA.creator,
     title: documentData.title || DEFAULT_METADATA.title,
@@ -772,25 +578,14 @@ export async function generateDocx(documentData, options = {}) {
       children
     }]
   });
-
-  // Generate and return buffer
   const buffer = await Packer.toBuffer(doc);
   console.log(`[DOCX Export] Generated document: ${documentData.title || 'Untitled'} (${buffer.length} bytes)`);
 
   return buffer;
 }
 
-/**
- * Generate a one-page intelligence brief DOCX
- * Optimized for meeting preparation with concise, actionable content
- * @param {Object} briefData - Intelligence brief data from generator
- * @param {Object} meetingContext - Meeting context (attendees, objective, keyConcerns)
- * @returns {Promise<Buffer>} - Document buffer
- */
 export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
   const children = [];
-
-  // Title - centered, red
   children.push(new Paragraph({
     spacing: { before: 0, after: 100 },
     alignment: AlignmentType.CENTER,
@@ -801,8 +596,6 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
       bold: false  // NOT bold per SKILL.md
     })]
   }));
-
-  // Company name - centered, navy
   children.push(new Paragraph({
     spacing: { after: 100 },
     alignment: AlignmentType.CENTER,
@@ -813,8 +606,6 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
       bold: true
     })]
   }));
-
-  // Meeting Objective subtitle - gray italic
   children.push(new Paragraph({
     spacing: { after: 200 },
     alignment: AlignmentType.CENTER,
@@ -825,8 +616,6 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
       italics: true
     })]
   }));
-
-  // Attendees line
   children.push(new Paragraph({
     spacing: { after: 200 },
     children: [
@@ -834,8 +623,6 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
       styledText(meetingContext.meetingAttendees, { ...STYLES.body, size: 20 })
     ]
   }));
-
-  // Key Concerns if provided
   if (meetingContext.keyConcerns) {
     children.push(new Paragraph({
       spacing: { after: 250 },
@@ -845,8 +632,6 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
       ]
     }));
   }
-
-  // Divider line
   children.push(new Paragraph({
     spacing: { after: 200 },
     border: {
@@ -854,20 +639,15 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
     },
     children: []
   }));
-
-  // Key Insights (most important - appears first)
   if (briefData.keyInsights?.length > 0) {
     children.push(createHeading('Key Insights', 2));
     briefData.keyInsights.forEach(insight => {
       children.push(createBullet(insight));
     });
   }
-
-  // Talking Points (with supporting evidence)
   if (briefData.talkingPoints?.length > 0) {
     children.push(createHeading('Talking Points', 2));
     briefData.talkingPoints.forEach((tp, i) => {
-      // Main point - numbered and bold
       children.push(new Paragraph({
         spacing: { before: 100, after: 50 },
         children: [
@@ -875,7 +655,6 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
           styledText(tp.point, { ...STYLES.body, bold: true })
         ]
       }));
-      // Supporting evidence (if present) - indented, gray italic
       if (tp.supporting) {
         children.push(new Paragraph({
           spacing: { after: 100 },
@@ -890,12 +669,9 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
       }
     });
   }
-
-  // Anticipated Questions (Q&A format)
   if (briefData.anticipatedQuestions?.length > 0) {
     children.push(createHeading('Anticipated Questions', 2));
     briefData.anticipatedQuestions.forEach(qa => {
-      // Question - red Q prefix
       children.push(new Paragraph({
         spacing: { before: 100, after: 50 },
         children: [
@@ -903,7 +679,6 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
           styledText(qa.question, { ...STYLES.body, italics: true })
         ]
       }));
-      // Suggested response
       children.push(new Paragraph({
         spacing: { after: 100 },
         indent: { left: 200 },
@@ -914,16 +689,12 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
       }));
     });
   }
-
-  // Roadmap Highlights (if present)
   if (briefData.roadmapHighlights?.length > 0) {
     children.push(createHeading('Roadmap Highlights', 2));
     briefData.roadmapHighlights.forEach(highlight => {
       children.push(createBullet(highlight));
     });
   }
-
-  // Recommended Next Steps - numbered list
   if (briefData.recommendedNextSteps?.length > 0) {
     children.push(createHeading('Recommended Next Steps', 2));
     briefData.recommendedNextSteps.forEach((step, i) => {
@@ -936,8 +707,6 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
       }));
     });
   }
-
-  // Caution Areas (if present - smaller section at end)
   if (briefData.cautionAreas?.length > 0) {
     children.push(new Paragraph({
       spacing: { before: 200, after: 100 },
@@ -962,8 +731,6 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
       }));
     });
   }
-
-  // Create the document (SKILL.md format - tighter margins for one-page fit, no header graphics)
   const doc = new Document({
     creator: DEFAULT_METADATA.creator,
     title: 'Pre-Meeting Intelligence Brief',

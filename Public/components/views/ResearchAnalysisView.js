@@ -524,7 +524,6 @@ export class ResearchAnalysisView {
     return formats[quality] || quality;
   }
   _scoreToRating(score) {
-    // Validate score is a valid number
     if (typeof score !== 'number' || isNaN(score)) return 'adequate';
     // Clamp to valid range
     const clampedScore = Math.max(0, Math.min(10, score));
@@ -544,7 +543,6 @@ export class ResearchAnalysisView {
     return div.innerHTML;
   }
   destroy() {
-    // Remove theme click and keydown handlers
     this.themeClickHandlers.forEach((handlers, element) => {
       element.removeEventListener('click', handlers.click);
       element.removeEventListener('keydown', handlers.keydown);

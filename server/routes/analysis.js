@@ -1,12 +1,3 @@
-/**
- * Analysis Routes Module
- * Handles task analysis and Q&A endpoints
- *
- * Supports both:
- * - Session-based: Pass sessionId to use stored research content
- * - Direct: Pass researchText directly in the request
- */
-
 import express from 'express';
 import { CONFIG } from '../config.js';
 import { callGeminiForJson, callGeminiForText } from '../gemini.js';
@@ -17,26 +8,12 @@ import { sessions, touchSession } from './content.js';
 
 const router = express.Router();
 
-/**
- * POST /get-task-analysis
- * Generates detailed analysis for a specific task
- *
- * Request body:
- * - taskName: string
- * - entity: string
- * - sessionId: string (optional - looks up research from session)
- * - researchText: string (optional - direct research content)
- *
- * Either sessionId or researchText must be provided.
- */
 router.post('/get-task-analysis', apiLimiter, async (req, res) => {
   const { taskName, entity, sessionId, researchText: directResearchText } = req.body;
 
   if (!taskName || !entity) {
     return res.status(400).json({ error: CONFIG.ERRORS.MISSING_TASK_NAME });
   }
-
-  // Get research text from session or direct input
   let researchText = directResearchText;
 
   if (!researchText && sessionId) {
@@ -51,12 +28,8 @@ router.post('/get-task-analysis', apiLimiter, async (req, res) => {
   if (!researchText) {
     return res.status(400).json({ error: 'Either sessionId or researchText is required for analysis' });
   }
-
-  // Sanitize user inputs to prevent prompt injection
   const sanitizedEntity = sanitizePrompt(entity);
   const sanitizedTaskName = sanitizePrompt(taskName);
-
-  // Build user query
   const geminiUserQuery = `**CRITICAL REMINDER:** You MUST escape all newlines (\\n) and double-quotes (") found in the research content before placing them into the final JSON string values.
 
 Research Content:
@@ -65,8 +38,6 @@ ${researchText}
 **YOUR TASK:** Provide a full, detailed analysis for this specific task:
   - Entity: ${sanitizedEntity}
   - Task Name: ${sanitizedTaskName}`;
-
-  // Define the payload
   const payload = {
     contents: [{ parts: [{ text: geminiUserQuery }] }],
     systemInstruction: { parts: [{ text: TASK_ANALYSIS_SYSTEM_PROMPT }] },
@@ -83,8 +54,6 @@ ${researchText}
       }
     }
   };
-
-  // Call the API
   try {
     const analysisData = await callGeminiForJson(payload);
     res.json(analysisData);
@@ -93,23 +62,8 @@ ${researchText}
   }
 });
 
-/**
- * POST /ask-question
- * Answers a user's question about a specific task
- *
- * Request body:
- * - taskName: string
- * - entity: string
- * - question: string
- * - sessionId: string (optional - looks up research from session)
- * - researchText: string (optional - direct research content)
- *
- * Either sessionId or researchText must be provided.
- */
 router.post('/ask-question', apiLimiter, async (req, res) => {
   const { taskName, entity, question, sessionId, researchText: directResearchText } = req.body;
-
-  // Enhanced input validation
   if (!question || typeof question !== 'string' || !question.trim()) {
     return res.status(400).json({ error: CONFIG.ERRORS.QUESTION_REQUIRED });
   }
@@ -121,8 +75,6 @@ router.post('/ask-question', apiLimiter, async (req, res) => {
   if (!taskName || typeof taskName !== 'string' || !taskName.trim()) {
     return res.status(400).json({ error: CONFIG.ERRORS.TASK_NAME_REQUIRED });
   }
-
-  // Get research text from session or direct input
   let researchText = directResearchText;
 
   if (!researchText && sessionId) {
@@ -137,21 +89,13 @@ router.post('/ask-question', apiLimiter, async (req, res) => {
   if (!researchText) {
     return res.status(400).json({ error: 'Either sessionId or researchText is required for Q&A' });
   }
-
-  // Limit question length to prevent abuse
   if (question.trim().length > CONFIG.VALIDATION.MAX_QUESTION_LENGTH) {
     return res.status(400).json({ error: CONFIG.ERRORS.QUESTION_TOO_LONG });
   }
-
-  // Sanitize user inputs to prevent prompt injection
   const sanitizedQuestion = sanitizePrompt(question);
   const sanitizedTaskName = sanitizePrompt(taskName);
   const sanitizedEntity = sanitizePrompt(entity);
-
-  // Build user query
   const geminiUserQuery = `Research Content:\n${researchText}\n\n**User Question:** ${sanitizedQuestion}`;
-
-  // Define the payload (no schema, simple text generation)
   const payload = {
     contents: [{ parts: [{ text: geminiUserQuery }] }],
     systemInstruction: { parts: [{ text: getQASystemPrompt(sanitizedTaskName, sanitizedEntity) }] },
@@ -165,8 +109,6 @@ router.post('/ask-question', apiLimiter, async (req, res) => {
       }
     }
   };
-
-  // Call the API
   try {
     const textResponse = await callGeminiForText(payload);
     res.json({ answer: textResponse });

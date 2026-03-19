@@ -1,9 +1,3 @@
-/**
- * GanttEditor - Handles chart edit mode functionality
- * Extracted from GanttChart.js for modularity
- * Contains: edit mode toggle, inline editing, task add/remove
- */
-
 export class GanttEditor {
   constructor(config) {
     this.ganttData = config.ganttData;
@@ -19,9 +13,6 @@ export class GanttEditor {
     this.isEditMode = false;
   }
 
-  /**
-   * Update references after re-render
-   */
   updateRefs(refs) {
     if (refs.gridElement) this.gridElement = refs.gridElement;
     if (refs.titleElement) this.titleElement = refs.titleElement;
@@ -31,17 +22,12 @@ export class GanttEditor {
     if (refs.contextMenu) this.contextMenu = refs.contextMenu;
   }
 
-  /**
-   * Initialize edit mode toggle listener
-   */
   initializeToggleListener() {
     const editModeBtn = document.getElementById('edit-mode-toggle-btn');
     if (!editModeBtn) return;
 
     editModeBtn.addEventListener('click', () => {
       this.isEditMode = !this.isEditMode;
-
-      // Update button appearance - support both old and new menu structures
       const iconEl = editModeBtn.querySelector('.menu-item-icon');
       const textEl = editModeBtn.querySelector('.menu-item-text');
 
@@ -68,9 +54,6 @@ export class GanttEditor {
     });
   }
 
-  /**
-   * Enable all edit features
-   */
   enableAllEditFeatures() {
     if (this.draggableGantt) {
       this.draggableGantt.enableDragging();
@@ -94,9 +77,6 @@ export class GanttEditor {
     }
   }
 
-  /**
-   * Disable all edit features
-   */
   disableAllEditFeatures() {
     if (this.draggableGantt) {
       this.draggableGantt.disableDragging();
@@ -125,27 +105,18 @@ export class GanttEditor {
     }
   }
 
-  /**
-   * Enable drag-to-edit functionality
-   */
   enableDragToEdit() {
     if (this.draggableGantt) {
       this.draggableGantt.enableDragging();
     }
   }
 
-  /**
-   * Disable drag-to-edit functionality
-   */
   disableDragToEdit() {
     if (this.draggableGantt) {
       this.draggableGantt.disableDragging();
     }
   }
 
-  /**
-   * Add a new task row after the specified index
-   */
   addNewTaskRow(afterIndex) {
     const newTask = {
       title: 'New Task',
@@ -162,9 +133,6 @@ export class GanttEditor {
     this.onRender();
   }
 
-  /**
-   * Remove a task row at the specified index
-   */
   removeTaskRow(taskIndex) {
     const taskData = this.ganttData.data[taskIndex];
     if (!taskData) return;
@@ -177,9 +145,6 @@ export class GanttEditor {
     this.onRender();
   }
 
-  /**
-   * Update row indices after modifications
-   */
   updateRowIndices() {
     if (!this.gridElement) return;
 
@@ -197,9 +162,6 @@ export class GanttEditor {
     });
   }
 
-  /**
-   * Make a label element editable
-   */
   makeEditable(labelElement, taskIndex) {
     const originalText = labelElement.textContent;
 
@@ -256,9 +218,6 @@ export class GanttEditor {
     labelElement.addEventListener('keydown', keyHandler);
   }
 
-  /**
-   * Make the chart title editable
-   */
   makeChartTitleEditable() {
     if (!this.titleElement) return;
 
@@ -317,9 +276,6 @@ export class GanttEditor {
     this.titleElement.addEventListener('keydown', keyHandler);
   }
 
-  /**
-   * Make a legend label editable
-   */
   makeLegendLabelEditable(labelElement, legendIndex) {
     const originalText = labelElement.textContent;
 

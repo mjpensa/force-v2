@@ -1,8 +1,4 @@
 /**
- * Date utilities for Gantt chart positioning
- */
-
-/**
  * Get ISO week number for a date
  * @param {Date} date - The date to get the week number for
  * @returns {number} - Week number (1-52/53)
@@ -15,13 +11,6 @@ export function getWeek(date) {
   return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
 
-/**
- * Find the position of today in the time columns
- * Supports year, quarter, month, and week formats
- * @param {Date} today - The current date
- * @param {string[]} timeColumns - Array of time column labels
- * @returns {{index: number, percentage: number}|null} - Position or null if not found
- */
 export function findTodayColumnPosition(today, timeColumns) {
   if (timeColumns.length === 0) return null;
 

@@ -1,8 +1,3 @@
-/**
- * Server-Sent Events (SSE) endpoint for real-time content generation progress
- * Replaces polling with push-based updates for better UX and reduced latency
- */
-
 import express from 'express';
 import { sessions } from './content.js';
 
@@ -11,16 +6,6 @@ const router = express.Router();
 // Track active SSE connections for cleanup
 const activeConnections = new Map();
 
-/**
- * GET /api/content/stream/:sessionId
- * Server-Sent Events endpoint for real-time generation progress
- *
- * Events sent:
- * - connected: Initial connection established
- * - progress: Content generation status updates
- * - complete: All content generated successfully
- * - error: Generation error occurred
- */
 router.get('/stream/:sessionId', (req, res) => {
   const { sessionId } = req.params;
 
@@ -37,8 +22,6 @@ router.get('/stream/:sessionId', (req, res) => {
     timestamp: Date.now(),
     message: 'SSE connection established'
   });
-
-  // Check if session exists
   const session = sessions.get(sessionId);
   if (!session) {
     sendEvent(res, 'error', {
@@ -52,8 +35,6 @@ router.get('/stream/:sessionId', (req, res) => {
   // Track this connection
   const connectionId = `${sessionId}-${Date.now()}`;
   activeConnections.set(connectionId, res);
-
-  // Send progress updates every 2 seconds
   const interval = setInterval(() => {
     const currentSession = sessions.get(sessionId);
 
@@ -62,8 +43,6 @@ router.get('/stream/:sessionId', (req, res) => {
       cleanup();
       return;
     }
-
-    // Build status for each content type
     const status = {
       type: 'progress',
       timestamp: Date.now(),
@@ -76,8 +55,6 @@ router.get('/stream/:sessionId', (req, res) => {
     };
 
     sendEvent(res, 'progress', status);
-
-    // Check if all content is complete
     const allComplete = ['roadmap', 'slides', 'document', 'researchAnalysis']
       .every(view => {
         const content = currentSession.content[view];
@@ -115,10 +92,6 @@ router.get('/stream/:sessionId', (req, res) => {
   req.on('error', cleanup);
 });
 
-/**
- * GET /api/content/stream/:sessionId/status
- * One-time status check (non-streaming)
- */
 router.get('/stream/:sessionId/status', (req, res) => {
   const { sessionId } = req.params;
 
@@ -142,9 +115,6 @@ router.get('/stream/:sessionId/status', (req, res) => {
   });
 });
 
-/**
- * Get status of a specific content type
- */
 function getContentStatus(session, viewName) {
   const content = session.content[viewName];
 
@@ -171,9 +141,6 @@ function getContentStatus(session, viewName) {
   return { status: 'generating', ready: false };
 }
 
-/**
- * Send an SSE event
- */
 function sendEvent(res, eventType, data) {
   try {
     res.write(`event: ${eventType}\n`);
@@ -183,9 +150,6 @@ function sendEvent(res, eventType, data) {
   }
 }
 
-/**
- * Get count of active SSE connections (for monitoring)
- */
 export function getActiveConnectionCount() {
   return activeConnections.size;
 }

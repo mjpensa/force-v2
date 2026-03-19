@@ -9,14 +9,6 @@ import {
   GanttComponents
 } from './gantt/index.js';
 
-/**
- * GanttChart - Main orchestrator for the Gantt chart visualization
- *
- * Coordinates rendering, UI components, and user interactions through
- * specialized modules:
- * - GanttRenderer: Grid, rows, bars, virtualization
- * - GanttComponents: Header, title, logo, footer, legend
- */
 export class GanttChart {
   constructor(container, ganttData, footerSVG, onTaskClick) {
     this.container = container;
@@ -51,9 +43,6 @@ export class GanttChart {
     return this.editor ? this.editor.isEditMode : false;
   }
 
-  /**
-   * Render the complete Gantt chart
-   */
   render() {
     const renderTimer = new PerformanceTimer('Gantt Chart Render');
 
@@ -72,8 +61,6 @@ export class GanttChart {
 
     // Render UI components
     this.components.addHeaderSVG(this.chartWrapper, this.footerSVG);
-
-    // Create the header menu (glassmorphic three-dot menu)
     const headerMenu = this.components.createHeaderMenu(this.isEditMode);
 
     const { titleContainer, titleElement } = this.components.addTitle(this.chartWrapper, this.ganttData, headerMenu);
@@ -83,30 +70,18 @@ export class GanttChart {
     this.components.addLogo(this.titleContainer, this.titleElement);
 
     renderTimer.mark('Header components added');
-
-    // Render grid
     this.gridElement = this.renderer.createGrid(this.chartWrapper, this.ganttData);
 
     renderTimer.mark('Grid created');
-
-    // Render legend and footer
     this.legendElement = this.components.addLegend(this.chartWrapper, this.ganttData);
     this.components.addFooterSVG(this.chartWrapper, this.footerSVG);
 
     this.container.appendChild(this.chartWrapper);
-
-    // Initialize handlers
     this._initializeExporter();
     this._initializeEditor();
-
-    // Add today line
     const today = new Date();
     this.components.addTodayLine(this.gridElement, this.ganttData, today);
-
-    // Update sticky header
     this.components.updateStickyHeaderPosition(this.titleContainer, this.chartWrapper, this.gridElement);
-
-    // Initialize drag-to-edit
     this._initializeDragToEdit();
     this._updateEditorRefs();
 
@@ -118,17 +93,11 @@ export class GanttChart {
     renderTimer.end();
   }
 
-  /**
-   * Clean up before re-render
-   */
   _cleanupBeforeRender() {
     this.components.cleanup(this.legendElement);
     this.renderer.cleanup(this.gridElement);
   }
 
-  /**
-   * Sort tasks within each swimlane by start date
-   */
   _sortTasksWithinSwimlanes() {
     if (!this.ganttData || !this.ganttData.data || this.ganttData.data.length === 0) {
       return;
@@ -162,9 +131,6 @@ export class GanttChart {
     this.ganttData.data = sortedData;
   }
 
-  /**
-   * Sort tasks by their start column
-   */
   _sortTasksByStartDate(tasks) {
     if (!tasks || tasks.length <= 1) {
       return;
@@ -184,9 +150,6 @@ export class GanttChart {
     });
   }
 
-  /**
-   * Get start column for a task
-   */
   _getStartCol(task) {
     if (!task || !task.bar) {
       return Infinity;
@@ -200,9 +163,6 @@ export class GanttChart {
     return startCol;
   }
 
-  /**
-   * Refresh the legend after color changes
-   */
   _refreshLegend() {
     const newLegend = this.components.refreshLegend(this.ganttData, this.legendElement);
     if (newLegend) {
@@ -210,9 +170,6 @@ export class GanttChart {
     }
   }
 
-  /**
-   * Initialize the exporter module
-   */
   _initializeExporter() {
     const chartContainer = document.getElementById('gantt-chart-container');
     if (!chartContainer) return;
@@ -223,9 +180,6 @@ export class GanttChart {
     this.exporter.initializeListeners();
   }
 
-  /**
-   * Initialize the editor module
-   */
   _initializeEditor() {
     if (!this.editor) {
       this.editor = new GanttEditor({
@@ -243,9 +197,6 @@ export class GanttChart {
     this.editor.initializeToggleListener();
   }
 
-  /**
-   * Update editor references after re-render
-   */
   _updateEditorRefs() {
     if (this.editor) {
       this.editor.updateRefs({
@@ -259,9 +210,6 @@ export class GanttChart {
     }
   }
 
-  /**
-   * Announce message to screen readers
-   */
   _announceToScreenReader(message) {
     let liveRegion = document.getElementById('gantt-live-region');
 
@@ -284,9 +232,6 @@ export class GanttChart {
     }, 5000);
   }
 
-  /**
-   * Initialize drag-to-edit functionality
-   */
   _initializeDragToEdit() {
     if (!this.gridElement) {
       return;
@@ -343,9 +288,6 @@ export class GanttChart {
     this._addCursorFeedback();
   }
 
-  /**
-   * Clean up interaction handlers
-   */
   _cleanupInteractionHandlers() {
     if (this.draggableGantt) {
       this.draggableGantt.disable();
@@ -368,9 +310,6 @@ export class GanttChart {
     }
   }
 
-  /**
-   * Add cursor feedback for bar interactions
-   */
   _addCursorFeedback() {
     this._cursorFeedbackHandler = (event) => {
       const bar = event.target.closest('.gantt-bar');
@@ -401,10 +340,6 @@ export class GanttChart {
     this.gridElement.addEventListener('mousemove', this._cursorFeedbackHandler);
   }
 
-  /**
-   * Clean up all resources to prevent memory leaks
-   * Call this before removing the chart or on page unload
-   */
   destroy() {
     // Cleanup modules
     this.components.cleanup(this.legendElement);

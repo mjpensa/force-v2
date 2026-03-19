@@ -1,8 +1,4 @@
 /**
- * Asset loading and legend building utilities
- */
-
-/**
  * Load the footer SVG asset
  * @returns {Promise<string>} - SVG content or empty string on error
  */
@@ -16,11 +12,6 @@ export async function loadFooterSVG() {
   }
 }
 
-/**
- * Build a legend element from legend data
- * @param {Array} legendData - Array of {color, label} objects
- * @returns {HTMLElement} - Legend container element
- */
 export function buildLegend(legendData) {
   const legendContainer = document.createElement('div');
   legendContainer.className = 'gantt-legend';

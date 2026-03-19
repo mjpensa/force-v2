@@ -1,13 +1,3 @@
-/**
- * Roadmap/Gantt Chart Generation Prompt
- * Extracted from server/prompts.js for modular architecture
- *
- * This module handles the generation of Gantt chart data from research files
- */
-
-/**
- * Gantt Chart JSON Schema
- */
 export const roadmapSchema = {
   type: "object",
   properties: {
@@ -84,9 +74,6 @@ export const roadmapSchema = {
   required: ["title", "timeColumns", "data", "legend", "researchAnalysis"]
 };
 
-/**
- * Gantt Chart Generation System Prompt
- */
 export const roadmapPrompt = `You are an expert project management analyst. Your job is to analyze a user's prompt and research files to build a complete Gantt chart data object.
 
 You MUST respond with *only* a valid JSON object matching the schema.
@@ -287,12 +274,6 @@ You MUST respond with *only* a valid JSON object matching the schema.
     f.  **Summary:** Write a 1-2 sentence summary explaining the overall research quality and key recommendations.
     g.  **IMPORTANT:** Topics that were NOT included as swimlanes (due to zero overlapping tasks or lack of date data) MUST still appear in this analysis with includedinChart=false and explanation of why.`;
 
-/**
- * Generate the complete roadmap prompt with user context
- * @param {string} userPrompt - The user's analysis request
- * @param {Array<{filename: string, content: string}>} researchFiles - Research files to analyze
- * @returns {string} Complete prompt for AI
- */
 export function generateRoadmapPrompt(userPrompt, researchFiles) {
   const researchContent = researchFiles
     .map(file => `=== ${file.filename} ===\n${file.content}`)

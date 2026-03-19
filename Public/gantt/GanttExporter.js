@@ -1,9 +1,3 @@
-/**
- * GanttExporter - Handles chart export functionality
- * Extracted from GanttChart.js for modularity
- * Contains: PNG export, SVG export, URL copy, notifications
- */
-
 import { CONFIG } from '../config.js';
 
 export class GanttExporter {
@@ -12,12 +6,6 @@ export class GanttExporter {
     this.onAnnounce = callbacks.onAnnounce || (() => {});
   }
 
-  /**
-   * Calculate dimensions for target aspect ratio with perfect scaling
-   * @param {number} sourceWidth - Original content width
-   * @param {number} sourceHeight - Original content height
-   * @returns {Object} Target dimensions and scaling info
-   */
   _calculateAspectRatioDimensions(sourceWidth, sourceHeight) {
     const { width: ratioW, height: ratioH } = CONFIG.EXPORT.ASPECT_RATIO;
     const targetRatio = ratioW / ratioH; // 9:16 = 0.5625
@@ -52,11 +40,6 @@ export class GanttExporter {
     };
   }
 
-  /**
-   * Create a canvas with the target aspect ratio and scaled content
-   * @param {HTMLCanvasElement} sourceCanvas - The original captured canvas
-   * @returns {HTMLCanvasElement} New canvas with 9:16 aspect ratio
-   */
   _createAspectRatioCanvas(sourceCanvas) {
     const dims = this._calculateAspectRatioDimensions(
       sourceCanvas.width,
@@ -85,18 +68,12 @@ export class GanttExporter {
     return targetCanvas;
   }
 
-  /**
-   * Initialize all export listeners
-   */
   initializeListeners() {
     this._addExportListener();
     this._addSvgExportListener();
     this._addCopyUrlListener();
   }
 
-  /**
-   * PNG export listener
-   */
   _addExportListener() {
     const exportBtn = document.getElementById('export-png-btn');
     if (!exportBtn || !this.chartContainer) return;
@@ -133,8 +110,6 @@ export class GanttExporter {
 
         // Force reflow to apply style changes
         await new Promise(resolve => requestAnimationFrame(resolve));
-
-        // Get the full content dimensions after removing constraints
         const fullWidth = this.chartContainer.scrollWidth;
         const fullHeight = this.chartContainer.scrollHeight;
 
@@ -190,9 +165,6 @@ export class GanttExporter {
     });
   }
 
-  /**
-   * SVG export listener
-   */
   _addSvgExportListener() {
     const exportBtn = document.getElementById('export-svg-btn');
     if (!exportBtn || !this.chartContainer) return;
@@ -229,8 +201,6 @@ export class GanttExporter {
 
         // Force reflow to apply style changes
         await new Promise(resolve => requestAnimationFrame(resolve));
-
-        // Get the full content dimensions after removing constraints
         const fullWidth = this.chartContainer.scrollWidth;
         const fullHeight = this.chartContainer.scrollHeight;
 
@@ -306,9 +276,6 @@ export class GanttExporter {
     });
   }
 
-  /**
-   * Copy URL listener
-   */
   _addCopyUrlListener() {
     const copyUrlBtn = document.getElementById('copy-url-btn');
     if (!copyUrlBtn) return;
@@ -337,9 +304,6 @@ export class GanttExporter {
     });
   }
 
-  /**
-   * Create loading overlay for export operations
-   */
   _createExportLoadingOverlay(messageText = 'Generating high-resolution PNG...') {
     const overlay = document.createElement('div');
     overlay.className = 'export-loading-overlay';
@@ -357,9 +321,6 @@ export class GanttExporter {
     return overlay;
   }
 
-  /**
-   * Show notification toast
-   */
   showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `chart-notification chart-notification-${type}`;

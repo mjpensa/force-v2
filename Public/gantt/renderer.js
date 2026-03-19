@@ -1,8 +1,5 @@
 import { CONFIG } from '../config.js';
 
-/**
- * GanttRenderer - Handles grid rendering, rows, bars, and virtualization
- */
 export class GanttRenderer {
   constructor(chart) {
     this.chart = chart;
@@ -12,12 +9,6 @@ export class GanttRenderer {
     this._gridDblClickHandler = null;
   }
 
-  /**
-   * Create the main grid structure
-   * @param {HTMLElement} chartWrapper - Container for the grid
-   * @param {Object} ganttData - Chart data
-   * @returns {HTMLElement} The created grid element
-   */
   createGrid(chartWrapper, ganttData) {
     const gridElement = document.createElement('div');
     gridElement.className = 'gantt-grid';
@@ -35,9 +26,6 @@ export class GanttRenderer {
     return gridElement;
   }
 
-  /**
-   * Create the header row with time columns
-   */
   _createHeaderRow(gridElement, ganttData, numCols) {
     const headerFragment = document.createDocumentFragment();
 
@@ -55,9 +43,6 @@ export class GanttRenderer {
     gridElement.appendChild(headerFragment);
   }
 
-  /**
-   * Create data rows (standard or virtualized based on count)
-   */
   _createDataRows(gridElement, ganttData, numCols) {
     const totalRows = ganttData.data.length;
     const VIRTUALIZATION_THRESHOLD = 100;
@@ -94,9 +79,6 @@ export class GanttRenderer {
     this._setupGridDelegation(gridElement, ganttData);
   }
 
-  /**
-   * Create a row label element
-   */
   _createRowLabel(row, dataIndex, isSwimlane) {
     const labelEl = document.createElement('div');
     labelEl.className = `gantt-row-label ${isSwimlane ? 'swimlane' : 'task'}`;
@@ -131,9 +113,6 @@ export class GanttRenderer {
     return labelEl;
   }
 
-  /**
-   * Create the bar area for a row
-   */
   _createBarArea(row, numCols, isSwimlane, dataIndex) {
     const barAreaEl = document.createElement('div');
     barAreaEl.className = `gantt-bar-area ${isSwimlane ? 'swimlane' : 'task'}`;
@@ -177,9 +156,6 @@ export class GanttRenderer {
     return barAreaEl;
   }
 
-  /**
-   * Setup delegated event listeners for the grid
-   */
   _setupGridDelegation(gridElement, ganttData) {
     if (this._gridClickHandler) {
       gridElement.removeEventListener('click', this._gridClickHandler);
@@ -190,8 +166,6 @@ export class GanttRenderer {
 
     this._gridClickHandler = (e) => {
       const target = e.target;
-
-      // Handle add task button
       const addBtn = target.closest('.row-action-btn.add-task');
       if (addBtn) {
         e.stopPropagation();
@@ -199,8 +173,6 @@ export class GanttRenderer {
         if (this.chart.editor) this.chart.editor.addNewTaskRow(taskIndex);
         return;
       }
-
-      // Handle delete task button
       const deleteBtn = target.closest('.row-action-btn.delete-task');
       if (deleteBtn) {
         e.stopPropagation();
@@ -208,8 +180,6 @@ export class GanttRenderer {
         if (this.chart.editor) this.chart.editor.removeTaskRow(taskIndex);
         return;
       }
-
-      // Handle task row/bar click for analysis
       if (this.chart.onTaskClick && !this.chart.isEditMode) {
         const clickableEl = target.closest('[data-clickable="true"]');
         if (clickableEl) {
@@ -241,9 +211,6 @@ export class GanttRenderer {
     gridElement.addEventListener('dblclick', this._gridDblClickHandler);
   }
 
-  /**
-   * Add hover effects between label and bar area
-   */
   _addHoverEffects(labelEl, barAreaEl) {
     labelEl.addEventListener('mouseenter', () => {
       barAreaEl.classList.add('row-hover');
@@ -259,9 +226,6 @@ export class GanttRenderer {
     });
   }
 
-  /**
-   * Create virtualized rows for large datasets
-   */
   _createVirtualizedRows(gridElement, ganttData, numCols) {
     const ROW_HEIGHT = 18;
     const BUFFER_ROWS = 20;
@@ -302,9 +266,6 @@ export class GanttRenderer {
     gridElement.appendChild(scrollContainer);
   }
 
-  /**
-   * Render visible rows for virtualization
-   */
   _renderVisibleRows() {
     if (!this.virtualScroll) return;
 
@@ -340,9 +301,6 @@ export class GanttRenderer {
     viewport.appendChild(rowsFragment);
   }
 
-  /**
-   * Handle virtual scroll updates
-   */
   _handleVirtualScroll() {
     if (!this.virtualScroll) return;
 
@@ -370,9 +328,6 @@ export class GanttRenderer {
     }
   }
 
-  /**
-   * Clean up event listeners
-   */
   cleanup(gridElement) {
     if (this._gridClickHandler && gridElement) {
       gridElement.removeEventListener('click', this._gridClickHandler);

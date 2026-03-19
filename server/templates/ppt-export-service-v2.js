@@ -1,11 +1,3 @@
-/**
- * PPT Export Service v2
- * Rebuilt to match browser preview exactly
- *
- * Slide types: sectionTitle, twoColumn, threeColumn
- * All positions calculated from browser CSS percentages
- */
-
 import PptxGenJS from 'pptxgenjs';
 import fs from 'fs';
 import path from 'path';
@@ -14,22 +6,12 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ============================================================================
-// SLIDE DIMENSIONS
-// ============================================================================
-
 const SLIDE = {
   WIDTH: 13.33,   // inches
   HEIGHT: 7.5     // inches (16:9 aspect ratio)
 };
-
-// Convert percentage to inches
 const pctX = (p) => (p / 100) * SLIDE.WIDTH;
 const pctY = (p) => (p / 100) * SLIDE.HEIGHT;
-
-// ============================================================================
-// COLORS
-// ============================================================================
 
 const COLORS = {
   navy: '0C2340',       // Primary brand - titles, body text
@@ -39,21 +21,14 @@ const COLORS = {
   mutedWhite: '999999'  // Page numbers on dark backgrounds (~60% white)
 };
 
-// ============================================================================
-// LAYOUTS - Exact browser CSS measurements converted to inches
-// ============================================================================
-
 const LAYOUTS = {
-  // Section Title Slide (navy background, centered title)
   sectionTitle: {
-    // Browser: top: 5%, left: 4%
     swimlaneLabel: {
       x: pctX(4),
       y: pctY(5),
       w: 5,
       h: 0.4
     },
-    // Centered title
     title: {
       x: 0.5,
       y: 2.5,
@@ -67,8 +42,6 @@ const LAYOUTS = {
       w: 2,
       h: 0.04
     },
-    // No corner graphic on section title slides - only used on templates 1 and 2
-    // Logo: bottom: 3%, right: 2%, height: 4%
     // Logo actual dimensions: 816x569 (aspect ratio ~1.434:1)
     // Reduced size for cleaner web rendering
     logo: {
@@ -77,7 +50,6 @@ const LAYOUTS = {
       w: 0.30 * (816 / 569),  // ~0.43 inches (calculated from aspect ratio)
       h: 0.30
     },
-    // Page number: bottom: 3.43%, left: 2.11%
     pageNumber: {
       x: pctX(2.11),
       y: SLIDE.HEIGHT - pctY(3.43) - 0.3,  // bottom position - element height
@@ -85,40 +57,32 @@ const LAYOUTS = {
       h: 0.3
     }
   },
-
-  // Two Column Content Slide
   twoColumn: {
-    // Tagline: top: 3.43%, left: 2.11%
     tagline: {
       x: pctX(2.11),
       y: pctY(3.43),
       w: 3,
       h: 0.35
     },
-    // Title: top: 7%, left: 1.87%, width: 44.59%, height: 40%
     title: {
       x: pctX(1.87),
       y: pctY(7),
       w: pctX(44.59),
       h: pctY(40)
     },
-    // Body: left: 50.59%, top: 57%, width: 44.30%, bottom: 6%
     body: {
       x: pctX(50.59),
       y: pctY(57),
       w: pctX(44.30),
       h: pctY(37)  // 100% - 57% - 6%
     },
-    // Corner graphic: top: 0, right: 0, width: 10%
     // SVG actual dimensions: 312x313 (essentially square, ~1:1 ratio)
-    // Slightly reduced from 10.9% to 10% for better web rendering
     cornerGraphic: {
       x: SLIDE.WIDTH - pctX(10),
       y: 0,
       w: pctX(10),
       h: pctX(10)  // Square aspect ratio
     },
-    // Logo: bottom: 3%, right: 2%
     // Logo actual dimensions: 816x569 (aspect ratio ~1.434:1)
     // Reduced size for cleaner web rendering
     logo: {
@@ -127,7 +91,6 @@ const LAYOUTS = {
       w: 0.30 * (816 / 569),  // ~0.43 inches
       h: 0.30
     },
-    // Page number: bottom: 3.43%, left: 2.11%
     pageNumber: {
       x: pctX(2.11),
       y: SLIDE.HEIGHT - pctY(3.43) - 0.3,  // bottom position - element height
@@ -135,17 +98,13 @@ const LAYOUTS = {
       h: 0.3
     }
   },
-
-  // Three Column Content Slide
   threeColumn: {
-    // Tagline: top: 3.47%, left: 2.10%
     tagline: {
       x: pctX(2.10),
       y: pctY(3.47),
       w: 3,
       h: 0.35
     },
-    // Title: top: 7%, left: 1.87%, width: 24%, height: 40%
     // Width increased from 20.70% to 24% to accommodate 44pt font
     title: {
       x: pctX(1.87),
@@ -153,16 +112,13 @@ const LAYOUTS = {
       w: pctX(24),
       h: pctY(40)
     },
-    // Columns: left: 26.71%, top: 46.13%, width: 68.27%, height: 46.93%
     columns: {
       x: pctX(26.71),
       y: pctY(46.13),
       w: pctX(68.27),
       h: pctY(46.93)
     },
-    // Column gap: 4.43%
     columnGap: pctX(4.43),
-    // Corner graphic - SVG actual dimensions: 312x313 (essentially square)
     // Slightly reduced from 10.9% to 10% for better web rendering
     cornerGraphic: {
       x: SLIDE.WIDTH - pctX(10),
@@ -170,7 +126,6 @@ const LAYOUTS = {
       w: pctX(10),
       h: pctX(10)  // Square aspect ratio
     },
-    // Logo - actual dimensions: 816x569 (aspect ratio ~1.434:1)
     // Reduced size for cleaner web rendering
     logo: {
       x: SLIDE.WIDTH - 0.75,
@@ -178,7 +133,6 @@ const LAYOUTS = {
       w: 0.30 * (816 / 569),  // ~0.43 inches
       h: 0.30
     },
-    // Page number
     pageNumber: {
       x: pctX(2.10),
       y: SLIDE.HEIGHT - pctY(3.43) - 0.3,  // bottom position - element height
@@ -187,10 +141,6 @@ const LAYOUTS = {
     }
   }
 };
-
-// ============================================================================
-// ASSETS - Loaded as base64 for reliable embedding
-// ============================================================================
 
 let ASSETS = {
   logo: null,
@@ -201,17 +151,10 @@ let ASSETS = {
 
 let assetsLoaded = false;
 
-/**
- * Load image assets as base64 encoded strings
- */
 function loadAssets() {
   if (assetsLoaded) return;
-
-  // Find project root (go up from server/templates)
   const projectRoot = path.resolve(__dirname, '..', '..');
   const publicDir = path.join(projectRoot, 'Public');
-
-  // Load red BIP logo
   const logoPath = path.join(publicDir, 'Red BIP Logo.png');
   if (fs.existsSync(logoPath)) {
     const logoData = fs.readFileSync(logoPath);
@@ -220,8 +163,6 @@ function loadAssets() {
   } else {
     console.warn('[PPT Export v2] Logo not found at:', logoPath);
   }
-
-  // Load corner graphic SVG (convert to base64)
   const cornerPath = path.join(publicDir, 'bip corner graphic.svg');
   if (fs.existsSync(cornerPath)) {
     const svgData = fs.readFileSync(cornerPath);
@@ -231,12 +172,6 @@ function loadAssets() {
 
   assetsLoaded = true;
 }
-
-// ============================================================================
-// TEXT FORMATTING HELPERS
-// ============================================================================
-
-// ALL CAPS acronyms - these get uppercased
 const ACRONYMS_UPPER = [
   'DRR', 'CDM', 'API', 'APIS', 'ROI', 'KPI', 'KPIS', 'CEO', 'CTO', 'CFO', 'COO', 'CIO',
   'AI', 'ML', 'US', 'UK', 'EU', 'UN', 'CFTC', 'SEC', 'FDA', 'EPA',
@@ -246,8 +181,6 @@ const ACRONYMS_UPPER = [
   'CRM', 'ERP', 'ISDA', 'LEI', 'EMIR', 'SFTR', 'NFA',  // Note: MiFID handled in ACRONYMS_MIXED
   'FINRA', 'OCC', 'DTCC', 'SWIFT', 'ISO', 'XML', 'JSON', 'REST', 'SDK'
 ];
-
-// MIXED CASE acronyms - preserve exact capitalization
 const ACRONYMS_MIXED = {
   'fpml': 'FpML',
   'saas': 'SaaS',
@@ -263,10 +196,6 @@ const ACRONYMS_MIXED = {
   'e.u.': 'E.U.'
 };
 
-/**
- * Check if a single word (no slashes) is an acronym
- * Returns: { isAcronym: boolean, value: string }
- */
 function checkSingleAcronym(word) {
   if (!word) return { isAcronym: false, value: word };
 
@@ -291,10 +220,6 @@ function checkSingleAcronym(word) {
   return { isAcronym: false, value: word };
 }
 
-/**
- * Get the correct form of an acronym, handling compound forms like "CDM/DRR"
- * Returns: { isAcronym: boolean, value: string }
- */
 function getAcronymForm(word) {
   if (!word) return { isAcronym: false, value: word };
 
@@ -313,9 +238,6 @@ function getAcronymForm(word) {
   return checkSingleAcronym(word);
 }
 
-/**
- * Convert text to sentence case while preserving acronyms
- */
 function toSentenceCase(text) {
   if (!text) return '';
 
@@ -402,10 +324,6 @@ function formatTitle(title, maxCharsPerLine = 10) {
   return enforceTitleLineCount(sentenceCase, maxCharsPerLine);
 }
 
-/**
- * Format section title: preserve acronyms but don't apply full sentence case
- * (Section titles are typically title case, not sentence case)
- */
 function formatSectionTitle(title) {
   if (!title) return '';
 
@@ -482,22 +400,11 @@ function formatBody(p1, p2, maxChars = 415) {
   return parts.join('\n');
 }
 
-/**
- * Get section/tagline label
- */
 function getSectionLabel(slideData) {
   const label = slideData.tagline || slideData.section || slideData.sectionLabel;
   return label ? String(label).toUpperCase() : '';
 }
 
-// ============================================================================
-// CORNER GRAPHIC - Uses actual SVG file from repo
-// ============================================================================
-
-/**
- * Add corner graphic image to slide
- * Uses the actual SVG file loaded as base64
- */
 function addCornerGraphic(pptx, slide, layout, isDarkBackground = false) {
   const pos = layout.cornerGraphic;
 
@@ -511,10 +418,6 @@ function addCornerGraphic(pptx, slide, layout, isDarkBackground = false) {
     });
   }
 }
-
-// ============================================================================
-// SPEAKER NOTES FORMATTER - For PPTX notes field
-// ============================================================================
 
 /**
  * Format speaker notes for PowerPoint notes field
@@ -690,22 +593,10 @@ function formatSpeakerNotesForPptx(notes, maxLength = 3000) {
   return sections.join('').trim();
 }
 
-// ============================================================================
-// SLIDE RENDERERS
-// ============================================================================
-
-/**
- * Add Section Title Slide
- * Navy background, centered title, white text
- */
 function addSectionTitleSlide(pptx, data, slideNumber) {
   const L = LAYOUTS.sectionTitle;
   const slide = pptx.addSlide();
-
-  // Navy background
   slide.background = { color: COLORS.navy };
-
-  // Swimlane label (white on dark, semi-bold - weight 600)
   if (data.swimlane) {
     const swimlaneText = formatSectionTitle(data.swimlane).toUpperCase();
     slide.addText(swimlaneText, {
@@ -721,9 +612,6 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
       charSpacing: 1
     });
   }
-
-  // Main section title (centered, large, thin font - weight 100)
-  // Font: 72pt Work Sans Thin per browser CSS (font-weight: 100)
   const titleText = formatSectionTitle(data.sectionTitle || data.swimlane || '');
   slide.addText(titleText, {
     x: L.title.x,
@@ -738,8 +626,6 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
     valign: 'middle',
     lineSpacingMultiple: 1.1
   });
-
-  // Red decorative line under title
   slide.addShape(pptx.ShapeType.rect, {
     x: L.redLine.x,
     y: L.redLine.y,
@@ -748,10 +634,6 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
     fill: { color: COLORS.red },
     line: { color: COLORS.red, width: 0 }
   });
-
-  // No corner graphic on section title slides - only used on templates 1 and 2
-
-  // Logo
   if (ASSETS.logo) {
     slide.addImage({
       data: ASSETS.logo,
@@ -761,8 +643,6 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
       h: L.logo.h
     });
   }
-
-  // Page number (muted white)
   slide.addText(String(slideNumber), {
     x: L.pageNumber.x,
     y: L.pageNumber.y,
@@ -775,19 +655,10 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
   });
 }
 
-/**
- * Add Two-Column Content Slide
- * White background, title left, body right
- * @param {object} speakerNotes - Optional speaker notes for this slide
- */
 function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   const L = LAYOUTS.twoColumn;
   const slide = pptx.addSlide();
-
-  // White background
   slide.background = { color: COLORS.white };
-
-  // Tagline (red, uppercase, semi-bold - weight 600)
   const tagline = getSectionLabel(data);
   if (tagline) {
     slide.addText(tagline, {
@@ -803,10 +674,6 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
       charSpacing: 0.5
     });
   }
-
-  // Title (navy, large, thin font, 4 lines)
-  // twoColumn layout: max 10 characters per line
-  // Font: 72pt Work Sans Thin (weight 100) per original PPT template
   const titleText = formatTitle(data.title, 10);
   slide.addText(titleText, {
     x: L.title.x,
@@ -821,10 +688,6 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
     valign: 'top',
     lineSpacingMultiple: 0.85
   });
-
-  // Body text (two paragraphs) - truncated to 415 chars each
-  // Browser: font-size: clamp(7px, 1.15cqw, 14px), line-height: 1.35, margin-bottom: 0.8em
-  // 14px = 10.5pt, 0.8em at 14px = 11.2px ≈ 8pt
   const bodyText = formatBody(data.paragraph1, data.paragraph2, 415);
   if (bodyText) {
     slide.addText(bodyText, {
@@ -843,11 +706,7 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
       charSpacing: 0.3  // Approximate letter-spacing: 0.02em
     });
   }
-
-  // Corner graphic (shape-based)
   addCornerGraphic(pptx, slide, L, false);
-
-  // Logo
   if (ASSETS.logo) {
     slide.addImage({
       data: ASSETS.logo,
@@ -857,8 +716,6 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
       h: L.logo.h
     });
   }
-
-  // Page number (dark gray)
   slide.addText(String(slideNumber), {
     x: L.pageNumber.x,
     y: L.pageNumber.y,
@@ -869,8 +726,6 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
     color: COLORS.darkGray,
     align: 'left'
   });
-
-  // Add speaker notes if provided
   if (speakerNotes) {
     const notesText = formatSpeakerNotesForPptx(speakerNotes);
     if (notesText) {
@@ -879,19 +734,10 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   }
 }
 
-/**
- * Add Three-Column Content Slide
- * White background, narrow title left, three columns below
- * @param {object} speakerNotes - Optional speaker notes for this slide
- */
 function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   const L = LAYOUTS.threeColumn;
   const slide = pptx.addSlide();
-
-  // White background
   slide.background = { color: COLORS.white };
-
-  // Tagline (red, uppercase, semi-bold - weight 600)
   const tagline = getSectionLabel(data);
   if (tagline) {
     slide.addText(tagline, {
@@ -907,10 +753,6 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
       charSpacing: 0.5
     });
   }
-
-  // Title (narrower, light weight - 300)
-  // threeColumn layout: max 18 characters per line
-  // Font: Work Sans Light per browser CSS (font-weight: 300)
   const titleText = formatTitle(data.title, 18);
   slide.addText(titleText, {
     x: L.title.x,
@@ -925,15 +767,9 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
     valign: 'top',
     lineSpacingMultiple: 0.85
   });
-
-  // Three columns - calculate widths
   const totalWidth = L.columns.w;
   const gapWidth = L.columnGap;
   const columnWidth = (totalWidth - (2 * gapWidth)) / 3;
-
-  // Normalize and truncate column text to 400 chars (matches browser SlidesView.js)
-  // Browser: font-size: clamp(7px, 1.15cqw, 14px), line-height: 1.3
-  // 14px = 10.5pt
   const columnTexts = [
     truncateToSentence(normalizeBodyText(data.paragraph1), 400),
     truncateToSentence(normalizeBodyText(data.paragraph2), 400),
@@ -958,11 +794,7 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
       });
     }
   });
-
-  // Corner graphic
   addCornerGraphic(pptx, slide, L, false);
-
-  // Logo
   if (ASSETS.logo) {
     slide.addImage({
       data: ASSETS.logo,
@@ -972,8 +804,6 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
       h: L.logo.h
     });
   }
-
-  // Page number
   slide.addText(String(slideNumber), {
     x: L.pageNumber.x,
     y: L.pageNumber.y,
@@ -984,8 +814,6 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
     color: COLORS.darkGray,
     align: 'left'
   });
-
-  // Add speaker notes if provided
   if (speakerNotes) {
     const notesText = formatSpeakerNotesForPptx(speakerNotes);
     if (notesText) {
@@ -994,32 +822,19 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   }
 }
 
-// ============================================================================
-// SECTION FLATTENING
-// ============================================================================
-
-/**
- * Flatten sections structure into linear array of slides
- * Inserts section title slide at start of each section
- */
 function flattenSections(sections) {
   const flatSlides = [];
 
   for (const section of sections) {
-    // Skip sections without valid swimlane
     if (!section.swimlane) {
       console.warn('[PPT Export v2] Skipping section with no swimlane');
       continue;
     }
-
-    // Add section title slide
     flatSlides.push({
       layout: 'sectionTitle',
       swimlane: section.swimlane,
       sectionTitle: section.sectionTitle || section.swimlane
     });
-
-    // Add all content slides for this section
     if (section.slides && Array.isArray(section.slides) && section.slides.length > 0) {
       flatSlides.push(...section.slides);
     } else {
@@ -1030,10 +845,6 @@ function flattenSections(sections) {
   return flatSlides;
 }
 
-// ============================================================================
-// MAIN EXPORT FUNCTION
-// ============================================================================
-
 /**
  * Generate PowerPoint presentation from slides data
  * @param {Object} slidesData - Slides data with sections array
@@ -1041,32 +852,23 @@ function flattenSections(sections) {
  * @returns {Promise<Buffer>} PowerPoint file as Node buffer
  */
 export async function generatePptx(slidesData, options = {}) {
-  // Validate input
   if (!slidesData || typeof slidesData !== 'object') {
     throw new Error('Invalid slides data: expected object');
   }
-
-  // Load assets on first call
   loadAssets();
 
   const pptx = new PptxGenJS();
-
-  // Set metadata
   pptx.author = options.author || 'BIP';
   pptx.company = options.company || 'BIP';
   pptx.title = slidesData.title || 'Presentation';
   pptx.subject = options.subject || 'Generated Presentation';
   pptx.revision = '1';
-
-  // Define custom 16:9 layout
   pptx.defineLayout({
     name: 'CUSTOM_16_9',
     width: SLIDE.WIDTH,
     height: SLIDE.HEIGHT
   });
   pptx.layout = 'CUSTOM_16_9';
-
-  // Get slides array from sections
   let slidesArray = [];
   if (slidesData.sections && Array.isArray(slidesData.sections) && slidesData.sections.length > 0) {
     console.log(`[PPT Export v2] Processing ${slidesData.sections.length} sections`);
@@ -1074,13 +876,9 @@ export async function generatePptx(slidesData, options = {}) {
   } else {
     console.warn('[PPT Export v2] No sections found in slides data - generating empty presentation');
   }
-
-  // Warn if no slides
   if (slidesArray.length === 0) {
     console.warn('[PPT Export v2] Warning: No slides to render');
   }
-
-  // Get speaker notes if available
   const speakerNotesData = slidesData.speakerNotes?.slides || [];
   const hasSpeakerNotes = speakerNotesData.length > 0;
   if (hasSpeakerNotes) {
@@ -1120,22 +918,14 @@ export async function generatePptx(slidesData, options = {}) {
 
     return null;
   };
-
-  // Track current section for speaker notes matching
   let currentSectionName = '';
-
-  // Render each slide
   for (let i = 0; i < slidesArray.length; i++) {
     const slideData = slidesArray[i];
     const slideNumber = i + 1;
     const layout = slideData.layout || 'twoColumn';
-
-    // Track section name for speaker notes matching
     if (layout === 'sectionTitle') {
       currentSectionName = slideData.swimlane || '';
     }
-
-    // Find speaker notes for this slide
     const speakerNotes = findSpeakerNotes(slideData, currentSectionName);
 
     console.log(`[PPT Export v2] Rendering slide ${slideNumber}: ${layout}${speakerNotes ? ' (with notes)' : ''}`);
@@ -1150,8 +940,6 @@ export async function generatePptx(slidesData, options = {}) {
   }
 
   console.log(`[PPT Export v2] Generated ${slidesArray.length} slides${hasSpeakerNotes ? ' with speaker notes' : ''}`);
-
-  // Export as buffer
   return await pptx.write({ outputType: 'nodebuffer' });
 }
 

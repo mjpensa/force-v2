@@ -16,7 +16,6 @@ export class ContextMenu {
   disable() {
     this.gridElement.removeEventListener('contextmenu', this._handleContextMenu);
     this.hide();
-    // Remove menu from DOM on disable to prevent orphaned elements
     if (this.menu && this.menu.parentNode) {
       this.menu.parentNode.removeChild(this.menu);
       this.menu = null;

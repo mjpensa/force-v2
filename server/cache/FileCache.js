@@ -1,10 +1,6 @@
 import crypto from 'crypto';
 import mammoth from 'mammoth';
 
-/**
- * LRU cache for file content extraction
- * Caches DOCX extraction results to avoid repeated mammoth processing
- */
 class FileCache {
   constructor(maxSizeMB = 50) {
     this.cache = new Map(); // hash -> { content, timestamp, size, filename }
@@ -14,18 +10,9 @@ class FileCache {
     this.misses = 0;
   }
 
-  /**
-   * Get file content from cache or extract it
-   * @param {Buffer} buffer - File buffer
-   * @param {string} mimetype - File MIME type
-   * @param {string} filename - Original filename for logging
-   * @returns {Promise<string>} Extracted text content
-   */
   async get(buffer, mimetype, filename) {
     const hash = this._getHash(buffer);
     const cacheKey = `${hash}:${mimetype}`;
-
-    // Check cache
     const cached = this.cache.get(cacheKey);
     if (cached) {
       this.hits++;
@@ -33,8 +20,6 @@ class FileCache {
       console.log(`[FileCache] HIT: ${filename} (${this._getHitRate()} hit rate)`);
       return cached.content;
     }
-
-    // Cache miss - extract content
     this.misses++;
     console.log(`[FileCache] MISS: ${filename} - extracting...`);
 
@@ -45,8 +30,6 @@ class FileCache {
     } else {
       content = buffer.toString('utf8');
     }
-
-    // Add to cache with LRU eviction
     const size = Buffer.byteLength(content, 'utf8');
     this._evictIfNeeded(size);
 
@@ -61,28 +44,18 @@ class FileCache {
     return content;
   }
 
-  /**
-   * Generate SHA-256 hash of buffer
-   */
   _getHash(buffer) {
     return crypto.createHash('sha256').update(buffer).digest('hex');
   }
 
-  /**
-   * Get hit rate as percentage string
-   */
   _getHitRate() {
     const total = this.hits + this.misses;
     if (total === 0) return '0%';
     return `${Math.round(this.hits / total * 100)}%`;
   }
 
-  /**
-   * Evict oldest entries if needed to make room for new content
-   */
   _evictIfNeeded(incomingSize) {
     while (this.currentSizeBytes + incomingSize > this.maxSizeBytes && this.cache.size > 0) {
-      // Find oldest entry (LRU)
       let oldestKey = null;
       let oldestTime = Infinity;
 
@@ -102,9 +75,6 @@ class FileCache {
     }
   }
 
-  /**
-   * Get cache statistics
-   */
   getStats() {
     return {
       entries: this.cache.size,
@@ -115,15 +85,10 @@ class FileCache {
     };
   }
 
-  /**
-   * Clear all cached entries
-   */
   clear() {
     this.cache.clear();
     this.currentSizeBytes = 0;
     console.log('[FileCache] Cache cleared');
   }
 }
-
-// Singleton instance with 50MB cache limit
 export const fileCache = new FileCache(50);

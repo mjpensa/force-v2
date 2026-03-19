@@ -1,9 +1,6 @@
 import { CONFIG } from '../config.js';
 import { findTodayColumnPosition, createButton } from '../Utils.js';
 
-/**
- * GanttComponents - Handles UI components (header, title, logo, footer, legend)
- */
 export class GanttComponents {
   constructor(chart) {
     this.chart = chart;
@@ -11,10 +8,6 @@ export class GanttComponents {
     this._legendDblClickHandler = null;
   }
 
-  /**
-   * Add the header SVG stripe
-   * Uses <img> element instead of CSS background-image for reliable html2canvas export
-   */
   addHeaderSVG(chartWrapper, footerSVG) {
     if (!footerSVG) return;
 
@@ -29,13 +22,6 @@ export class GanttComponents {
     chartWrapper.appendChild(headerSvgEl);
   }
 
-  /**
-   * Add the chart title
-   * @param {HTMLElement} chartWrapper - The wrapper element
-   * @param {Object} ganttData - The gantt data
-   * @param {HTMLElement} [headerMenu] - Optional header menu element
-   * @returns {Object} { titleContainer, titleElement }
-   */
   addTitle(chartWrapper, ganttData, headerMenu = null) {
     const titleContainer = document.createElement('div');
     titleContainer.className = 'gantt-title-container';
@@ -65,8 +51,6 @@ export class GanttComponents {
     });
 
     titleContainer.appendChild(titleElement);
-
-    // Add header menu to the right side if provided
     if (headerMenu) {
       titleContainer.appendChild(headerMenu);
     }
@@ -76,9 +60,6 @@ export class GanttComponents {
     return { titleContainer, titleElement };
   }
 
-  /**
-   * Add the logo to the title container
-   */
   addLogo(titleContainer, titleElement) {
     const logoImg = document.createElement('img');
     logoImg.src = '/bip_logo.png';
@@ -93,10 +74,6 @@ export class GanttComponents {
     }
   }
 
-  /**
-   * Add the footer SVG stripe
-   * Uses <img> element instead of CSS background-image for reliable html2canvas export
-   */
   addFooterSVG(chartWrapper, footerSVG) {
     if (!footerSVG) return;
 
@@ -111,10 +88,6 @@ export class GanttComponents {
     chartWrapper.appendChild(footerSvgEl);
   }
 
-  /**
-   * Add the legend
-   * @returns {HTMLElement|null} The legend element
-   */
   addLegend(chartWrapper, ganttData) {
     if (!ganttData.legend) {
       ganttData.legend = [];
@@ -169,9 +142,6 @@ export class GanttComponents {
     return legendElement;
   }
 
-  /**
-   * Setup delegated event listeners for legend
-   */
   _setupLegendDelegation(legendElement) {
     if (!legendElement) return;
 
@@ -194,9 +164,6 @@ export class GanttComponents {
     legendElement.addEventListener('dblclick', this._legendDblClickHandler);
   }
 
-  /**
-   * Refresh the legend after color changes
-   */
   refreshLegend(ganttData, legendElement) {
     if (!legendElement) return null;
 
@@ -221,9 +188,6 @@ export class GanttComponents {
     return legendElement;
   }
 
-  /**
-   * Update legend with colors used in the chart
-   */
   _updateLegendWithUsedColors(ganttData) {
     const usedColors = new Set();
 
@@ -245,9 +209,6 @@ export class GanttComponents {
     });
   }
 
-  /**
-   * Format color key to readable name
-   */
   _formatColorName(colorKey) {
     return colorKey
       .split('-')
@@ -255,10 +216,6 @@ export class GanttComponents {
       .join(' ');
   }
 
-  /**
-   * Create the glassmorphic three-dot menu for the header
-   * @returns {HTMLElement} The menu container
-   */
   createHeaderMenu(isEditMode) {
     const menuContainer = document.createElement('div');
     menuContainer.className = 'gantt-header-menu';
@@ -328,16 +285,11 @@ export class GanttComponents {
 
     menuContainer.appendChild(triggerBtn);
     menuContainer.appendChild(dropdown);
-
-    // Setup menu toggle behavior
     this._setupMenuBehavior(triggerBtn, dropdown);
 
     return menuContainer;
   }
 
-  /**
-   * Create a menu item element
-   */
   _createMenuItem({ id, icon, text, className, ariaLabel }) {
     const item = document.createElement('button');
     item.id = id;
@@ -351,9 +303,6 @@ export class GanttComponents {
     return item;
   }
 
-  /**
-   * Create a menu divider
-   */
   _createMenuDivider() {
     const divider = document.createElement('div');
     divider.className = 'menu-divider';
@@ -361,9 +310,6 @@ export class GanttComponents {
     return divider;
   }
 
-  /**
-   * Setup menu open/close behavior
-   */
   _setupMenuBehavior(trigger, dropdown) {
     let isOpen = false;
 
@@ -407,9 +353,6 @@ export class GanttComponents {
     });
   }
 
-  /**
-   * Update the edit mode toggle button state
-   */
   updateEditModeToggle(isEditMode) {
     const editModeBtn = document.getElementById('edit-mode-toggle-btn');
     if (editModeBtn) {
@@ -421,9 +364,6 @@ export class GanttComponents {
     }
   }
 
-  /**
-   * Add the today line to the chart
-   */
   addTodayLine(gridElement, ganttData, today) {
     if (!gridElement) return;
 
@@ -457,9 +397,6 @@ export class GanttComponents {
     }
   }
 
-  /**
-   * Update sticky header position
-   */
   updateStickyHeaderPosition(titleContainer, chartWrapper, gridElement) {
     if (!titleContainer || !chartWrapper) return;
 
@@ -479,9 +416,6 @@ export class GanttComponents {
     });
   }
 
-  /**
-   * Apply sticky header position
-   */
   _applyStickyHeaderPosition(titleContainer, chartWrapper, gridElement) {
     if (!titleContainer || !chartWrapper || !gridElement) return;
 
@@ -494,9 +428,6 @@ export class GanttComponents {
     });
   }
 
-  /**
-   * Clean up observers and listeners
-   */
   cleanup(legendElement) {
     if (this._titleResizeObserver) {
       this._titleResizeObserver.disconnect();

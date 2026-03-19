@@ -122,7 +122,6 @@ export class StateManager {
     }
   }
   async loadView(viewName, forceRefresh = false) {
-    // Return cached content if available and not forcing refresh
     if (!forceRefresh && this.state.content[viewName]) {
       return this.state.content[viewName];
     }
@@ -132,8 +131,6 @@ export class StateManager {
     if (!forceRefresh && this._pendingRequests.has(requestKey)) {
       return this._pendingRequests.get(requestKey);
     }
-
-    // Create and track the request promise
     const requestPromise = this._executeLoadView(viewName, forceRefresh);
     this._pendingRequests.set(requestKey, requestPromise);
 
@@ -308,7 +305,6 @@ export class StateManager {
     return await this.loadView(viewName);
   }
   clear() {
-    // Clear pending requests
     this._pendingRequests.clear();
     this._pendingStateUpdates = [];
     this._updateScheduled = false;

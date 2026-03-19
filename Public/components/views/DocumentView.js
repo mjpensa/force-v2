@@ -1,24 +1,4 @@
-/**
- * DocumentView Component
- * Phase 4: Long-form document reading with Google Docs-inspired UI
- *
- * Features:
- * - Table of contents with scroll spy (highlights current section)
- * - Hierarchical section rendering (3 heading levels)
- * - Content blocks: paragraphs, lists, tables, quotes, evidence
- * - Executive summary with TL;DR label
- * - Key insights per section
- * - Prioritized recommendations section
- * - Sticky TOC navigation for easy jumping
- * - Print-friendly layout
- * - Responsive design (mobile hides TOC, shows inline)
- */
-
 export class DocumentView {
-  /**
-   * @param {object} documentData - Document data from API
-   * @param {string} sessionId - Session ID for data fetching
-   */
   constructor(documentData = null, sessionId = null) {
     this.documentData = documentData;
     this.sessionId = sessionId;
@@ -29,10 +9,6 @@ export class DocumentView {
     this.tocLinks = new Map(); // sectionId -> tocLink element
   }
 
-  /**
-   * Render the document view
-   * @returns {HTMLElement} Container element
-   */
   render() {
     this.container = document.createElement('div');
     this.container.className = 'document-view';
@@ -41,46 +17,29 @@ export class DocumentView {
       this.container.appendChild(this._renderEmptyState());
       return this.container;
     }
-
-    // Add glassmorphic three-dot menu in upper right corner (above TOC)
     if (this.sessionId) {
       const menu = this._createDocumentMenu();
       this.container.appendChild(menu);
     }
-
-    // Normalize sections - add id and level if missing
     this._normalizeSections();
-
-    // Main container with TOC + content layout
     const documentContainer = document.createElement('div');
     documentContainer.className = 'document-container';
-
-    // Table of contents (left sidebar)
     const toc = this._renderTableOfContents();
     documentContainer.appendChild(toc);
-
-    // Document content (main area)
     const content = this._renderContent();
     documentContainer.appendChild(content);
 
     this.container.appendChild(documentContainer);
-
-    // Setup scroll spy after rendering
     setTimeout(() => this._setupScrollSpy(), 100);
 
     return this.container;
   }
 
-  /**
-   * Normalize sections to ensure they have id and level properties
-   */
   _normalizeSections() {
     this.documentData.sections = this.documentData.sections.map((section, index) => {
-      // Generate id from heading if missing
       if (!section.id) {
         section.id = this._generateId(section.heading, index);
       }
-      // Default to level 1 if missing
       if (!section.level) {
         section.level = 1;
       }
@@ -88,9 +47,6 @@ export class DocumentView {
     });
   }
 
-  /**
-   * Generate a URL-safe id from heading text
-   */
   _generateId(heading, index) {
     if (!heading) return `section-${index}`;
     return heading
@@ -101,12 +57,6 @@ export class DocumentView {
       .substring(0, 50) || `section-${index}`;
   }
 
-  /**
-   * Render table of contents with structured navigation:
-   * 1. Overview (Analysis Overview section)
-   * 2. Swimlane topic sections
-   * 3. Closing
-   */
   _renderTableOfContents() {
     const tocContainer = document.createElement('div');
     tocContainer.className = 'document-toc';
@@ -118,8 +68,6 @@ export class DocumentView {
 
     const tocList = document.createElement('ul');
     tocList.className = 'toc-list';
-
-    // 1. Overview link (if analysis overview exists)
     if (this.documentData.analysisOverview) {
       const overviewLi = document.createElement('li');
       const overviewLink = document.createElement('a');
@@ -137,8 +85,6 @@ export class DocumentView {
       overviewLi.appendChild(overviewLink);
       tocList.appendChild(overviewLi);
     }
-
-    // 2. Swimlane topic sections - use swimlaneTopic name if available
     this.documentData.sections.forEach(section => {
       if (section.level !== 1) return; // Only top-level sections
 
@@ -146,7 +92,6 @@ export class DocumentView {
       const link = document.createElement('a');
       link.className = 'toc-link';
       link.href = `#${section.id}`;
-      // Use swimlaneTopic for display if available, otherwise use heading
       link.textContent = section.swimlaneTopic || section.heading;
       link.setAttribute('data-section-id', section.id);
 
@@ -154,14 +99,10 @@ export class DocumentView {
         e.preventDefault();
         this._scrollToSection(section.id);
       });
-
-      // Store reference for scroll spy
       this.tocLinks.set(section.id, link);
       li.appendChild(link);
       tocList.appendChild(li);
     });
-
-    // 3. Closing link (always add at the end)
     const closingLi = document.createElement('li');
     const closingLink = document.createElement('a');
     closingLink.className = 'toc-link';
@@ -182,18 +123,12 @@ export class DocumentView {
     return tocContainer;
   }
 
-  /**
-   * Check if subsection belongs to parent section
-   */
   _isSubsectionOf(subsection, parentSection) {
-    // Simple heuristic: subsection comes after parent and before next level-1 section
     const sections = this.documentData.sections;
     const parentIndex = sections.indexOf(parentSection);
     const subsectionIndex = sections.indexOf(subsection);
 
     if (subsectionIndex <= parentIndex) return false;
-
-    // Find next level-1 section
     const nextLevel1Index = sections.findIndex((s, idx) =>
       idx > parentIndex && s.level === 1
     );
@@ -205,45 +140,29 @@ export class DocumentView {
     return subsectionIndex > parentIndex && subsectionIndex < nextLevel1Index;
   }
 
-  /**
-   * Render document content
-   */
   _renderContent() {
     const contentContainer = document.createElement('div');
     contentContainer.className = 'document-content';
-
-    // Document header
     const header = this._renderDocumentHeader();
     contentContainer.appendChild(header);
-
-    // Analysis Overview (if present) - comprehensive synthesis before detailed sections
     const overview = this._renderAnalysisOverview();
     if (overview) {
       contentContainer.appendChild(overview);
     }
-
-    // Sections
     this.documentData.sections.forEach(section => {
       const sectionEl = this._renderSection(section);
       contentContainer.appendChild(sectionEl);
     });
-
-    // Recommendations section (if present)
     const recommendations = this._renderRecommendations();
     if (recommendations) {
       contentContainer.appendChild(recommendations);
     }
-
-    // Closing section (always rendered for TOC navigation)
     const closing = this._renderClosingSection();
     contentContainer.appendChild(closing);
 
     return contentContainer;
   }
 
-  /**
-   * Render closing section - wraps up the document
-   */
   _renderClosingSection() {
     const container = document.createElement('div');
     container.className = 'document-closing';
@@ -253,12 +172,8 @@ export class DocumentView {
     header.className = 'section-heading closing-heading';
     header.textContent = 'Closing';
     container.appendChild(header);
-
-    // Generate closing content based on executive summary action
     const closingContent = document.createElement('div');
     closingContent.className = 'closing-content';
-
-    // Primary closing paragraph
     const closingParagraph = document.createElement('p');
     closingParagraph.className = 'closing-paragraph';
 
@@ -268,8 +183,6 @@ export class DocumentView {
       closingParagraph.textContent = 'The analysis presented above provides a comprehensive view of the strategic landscape. The detailed sections offer actionable insights for each key area, enabling informed decision-making and strategic prioritization.';
     }
     closingContent.appendChild(closingParagraph);
-
-    // Next steps callout
     const nextSteps = document.createElement('div');
     nextSteps.className = 'closing-next-steps';
 
@@ -300,9 +213,6 @@ export class DocumentView {
     return container;
   }
 
-  /**
-   * Render analysis overview - comprehensive strategic synthesis
-   */
   _renderAnalysisOverview() {
     const overview = this.documentData.analysisOverview;
     if (!overview) return null;
@@ -310,8 +220,6 @@ export class DocumentView {
     const container = document.createElement('div');
     container.className = 'analysis-overview';
     container.id = 'analysis-overview'; // ID for TOC navigation
-
-    // Overview header
     const header = document.createElement('div');
     header.className = 'analysis-overview-header';
 
@@ -321,13 +229,9 @@ export class DocumentView {
     header.appendChild(label);
 
     container.appendChild(header);
-
-    // Narrative section
     if (overview.narrative) {
       const narrativeContainer = document.createElement('div');
       narrativeContainer.className = 'overview-narrative';
-
-      // Split narrative into paragraphs if it contains newlines, otherwise treat as single block
       const paragraphs = overview.narrative.split(/\n\n+/).filter(p => p.trim());
       paragraphs.forEach(para => {
         const p = document.createElement('p');
@@ -338,8 +242,6 @@ export class DocumentView {
 
       container.appendChild(narrativeContainer);
     }
-
-    // Key Themes section
     if (overview.keyThemes && Array.isArray(overview.keyThemes) && overview.keyThemes.length > 0) {
       const themesContainer = document.createElement('div');
       themesContainer.className = 'overview-themes';
@@ -388,8 +290,6 @@ export class DocumentView {
       themesContainer.appendChild(themesList);
       container.appendChild(themesContainer);
     }
-
-    // Critical Findings section
     if (overview.criticalFindings && Array.isArray(overview.criticalFindings) && overview.criticalFindings.length > 0) {
       const findingsContainer = document.createElement('div');
       findingsContainer.className = 'overview-findings';
@@ -412,8 +312,6 @@ export class DocumentView {
       findingsContainer.appendChild(findingsList);
       container.appendChild(findingsContainer);
     }
-
-    // Strategic Context section
     if (overview.strategicContext) {
       const contextContainer = document.createElement('div');
       contextContainer.className = 'overview-context';
@@ -422,8 +320,6 @@ export class DocumentView {
       contextLabel.className = 'overview-section-label';
       contextLabel.textContent = 'Strategic Context';
       contextContainer.appendChild(contextLabel);
-
-      // Split into paragraphs
       const paragraphs = overview.strategicContext.split(/\n\n+/).filter(p => p.trim());
       paragraphs.forEach(para => {
         const p = document.createElement('p');
@@ -438,9 +334,6 @@ export class DocumentView {
     return container;
   }
 
-  /**
-   * Render recommendations section with prioritized actions
-   */
   _renderRecommendations() {
     if (!this.documentData.recommendations || !Array.isArray(this.documentData.recommendations) || this.documentData.recommendations.length === 0) {
       return null;
@@ -456,8 +349,6 @@ export class DocumentView {
 
     const list = document.createElement('div');
     list.className = 'recommendations-list';
-
-    // Sort by priority: critical > high > medium
     const priorityOrder = { critical: 0, high: 1, medium: 2 };
     const sortedRecs = [...this.documentData.recommendations].sort((a, b) => {
       return (priorityOrder[a.priority] || 3) - (priorityOrder[b.priority] || 3);
@@ -496,14 +387,9 @@ export class DocumentView {
     return section;
   }
 
-  /**
-   * Render document header
-   */
   _renderDocumentHeader() {
     const header = document.createElement('div');
     header.className = 'document-header';
-
-    // Title
     const title = document.createElement('h1');
     title.className = 'document-title';
     title.textContent = this.documentData.title;
@@ -535,23 +421,16 @@ export class DocumentView {
     return header;
   }
 
-  /**
-   * Render a section
-   */
   _renderSection(section) {
     const sectionEl = document.createElement('section');
     sectionEl.className = 'document-section';
     sectionEl.id = section.id;
-
-    // Section title (swimlaneTopic) - matches TOC entry exactly
     if (section.swimlaneTopic) {
       const sectionTitle = document.createElement('h2');
       sectionTitle.className = 'section-title';
       sectionTitle.textContent = section.swimlaneTopic;
       sectionEl.appendChild(sectionTitle);
     }
-
-    // Section heading (insight-driven subtitle)
     const headingLevel = section.swimlaneTopic ? 3 : Math.min(section.level + 1, 6);
     const heading = document.createElement(`h${headingLevel}`);
     heading.className = section.swimlaneTopic ? 'section-subtitle' :
@@ -559,9 +438,6 @@ export class DocumentView {
                         section.level === 2 ? 'section-subheading' : 'section-subheading');
     heading.textContent = section.heading;
     sectionEl.appendChild(heading);
-
-    // TEXT CONTENT FIRST (paragraphs and content blocks)
-    // Paragraphs array
     if (section.paragraphs && Array.isArray(section.paragraphs)) {
       section.paragraphs.forEach(text => {
         const p = document.createElement('p');
@@ -570,8 +446,6 @@ export class DocumentView {
         sectionEl.appendChild(p);
       });
     }
-
-    // Content blocks
     if (section.content && Array.isArray(section.content)) {
       section.content.forEach(block => {
         const blockEl = this._renderContentBlock(block);
@@ -580,17 +454,12 @@ export class DocumentView {
         }
       });
     }
-
-    // CARDS, BADGES, AND HIGHLIGHTS AT END
-    // Key insight (if present)
     if (section.keyInsight) {
       const insight = document.createElement('p');
       insight.className = 'key-insight';
       insight.textContent = section.keyInsight;
       sectionEl.appendChild(insight);
     }
-
-    // Research summary (if present) - new field for swimlane-aligned sections
     if (section.researchSummary) {
       const summaryContainer = document.createElement('div');
       summaryContainer.className = 'research-summary';
@@ -607,8 +476,6 @@ export class DocumentView {
 
       sectionEl.appendChild(summaryContainer);
     }
-
-    // Strategic implications (if present) - new field for swimlane-aligned sections
     if (section.implications) {
       const implicationsContainer = document.createElement('div');
       implicationsContainer.className = 'strategic-implications';
@@ -625,11 +492,8 @@ export class DocumentView {
 
       sectionEl.appendChild(implicationsContainer);
     }
-
-    // Supporting evidence (if present) - renders evidence citations from schema
     if (section.supportingEvidence && Array.isArray(section.supportingEvidence)) {
       section.supportingEvidence.forEach(evidence => {
-        // Reuse existing _renderEvidence method, mapping 'quote' to 'text'
         const evidenceBlock = this._renderEvidence({
           claim: evidence.claim,
           text: evidence.quote,  // Schema uses 'quote', renderer expects 'text'
@@ -642,9 +506,6 @@ export class DocumentView {
     return sectionEl;
   }
 
-  /**
-   * Render a content block
-   */
   _renderContentBlock(block) {
     switch (block.type) {
       case 'paragraph':
@@ -663,9 +524,6 @@ export class DocumentView {
     }
   }
 
-  /**
-   * Render paragraph block
-   */
   _renderParagraph(block) {
     const p = document.createElement('p');
     p.className = 'section-paragraph';
@@ -673,9 +531,6 @@ export class DocumentView {
     return p;
   }
 
-  /**
-   * Render list block
-   */
   _renderList(block) {
     const list = block.ordered ? document.createElement('ol') : document.createElement('ul');
     list.className = 'section-list';
@@ -691,17 +546,12 @@ export class DocumentView {
     return list;
   }
 
-  /**
-   * Render table block
-   */
   _renderTable(block) {
     const wrapper = document.createElement('div');
     wrapper.className = 'table-wrapper';
 
     const table = document.createElement('table');
     table.className = 'section-table';
-
-    // Table header
     if (block.headers && Array.isArray(block.headers)) {
       const thead = document.createElement('thead');
       const tr = document.createElement('tr');
@@ -715,8 +565,6 @@ export class DocumentView {
       thead.appendChild(tr);
       table.appendChild(thead);
     }
-
-    // Table body
     if (block.rows && Array.isArray(block.rows)) {
       const tbody = document.createElement('tbody');
 
@@ -741,9 +589,6 @@ export class DocumentView {
     return wrapper;
   }
 
-  /**
-   * Render quote block
-   */
   _renderQuote(block) {
     const quote = document.createElement('blockquote');
     quote.className = 'section-quote';
@@ -758,9 +603,6 @@ export class DocumentView {
     return quote;
   }
 
-  /**
-   * Render evidence block - citation linking claim to source
-   */
   _renderEvidence(block) {
     const evidence = document.createElement('div');
     evidence.className = 'evidence-block';
@@ -789,9 +631,6 @@ export class DocumentView {
     return evidence;
   }
 
-  /**
-   * Render empty state
-   */
   _renderEmptyState() {
     const emptyState = document.createElement('div');
     emptyState.className = 'empty-state';
@@ -809,9 +648,6 @@ export class DocumentView {
     return emptyState;
   }
 
-  /**
-   * Scroll to a specific section
-   */
   _scrollToSection(sectionId) {
     const section = document.getElementById(sectionId);
     const scrollContainer = document.querySelector('.app-main') || window;
@@ -840,9 +676,6 @@ export class DocumentView {
     }
   }
 
-  /**
-   * Setup scroll spy to highlight active section in TOC
-   */
   _setupScrollSpy() {
     if (!this.documentData || !this.documentData.sections) return;
 
@@ -858,8 +691,6 @@ export class DocumentView {
         ? 0 
         : scrollContainer.getBoundingClientRect().top;
       const scrollOffset = 150; // Offset for header
-
-      // Find the current section
       let currentSection = null;
       for (let i = sections.length - 1; i >= 0; i--) {
         const section = sections[i];
@@ -869,8 +700,6 @@ export class DocumentView {
           break;
         }
       }
-
-      // Update active state
       if (currentSection && currentSection !== this.activeSectionId) {
         this.activeSectionId = currentSection;
         this._updateActiveSection(currentSection);
@@ -882,30 +711,19 @@ export class DocumentView {
     
     // Store reference to remove listener later
     this.scrollContainer = eventTarget;
-
-    // Initial check
     this.scrollHandler();
   }
 
-  /**
-   * Update active section in TOC
-   */
   _updateActiveSection(sectionId) {
-    // Remove active class from all links
     this.tocLinks.forEach(link => {
       link.classList.remove('active');
     });
-
-    // Add active class to current link
     const activeLink = this.tocLinks.get(sectionId);
     if (activeLink) {
       activeLink.classList.add('active');
     }
   }
 
-  /**
-   * Export document to Word (.docx) file
-   */
   async _exportToDocx() {
     if (!this.sessionId) {
       alert('Export requires a valid session. Please regenerate the document.');
@@ -919,16 +737,12 @@ export class DocumentView {
         const error = await response.json();
         throw new Error(error.message || 'Export failed');
       }
-
-      // Get filename from Content-Disposition header or use default
       const contentDisposition = response.headers.get('Content-Disposition');
       let filename = 'Executive_Summary.docx';
       if (contentDisposition) {
         const match = contentDisposition.match(/filename="(.+)"/);
         if (match) filename = match[1];
       }
-
-      // Download the file
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -944,15 +758,9 @@ export class DocumentView {
     }
   }
 
-  /**
-   * Create the glassmorphic three-dot menu for the document (upper right corner)
-   * @returns {HTMLElement} The menu container
-   */
   _createDocumentMenu() {
     const menuContainer = document.createElement('div');
     menuContainer.className = 'document-header-menu';
-
-    // Three-dot trigger button
     const triggerBtn = document.createElement('button');
     triggerBtn.className = 'document-menu-trigger';
     triggerBtn.setAttribute('aria-label', 'Open document menu');
@@ -963,13 +771,9 @@ export class DocumentView {
       <span class="menu-dot"></span>
       <span class="menu-dot"></span>
     `;
-
-    // Dropdown menu
     const dropdown = document.createElement('div');
     dropdown.className = 'document-menu-dropdown';
     dropdown.setAttribute('role', 'menu');
-
-    // Export to Word
     const exportWordItem = this._createDocMenuItem({
       id: 'export-word-btn',
       icon: '📄',
@@ -978,8 +782,6 @@ export class DocumentView {
     });
     exportWordItem.addEventListener('click', () => this._exportToDocx());
     dropdown.appendChild(exportWordItem);
-
-    // Pre-Meeting Intelligence Brief
     const intelligenceBriefItem = this._createDocMenuItem({
       id: 'intelligence-brief-btn',
       icon: '🎯',
@@ -991,16 +793,11 @@ export class DocumentView {
 
     menuContainer.appendChild(triggerBtn);
     menuContainer.appendChild(dropdown);
-
-    // Setup menu toggle behavior
     this._setupDocMenuBehavior(triggerBtn, dropdown);
 
     return menuContainer;
   }
 
-  /**
-   * Create a menu item element for document menu
-   */
   _createDocMenuItem({ id, icon, text, ariaLabel }) {
     const item = document.createElement('button');
     item.id = id;
@@ -1014,9 +811,6 @@ export class DocumentView {
     return item;
   }
 
-  /**
-   * Setup menu open/close behavior for document menu
-   */
   _setupDocMenuBehavior(trigger, dropdown) {
     let isOpen = false;
 
@@ -1040,15 +834,11 @@ export class DocumentView {
         openMenu();
       }
     });
-
-    // Close when clicking outside
     document.addEventListener('click', (e) => {
       if (isOpen && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
         closeMenu();
       }
     });
-
-    // Close menu when a menu item is clicked
     dropdown.addEventListener('click', (e) => {
       const menuItem = e.target.closest('.menu-item');
       if (menuItem) {
@@ -1057,19 +847,11 @@ export class DocumentView {
     });
   }
 
-  /**
-   * Show the intelligence brief modal
-   */
   _showIntelligenceBriefModal() {
-    // Remove existing modal if present
     const existing = document.querySelector('.intelligence-brief-modal-overlay');
     if (existing) existing.remove();
-
-    // Create modal overlay
     const overlay = document.createElement('div');
     overlay.className = 'intelligence-brief-modal-overlay';
-
-    // Create modal container
     const modal = document.createElement('div');
     modal.className = 'intelligence-brief-modal';
     modal.innerHTML = `
@@ -1112,30 +894,17 @@ export class DocumentView {
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
-
-    // Focus first input (company name)
     setTimeout(() => modal.querySelector('#company-name').focus(), 100);
-
-    // Attach event handlers
     this._setupIntelligenceBriefModalHandlers(overlay, modal);
   }
 
-  /**
-   * Setup modal event handlers
-   */
   _setupIntelligenceBriefModalHandlers(overlay, modal) {
     const closeModal = () => overlay.remove();
-
-    // Close button
     modal.querySelector('.modal-close').addEventListener('click', closeModal);
     modal.querySelector('.modal-cancel').addEventListener('click', closeModal);
-
-    // Click outside to close
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) closeModal();
     });
-
-    // Escape key to close
     const escHandler = (e) => {
       if (e.key === 'Escape') {
         closeModal();
@@ -1143,13 +912,9 @@ export class DocumentView {
       }
     };
     document.addEventListener('keydown', escHandler);
-
-    // Generate button
     modal.querySelector('#generate-brief-btn').addEventListener('click', () => {
       this._handleGenerateIntelligenceBrief(modal, closeModal);
     });
-
-    // Enter key in inputs triggers generate
     modal.querySelectorAll('input').forEach(input => {
       input.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -1159,16 +924,11 @@ export class DocumentView {
     });
   }
 
-  /**
-   * Handle intelligence brief generation
-   */
   async _handleGenerateIntelligenceBrief(modal, closeModal) {
     const companyName = modal.querySelector('#company-name').value.trim();
     const meetingAttendees = modal.querySelector('#meeting-attendees').value.trim();
     const meetingObjective = modal.querySelector('#meeting-objective').value.trim();
     const keyConcerns = modal.querySelector('#key-concerns').value.trim();
-
-    // Validate required fields
     if (!companyName) {
       modal.querySelector('#company-name').focus();
       modal.querySelector('#company-name').classList.add('input-error');
@@ -1187,8 +947,6 @@ export class DocumentView {
       setTimeout(() => modal.querySelector('#meeting-objective').classList.remove('input-error'), 500);
       return;
     }
-
-    // Show loading state
     const formBody = modal.querySelector('.modal-body');
     const footer = modal.querySelector('.modal-footer');
     const loading = modal.querySelector('.modal-loading');
@@ -1206,20 +964,15 @@ export class DocumentView {
 
       if (!response.ok) {
         const error = await response.json();
-        // Include detailed error message if available
         const errorMessage = error.details || error.message || error.error || 'Generation failed';
         throw new Error(errorMessage);
       }
-
-      // Get filename from header or use default
       const contentDisposition = response.headers.get('Content-Disposition');
       let filename = 'Pre_Meeting_Brief.docx';
       if (contentDisposition) {
         const match = contentDisposition.match(/filename="(.+)"/);
         if (match) filename = match[1];
       }
-
-      // Download the file
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1229,19 +982,13 @@ export class DocumentView {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-
-      // Close modal on success
       closeModal();
 
     } catch (error) {
       console.error('Intelligence brief generation failed:', error);
-
-      // Show error state
       loading.classList.add('hidden');
       formBody.classList.remove('hidden');
       footer.classList.remove('hidden');
-
-      // Show error message
       let errorMsg = modal.querySelector('.error-message');
       if (!errorMsg) {
         errorMsg = document.createElement('p');
@@ -1252,9 +999,6 @@ export class DocumentView {
     }
   }
 
-  /**
-   * Cleanup and remove event listeners
-   */
   destroy() {
     if (this.scrollHandler && this.scrollContainer) {
       this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
@@ -1275,11 +1019,6 @@ export class DocumentView {
     }
   }
 
-  /**
-   * Load document data from API
-   * @param {string} sessionId - Session ID
-   * @returns {Promise<void>}
-   */
   async loadData(sessionId) {
     try {
       const response = await fetch(`/api/content/${sessionId}/document`);

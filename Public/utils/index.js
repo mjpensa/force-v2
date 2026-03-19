@@ -1,17 +1,3 @@
-/**
- * Utils Index
- *
- * Re-exports all utility functions for backwards compatibility.
- * New code should prefer importing from specific modules:
- *
- * - utils/fetch.js - HTTP fetch utilities
- * - utils/dom.js - DOM manipulation utilities
- * - utils/date.js - Date calculation utilities
- * - utils/analysis-builders.js - Analysis HTML builders
- * - utils/performance.js - Performance measurement
- * - utils/assets.js - Asset loading and legend building
- */
-
 // Fetch utilities
 export { fetchJSON } from './fetch.js';
 

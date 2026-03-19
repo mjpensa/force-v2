@@ -1,8 +1,4 @@
 /**
- * Fetch utilities
- */
-
-/**
  * Fetch JSON with standardized error handling
  * @param {string} url - The URL to fetch
  * @param {Object} options - Fetch options (method, headers, body, etc.)

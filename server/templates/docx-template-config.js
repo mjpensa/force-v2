@@ -1,9 +1,3 @@
-/**
- * DOCX Template Configuration
- * Document styles and formatting for Word export
- * SKILL.md format (Work Sans fonts, red headings, proper table formatting)
- */
-
 // Brand colors (hex without #) - SKILL.md specifications
 export const COLORS = {
   red: 'DA291C',           // Section headers

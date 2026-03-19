@@ -1,75 +1,40 @@
-/**
- * SlidesView - Templates: sectionTitle, twoColumn, threeColumn
- * EXACT measurements extracted from PPT XML
- *
- * Slide: 12192000 x 6858000 EMU (16:9)
- * All positions calculated as percentages from source XML
- *
- * Sections structure aligned with Gantt chart swimlanes
- */
-
 // Proper nouns with periods (place names must always be capitalized)
 const PROPER_NOUNS = {
   'u.s.': 'U.S.',
   'u.k.': 'U.K.',
   'e.u.': 'E.U.'
 };
-
-// Known acronyms to preserve (case-insensitive matching)
 const KNOWN_ACRONYMS = [
   'CDM', 'DRR', 'API', 'ROI', 'KPI', 'CEO', 'CTO', 'CFO', 'COO', 'CIO',
   'AI', 'ML', 'CFTC', 'SEC', 'FDA', 'EPA', 'UTI', 'UPI', 'ESG', 'DEI',
   'IPO', 'ETF', 'GDP', 'CPMI', 'IOSCO', 'OTC', 'FX', 'USD', 'EUR', 'GBP',
   'ISDA', 'DLT', 'IT', 'HR', 'PR', 'EMIR', 'OCC', 'BSA', 'AML', 'FINOS'
 ];
-
-// Company/brand names with special capitalization
 const COMPANY_NAMES = {
   'jpmorgan': 'JPMorgan',
   'jpm': 'JPM'
 };
 
-/**
- * Check if a single word (no slashes) is an acronym
- * @param {string} word - Word to check
- * @returns {boolean} - True if the word is an acronym
- */
 function isAcronymWord(word) {
   if (!word) return false;
-  // Check against known acronyms list (case-insensitive)
   if (KNOWN_ACRONYMS.some(a => a.toLowerCase() === word.toLowerCase())) {
     return true;
   }
-  // Fallback: Check if word is all uppercase (2-5 letters, optionally with numbers)
   return /^[A-Z][A-Z0-9]{1,4}$/.test(word);
 }
 
-/**
- * Check if a word (possibly compound with slashes) is an acronym
- * Handles compound forms like "CDM/DRR", proper nouns like "U.S.", and trailing punctuation like "CDM:"
- * @param {string} word - Word to check
- * @returns {{ isAcronym: boolean, value: string }}
- */
 function checkAcronym(word) {
   if (!word) return { isAcronym: false, value: word };
-
-  // Strip trailing punctuation for acronym check, reattach later
   const punctMatch = word.match(/^(.+?)([.:,;!?]+)$/);
   const baseWord = punctMatch ? punctMatch[1] : word;
   const trailingPunct = punctMatch ? punctMatch[2] : '';
-
-  // Check proper nouns with periods first (e.g., U.S., U.K.)
   const lowerWord = baseWord.toLowerCase();
   if (PROPER_NOUNS[lowerWord]) {
     return { isAcronym: true, value: PROPER_NOUNS[lowerWord] + trailingPunct };
   }
-
-  // Check company names with special capitalization (e.g., JPMorgan)
   if (COMPANY_NAMES[lowerWord]) {
     return { isAcronym: true, value: COMPANY_NAMES[lowerWord] + trailingPunct };
   }
-
-  // Handle slashed compound acronyms like "CDM/DRR"
   if (baseWord.includes('/')) {
     const parts = baseWord.split('/');
     const allAcronyms = parts.every(part => isAcronymWord(part));
@@ -87,35 +52,20 @@ function checkAcronym(word) {
   return { isAcronym: false, value: word };
 }
 
-/**
- * Convert text to sentence case while preserving acronyms (all-caps words like CDM, API, ROI)
- * Also handles compound acronyms like "CDM/DRR"
- * @param {string} text - Text to convert
- * @returns {string} - Sentence case text with acronyms preserved
- */
 function toSentenceCasePreservingAcronyms(text) {
   if (!text) return '';
-
-  // Split into lines first to handle multi-line titles
   return text.split('\n').map((line, lineIndex) => {
-    // Split line into words
     const words = line.split(/(\s+)/); // Keep whitespace as separate elements
 
     return words.map((word, wordIndex) => {
-      // Skip whitespace
       if (/^\s*$/.test(word)) return word;
-
-      // Check if word is an acronym (handles compound forms like CDM/DRR)
       const acronymCheck = checkAcronym(word);
 
       if (acronymCheck.isAcronym) {
-        // Keep acronyms uppercase
         return acronymCheck.value;
       } else if (lineIndex === 0 && wordIndex === 0) {
-        // First word of first line: capitalize first letter, lowercase rest
         return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
       } else {
-        // All other words: lowercase
         return word.toLowerCase();
       }
     }).join('');
@@ -133,7 +83,6 @@ function sanitizeText(text) {
   if (!text) return '';
 
   return text
-    // Remove markdown bold markers: **text** → text
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     // Remove markdown italic markers: *text* → text (but not ** which is already handled)
     .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
@@ -143,23 +92,15 @@ function sanitizeText(text) {
     });
 }
 
-/**
- * Normalize body text by converting all-caps words to proper case
- * Preserves known acronyms (CDM, DRR, API, etc.)
- * @param {string} text - Body text to normalize
- * @returns {string} - Normalized text
- */
 function normalizeBodyText(text) {
   if (!text) return '';
 
   // Match all-caps words (3+ letters) that aren't known acronyms
   return text.replace(/\b([A-Z]{3,})\b/g, (match) => {
-    // Check if it's a known acronym
     const acronymCheck = checkAcronym(match);
     if (acronymCheck.isAcronym) {
       return acronymCheck.value; // Keep as-is
     }
-    // Convert to proper case (first letter uppercase, rest lowercase)
     return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase();
   });
 }
@@ -175,11 +116,8 @@ function renderSlide(slide, index) {
   }
   return renderTwoColumnSlide(slide, index);
 }
-
-// ========================================
 // SECTION TITLE SLIDE RENDERER
 // Full-bleed title slide for section breaks
-// ========================================
 function renderSectionTitleSlide(slide, index) {
   const el = document.createElement('div');
   el.style.cssText = `
@@ -363,10 +301,9 @@ function renderTwoColumnSlide(slide, index) {
   // Body text - uses paragraph1 and paragraph2 fields (or falls back to body for compatibility)
   // Hard limit: 415 chars per paragraph - truncate at sentence boundary if AI exceeds
   const MAX_CHARS = 415;
-  
+
   const truncateToSentence = (text) => {
     if (text.length <= MAX_CHARS) return text;
-    // Find last sentence end before the limit
     const truncated = text.substring(0, MAX_CHARS);
     const lastPeriod = truncated.lastIndexOf('.');
     const lastQuestion = truncated.lastIndexOf('?');
@@ -436,11 +373,8 @@ function renderTwoColumnSlide(slide, index) {
 
   return el;
 }
-
-// ========================================
 // THREE COLUMN LAYOUT RENDERER
 // Measurements from ppt-template-config.js (13.33" x 7.5" slide)
-// ========================================
 function renderThreeColumnSlide(slide, index) {
   const el = document.createElement('div');
   el.style.cssText = `
@@ -587,10 +521,7 @@ function renderThreeColumnSlide(slide, index) {
 
   return el;
 }
-
-// ========================================
 // DEMO SLIDES - Template references
-// ========================================
 const DEMO_SLIDE_TWO_COL = {
   layout: 'twoColumn',
   tagline: 'LOREM IPSUM',
@@ -607,10 +538,7 @@ const DEMO_SLIDE_THREE_COL = {
   paragraph2: 'minim veniam, quis nostrud exercitation Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitationLorem ipsum dolor sit amet, consectetur adipiscing',
   paragraph3: 'elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitationLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor'
 };
-
-// ========================================
 // SLIDES VIEW CLASS
-// ========================================
 export class SlidesView {
   constructor(data, sessionId = null) {
     this.sessionId = sessionId;
@@ -633,8 +561,6 @@ export class SlidesView {
     // NEW: Track individual slides for sub-topic navigation (two-level TOC)
     this.slideIndices = new Map();      // slideId -> global index
     this.sectionSlides = new Map();     // sectionId -> [{slideId, subTopic, index}]
-
-    // Handle sections structure (aligned with Gantt swimlanes)
     if (this.sections.length) {
       const flattenedSlides = this._flattenSections(this.sections);
       this.slides = this.slides.concat(flattenedSlides);
@@ -650,13 +576,6 @@ export class SlidesView {
     this.tocContainer = null;
   }
 
-  /**
-   * Flatten sections structure into a linear array of slides
-   * Inserts a section title slide at the start of each section
-   * Tracks sub-topic metadata for two-level TOC navigation
-   * @param {Array} sections - Array of section objects with swimlane and slides
-   * @returns {Array} Flattened array of slides
-   */
   _flattenSections(sections) {
     const flatSlides = [];
     // Start after demo slides (2 demo slides at indices 0 and 1)
@@ -666,11 +585,7 @@ export class SlidesView {
       // Track section start index for TOC navigation
       const sectionId = section.swimlane.toLowerCase().replace(/\s+/g, '-');
       this.sectionStartIndices.set(sectionId, currentIndex);
-
-      // Initialize section slides array for two-level TOC sub-items
       this.sectionSlides.set(sectionId, []);
-
-      // Add section title slide
       flatSlides.push({
         layout: 'sectionTitle',
         swimlane: section.swimlane,
@@ -678,8 +593,6 @@ export class SlidesView {
         _sectionId: sectionId
       });
       currentIndex++;
-
-      // Add all content slides for this section with sub-topic tracking
       if (section.slides?.length) {
         section.slides.forEach((slide, slideIdx) => {
           const slideId = `${sectionId}-slide-${slideIdx}`;
@@ -708,10 +621,6 @@ export class SlidesView {
     return flatSlides;
   }
 
-  /**
-   * Render the Table of Contents sidebar
-   * Two-level structure: Sections + Sub-topics (slides)
-   */
   _renderTableOfContents() {
     const tocContainer = document.createElement('div');
     tocContainer.className = 'slides-toc';
@@ -798,9 +707,6 @@ export class SlidesView {
     return tocContainer;
   }
 
-  /**
-   * Navigate to a section by its ID
-   */
   _goToSection(sectionId) {
     const targetIndex = this.sectionStartIndices.get(sectionId);
     if (targetIndex !== undefined) {
@@ -809,9 +715,6 @@ export class SlidesView {
     }
   }
 
-  /**
-   * Navigate to a specific slide by its ID
-   */
   _goToSlide(slideId) {
     const targetIndex = this.slideIndices.get(slideId);
     if (targetIndex !== undefined) {
@@ -820,10 +723,6 @@ export class SlidesView {
     }
   }
 
-  /**
-   * Update active section and slide in TOC based on current slide
-   * Supports two-level highlighting: section + sub-topic
-   */
   _updateActiveTocSection() {
     const currentSlide = this.slides[this.index];
     let activeSectionId = 'demo';
@@ -836,8 +735,6 @@ export class SlidesView {
       activeSectionId = currentSlide._sectionId || 'demo';
       activeSlideId = currentSlide._slideId || null;
     }
-
-    // Remove all active classes
     this.tocLinks.forEach(link => {
       link.classList.remove('active', 'active-section');
     });
@@ -863,8 +760,6 @@ export class SlidesView {
   render() {
     const container = document.createElement('div');
     container.className = 'slides-view-container';
-
-    // Add glassmorphic three-dot menu in upper right corner (above TOC)
     const menu = this._createHeaderMenu();
     container.appendChild(menu);
 
@@ -900,8 +795,6 @@ export class SlidesView {
 
     slidesArea.appendChild(wrapper);
     slidesArea.appendChild(nav);
-
-    // Add inline speaker notes panel (collapsible, beneath nav)
     this.speakerNotesPanel = this._renderSpeakerNotesPanel();
     slidesArea.appendChild(this.speakerNotesPanel);
 
@@ -917,11 +810,6 @@ export class SlidesView {
     return container;
   }
 
-  /**
-   * Render the inline speaker notes panel (collapsible, beneath navigation)
-   * Navy blue glassmorphic styling to match UI
-   * @returns {HTMLElement} The speaker notes panel container
-   */
   _renderSpeakerNotesPanel() {
     const panel = document.createElement('div');
     panel.className = 'speaker-notes-panel speaker-notes-inline';
@@ -980,24 +868,16 @@ export class SlidesView {
     return panel;
   }
 
-  /**
-   * Toggle speaker notes panel visibility
-   * Triggers on-demand generation if notes don't exist yet
-   */
   _toggleSpeakerNotes() {
     this.speakerNotesVisible = !this.speakerNotesVisible;
 
     if (this.speakerNotesPanel) {
       this.speakerNotesPanel.classList.toggle('expanded', this.speakerNotesVisible);
-
-      // Update aria-expanded on the toggle header
       const toggleHeader = this.speakerNotesPanel.querySelector('.speaker-notes-toggle');
       if (toggleHeader) {
         toggleHeader.setAttribute('aria-expanded', this.speakerNotesVisible);
       }
     }
-
-    // Update the menu button text (keep for backwards compatibility)
     const toggleBtn = document.getElementById('toggle-notes-btn');
     if (toggleBtn) {
       const textSpan = toggleBtn.querySelector('.menu-item-text');
@@ -1005,10 +885,7 @@ export class SlidesView {
         textSpan.textContent = this.speakerNotesVisible ? 'Hide Notes' : 'Show Notes';
       }
     }
-
-    // Update notes content if visible
     if (this.speakerNotesVisible) {
-      // Check if notes need to be generated on-demand
       if (!this.speakerNotes?.slides?.length && !this.speakerNotesLoading && this.sessionId) {
         this._generateSpeakerNotesOnDemand();
       } else {
@@ -1017,10 +894,6 @@ export class SlidesView {
     }
   }
 
-  /**
-   * Generate speaker notes on-demand via API
-   * Shows loading indicator while generating
-   */
   async _generateSpeakerNotesOnDemand() {
     if (this.speakerNotesLoading || !this.sessionId) return;
 
@@ -1072,8 +945,6 @@ export class SlidesView {
       if (result.status === 'completed' && result.data) {
         this.speakerNotes = result.data;
         console.log('[SpeakerNotes] On-demand generation complete:', result.data.slides?.length || 0, 'notes');
-
-        // Update content if panel is still visible
         if (this.speakerNotesVisible) {
           this._updateSpeakerNotesContent();
         }
@@ -1115,10 +986,6 @@ export class SlidesView {
     }
   }
 
-  /**
-   * Show/hide the loading spinner next to the speaker notes chevron
-   * @param {boolean} show - Whether to show the spinner
-   */
   _showSpeakerNotesLoading(show) {
     const spinner = document.getElementById('speaker-notes-spinner');
     if (spinner) {
@@ -1131,17 +998,11 @@ export class SlidesView {
     }
   }
 
-  /**
-   * Update speaker notes content for current slide
-   * Provides detailed feedback for different failure scenarios
-   */
   _updateSpeakerNotesContent() {
     const contentEl = document.getElementById('speaker-notes-content');
     if (!contentEl) return;
 
     const currentSlide = this.slides[this.index];
-
-    // Update slide indicator in header
     const slideIndicator = document.getElementById('speaker-notes-slide-indicator');
     if (slideIndicator) {
       if (currentSlide?.tagline) {
@@ -1211,8 +1072,6 @@ export class SlidesView {
     try {
       const reasoningHTML = this._renderReasoningSection();
       const slideNotesHTML = this._renderSpeakerNotesHTML(notes);
-
-      // Add match quality indicator if not exact match
       let matchIndicator = '';
       if (matchInfo.matchType === 'partial_section') {
         matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Matched via partial section name">Partial match</div>`;
@@ -1231,8 +1090,6 @@ export class SlidesView {
       }
 
       contentEl.innerHTML = matchIndicator + reasoningHTML + slideNotesHTML;
-
-      // Attach click handlers for collapsible sections
       this._attachCollapsibleToggleHandlers(contentEl);
     } catch (renderError) {
       console.error('[SpeakerNotes] Failed to render notes:', renderError);
@@ -1246,10 +1103,6 @@ export class SlidesView {
     }
   }
 
-  /**
-   * Attach click handlers to collapsible section toggles
-   * @param {HTMLElement} container - Container element with toggle elements
-   */
   _attachCollapsibleToggleHandlers(container) {
     const toggles = container.querySelectorAll('.notes-section-toggle');
     toggles.forEach(toggle => {
@@ -1257,7 +1110,6 @@ export class SlidesView {
         const section = e.target.closest('.notes-section');
         if (section) {
           section.classList.toggle('notes-section-collapsed');
-          // Update aria-expanded for accessibility
           const isCollapsed = section.classList.contains('notes-section-collapsed');
           toggle.setAttribute('aria-expanded', !isCollapsed);
         }
@@ -1265,11 +1117,6 @@ export class SlidesView {
     });
   }
 
-  /**
-   * Get speaker notes for the current slide
-   * Uses three-tier matching strategy with fallback for duplicates
-   * @returns {{ notes: object|null, matchInfo: object }} Speaker notes and match metadata
-   */
   _getSpeakerNotesForCurrentSlide() {
     const noMatch = (reason, extra = {}) => ({
       notes: null,
@@ -1398,8 +1245,6 @@ export class SlidesView {
         contentSlideIndex++;
       }
     }
-
-    // Find notes for this section and index
     const sectionNotes = this.speakerNotes.slides.filter(note =>
       note.sectionName?.toLowerCase().includes(sectionName.toLowerCase()) ||
       sectionName.toLowerCase().includes(note.sectionName?.toLowerCase() || '')
@@ -1427,11 +1272,6 @@ export class SlidesView {
     return noMatch('no_tagline_match', { tagline: slideTagline });
   }
 
-  /**
-   * Render speaker notes as HTML
-   * @param {object} notes - Speaker notes object
-   * @returns {string} HTML string
-   */
   _renderSpeakerNotesHTML(notes) {
     // Defensive check for notes object
     if (!notes || typeof notes !== 'object') {
@@ -1732,11 +1572,6 @@ export class SlidesView {
     return sections.join('') || '<p class="notes-placeholder">No notes available.</p>';
   }
 
-  /**
-   * Render the reasoning transparency section (from two-pass generation)
-   * Shows audience analysis, evidence chains, and pushback preparation
-   * @returns {string} HTML for reasoning section
-   */
   _renderReasoningSection() {
     const reasoning = this.speakerNotes?.reasoning;
     if (!reasoning || typeof reasoning !== 'object') return '';
@@ -1921,11 +1756,6 @@ export class SlidesView {
     `;
   }
 
-  /**
-   * Escape HTML to prevent XSS
-   * @param {string} text - Text to escape
-   * @returns {string} Escaped text
-   */
   _escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -1933,10 +1763,6 @@ export class SlidesView {
     return div.innerHTML;
   }
 
-  /**
-   * Create the glassmorphic three-dot menu for the header
-   * @returns {HTMLElement} The menu container
-   */
   _createHeaderMenu() {
     const menuContainer = document.createElement('div');
     menuContainer.className = 'slides-header-menu';
@@ -1980,16 +1806,11 @@ export class SlidesView {
 
     menuContainer.appendChild(triggerBtn);
     menuContainer.appendChild(dropdown);
-
-    // Setup menu toggle behavior
     this._setupMenuBehavior(triggerBtn, dropdown);
 
     return menuContainer;
   }
 
-  /**
-   * Create a menu item element
-   */
   _createMenuItem({ id, icon, text, ariaLabel }) {
     const item = document.createElement('button');
     item.id = id;
@@ -2003,9 +1824,6 @@ export class SlidesView {
     return item;
   }
 
-  /**
-   * Setup menu open/close behavior
-   */
   _setupMenuBehavior(trigger, dropdown) {
     let isOpen = false;
 
@@ -2066,13 +1884,11 @@ export class SlidesView {
 
     try {
       const response = await fetch(`/api/content/${this.sessionId}/slides/export`);
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Export failed');
       }
-
-      // Get filename from Content-Disposition header or use default
       const contentDisposition = response.headers.get('Content-Disposition');
       let filename = 'Presentation.pptx';
       if (contentDisposition) {
@@ -2113,16 +1929,11 @@ export class SlidesView {
     this._updateActiveTocSection();
     // Always update slide indicator in speaker notes header
     this._updateSlideIndicator();
-    // Update full speaker notes content if panel is expanded
     if (this.speakerNotesVisible) {
       this._updateSpeakerNotesContent();
     }
   }
 
-  /**
-   * Update just the slide indicator in the speaker notes header
-   * Called on every slide change regardless of panel visibility
-   */
   _updateSlideIndicator() {
     const slideIndicator = document.getElementById('speaker-notes-slide-indicator');
     if (!slideIndicator) return;

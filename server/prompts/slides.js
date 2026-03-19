@@ -1,10 +1,3 @@
-/**
- * Slide Schema - Organized by sections (aligned with Gantt chart swimlanes)
- * Each section contains:
- * - A section title slide
- * - Multiple content slides (twoColumn or threeColumn layouts)
- */
-
 // Schema for individual content slides
 const contentSlideSchema = {
   type: "object",
@@ -48,7 +41,6 @@ const contentSlideSchema = {
   required: ["layout", "tagline", "title", "paragraph1", "paragraph2", "subTopic"]
 };
 
-// Main schema with sections structure
 export const slidesSchema = {
   description: "Presentation slides organized by sections (aligned with Gantt chart swimlanes)",
   type: "object",
@@ -89,7 +81,6 @@ export const slidesSchema = {
   required: ["title", "sections"]
 };
 
-// Outline schema for two-pass generation (Pass 1: narrative structure)
 export const slidesOutlineSchema = {
   description: "Narrative outline for slide presentation - defines structure before full content generation",
   type: "object",
@@ -186,19 +177,10 @@ export const slidesOutlineSchema = {
   required: ["reasoning", "sections"]
 };
 
-// ============================================================================
-// SPEAKER NOTES SCHEMA - For separate pass generation after slides
-// ============================================================================
-
-/**
- * Schema for speaker notes - generated in a separate pass after slides
- * Includes narrative script, Q&A, source attribution, story context, and transparency
- */
 export const speakerNotesSchema = {
   description: "Speaker notes for each slide - generated after slides to support sales enablement",
   type: "object",
   properties: {
-    // Top-level reasoning block for transparency (from Pass 1 outline)
     reasoning: {
       type: "object",
       description: "Chain-of-thought reasoning that informed notes generation. Provides transparency into the analytical process.",
@@ -253,7 +235,6 @@ export const speakerNotesSchema = {
           },
           description: "Hardest pushbacks and how to handle them"
         },
-        // Narrative transitions for slide-to-slide coherence
         narrativeTransitions: {
           type: "array",
           items: {
@@ -267,7 +248,6 @@ export const speakerNotesSchema = {
           },
           description: "Planned transitions between slides for narrative coherence"
         },
-        // Enhancement #3: Competitive Differentiation Arsenal
         competitivePositioning: {
           type: "object",
           description: "Ammunition for 'why not [competitor]?' questions",
@@ -295,7 +275,6 @@ export const speakerNotesSchema = {
             }
           }
         },
-        // Enhancement #10: Bridge Phrases for Difficult Moments
         bridgePhrases: {
           type: "object",
           description: "Pre-written phrases for difficult presentation moments",
@@ -347,8 +326,6 @@ export const speakerNotesSchema = {
             type: "string",
             description: "Tagline of the slide for reference"
           },
-
-          // 1. NARRATIVE SCRIPT
           narrative: {
             type: "object",
             properties: {
@@ -417,8 +394,6 @@ export const speakerNotesSchema = {
             },
             description: "2-3 likely questions/objections with prepared responses and escalation paths"
           },
-
-          // 3. SOURCE ATTRIBUTION
           sourceAttribution: {
             type: "array",
             items: {
@@ -447,8 +422,6 @@ export const speakerNotesSchema = {
             },
             description: "Citations for key claims on this slide"
           },
-
-          // 4. STORY CONTEXT (Enhanced with CTA variants and Time Guidance)
           storyContext: {
             type: "object",
             properties: {
@@ -469,7 +442,6 @@ export const speakerNotesSchema = {
                 type: "string",
                 description: "Why this slide matters to the client - the key takeaway"
               },
-              // Enhancement #8: Call-to-Action Variants by Audience Temperature
               callToAction: {
                 type: "object",
                 description: "Different closes based on audience receptivity",
@@ -497,7 +469,6 @@ export const speakerNotesSchema = {
                   }
                 }
               },
-              // Enhancement #9: Time Management Cues
               timeGuidance: {
                 type: "object",
                 description: "Time management for this slide",
@@ -515,8 +486,6 @@ export const speakerNotesSchema = {
             },
             required: ["narrativePosition", "soWhat"]
           },
-
-          // 5. GENERATION TRANSPARENCY
           generationTransparency: {
             type: "object",
             properties: {
@@ -542,8 +511,6 @@ export const speakerNotesSchema = {
             },
             required: ["primarySources", "derivationMethod", "dataLineage"]
           },
-
-          // 6. CREDIBILITY ANCHORS (Enhancement #6)
           credibilityAnchors: {
             type: "array",
             items: {
@@ -571,8 +538,6 @@ export const speakerNotesSchema = {
             },
             description: "Third-party validation points for skeptical audiences"
           },
-
-          // 7. RISK MITIGATION (Enhancement #7)
           riskMitigation: {
             type: "object",
             description: "De-risking language for risk-averse audiences",
@@ -628,8 +593,6 @@ export const speakerNotesSchema = {
               }
             }
           },
-
-          // 9. AUDIENCE SIGNALS (Enhancement #4)
           audienceSignals: {
             type: "object",
             description: "How to read the room and adapt in real-time",
@@ -651,8 +614,6 @@ export const speakerNotesSchema = {
               }
             }
           },
-
-          // 10. QUICK REFERENCE CHEAT SHEET (Enhancement #5)
           quickReference: {
             type: "object",
             description: "Condensed view for quick glance during presentation",
@@ -671,19 +632,10 @@ export const speakerNotesSchema = {
   required: ["reasoning", "slides"]
 };
 
-// ============================================================================
-// SPEAKER NOTES OUTLINE SCHEMA - For two-pass generation (Pass 1)
-// ============================================================================
-
-/**
- * Schema for speaker notes outline - lightweight structure for Pass 1
- * Captures reasoning and high-level notes structure before full generation
- */
 export const speakerNotesOutlineSchema = {
   description: "Speaker notes outline with chain-of-thought reasoning - Pass 1 of two-pass generation",
   type: "object",
   properties: {
-    // Chain-of-thought reasoning (completed BEFORE structuring notes)
     reasoning: {
       type: "object",
       description: "Explicit reasoning completed BEFORE generating notes. Forces analytical depth.",
@@ -762,7 +714,6 @@ export const speakerNotesOutlineSchema = {
           },
           description: "3-5 hardest pushbacks and how to handle them"
         },
-        // Enhancement #3: Competitive Differentiation Arsenal
         competitivePositioning: {
           type: "object",
           description: "Ammunition for 'why not [competitor]?' questions",
@@ -790,7 +741,6 @@ export const speakerNotesOutlineSchema = {
             }
           }
         },
-        // Enhancement #10: Bridge Phrases for Difficult Moments
         bridgePhrases: {
           type: "object",
           description: "Pre-written phrases for difficult presentation moments",
@@ -825,8 +775,6 @@ export const speakerNotesOutlineSchema = {
       },
       required: ["presentationNarrativeArc", "keyEvidenceChains", "sourceInventory", "anticipatedPushback"]
     },
-
-    // Slide-level outline (lightweight - just key elements, not full notes)
     slideOutlines: {
       type: "array",
       items: {
@@ -863,11 +811,6 @@ export const speakerNotesOutlineSchema = {
   required: ["reasoning", "slideOutlines"]
 };
 
-/**
- * Get current date context for time-aware recommendations
- * Enables temporally-aware framing in slide content
- * @returns {object} Object with formatted date strings and fiscal quarter info
- */
 function getCurrentDateContext() {
   const now = new Date();
   const year = now.getFullYear();
@@ -888,16 +831,8 @@ function getCurrentDateContext() {
   };
 }
 
-/**
- * Extract key statistics, contextual sentences, and sources from research content
- * Enhanced version with source extraction for better citation support
- * @param {string} content - Combined research content
- * @returns {object} - Object with stats string, contextual stats array, and sources array
- */
 function extractKeyStats(content) {
   if (!content) return { stats: '', sources: [], contextualStats: [] };
-
-  // Statistical patterns (unchanged)
   const statPatterns = [
     /\d+\.?\d*\s*%/g,                          // Percentages: 23%, 4.5%
     /\$\d[\d,]*\.?\d*\s*[MBK]?(?:illion)?/gi,  // Currency: $4M, $2.5 billion
@@ -910,8 +845,6 @@ function extractKeyStats(content) {
     /\b\d+:1\b/g,                              // Ratios: 3:1, 10:1
     /\d+\s*(?:months?|years?|days?|weeks?)\b/gi // Durations: 18 months, 3 years
   ];
-
-  // Source extraction patterns (NEW)
   const sourcePatterns = [
     /according to ([^,.\n]+)/gi,
     /per ([^,.\n]+(?:report|study|analysis|survey|data)[^,.\n]*)/gi,
@@ -920,8 +853,6 @@ function extractKeyStats(content) {
     /\[([^\]]+(?:Report|Study|Analysis|Survey|Data)[^\]]*)\]/gi,
     /(?:published by|released by) ([^,.\n]+)/gi
   ];
-
-  // Extract contextual stats (sentences containing numbers) - NEW
   const sentences = content.split(/(?<=[.!?])\s+/);
   const contextualStats = [];
   const seenSentences = new Set();
@@ -939,16 +870,12 @@ function extractKeyStats(content) {
     }
     if (contextualStats.length >= 15) break;
   }
-
-  // Extract raw stats (original behavior)
   const rawMatches = new Set();
   for (const pattern of statPatterns) {
     pattern.lastIndex = 0;
     const found = content.match(pattern) || [];
     found.slice(0, 5).forEach(m => rawMatches.add(m.trim()));
   }
-
-  // Extract sources - NEW
   const sources = new Set();
   for (const pattern of sourcePatterns) {
     pattern.lastIndex = 0;
@@ -956,7 +883,6 @@ function extractKeyStats(content) {
     while ((match = pattern.exec(content)) !== null && sources.size < 12) {
       const source = match[1]?.trim();
       if (source && source.length > 5 && source.length < 100) {
-        // Filter out common false positives
         const lowerSource = source.toLowerCase();
         if (!lowerSource.includes('this') &&
             !lowerSource.includes('that') &&
@@ -975,24 +901,13 @@ function extractKeyStats(content) {
   };
 }
 
-/**
- * Generate prompt for slide outline (Pass 1 of two-pass generation)
- * Creates narrative structure with cross-slide connections before full content generation
- * @param {string} userPrompt - The user's request
- * @param {Array<{filename: string, content: string}>} researchFiles - Research files to analyze
- * @param {Array<{name: string, entity: string, taskCount: number}>} swimlanes - Swimlane topics from Gantt chart
- * @returns {string} Complete prompt for outline generation
- */
 export function generateSlidesOutlinePrompt(userPrompt, researchFiles, swimlanes = []) {
-  // Validate inputs
   if (!userPrompt || userPrompt.trim() === '') {
     throw new Error('userPrompt is required for outline generation');
   }
   if (!researchFiles || researchFiles.length === 0) {
     throw new Error('At least one research file is required for outline generation');
   }
-
-  // Validate and filter research files
   const validFiles = researchFiles.filter(file => {
     if (!file || typeof file.filename !== 'string' || typeof file.content !== 'string') {
       return false;
@@ -1214,15 +1129,12 @@ function getFrameworkSignalPhrases(framework) {
  * @returns {string} Complete prompt for AI
  */
 export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = [], outline = null) {
-  // Validate inputs
   if (!userPrompt || userPrompt.trim() === '') {
     throw new Error('userPrompt is required for slide generation');
   }
   if (!researchFiles || researchFiles.length === 0) {
     throw new Error('At least one research file is required for slide generation');
   }
-
-  // Validate and filter research files
   const validFiles = researchFiles.filter(file => {
     if (!file || typeof file.filename !== 'string' || typeof file.content !== 'string') {
       return false; // Skip malformed file objects
@@ -1769,10 +1681,6 @@ FINAL VALIDATION (DO THIS BEFORE OUTPUTTING - MANDATORY):
 `;
 }
 
-// ============================================================================
-// SPEAKER NOTES PROMPT - Separate pass after slides generation
-// ============================================================================
-
 /**
  * Generate prompt for speaker notes (Pass 2 of two-pass generation)
  * Creates comprehensive presenter support notes for each slide
@@ -1784,7 +1692,6 @@ FINAL VALIDATION (DO THIS BEFORE OUTPUTTING - MANDATORY):
  * @returns {string} Complete prompt for speaker notes generation
  */
 export function generateSpeakerNotesPrompt(slidesData, researchFiles, userPrompt, outline = null) {
-  // Validate inputs
   if (!slidesData?.sections?.length) {
     throw new Error('slidesData with sections is required for speaker notes generation');
   }
@@ -2145,10 +2052,6 @@ Transform the outline reasoning into the speakerNotesSchema reasoning format:
 Start with { and end with }`;
 }
 
-// ============================================================================
-// SPEAKER NOTES OUTLINE PROMPT - Pass 1 of two-pass generation
-// ============================================================================
-
 /**
  * Generate prompt for speaker notes outline (Pass 1)
  * Creates reasoning framework and lightweight structure before full notes generation
@@ -2158,7 +2061,6 @@ Start with { and end with }`;
  * @returns {string} Complete prompt for speaker notes outline generation
  */
 export function generateSpeakerNotesOutlinePrompt(slidesData, researchFiles, userPrompt) {
-  // Validate inputs
   if (!slidesData?.sections?.length) {
     throw new Error('slidesData with sections is required for speaker notes outline generation');
   }

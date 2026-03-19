@@ -1,13 +1,5 @@
-/**
- * Analysis section builders for task analysis modal
- * These functions generate HTML for various analysis sections
- */
-
 import { isSafeUrl } from './dom.js';
 
-/**
- * Build a simple analysis section with title and content
- */
 export function buildAnalysisSection(title, content) {
   if (!content) return '';
   const safeTitle = DOMPurify.sanitize(title);
@@ -20,9 +12,6 @@ export function buildAnalysisSection(title, content) {
   `;
 }
 
-/**
- * Build an analysis list with items and sources
- */
 export function buildAnalysisList(title, items, itemKey, sourceKey) {
   if (!items || items.length === 0) return '';
   const listItems = items.map(item => {
@@ -50,9 +39,6 @@ export function buildAnalysisList(title, items, itemKey, sourceKey) {
   `;
 }
 
-/**
- * Build timeline scenarios section
- */
 export function buildTimelineScenarios(timelineScenarios) {
   if (!timelineScenarios) return '';
   const { expected, bestCase, worstCase, likelyDelayFactors } = timelineScenarios;
@@ -123,9 +109,6 @@ export function buildTimelineScenarios(timelineScenarios) {
   `;
 }
 
-/**
- * Build risk analysis section
- */
 export function buildRiskAnalysis(risks) {
   if (!risks || risks.length === 0) return '';
   const riskCards = risks.map(risk => {
@@ -156,9 +139,6 @@ export function buildRiskAnalysis(risks) {
   `;
 }
 
-/**
- * Build impact analysis section
- */
 export function buildImpactAnalysis(impact) {
   if (!impact) return '';
   let contentHTML = '';
@@ -211,9 +191,6 @@ export function buildImpactAnalysis(impact) {
   `;
 }
 
-/**
- * Build scheduling context section
- */
 export function buildSchedulingContext(schedulingContext) {
   if (!schedulingContext) return '';
   let contentHTML = '';
@@ -271,9 +248,6 @@ export function buildSchedulingContext(schedulingContext) {
   `;
 }
 
-/**
- * Build progress indicators section
- */
 export function buildProgressIndicators(progress, taskStatus) {
   if (!progress || taskStatus !== 'in-progress') return '';
   let contentHTML = '';
@@ -345,9 +319,6 @@ export function buildProgressIndicators(progress, taskStatus) {
   `;
 }
 
-/**
- * Build accelerators section
- */
 export function buildAccelerators(accelerators) {
   if (!accelerators) return '';
   let contentHTML = '';

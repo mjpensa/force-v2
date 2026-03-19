@@ -1,12 +1,3 @@
-/**
- * Pre-Meeting Intelligence Brief
- * Synthesizes session research and analysis into a concise meeting prep document
- */
-
-/**
- * Intelligence Brief Schema
- * Designed for one-page output focused on meeting preparation
- */
 export const intelligenceBriefSchema = {
   type: "object",
   properties: {
@@ -67,9 +58,6 @@ export const intelligenceBriefSchema = {
   required: ["keyInsights", "talkingPoints", "anticipatedQuestions", "recommendedNextSteps"]
 };
 
-/**
- * System prompt for intelligence brief generation
- */
 export const INTELLIGENCE_BRIEF_SYSTEM_PROMPT = `You are a senior management consultant preparing a pre-meeting intelligence brief. Your role is to synthesize research and analysis into actionable meeting preparation.
 
 ## Your Task
@@ -113,16 +101,8 @@ Create a one-page meeting brief that helps the presenter walk into the meeting f
 - Consultant speaking to consultant
 - Direct and actionable`;
 
-/**
- * Generate the full prompt with session data context
- * @param {Object} sessionData - Contains sources, document, roadmap, slides
- * @param {Object} meetingContext - Contains companyName, meetingAttendees, meetingObjective, keyConcerns
- * @returns {string} Complete prompt for Gemini
- */
 export function generateIntelligenceBriefPrompt(sessionData, meetingContext) {
   const { companyName, meetingAttendees, meetingObjective, keyConcerns } = meetingContext;
-
-  // Build context from session data
   let sessionContext = '## Session Analysis Data\n\n';
 
   // Source research (stored as { filename, content } from upload)

@@ -1,14 +1,3 @@
-/**
- * Document Generation Prompt - Enhanced but Stable
- *
- * Balanced approach: Adds executiveSummary and keyInsight without
- * the complex nested content blocks that caused repetition issues.
- */
-
-/**
- * Document Schema - Enhanced with executive summary and key insights
- * Keeps simple paragraphs array (no complex content block types)
- */
 export const documentSchema = {
   type: "object",
   properties: {
@@ -213,13 +202,6 @@ export const documentSchema = {
   required: ["reasoning", "title", "executiveSummary", "analysisOverview", "sections"]
 };
 
-/**
- * Enhanced prompt with analytical rigor and narrative energy
- *
- * PROMPT ORDER STRATEGY: Instructions are ordered by increasing importance.
- * Models exhibit "recency bias" - later instructions have stronger effect.
- * Order: Reference material → Mechanics → Context → Avoidances → Core requirements → Quality drivers → Highest priority
- */
 export const documentPrompt = `You are a senior strategy consultant writing an executive briefing for C-suite leadership.
 
 SOURCE EXTRACTION (Reference Material):
@@ -564,12 +546,6 @@ NEW SCHEMA FIELDS (Use these to demonstrate quality):
 - counterargument: What's the strongest objection? Addressing it shows rigor.
 - synthesisNote: How does this section connect to others? Build the narrative arc.`;
 
-/**
- * Extract key statistics from research content WITH surrounding context
- * Enhanced to provide richer context for the AI model
- * @param {string} content - Combined research content
- * @returns {object} - Object with stats string, contextual stats array, and extracted sources
- */
 function extractKeyStats(content) {
   if (!content) return { stats: '', contextualStats: [], sources: [] };
 
@@ -638,12 +614,6 @@ function extractKeyStats(content) {
   };
 }
 
-/**
- * Extract causal relationships and strategic indicators from research content
- * Identifies cause-effect patterns, comparisons, trajectories, and deadlines
- * @param {string} content - Combined research content
- * @returns {object} - Object with relationships, comparisons, trajectories, and windows
- */
 function extractCausalRelationships(content) {
   if (!content) return { relationships: [], comparisons: [], trajectories: [], windows: [] };
 
@@ -743,11 +713,6 @@ function extractCausalRelationships(content) {
   return { relationships, comparisons, trajectories, windows };
 }
 
-/**
- * Generate swimlane-aligned section instructions
- * @param {Array<{name: string, entity: string, taskCount: number}>} swimlanes - Swimlane topics from roadmap
- * @returns {string} - Prompt section for swimlane alignment
- */
 function generateSwimlaneSectionInstructions(swimlanes) {
   if (!swimlanes || swimlanes.length === 0) {
     return '';
@@ -803,10 +768,6 @@ ANTI-PATTERNS FOR SWIMLANE SECTIONS:
 `;
 }
 
-/**
- * Get current date context for time-aware recommendations
- * @returns {object} Object with formatted date strings and fiscal quarter info
- */
 function getCurrentDateContext() {
   const now = new Date();
   const year = now.getFullYear();
@@ -827,12 +788,6 @@ function getCurrentDateContext() {
   };
 }
 
-/**
- * Generate prompt with research content and optional swimlane alignment
- * @param {string} userPrompt - User's analysis request
- * @param {Array} researchFiles - Research files to analyze
- * @param {Array} swimlanes - Optional swimlane topics from roadmap for section alignment
- */
 export function generateDocumentPrompt(userPrompt, researchFiles, swimlanes = []) {
   const researchContent = researchFiles
     .map(file => `=== ${file.filename} ===\n${file.content}`)
@@ -843,33 +798,21 @@ export function generateDocumentPrompt(userPrompt, researchFiles, swimlanes = []
   const { relationships, comparisons, trajectories, windows } = extractCausalRelationships(researchContent);
   const swimlaneInstructions = generateSwimlaneSectionInstructions(swimlanes);
   const dateContext = getCurrentDateContext();
-
-  // Format contextual stats with numbering
   const contextualStatsFormatted = contextualStats.length > 0
     ? contextualStats.map((s, i) => `${i + 1}. "${s}"`).join('\n')
     : 'No contextual statistics found - extract key data points from the research text';
-
-  // Format sources
   const sourcesFormatted = sources.length > 0
     ? sources.join(', ')
     : 'Extract authoritative sources mentioned within the research content';
-
-  // Format causal relationships
   const causalFormatted = relationships.length > 0
     ? relationships.map(r => `- "${r.cause}" → "${r.effect}"`).join('\n')
     : 'Identify cause-effect relationships from the research';
-
-  // Format comparisons (for DATA → COMPARISON insights)
   const comparisonsFormatted = comparisons.length > 0
     ? comparisons.map((c, i) => `${i + 1}. "${c}"`).join('\n')
     : 'No direct comparisons found - look for competitive positioning in the research';
-
-  // Format trajectories (for DATA → TRAJECTORY insights)
   const trajectoriesFormatted = trajectories.length > 0
     ? trajectories.map((t, i) => `${i + 1}. "${t}"`).join('\n')
     : 'No trajectory indicators found - identify growth/decline patterns in the research';
-
-  // Format windows/deadlines (for DATA → WINDOW insights)
   const windowsFormatted = windows.length > 0
     ? windows.map((w, i) => `${i + 1}. "${w}"`).join('\n')
     : 'No explicit deadlines found - identify time-sensitive factors in the research';
