@@ -640,84 +640,43 @@ body.dragging {
 }
 
 @media (max-width: 1024px) {
-  .export-container button {
-    min-width: 32px; 
-    min-height: 32px; 
-    padding: 5px 12px; 
-  }
-  .export-container {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 5px; 
-    padding: 6px 8px; 
-  }
   .gantt-legend {
-    padding: 6px 10px; 
+    padding: 6px 10px;
   }
   .legend-list {
-    gap: 8px; 
+    gap: 8px;
   }
 }
 @media (max-width: 768px) {
-  .export-container button {
-    min-height: 28px; 
-    padding: 5px 10px; 
-  }
   .gantt-title {
-    padding: 6px; 
+    padding: 6px;
   }
   .gantt-bar {
     height: 3px;
     margin: 2px 1px;
   }
   .gantt-legend {
-    padding: 6px 8px; 
+    padding: 6px 8px;
   }
   .legend-color-box {
-    width: 10px; 
-    height: 10px; 
-  }
-  .modal-content {
-    width: 95%;
-    max-width: 95%;
-    margin: 20px auto;
-    padding: 12px; 
+    width: 10px;
+    height: 10px;
   }
 }
 @media (max-width: 480px) {
   .gantt-title {
-    padding: 4px; 
-  }
-  .export-container button {
-    padding: 4px 10px; 
+    padding: 4px;
   }
   .legend-list {
     flex-direction: column;
-    gap: 4px; 
+    gap: 4px;
   }
   .legend-item {
     width: 100%;
   }
-  .modal-content {
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    margin: 0;
-    border-radius: 0;
-  }
 }
 @media (max-width: 768px) and (orientation: landscape) {
   .gantt-title {
-    padding: 6px; 
-  }
-  .export-container {
-    flex-direction: row;
-    flex-wrap: wrap;
-    padding: 6px; 
-  }
-  .export-container button {
-    flex: 1 1 calc(50% - 8px);
-    min-width: 140px;
+    padding: 6px;
   }
 }
