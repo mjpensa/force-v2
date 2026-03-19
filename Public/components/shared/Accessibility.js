@@ -57,4 +57,3 @@ export function initAccessibility(options = {}) {
     }).observe(document.body, { childList: true, subtree: true });
   }
 }
-export default { announceToScreenReader, trapFocus, addSkipLink, initAccessibility };

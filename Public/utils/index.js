@@ -18,24 +18,15 @@ export {
 
 // Analysis builders
 export {
-  buildAnalysisSection,
-  buildAnalysisList,
-  buildTimelineScenarios,
-  buildRiskAnalysis,
-  buildImpactAnalysis,
-  buildSchedulingContext,
-  buildProgressIndicators,
-  buildAccelerators
+  buildAnalysisSection
 } from './analysis-builders.js';
 
 // Performance utilities
 export {
-  PerformanceTimer,
-  measureAsync
+  PerformanceTimer
 } from './performance.js';
 
 // Asset utilities
 export {
-  loadFooterSVG,
-  buildLegend
+  loadFooterSVG
 } from './assets.js';

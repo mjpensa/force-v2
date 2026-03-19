@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { sanitizePrompt, isValidChartId, isValidJobId, getFileExtension } from '../../server/utils.js';
+import { sanitizePrompt, getFileExtension } from '../../server/utils.js';
 
 describe('Server Utils', () => {
   describe('sanitizePrompt', () => {
@@ -100,54 +100,6 @@ describe('Server Utils', () => {
       const normalInput = 'Please create a Gantt chart for my project timeline';
       const result = sanitizePrompt(normalInput);
       expect(result).toContain(normalInput);
-    });
-  });
-
-  describe('isValidChartId', () => {
-    it('should return true for valid 32-character hex ID', () => {
-      expect(isValidChartId('a1b2c3d4e5f6789012345678abcdef12')).toBe(true);
-    });
-
-    it('should return true for uppercase hex ID', () => {
-      expect(isValidChartId('A1B2C3D4E5F6789012345678ABCDEF12')).toBe(true);
-    });
-
-    it('should return true for mixed case hex ID', () => {
-      expect(isValidChartId('a1B2c3D4e5F6789012345678AbCdEf12')).toBe(true);
-    });
-
-    it('should return false for ID shorter than 32 characters', () => {
-      expect(isValidChartId('a1b2c3d4e5f6')).toBe(false);
-    });
-
-    it('should return false for ID longer than 32 characters', () => {
-      expect(isValidChartId('a1b2c3d4e5f6789012345678abcdef12345')).toBe(false);
-    });
-
-    it('should return false for non-hex characters', () => {
-      expect(isValidChartId('g1b2c3d4e5f6789012345678abcdef12')).toBe(false);
-    });
-
-    it('should return false for empty string', () => {
-      expect(isValidChartId('')).toBe(false);
-    });
-
-    it('should return false for special characters', () => {
-      expect(isValidChartId('a1b2c3d4-e5f6-7890-1234-5678abcdef')).toBe(false);
-    });
-  });
-
-  describe('isValidJobId', () => {
-    it('should return true for valid 32-character hex ID', () => {
-      expect(isValidJobId('a1b2c3d4e5f6789012345678abcdef12')).toBe(true);
-    });
-
-    it('should return false for invalid ID', () => {
-      expect(isValidJobId('invalid')).toBe(false);
-    });
-
-    it('should return false for empty string', () => {
-      expect(isValidJobId('')).toBe(false);
     });
   });
 

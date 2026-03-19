@@ -105,18 +105,6 @@ export class GanttEditor {
     }
   }
 
-  enableDragToEdit() {
-    if (this.draggableGantt) {
-      this.draggableGantt.enableDragging();
-    }
-  }
-
-  disableDragToEdit() {
-    if (this.draggableGantt) {
-      this.draggableGantt.disableDragging();
-    }
-  }
-
   addNewTaskRow(afterIndex) {
     const newTask = {
       title: 'New Task',
@@ -143,23 +131,6 @@ export class GanttEditor {
 
     this.ganttData.data.splice(taskIndex, 1);
     this.onRender();
-  }
-
-  updateRowIndices() {
-    if (!this.gridElement) return;
-
-    const allLabels = Array.from(this.gridElement.querySelectorAll('.gantt-row-label'));
-    const allBarAreas = Array.from(this.gridElement.querySelectorAll('.gantt-bar-area'));
-
-    allLabels.forEach((label, index) => {
-      label.setAttribute('data-task-index', index);
-      label.setAttribute('data-row-id', `row-${index}`);
-    });
-
-    allBarAreas.forEach((barArea, index) => {
-      barArea.setAttribute('data-task-index', index);
-      barArea.setAttribute('data-row-id', `row-${index}`);
-    });
   }
 
   makeEditable(labelElement, taskIndex) {

@@ -92,17 +92,6 @@ export class StateManager {
       this.listeners = this.listeners.filter(l => l !== listener);
     };
   }
-  subscribeToView(viewName, listener) {
-    if (!this.viewListeners[viewName]) {
-      this.viewListeners[viewName] = [];
-    }
-    this.viewListeners[viewName].push(listener);
-    return () => {
-      this.viewListeners[viewName] = this.viewListeners[viewName].filter(
-        l => l !== listener
-      );
-    };
-  }
   notifyListeners(previousState, newState) {
     this.listeners.forEach(listener => {
       try {
@@ -257,53 +246,6 @@ export class StateManager {
       throw appError;
     }
   }
-  switchView(viewName) {
-    if (this.state.currentView === viewName) {
-      return;  // Already on this view
-    }
-    this.setState({ currentView: viewName });
-    window.location.hash = viewName;
-  }
-  initializeFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get('session') || params.get('id'); // Support both
-    const hash = window.location.hash.replace('#', '') || 'roadmap';
-    if (!sessionId) {
-      throw new Error('No session ID in URL');
-    }
-    this.setState({
-      sessionId,
-      currentView: hash
-    });
-  }
-  async prefetchOtherViews(currentView) {
-    const views = ['roadmap', 'slides', 'document', 'research-analysis'];
-    const otherViews = views.filter(v => v !== currentView);
-
-    // Use requestIdleCallback for non-critical prefetching (falls back to setTimeout)
-    const scheduleIdleTask = window.requestIdleCallback || ((cb) => setTimeout(cb, 1000));
-
-    scheduleIdleTask(() => {
-      const viewsToFetch = otherViews.filter(view =>
-        !this.state.content[view] && !this._pendingRequests.has(`${this.state.sessionId}:${view}`)
-      );
-
-      if (viewsToFetch.length === 0) {
-        return;
-      }
-
-      // Prefetch in parallel with lower priority
-      Promise.allSettled(
-        viewsToFetch.map(view => this.loadView(view))
-      );
-    }, { timeout: 2000 });
-  }
-  async refreshView(viewName) {
-    this.setState({
-      content: { ...this.state.content, [viewName]: null }
-    });
-    return await this.loadView(viewName);
-  }
   clear() {
     this._pendingRequests.clear();
     this._pendingStateUpdates = [];
@@ -317,15 +259,4 @@ export class StateManager {
       errors: { roadmap: null, slides: null, document: null, 'research-analysis': null }
     });
   }
-  toggleMenu() {
-    this.setState({
-      ui: { ...this.state.ui, menuOpen: !this.state.ui.menuOpen }
-    });
-  }
-  toggleFullscreen() {
-    this.setState({
-      ui: { ...this.state.ui, fullscreen: !this.state.ui.fullscreen }
-    });
-  }
 }
-export const state = new StateManager();

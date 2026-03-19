@@ -13,25 +13,3 @@ export function measurePerformance(name, startMark, endMark) {
   metrics.measures.set(name, duration);
   return duration;
 }
-export function reportWebVitals(callback) {
-  if (!('PerformanceObserver' in window)) return;
-  const getRating = (value, thresholds) => value <= thresholds[0] ? 'good' : value <= thresholds[1] ? 'needs-improvement' : 'poor';
-  try {
-    new PerformanceObserver((list) => {
-      const entries = list.getEntries();
-      const last = entries[entries.length - 1];
-      callback({ name: 'LCP', value: last.renderTime || last.loadTime, rating: getRating(last.renderTime || last.loadTime, [2500, 4000]) });
-    }).observe({ entryTypes: ['largest-contentful-paint'] });
-    new PerformanceObserver((list) => {
-      list.getEntries().forEach((entry) => {
-        callback({ name: 'FID', value: entry.processingStart - entry.startTime, rating: getRating(entry.processingStart - entry.startTime, [100, 300]) });
-      });
-    }).observe({ entryTypes: ['first-input'] });
-    let clsValue = 0;
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) if (!entry.hadRecentInput) clsValue += entry.value;
-      callback({ name: 'CLS', value: clsValue, rating: getRating(clsValue, [0.1, 0.25]) });
-    }).observe({ entryTypes: ['layout-shift'] });
-  } catch (e) {}
-}
-export default { markPerformance, measurePerformance, reportWebVitals };

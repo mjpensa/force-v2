@@ -103,7 +103,3 @@ export function addLazyLoadingStyles() {
   `;
   document.head.appendChild(style);
 }
-export default {
-  initLazyLoading,
-  addLazyLoadingStyles
-};

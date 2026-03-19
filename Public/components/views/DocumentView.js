@@ -97,23 +97,6 @@ export class DocumentView {
     return li;
   }
 
-  _isSubsectionOf(subsection, parentSection) {
-    const sections = this.documentData.sections;
-    const parentIndex = sections.indexOf(parentSection);
-    const subsectionIndex = sections.indexOf(subsection);
-
-    if (subsectionIndex <= parentIndex) return false;
-    const nextLevel1Index = sections.findIndex((s, idx) =>
-      idx > parentIndex && s.level === 1
-    );
-
-    if (nextLevel1Index === -1) {
-      return subsectionIndex > parentIndex;
-    }
-
-    return subsectionIndex > parentIndex && subsectionIndex < nextLevel1Index;
-  }
-
   _renderContent() {
     const contentContainer = document.createElement('div');
     contentContainer.className = 'document-content';
@@ -966,28 +949,4 @@ export class DocumentView {
     }
   }
 
-  async loadData(sessionId) {
-    try {
-      const response = await fetch(`/api/content/${sessionId}/document`);
-
-      if (!response.ok) {
-        throw new Error(`Failed to load document: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-
-      if (result.status === 'completed' && result.data) {
-        this.documentData = result.data;
-        this.sessionId = sessionId;
-      } else if (result.status === 'processing') {
-        throw new Error('Document is still being generated. Please wait...');
-      } else if (result.status === 'error') {
-        throw new Error(result.error || 'Failed to generate document');
-      }
-
-    } catch (error) {
-      console.error('Error loading document:', error);
-      throw error;
-    }
-  }
 }

@@ -50,8 +50,7 @@ export class TaskAnalyzer {
     if (!modalBody) return;
     const modalTitle = safeQuerySelector('.modal-title', 'TaskAnalyzer._displayAnalysis');
     if (modalTitle) {
-      const confidenceBadge = this._buildConfidenceBadge(analysis.confidence);
-      modalTitle.innerHTML = `${DOMPurify.sanitize(analysis.taskName)} ${confidenceBadge}`;
+      modalTitle.innerHTML = DOMPurify.sanitize(analysis.taskName);
     }
     const quickFactsHTML = this._buildQuickFacts(analysis);
     const mainContentHTML = `
@@ -136,9 +135,6 @@ export class TaskAnalyzer {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }
-  _buildConfidenceBadge(confidence) {
-    return '';
   }
   _buildQuickFacts(analysis) {
     const statusClass = analysis.status.replace(/\s+/g, '-').toLowerCase();

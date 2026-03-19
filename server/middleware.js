@@ -36,20 +36,6 @@ export const apiLimiter = rateLimit({
     });
   }
 });
-export const strictLimiter = rateLimit({
-  windowMs: CONFIG.RATE_LIMIT.WINDOW_MS,
-  max: CONFIG.RATE_LIMIT.STRICT_MAX_REQUESTS,
-  message: {
-    error: CONFIG.ERRORS.STRICT_RATE_LIMIT_EXCEEDED
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    res.status(429).json({
-      error: CONFIG.ERRORS.STRICT_RATE_LIMIT_EXCEEDED
-    });
-  }
-});
 export const uploadMiddleware = multer({
   storage: multer.memoryStorage(),
   limits: {

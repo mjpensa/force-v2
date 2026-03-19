@@ -13,8 +13,7 @@ import {
   announceToScreenReader
 } from './components/shared/Accessibility.js';
 import {
-  showErrorNotification,
-  logError
+  showErrorNotification
 } from './components/shared/ErrorHandler.js';
 import { loadFooterSVG } from './Utils.js'; // For GanttChart footer
 import { TaskAnalyzer } from './analysis/TaskAnalyzer.js'; // For task clicks
@@ -317,7 +316,6 @@ class ContentViewer {
         initLazyLoading('img[data-src]');
       }, 0);
     } catch (error) {
-      logError(error, { component: 'ContentViewer', action: 'loadView', viewName });
       const isLegacyLimitation = error.message && error.message.includes('not available for legacy charts');
       if (isLegacyLimitation) {
         this._showLegacyChartLimitation(viewName);

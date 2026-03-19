@@ -87,8 +87,6 @@ export const CONFIG = {
     QUESTION_TOO_LONG: 'Question too long (max 1000 characters)',
     INVALID_CHART_ID: ERROR_MESSAGES.INVALID_CHART_ID,
     CHART_NOT_FOUND: ERROR_MESSAGES.CHART_NOT_FOUND,
-    INVALID_JOB_ID: 'Invalid job ID format',
-    JOB_NOT_FOUND: 'Job not found or expired. Jobs are available for 1 hour.',
     FILE_TOO_LARGE: ERROR_MESSAGES.FILE_TOO_LARGE,
     TOO_MANY_FILES: ERROR_MESSAGES.TOO_MANY_FILES,
     FIELD_TOO_LARGE: ERROR_MESSAGES.FIELD_TOO_LARGE,
@@ -111,18 +109,3 @@ Object.freeze(CONFIG.SECURITY.PATTERNS);
 Object.freeze(CONFIG.VALIDATION);
 Object.freeze(CONFIG.ERRORS);
 
-export function getGeminiApiUrl() {
-  return `${CONFIG.API.BASE_URL}/models/${CONFIG.API.GEMINI_MODEL}:generateContent?key=${process.env.API_KEY}`;
-}
-
-// Re-export shared config for convenience
-export {
-  INJECTION_PATTERNS,
-  ID_PATTERNS,
-  FILE_TYPES,
-  RATE_LIMITS,
-  TIMEOUTS as SHARED_TIMEOUTS,
-  FILE_LIMITS,
-  VALIDATION as SHARED_VALIDATION,
-  ERROR_MESSAGES
-};

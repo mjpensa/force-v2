@@ -209,5 +209,3 @@ export class SidebarNav {
   }
 
 }
-
-export default SidebarNav;

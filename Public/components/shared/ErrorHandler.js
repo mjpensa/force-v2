@@ -61,8 +61,6 @@ export async function fetchWithRetry(url, options = {}) {
     return response;
   }, { maxRetries: 3, initialDelay: 1000 });
 }
-export function logError(error, context = {}) {
-}
 export function showErrorNotification(error, options = {}) {
   const { onRetry = null, dismissible = true } = options;
   const existing = document.getElementById('error-notification');
@@ -93,4 +91,3 @@ export function showErrorNotification(error, options = {}) {
   if (dismissBtn) dismissBtn.addEventListener('click', removeNotification);
   document.body.appendChild(notification);
 }
-export default { ErrorTypes, ErrorSeverity, AppError, retryWithBackoff, fetchWithRetry, logError, showErrorNotification };

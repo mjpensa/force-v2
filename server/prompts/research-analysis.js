@@ -342,44 +342,8 @@ Analyze this research thoroughly and provide a comprehensive quality assessment 
 Respond with ONLY the JSON object.`;
 }
 
-export function validateResearchAnalysisStructure(data) {
-  if (!data || typeof data !== 'object') {
-    return false;
-  }
-  const requiredFields = [
-    'title',
-    'overallScore',
-    'overallRating',
-    'summary',
-    'themes',
-    'dataCompleteness',
-    'ganttReadiness'
-  ];
-
-  for (const field of requiredFields) {
-    if (!(field in data)) {
-      return false;
-    }
-  }
-  if (!Array.isArray(data.themes) || data.themes.length === 0) {
-    return false;
-  }
-  for (let i = 0; i < data.themes.length; i++) {
-    const theme = data.themes[i];
-    if (!theme.name || typeof theme.fitnessScore !== 'number') {
-      return false;
-    }
-  }
-  if (data.overallScore < 1 || data.overallScore > 10) {
-    return false;
-  }
-
-  return true;
-}
-
 export default {
   researchAnalysisSchema,
   researchAnalysisPrompt,
-  generateResearchAnalysisPrompt,
-  validateResearchAnalysisStructure
+  generateResearchAnalysisPrompt
 };

@@ -331,17 +331,6 @@ export class GanttComponents {
     });
   }
 
-  updateEditModeToggle(isEditMode) {
-    const editModeBtn = document.getElementById('edit-mode-toggle-btn');
-    if (editModeBtn) {
-      const icon = editModeBtn.querySelector('.menu-item-icon');
-      const text = editModeBtn.querySelector('.menu-item-text');
-      if (icon) icon.textContent = isEditMode ? '🔓' : '🔒';
-      if (text) text.textContent = isEditMode ? 'Edit Mode: ON' : 'Edit Mode: OFF';
-      editModeBtn.classList.toggle('active', isEditMode);
-    }
-  }
-
   addTodayLine(gridElement, ganttData, today) {
     if (!gridElement) return;
 

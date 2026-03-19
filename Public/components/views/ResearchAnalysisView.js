@@ -556,4 +556,3 @@ export class ResearchAnalysisView {
     this.analysisData = null;
   }
 }
-export default ResearchAnalysisView;

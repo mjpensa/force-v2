@@ -75,20 +75,5 @@ class FileCache {
     }
   }
 
-  getStats() {
-    return {
-      entries: this.cache.size,
-      sizeMB: (this.currentSizeBytes / 1024 / 1024).toFixed(2),
-      hitRate: this._getHitRate(),
-      hits: this.hits,
-      misses: this.misses
-    };
-  }
-
-  clear() {
-    this.cache.clear();
-    this.currentSizeBytes = 0;
-    console.log('[FileCache] Cache cleared');
-  }
 }
 export const fileCache = new FileCache(50);

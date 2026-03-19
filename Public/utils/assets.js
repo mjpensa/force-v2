@@ -11,36 +11,3 @@ export async function loadFooterSVG() {
     return '';
   }
 }
-
-export function buildLegend(legendData) {
-  const legendContainer = document.createElement('div');
-  legendContainer.className = 'gantt-legend';
-
-  const title = document.createElement('h3');
-  title.className = 'legend-title';
-  title.textContent = 'Legend';
-  legendContainer.appendChild(title);
-
-  const list = document.createElement('div');
-  list.className = 'legend-list';
-
-  for (const item of legendData) {
-    const itemEl = document.createElement('div');
-    itemEl.className = 'legend-item';
-
-    const colorBox = document.createElement('div');
-    colorBox.className = 'legend-color-box';
-    colorBox.setAttribute('data-color', item.color);
-
-    const label = document.createElement('span');
-    label.className = 'legend-label';
-    label.textContent = item.label;
-
-    itemEl.appendChild(colorBox);
-    itemEl.appendChild(label);
-    list.appendChild(itemEl);
-  }
-
-  legendContainer.appendChild(list);
-  return legendContainer;
-}
