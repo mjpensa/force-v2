@@ -293,7 +293,11 @@ async function handleChartGenerate(event) {
     if (ganttData.timeColumns.length === 0 || ganttData.data.length === 0) {
       throw new Error('The AI was unable to find any tasks or time columns in the provided documents. Please check your files or try a different prompt.');
     }
+    // Success — navigate to viewer. Stop timer and redirect.
+    stopProgressTimer();
+    loadingIndicator.style.display = 'none';
     window.location.href = `/viewer.html?sessionId=${sessionId}#roadmap`;
+    return; // Skip finally block — page is navigating
   } catch (error) {
     errorMessage.textContent = `Error: ${error.message}`;
     errorMessage.style.display = 'block';

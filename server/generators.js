@@ -33,7 +33,7 @@ class APIQueue {
   }
 }
 
-const apiQueue = new APIQueue(4);
+const apiQueue = new APIQueue(2);
 
 // Generation config factory — topK is fixed at 64 for Gemini 2.5 Flash (not configurable)
 const DEFAULTS = { thinkingBudget: 0 };
