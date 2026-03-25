@@ -230,36 +230,12 @@ function validateReasoningCoherence(reasoning, executiveSummary) {
     }
   }
 
-  if (reasoning.tensionAnalysis && executiveSummary.tensionPoint) {
-    const keywords = reasoning.tensionAnalysis.toLowerCase()
-      .match(/\b(cost|competitive|compliance|risk|pressure|delay|resource|gap|deadline|regulatory)\b/gi) || [];
-    const hasAlignment = keywords.some(k =>
-      executiveSummary.tensionPoint.toLowerCase().includes(k.toLowerCase())
-    );
-    if (keywords.length > 0 && !hasAlignment) {
-      issues.push('TensionPoint does not reflect tensionAnalysis themes');
-    }
-  } else if (reasoning.tensionAnalysis && !executiveSummary.tensionPoint) {
-    issues.push('Missing tensionPoint despite tensionAnalysis in reasoning');
-  }
-
   if (executiveSummary.action) {
     if (!/\b(cto|cfo|ceo|coo|cio|director|vp|head|chief|board|leadership|team)\b/i.test(executiveSummary.action)) {
       issues.push('Action missing clear role assignment');
     }
     if (!/\b(q[1-4]\s*20\d{2}|by\s+(january|february|march|april|may|june|july|august|september|october|november|december)|20\d{2})\b/i.test(executiveSummary.action)) {
       issues.push('Action missing deadline/timeline');
-    }
-  }
-
-  if (reasoning.keyDataPoints && Array.isArray(reasoning.keyDataPoints) && reasoning.keyDataPoints.length >= 3 &&
-      executiveSummary.evidenceChain && Array.isArray(executiveSummary.evidenceChain) && executiveSummary.evidenceChain.length > 0) {
-    const keyNumbers = reasoning.keyDataPoints.join(' ').match(/\d+\.?\d*/g) || [];
-    const evidenceNumbers = executiveSummary.evidenceChain
-      .map(e => e.dataPoint || '').join(' ').match(/\d+\.?\d*/g) || [];
-    const overlap = keyNumbers.filter(n => evidenceNumbers.includes(n));
-    if (overlap.length === 0) {
-      issues.push('EvidenceChain does not reference keyDataPoints from reasoning');
     }
   }
 

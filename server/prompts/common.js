@@ -178,3 +178,103 @@ export function validatePromptInputs(userPrompt, researchFiles, context = 'gener
 
   return validFiles;
 }
+
+/**
+ * Narrative position enum values used across speaker notes schemas and prompts.
+ * @type {string[]}
+ */
+export const NARRATIVE_POSITIONS = ["opening_hook", "context_setting", "evidence_building", "insight_reveal", "implication", "call_to_action"];
+
+/**
+ * Returns source extraction instructions for prompt injection.
+ * @param {'full'|'compact'|'minimal'} variant
+ *   - 'full': Categories + citation patterns + anti-patterns (slides)
+ *   - 'compact': Categories + fallback (document)
+ *   - 'minimal': Short enforcement rules (speaker notes)
+ * @returns {string}
+ */
+export function getSourceExtractionRules(variant = 'full') {
+  if (variant === 'minimal') {
+    return `SOURCE CITATION RULES:
+- Extract REAL source names from research (reports, filings, publications) — NEVER cite uploaded filenames
+- Cite explicitly: "According to [Source]...", "[Report Name] reveals..."
+- NEVER use vague attribution: "Sources indicate...", "Reports suggest..."
+- If truly unnamed, use descriptive type: "Internal benchmarking analysis" or "Industry consortium survey"`;
+  }
+
+  const categories = `AUTHORITATIVE SOURCE CATEGORIES TO EXTRACT:
+- Official reports: "Federal Reserve Economic Data Q3 2024", "JPMorgan 2024 Annual Report"
+- Research firms: "Gartner Magic Quadrant 2024", "McKinsey Global Institute Study"
+- Regulatory filings: "SEC Form 10-K", "CFTC Rule 17a-4 Guidance", "ISDA CDM Specification v3.0"
+- Industry publications: "Risk.net Analysis", "Bloomberg Terminal Data"
+- Internal sources: "Internal competitive analysis", "Q3 Strategy Review"`;
+
+  if (variant === 'compact') {
+    return `SOURCE EXTRACTION (Reference Material):
+- Research documents contain references to actual authoritative sources (reports, filings, publications)
+- You MUST extract and use these REAL source names, NOT the uploaded filenames
+- Look for patterns like: "According to [Source]", "per [Report Name]", "[Organization] reports", citations, footnotes
+- Examples of authoritative sources to extract:
+  * Official reports: "JPMorgan 2024 Annual Report", "Federal Reserve Economic Data Q3 2024"
+  * Research firms: "Gartner Magic Quadrant 2024", "McKinsey Global Institute Study"
+  * Regulatory filings: "SEC Form 10-K", "CFTC Rule 17a-4 Guidance"
+  * Industry publications: "Risk.net Analysis", "Bloomberg Terminal Data"
+  * Academic/standards: "ISDA CDM Specification v3.0", "Basel III Framework"
+- If a research document doesn't cite a specific source, use the document's apparent origin (e.g., "Internal Market Analysis" or "Competitive Intelligence Brief")
+- NEVER use the uploaded filename (like "research.md" or "data.pdf") as the source`;
+  }
+
+  // 'full' variant — categories + citation patterns + anti-patterns (slides)
+  return `SOURCE EXTRACTION (CRITICAL - DRIVES CREDIBILITY):
+- Research documents contain references to actual authoritative sources (reports, filings, publications)
+- You MUST extract and cite these REAL source names in paragraphs, NOT the uploaded filenames
+- Cite sources explicitly: "According to [Actual Source Name]..." or "[Report Name] reveals..."
+
+${categories}
+
+CITATION PATTERNS (use these phrases):
+- "According to [Source], [fact]..."
+- "[Source] reveals [finding]..."
+- "The [Report Name] shows [data]..."
+- "Per [Organization]'s analysis, [insight]..."
+
+SOURCE CITATION ANTI-PATTERNS (NEVER DO):
+- NEVER cite uploaded filenames: "According to research.md..." or "data.pdf shows..."
+- NEVER use vague attribution: "Sources indicate...", "Reports suggest...", "Studies show..."
+- NEVER use meaningless brackets: "[1]", "[source]", "[citation needed]"
+- NEVER omit source entirely: "Costs dropped 40%" without attribution
+
+Look for patterns in research: "According to [Source]", "per [Report]", citations, footnotes, author attributions`;
+}
+
+/**
+ * Returns a formatted temporal context block for prompt injection.
+ * @param {object} dateContext - Result of getCurrentDateContext()
+ * @param {'slides'|'document'} variant
+ *   - 'slides': Uses quarterPlusTwo as planning horizon (4 lines)
+ *   - 'document': Uses nextYear, includes month/year detail and deadline guidance
+ * @returns {string}
+ */
+export function formatDateContext(dateContext, variant = 'slides') {
+  if (variant === 'document') {
+    return `CURRENT DATE CONTEXT (use for time-appropriate recommendations):
+- Today's date: ${dateContext.fullDate} (${dateContext.month} ${dateContext.year})
+- Current quarter: ${dateContext.currentQuarter}
+- Next quarter: ${dateContext.nextQuarter}
+- Next year: ${dateContext.nextYear}
+
+When setting action deadlines in the executiveSummary:
+- Use realistic future dates based on today's date
+- Near-term actions: ${dateContext.nextQuarter} or ${dateContext.quarterPlusTwo}
+- Medium-term milestones: ${dateContext.endOfYear} or Q1-Q2 ${dateContext.nextYear}
+- NEVER use past dates or dates that have already occurred
+- Ensure deadlines are achievable given the current date`;
+  }
+
+  // 'slides' variant
+  return `TEMPORAL CONTEXT (for time-aware framing):
+- Today's date: ${dateContext.fullDate}
+- Current quarter: ${dateContext.currentQuarter}
+- Next quarter: ${dateContext.nextQuarter}
+- Planning horizon: ${dateContext.quarterPlusTwo}`;
+}

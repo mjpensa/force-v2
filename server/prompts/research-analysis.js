@@ -3,62 +3,32 @@ import { assembleResearchContent } from './common.js';
 const themeAnalysisSchema = {
   type: "object",
   properties: {
-    name: {
-      type: "string",
-      description: "Name of the theme/topic identified in the research"
-    },
-    description: {
-      type: "string",
-      description: "Brief description of what this theme covers"
-    },
-    fitnessScore: {
-      type: "number",
-      description: "Score from 1-10 rating how well research supports Gantt chart creation for this theme"
-    },
+    name: { type: "string", description: "Theme/topic name" },
+    description: { type: "string", description: "Brief theme description" },
+    fitnessScore: { type: "number", description: "1-10 Gantt fitness score" },
     eventDataQuality: {
       type: "string",
       enum: ["excellent", "good", "adequate", "poor", "inadequate"],
-      description: "Quality rating of event-level data (dates, milestones, deadlines)"
+      description: "Event-level data quality (dates, milestones, deadlines)"
     },
-    datesCounted: {
-      type: "number",
-      description: "Number of specific dates or time references found for this theme"
-    },
-    tasksPotential: {
-      type: "number",
-      description: "Estimated number of tasks that could be extracted for a Gantt chart"
-    },
-    includeableInGantt: {
-      type: "boolean",
-      description: "Whether this theme has enough data to be included as a swimlane (requires 3+ tasks)"
-    },
-    strengths: {
-      type: "array",
-      items: { type: "string" },
-      description: "What the research does well for this theme"
-    },
-    gaps: {
-      type: "array",
-      items: { type: "string" },
-      description: "Specific missing information or gaps for this theme"
-    },
-    recommendations: {
-      type: "array",
-      items: { type: "string" },
-      description: "Actionable suggestions for improving research quality for this theme"
-    },
+    datesCounted: { type: "number", description: "Count of date/time references found" },
+    tasksPotential: { type: "number", description: "Estimated extractable Gantt tasks" },
+    includeableInGantt: { type: "boolean", description: "Has enough data for a swimlane (3+ tasks)" },
+    strengths: { type: "array", items: { type: "string" }, description: "Research strengths for this theme" },
+    gaps: { type: "array", items: { type: "string" }, description: "Missing information or gaps" },
+    recommendations: { type: "array", items: { type: "string" }, description: "Actionable improvement suggestions" },
     sampleEvents: {
       type: "array",
       items: {
         type: "object",
         properties: {
-          event: { type: "string", description: "Event or milestone name" },
-          dateInfo: { type: "string", description: "Date/timeline info found (or 'Not specified')" },
+          event: { type: "string", description: "Event/milestone name" },
+          dateInfo: { type: "string", description: "Date info found (or 'Not specified')" },
           quality: { type: "string", enum: ["specific", "approximate", "vague", "missing"] }
         },
         required: ["event", "dateInfo", "quality"]
       },
-      description: "Sample events found with their date quality assessment"
+      description: "Sample events with date quality assessment"
     }
   },
   required: ["name", "description", "fitnessScore", "eventDataQuality", "datesCounted", "tasksPotential", "includeableInGantt", "strengths", "gaps", "recommendations", "sampleEvents"]
@@ -67,40 +37,28 @@ const themeAnalysisSchema = {
 const dataCompletenessSchema = {
   type: "object",
   properties: {
-    totalDatesFound: {
-      type: "number",
-      description: "Total count of specific dates found across all research"
-    },
-    totalEventsIdentified: {
-      type: "number",
-      description: "Total events/milestones/tasks identified"
-    },
-    eventsWithDates: {
-      type: "number",
-      description: "Number of events that have associated dates"
-    },
-    eventsWithoutDates: {
-      type: "number",
-      description: "Number of events lacking date information"
-    },
+    totalDatesFound: { type: "number", description: "Total specific dates across all research" },
+    totalEventsIdentified: { type: "number", description: "Total events/milestones identified" },
+    eventsWithDates: { type: "number", description: "Events with associated dates" },
+    eventsWithoutDates: { type: "number", description: "Events lacking dates" },
     dateSpecificityBreakdown: {
       type: "object",
       properties: {
-        specific: { type: "number", description: "Count of specific dates (e.g., 'March 15, 2024')" },
-        quarterly: { type: "number", description: "Count of quarterly references (e.g., 'Q2 2024')" },
-        monthly: { type: "number", description: "Count of monthly references (e.g., 'June 2024')" },
-        yearly: { type: "number", description: "Count of yearly references (e.g., '2024')" },
-        relative: { type: "number", description: "Count of relative dates (e.g., 'next quarter', '6 months')" },
-        vague: { type: "number", description: "Count of vague references (e.g., 'soon', 'later')" }
+        specific: { type: "number", description: "Specific-date count" },
+        quarterly: { type: "number", description: "Quarterly-reference count" },
+        monthly: { type: "number", description: "Monthly-reference count" },
+        yearly: { type: "number", description: "Yearly-reference count" },
+        relative: { type: "number", description: "Relative-date count" },
+        vague: { type: "number", description: "Vague-reference count" }
       },
       required: ["specific", "quarterly", "monthly", "yearly", "relative", "vague"]
     },
     timelineSpan: {
       type: "object",
       properties: {
-        earliestDate: { type: "string", description: "Earliest date reference found" },
-        latestDate: { type: "string", description: "Latest date reference found" },
-        spanDescription: { type: "string", description: "Human-readable timeline span (e.g., '3 years from 2022-2025')" }
+        earliestDate: { type: "string", description: "Earliest date found" },
+        latestDate: { type: "string", description: "Latest date found" },
+        spanDescription: { type: "string", description: "Human-readable span (e.g., '3 years from 2022-2025')" }
       },
       required: ["earliestDate", "latestDate", "spanDescription"]
     }
@@ -111,23 +69,10 @@ const dataCompletenessSchema = {
 const suggestedSourceSchema = {
   type: "object",
   properties: {
-    sourceType: {
-      type: "string",
-      description: "Type of source recommended (e.g., 'Project timeline document', 'Regulatory filing')"
-    },
-    reason: {
-      type: "string",
-      description: "Why this source would help improve the research"
-    },
-    expectedImprovement: {
-      type: "string",
-      description: "What specific gaps this would address"
-    },
-    priority: {
-      type: "string",
-      enum: ["high", "medium", "low"],
-      description: "Priority level for obtaining this source"
-    }
+    sourceType: { type: "string", description: "Recommended source type" },
+    reason: { type: "string", description: "Why this source would help" },
+    expectedImprovement: { type: "string", description: "Gaps this would address" },
+    priority: { type: "string", enum: ["high", "medium", "low"], description: "Acquisition priority" }
   },
   required: ["sourceType", "reason", "expectedImprovement", "priority"]
 };
@@ -143,54 +88,31 @@ export const researchAnalysisSchema = {
       type: "string",
       description: "ISO timestamp of when analysis was generated"
     },
-    overallScore: {
-      type: "number",
-      description: "Overall research fitness score (1-10) for Gantt chart creation"
-    },
+    overallScore: { type: "number", description: "1-10 Gantt fitness score" },
     overallRating: {
       type: "string",
       enum: ["excellent", "good", "adequate", "poor", "inadequate"],
       description: "Overall quality rating"
     },
-    summary: {
-      type: "string",
-      description: "Executive summary of research quality (2-3 sentences)"
-    },
-    keyFindings: {
-      type: "array",
-      items: { type: "string" },
-      description: "Top 3-5 key findings about the research quality"
-    },
-    themes: {
-      type: "array",
-      items: themeAnalysisSchema,
-      description: "Detailed analysis of each theme/topic identified"
-    },
+    summary: { type: "string", description: "Research quality summary (2-3 sentences)" },
+    keyFindings: { type: "array", items: { type: "string" }, description: "Top 3-5 research quality findings" },
+    themes: { type: "array", items: themeAnalysisSchema, description: "Per-theme analysis" },
     dataCompleteness: dataCompletenessSchema,
     ganttReadiness: {
       type: "object",
       properties: {
-        readyThemes: {
-          type: "number",
-          description: "Number of themes ready to become Gantt swimlanes (3+ tasks with dates)"
-        },
-        totalThemes: {
-          type: "number",
-          description: "Total number of themes identified"
-        },
-        estimatedTasks: {
-          type: "number",
-          description: "Estimated total tasks that can be extracted"
-        },
+        readyThemes: { type: "number", description: "Themes ready for Gantt swimlanes" },
+        totalThemes: { type: "number", description: "Total themes identified" },
+        estimatedTasks: { type: "number", description: "Total extractable tasks" },
         recommendedTimeInterval: {
           type: "string",
           enum: ["weeks", "months", "quarters", "years"],
-          description: "Recommended time interval based on data granularity"
+          description: "Time interval based on data granularity"
         },
         readinessVerdict: {
           type: "string",
           enum: ["ready", "needs-improvement", "insufficient"],
-          description: "Overall verdict on whether research is ready for Gantt creation"
+          description: "Gantt creation readiness verdict"
         }
       },
       required: ["readyThemes", "totalThemes", "estimatedTasks", "recommendedTimeInterval", "readinessVerdict"]
@@ -198,25 +120,25 @@ export const researchAnalysisSchema = {
     criticalGaps: {
       type: "array",
       items: { type: "string" },
-      description: "Most critical gaps that should be addressed before creating a Gantt chart"
+      description: "Critical gaps to address before Gantt creation"
     },
     suggestedSources: {
       type: "array",
       items: suggestedSourceSchema,
-      description: "Recommended additional sources to improve research quality"
+      description: "Additional sources to improve research"
     },
     actionItems: {
       type: "array",
       items: {
         type: "object",
         properties: {
-          action: { type: "string", description: "Specific action to take" },
-          impact: { type: "string", enum: ["high", "medium", "low"], description: "Expected impact on Gantt quality" },
+          action: { type: "string", description: "Action to take" },
+          impact: { type: "string", enum: ["high", "medium", "low"], description: "Gantt quality impact" },
           effort: { type: "string", enum: ["low", "medium", "high"], description: "Effort required" }
         },
         required: ["action", "impact", "effort"]
       },
-      description: "Prioritized list of actions to improve research"
+      description: "Prioritized improvement actions"
     }
   },
   required: [

@@ -1,4 +1,66 @@
-import { getCurrentDateContext, assembleResearchContent, validatePromptInputs, getAcronymRules, extractKeyStats } from './common.js';
+import { getCurrentDateContext, assembleResearchContent, validatePromptInputs, getAcronymRules, extractKeyStats, getSourceExtractionRules, formatDateContext, NARRATIVE_POSITIONS } from './common.js';
+
+/**
+ * Formats extracted stats, sources, and contextual evidence for prompt injection.
+ * @param {string} stats - Comma-separated raw stat matches
+ * @param {string[]} sources - Extracted source names
+ * @param {string[]} contextualStats - Full sentences containing statistics
+ * @param {string} hint - Usage hint for the KEY DATA POINTS header (e.g. "use at least one per slide")
+ * @returns {string}
+ */
+function formatStatsSourcesEvidence(stats, sources, contextualStats, hint) {
+  const statsLine = stats || 'Extract specific numbers, percentages, and dates from the research text';
+  const sourcesLine = sources.length > 0
+    ? sources.map((s, i) => `${i + 1}. ${s}`).join('\n')
+    : 'No explicit sources identified - extract source names from the research content';
+  const evidenceLine = contextualStats.length > 0
+    ? contextualStats.map((s, i) => `${i + 1}. "${s}"`).join('\n')
+    : 'No contextual statistics extracted - use specific data points from research';
+
+  return `KEY DATA POINTS FROM RESEARCH (${hint}):
+${statsLine}
+
+EXTRACTED SOURCES (cite these in your content):
+${sourcesLine}
+
+EVIDENCE SENTENCES (use these for supporting claims):
+${evidenceLine}`;
+}
+
+/**
+ * Formats the slides reference summary used in speaker notes prompts.
+ * @param {object} slidesData - Generated slides data with sections
+ * @param {number} contentPreviewLength - How many characters of paragraph1 to include
+ * @returns {string}
+ */
+function formatSlidesReference(slidesData, contentPreviewLength) {
+  return slidesData.sections.map((section, sectionIdx) => {
+    const sectionSlides = section.slides.map((slide, slideIdx) => {
+      return `    Slide ${slideIdx + 1}: "${slide.tagline}" - ${slide.subTopic || 'No subtopic'}
+      Title: ${slide.title?.replace(/\n/g, ' | ')}
+      Key content: ${(slide.paragraph1 || '').substring(0, contentPreviewLength)}...`;
+    }).join('\n');
+
+    return `  Section ${sectionIdx + 1}: "${section.swimlane}"
+${sectionSlides}`;
+  }).join('\n\n');
+}
+
+/**
+ * Formats the swimlane list for prompt injection.
+ * @param {Array<{name: string, taskCount: number, isFixed?: boolean}>} swimlanes
+ * @param {string} taskSuffix - Suffix for task count (e.g. "related tasks" or "related tasks in roadmap")
+ * @returns {string|null} Formatted list or null if no swimlanes
+ */
+function formatSwimlaneList(swimlanes, taskSuffix) {
+  if (swimlanes.length === 0) return null;
+  return swimlanes.map((s, i) => {
+    if (s.isFixed) {
+      return `${i + 1}. "${s.name}" (FIXED SECTION - 4-8 slides required)`;
+    }
+    return `${i + 1}. "${s.name}" (${s.taskCount} ${taskSuffix})`;
+  }).join('\n');
+}
 
 // Shared sub-schemas used in both speakerNotesSchema and speakerNotesOutlineSchema
 const narrativeTransitionsSchema = {
@@ -436,7 +498,7 @@ export const speakerNotesSchema = {
             properties: {
               narrativePosition: {
                 type: "string",
-                enum: ["opening_hook", "context_setting", "evidence_building", "insight_reveal", "implication", "call_to_action"],
+                enum: NARRATIVE_POSITIONS,
                 description: "Where this slide sits in the narrative arc"
               },
               precededBy: {
@@ -726,7 +788,7 @@ export const speakerNotesOutlineSchema = {
           slideTagline: { type: "string" },
           narrativePosition: {
             type: "string",
-            enum: ["opening_hook", "context_setting", "evidence_building", "insight_reveal", "implication", "call_to_action"]
+            enum: NARRATIVE_POSITIONS
           },
           keyTalkingPoint: {
             type: "string",
@@ -764,14 +826,7 @@ export function generateSlidesOutlinePrompt(userPrompt, researchFiles, swimlanes
   const dateContext = getCurrentDateContext();
 
   // Format swimlanes for the prompt (including fixed Overview and Conclusion sections)
-  const swimlaneList = swimlanes.length > 0
-    ? swimlanes.map((s, i) => {
-        if (s.isFixed) {
-          return `${i + 1}. "${s.name}" (FIXED SECTION - 4-8 slides required)`;
-        }
-        return `${i + 1}. "${s.name}" (${s.taskCount} related tasks)`;
-      }).join('\n')
-    : null;
+  const swimlaneList = formatSwimlaneList(swimlanes, 'related tasks');
 
   const swimlaneInstructions = swimlanes.length > 0
     ? `
@@ -911,20 +966,9 @@ NARRATIVE FLOW REQUIREMENTS:
    - Each section's ending should create tension
    - The next section's opening should resolve or build on that tension
 
-TEMPORAL CONTEXT (for time-aware framing):
-- Today's date: ${dateContext.fullDate}
-- Current quarter: ${dateContext.currentQuarter}
-- Next quarter: ${dateContext.nextQuarter}
-- Planning horizon: ${dateContext.quarterPlusTwo}
+${formatDateContext(dateContext, 'slides')}
 
-KEY DATA POINTS FROM RESEARCH (use at least 2-3 per slide):
-${stats || 'Extract specific numbers, percentages, and dates from the research text'}
-
-EXTRACTED SOURCES (cite these in your content):
-${sources.length > 0 ? sources.map((s, i) => `${i + 1}. ${s}`).join('\n') : 'No explicit sources identified - extract source names from the research content'}
-
-EVIDENCE SENTENCES (use these for supporting claims):
-${contextualStats.length > 0 ? contextualStats.map((s, i) => `${i + 1}. "${s}"`).join('\n') : 'No contextual statistics extracted - use specific data points from research'}
+${formatStatsSourcesEvidence(stats, sources, contextualStats, 'use at least 2-3 per slide')}
 
 USER REQUEST: "${userPrompt}"
 
@@ -980,14 +1024,7 @@ export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = [], 
   const dateContext = getCurrentDateContext();
 
   // Format swimlanes for the prompt (including fixed Overview and Conclusion sections)
-  const swimlaneList = swimlanes.length > 0
-    ? swimlanes.map((s, i) => {
-        if (s.isFixed) {
-          return `${i + 1}. "${s.name}" (FIXED SECTION - 4-8 slides required)`;
-        }
-        return `${i + 1}. "${s.name}" (${s.taskCount} related tasks in roadmap)`;
-      }).join('\n')
-    : null;
+  const swimlaneList = formatSwimlaneList(swimlanes, 'related tasks in roadmap');
 
   // Fixed section content generation instructions
   const fixedSectionContentInstructions = `
@@ -1332,31 +1369,7 @@ EXAMPLE - GOOD PARAGRAPH (complete chain):
 "JPMorgan's Q4 2024 deployment of CDM cut reconciliation costs 50%, according to their Annual Investor Report. This early-mover advantage compounds quarterly as manual-process competitors fall further behind on unit economics. Organizations delaying past Q2 2025 face a widening cost gap estimated at 8-12% per quarter."
 Why it works: Sourced evidence → clear insight about competitive dynamics → actionable implication with timeline
 
-SOURCE EXTRACTION (CRITICAL - DRIVES CREDIBILITY):
-- Research documents contain references to actual authoritative sources (reports, filings, publications)
-- You MUST extract and cite these REAL source names in paragraphs, NOT the uploaded filenames
-- Cite sources explicitly: "According to [Actual Source Name]..." or "[Report Name] reveals..."
-
-AUTHORITATIVE SOURCE CATEGORIES TO EXTRACT:
-- Official reports: "Federal Reserve Economic Data Q3 2024", "JPMorgan 2024 Annual Report"
-- Research firms: "Gartner Magic Quadrant 2024", "McKinsey Global Institute Study"
-- Regulatory filings: "SEC Form 10-K", "CFTC Rule 17a-4 Guidance", "ISDA CDM Specification v3.0"
-- Industry publications: "Risk.net Analysis", "Bloomberg Terminal Data"
-- Internal sources: "Internal competitive analysis", "Q3 Strategy Review"
-
-CITATION PATTERNS (use these phrases):
-- "According to [Source], [fact]..."
-- "[Source] reveals [finding]..."
-- "The [Report Name] shows [data]..."
-- "Per [Organization]'s analysis, [insight]..."
-
-SOURCE CITATION ANTI-PATTERNS (NEVER DO):
-- NEVER cite uploaded filenames: "According to research.md..." or "data.pdf shows..."
-- NEVER use vague attribution: "Sources indicate...", "Reports suggest...", "Studies show..."
-- NEVER use meaningless brackets: "[1]", "[source]", "[citation needed]"
-- NEVER omit source entirely: "Costs dropped 40%" without attribution
-
-Look for patterns in research: "According to [Source]", "per [Report]", citations, footnotes, author attributions
+${getSourceExtractionRules('full')}
 
 NARRATIVE ENERGY (CRITICAL):
 - Lead each paragraph with tension, insight, or stakes - not topic introduction
@@ -1399,20 +1412,9 @@ EXAMPLE - GOOD SLIDE (do this):
 }
 WHY IT WORKS: Insight-driven tagline, sourced data points, complete evidence-insight-implication chains, specific numbers, power verbs ("slashed", "hemorrhage", "exposing"), forward momentum
 
-TEMPORAL CONTEXT (for time-aware framing):
-- Today's date: ${dateContext.fullDate}
-- Current quarter: ${dateContext.currentQuarter}
-- Next quarter: ${dateContext.nextQuarter}
-- Planning horizon: ${dateContext.quarterPlusTwo}
+${formatDateContext(dateContext, 'slides')}
 
-KEY DATA POINTS FROM RESEARCH (use at least one per slide):
-${stats || 'Extract specific numbers, percentages, and dates from the research text'}
-
-EXTRACTED SOURCES (cite these in your content):
-${sources.length > 0 ? sources.map((s, i) => `${i + 1}. ${s}`).join('\n') : 'No explicit sources identified - extract source names from the research content'}
-
-EVIDENCE SENTENCES (use these for supporting claims):
-${contextualStats.length > 0 ? contextualStats.map((s, i) => `${i + 1}. "${s}"`).join('\n') : 'No contextual statistics extracted - use specific data points from research'}
+${formatStatsSourcesEvidence(stats, sources, contextualStats, 'use at least one per slide')}
 
 USER REQUEST: "${userPrompt}"
 
@@ -1496,16 +1498,7 @@ export function generateSpeakerNotesPrompt(slidesData, researchFiles, userPrompt
   }
 
   // Format slides data for the prompt
-  const slidesReference = slidesData.sections.map((section, sectionIdx) => {
-    const sectionSlides = section.slides.map((slide, slideIdx) => {
-      return `    Slide ${slideIdx + 1}: "${slide.tagline}" - ${slide.subTopic || 'No subtopic'}
-      Title: ${slide.title?.replace(/\n/g, ' | ')}
-      Key content: ${(slide.paragraph1 || '').substring(0, 200)}...`;
-    }).join('\n');
-
-    return `  Section ${sectionIdx + 1}: "${section.swimlane}"
-${sectionSlides}`;
-  }).join('\n\n');
+  const slidesReference = formatSlidesReference(slidesData, 200);
 
   // Format research content
   const validResearchFiles = researchFiles.filter(file => file?.filename && file?.content?.trim());
@@ -1607,221 +1600,57 @@ NOTE: Extract actual publication names from within these documents - do NOT cite
 ${outlineConstraint}
 ## SPEAKER NOTES REQUIREMENTS
 
-For EACH content slide, generate:
+For EACH content slide, populate all schema fields. Key quality guidance per section:
 
-### 1. NARRATIVE (talking points)
-- 3-5 bullet points the presenter can use VERBATIM in conversation
-- Each point should be 1-2 natural sentences (not bullet-point fragments)
-- Include delivery cues in brackets: [pause], [emphasize], [gesture to slide]
-- Start with a hook: "Here's where it gets interesting..." or "This is the critical insight..."
-- Include the KEY PHRASE - a memorable, quotable line the client will repeat internally
-- Transition phrases: how to flow FROM the previous slide and TO the next
+### 1. NARRATIVE
+- Talking points: 1-2 natural sentences usable VERBATIM (not bullet fragments)
+- Include delivery cues: [pause], [emphasize], [gesture to slide]
+- Open with a hook: "Here's where it gets interesting..." / "This is the critical insight..."
+- keyPhrase: a memorable, quotable line the client will repeat internally
 
-### 2. ANTICIPATED QUESTIONS (Q&A prep with SEVERITY TIERS)
-- 2-3 likely questions from a skeptical C-suite executive
-- Structure EVERY response using the ACE framework:
-  - ACKNOWLEDGE: "That's a fair concern..." / "You're right to ask..."
-  - CITE EVIDENCE: Specific data point or source
-  - EXPAND: Why this actually supports the recommendation
+### 2. ANTICIPATED QUESTIONS
+- Use ACE framework for EVERY response: Acknowledge -> Cite Evidence -> Expand
+- severity levels guide preparation priority (deal_breaker = kills the deal if unaddressed)
+- escalationResponse: second response if they push back AGAIN
+- bridgeToStrength: pivot the objection INTO a selling point
 
-FOR EACH QUESTION PROVIDE:
-- question: The exact question they'll ask
-- response: Initial ACE framework response
-- pushbackType: skepticism, cost_concern, timeline, feasibility, risk, scope, competitive
-- severity: CRITICAL - Assign one of these levels:
-  * probing: Genuine curiosity, easy to satisfy
-  * skeptical: Needs convincing, but open to evidence
-  * hostile: Actively looking for holes, requires careful handling
-  * deal_breaker: If not addressed, kills the deal
-- escalationResponse: If they push back AGAIN, what's your second response?
-- deferralOption: Graceful exit if you need to follow up later
-- bridgeToStrength: How to turn this objection into a selling point
+### 3. SOURCE ATTRIBUTION
+- CRITICAL: Extract REAL publication names from research ("McKinsey 2024 Report", "Gartner MQ Q3 2024"), NEVER cite uploaded filenames
+- For inference-level confidence, flag assumptions explicitly
 
-Example deal_breaker question:
-{
-  question: "Our board won't approve anything without 18-month ROI projections",
-  response: "That's exactly the right question. JPMorgan's deployment showed 14-month payback...",
-  severity: "deal_breaker",
-  escalationResponse: "I can provide a custom ROI model using your actual cost structure...",
-  deferralOption: "Let me build a board-ready ROI deck with your specific numbers",
-  bridgeToStrength: "This rigor is why you'll succeed - let me give you the ammunition"
-}
+### 4. STORY CONTEXT
+- soWhat MUST be: action-oriented, quantified, urgent, client-specific
+  Example: "Accelerate CDM pilot before Q2, saving \$2.3M annually"
+- callToAction: vary ask intensity by audience warmth (warm=commitment, neutral=follow-up, hostile=address concerns)
+- timeGuidance: condensedVersion = one-sentence version if running late
 
-### 3. SOURCE ATTRIBUTION (citations)
-- For each key claim or data point on the slide, cite the SPECIFIC source
-- Include: the claim, source document/section/page, and confidence level
-- CRITICAL: Extract REAL publication names from the research content:
-  - Look for: "according to...", "published by...", "per the...", author names, report titles
-  - Examples: "McKinsey Global Institute 2024 Report", "Gartner Magic Quadrant Q3 2024", "Federal Reserve Economic Data"
-  - If truly unnamed, use descriptive type: "Internal benchmarking analysis" or "Industry consortium survey"
-- Confidence levels:
-  - direct_extraction: Quoted or nearly quoted from source (include original text)
-  - paraphrase: Restated in different words, same meaning
-  - synthesis: Combined multiple sources into one insight
-  - inference: Logical conclusion drawn from evidence (flag assumptions clearly)
+### 5-6. TRANSPARENCY & CREDIBILITY
+- Data lineage: trace claim -> source -> page/section
+- Credibility anchors: prioritize analyst firms > peer results > regulatory bodies > academic
 
-### 4. STORY CONTEXT (narrative position)
-- Where this slide sits in the overall arc (opening_hook, context_setting, evidence_building, insight_reveal, implication, call_to_action)
-- What the audience just learned (precededBy) - the mental context they're carrying
-- What comes next and why (followedBy) - create anticipation
-- The "SO WHAT" - must be:
-  - Action-oriented: "This means you need to..." or "This changes how you should..."
-  - Quantified if possible: "...saving $X" or "...reducing risk by Y%"
-  - Urgent: "...before Q2" or "...while the window is open"
-  - Client-specific: Frame in terms of THEIR business outcomes
+### 7. RISK MITIGATION
+- Address implementation, reputational, and career risk only when relevant to slide content
+- De-risk with: pilot scope, phased approach, checkpoints, off-ramps
 
-### 5. GENERATION TRANSPARENCY (provenance)
-- Which source documents informed this slide (list actual document names/titles)
-- How the content was derived (extracted, paraphrased, synthesized, inferred)
-- Any assumptions made - be explicit about logical leaps
-- Data lineage: "Claim X comes from Source Y, page Z, where it states '...'"
+### 8. STAKEHOLDER ANGLES
+- cfo: ROI/savings with specific numbers; cto: integration/security feasibility
+- ceo: competitive positioning/board narrative; operations: timeline/resource/change mgmt
 
-### 6. CREDIBILITY ANCHORS (third-party validation)
-For each major claim, provide third-party validation points:
-- type: case_study, analyst_quote, regulatory, peer_company, or research
-- statement: The credibility-building statement
-- dropPhrase: Natural conversation insert - "As Gartner noted in their 2024 analysis..."
-- fullCitation: Complete reference for "where did you get that?" questions
+### 9-10. AUDIENCE SIGNALS & QUICK REFERENCE
+- Schema fields are self-descriptive; focus on making quickReference memorable and quotable
 
-Prioritize:
-1. Analyst firms (Gartner, Forrester, McKinsey research)
-2. Peer company results (JPMorgan, Goldman implementations)
-3. Regulatory/standards bodies (ISDA, SEC guidance)
-4. Academic/research institutions
-
-Example:
-{
-  type: "analyst_quote",
-  statement: "Gartner predicts 60% of enterprises will adopt CDM by 2026",
-  dropPhrase: "As Gartner noted in their Magic Quadrant...",
-  fullCitation: "Gartner Magic Quadrant for Data Management, Q3 2024, p.23"
-}
-
-### 7. RISK MITIGATION LANGUAGE
-Address unspoken fears of risk-averse stakeholders:
-
-IMPLEMENTATION RISK (IT complexity fears):
-- concern: "This sounds like a major IT project"
-- response: De-risk with pilot scope, phased approach, no-infrastructure messaging
-- proofPoint: "Goldman did their pilot with 2 FTEs, no infrastructure changes"
-
-REPUTATIONAL RISK (public failure fears):
-- concern: "What if this fails publicly?"
-- response: Internal pilot framing, controlled rollout, clear success criteria
-
-CAREER RISK (sponsor's personal exposure):
-- concern: "I'm putting my neck out recommending this"
-- response: Checkpoints, off-ramps, board-ready progress narratives
-
-Not every slide needs all three risk types - include only when relevant to slide content.
-
-### 8. STAKEHOLDER-SPECIFIC ANGLES
-For each slide, provide tailored one-liner pivots for different stakeholders:
-- cfo: Frame in terms of ROI, cost savings, payback period. Use specific numbers.
-  Example: "This represents $2.3M annual savings with 8-month payback"
-- cto: Address technical feasibility, integration complexity, security concerns.
-  Example: "API-first architecture means no rip-and-replace - integrates with existing stack"
-- ceo: Position strategically - competitive advantage, market timing, board-ready narrative.
-  Example: "First-mover advantage closes in Q2 - competitors are 18 months behind"
-- operations: Mitigate implementation concerns - timeline, resources, change management.
-  Example: "Pilot requires 2 FTEs for 6 weeks - no production system changes"
-
-### 9. AUDIENCE SIGNALS (Room Temperature)
-Help the presenter read the room:
-
-LOSING THEM - provide:
-- signs: ["Phone checking", "Side conversations", "Crossed arms", "Clock watching"]
-- pivotStrategy: Action to take - e.g., "Pause and ask: 'I want to make sure this is relevant...'"
-- emergencyBridge: Escape hatch - e.g., "Let me skip to the bottom line..."
-
-WINNING THEM - provide:
-- signs: ["Nodding", "Note-taking", "Leaning forward", "Asking follow-up questions"]
-- accelerationOption: How to capitalize - e.g., "Good time to ask: 'Does this align with what you need?'"
-
-### 10. QUICK REFERENCE (Cheat Sheet)
-For at-a-glance reference during presentation:
-- keyNumber: The single most important number on this slide (with context)
-- keyPhrase: The one line they should remember - quotable in their next meeting
-- keyProof: The credibility anchor - company name + result + timeframe
-- keyAsk: What you want them to do/decide after this slide
-
-### 11. CALL-TO-ACTION VARIANTS (in storyContext)
-Provide different closes based on room temperature:
-
-WARM AUDIENCE (engaged, nodding):
-- ask: Direct commitment request - "Can we schedule the pilot kickoff?"
-- timeline: Specific date/time - "I have availability Tuesday at 2pm"
-
-NEUTRAL AUDIENCE (polite but noncommittal):
-- ask: Lower-pressure ask - "Would a detailed ROI model be helpful?"
-- nextStep: Give them homework - "Review with your team and let's reconvene"
-
-HOSTILE AUDIENCE (skeptical, arms crossed):
-- ask: Address resistance - "What would need to be true for this to work for you?"
-- fallback: Leave something behind - "Can I at least share the analyst reports?"
-
-### 12. TIME MANAGEMENT (in storyContext)
-Help presenters manage pacing:
-- suggestedDuration: "2-3 minutes" - realistic time for this slide
-- canCondense: true/false - can this be shortened if running late?
-- condensedVersion: One-sentence summary if skipping details
-- mustInclude: List of 2-3 points that MUST be said even if condensing
-
-### 13. BRIDGE PHRASES LIBRARY (in reasoning block - TOP LEVEL)
-Provide pre-written escape phrases for difficult presentation moments.
-These go in the TOP-LEVEL reasoning object (reasoning.bridgePhrases), NOT per-slide:
-
-DONT KNOW ANSWER (dontKnowAnswer - 2-3 phrases):
-- "That's an excellent question - let me get you the precise data after this meeting"
-- "I want to give you accurate numbers, so let me follow up with our analytics team"
-
-HOSTILE INTERRUPTION (hostileInterruption - 2-3 phrases):
-- "I appreciate the pushback - let me address that directly..."
-- "That's exactly the skepticism we need - here's why it still holds..."
-
-GOING OFF TOPIC (goingOffTopic - 2-3 phrases):
-- "Great point - let me note that for our follow-up and bring us back to..."
-- "I want to give that the attention it deserves - can we park it for the end?"
-
-TECHNICAL DIVE (technicalDive - 2-3 phrases):
-- "Happy to go deeper on the technical architecture - should we schedule a separate session with your engineering team?"
-- "The short answer is [X] - I have detailed specs if you'd like them after"
-
-LOSING THE ROOM (losingTheRoom - 2-3 phrases):
-- "Let me cut to the bottom line..."
-- "Here's what this means for your Q2 numbers specifically..."
+### 11. BRIDGE PHRASES (TOP-LEVEL reasoning.bridgePhrases, NOT per-slide)
+Pre-written escape phrases for: dontKnowAnswer, hostileInterruption, goingOffTopic, technicalDive, losingTheRoom (2-3 phrases each)
 
 ## QUALITY STANDARDS
 
-TALKING POINTS MUST:
-- Sound like a confident senior partner speaking, not reading
-- Include specific numbers, dates, company names from the research
-- Use power phrases: "The data is clear...", "What we're seeing across the industry...", "The real risk here is..."
-- Add context the slide doesn't show: "Behind this number is..."
-- Include a rhetorical question: "So what does this mean for your Q2 planning?"
+TALKING POINTS: Sound like a confident senior partner, not reading. Include specific numbers/dates/companies. Add context the slide doesn't show.
 
-ANTICIPATED QUESTIONS MUST:
-- Be the HARDEST questions a skeptical CFO/CTO would ask
-- Include at least one "devil's advocate" question
-- Sample tough questions to anticipate:
-  - "What's the ROI on this investment?"
-  - "Why should we believe these projections?"
-  - "What are competitors doing differently?"
-  - "What happens if we don't act on this?"
-  - "How confident are you in this data?"
-- NEVER give generic responses - every answer needs a specific data point
+QUESTIONS: Target the HARDEST CFO/CTO objections. NEVER give generic responses - every answer needs a specific data point.
 
-SOURCE ATTRIBUTION MUST:
-- NEVER cite uploaded filenames (e.g., "research.pdf", "document.docx")
-- ALWAYS extract the actual source: look for publication names, author names, dates
-- Include page/section references where possible
-- Flag confidence clearly: "directly stated" vs "our inference from the data"
+SOURCES: NEVER cite filenames. ALWAYS extract actual publication names. Flag confidence level clearly.
 
-SO-WHAT STATEMENTS MUST:
-- Start with action verbs: "Accelerate...", "Prioritize...", "Reallocate..."
-- Include a timeline or urgency driver
-- Connect to business metrics the client cares about (revenue, cost, risk, speed)
-- Be specific enough that the client could repeat it in their next board meeting
+SO-WHAT: Action verb + timeline + business metric + client-specific framing. Specific enough for the client to repeat in their next board meeting.
 
 ## ORIGINAL USER REQUEST
 "${userPrompt}"
@@ -1863,16 +1692,7 @@ export function generateSpeakerNotesOutlinePrompt(slidesData, researchFiles, use
   }
 
   // Format slides data for the prompt
-  const slidesReference = slidesData.sections.map((section, sectionIdx) => {
-    const sectionSlides = section.slides.map((slide, slideIdx) => {
-      return `    Slide ${slideIdx + 1}: "${slide.tagline}" - ${slide.subTopic || 'No subtopic'}
-      Title: ${slide.title?.replace(/\n/g, ' | ')}
-      Key content: ${(slide.paragraph1 || '').substring(0, 150)}...`;
-    }).join('\n');
-
-    return `  Section ${sectionIdx + 1}: "${section.swimlane}"
-${sectionSlides}`;
-  }).join('\n\n');
+  const slidesReference = formatSlidesReference(slidesData, 150);
 
   // Format research content
   const validResearchFiles = researchFiles.filter(file => file?.filename && file?.content?.trim());
@@ -1915,77 +1735,24 @@ Think carefully about who will be in the room:
 - Decision Criteria: What factors will drive their yes/no? (ROI, risk, timeline, competitive pressure?)
 
 ### 3. KEY EVIDENCE CHAINS (3-5 chains)
-For each major data point in the presentation:
-- evidence: The specific data point with its source
-- insight: What this evidence means (the "so what")
-- anticipatedQuestion: What question will this trigger from a skeptical executive?
-- preparedResponse: Your prepared response using the ACE framework:
-  - ACKNOWLEDGE: "That's a fair concern..." / "You're right to ask..."
-  - CITE EVIDENCE: Specific data point or source
-  - EXPAND: Why this actually supports the recommendation
+For each: evidence (data+source) -> insight (so what) -> anticipatedQuestion -> preparedResponse (ACE: Acknowledge, Cite Evidence, Expand)
 
 ### 4. SOURCE INVENTORY
-Create an inventory of sources to cite:
-- Extract REAL publication names from the research (not filenames)
-- Look for: "according to...", "published by...", author names, report titles
-- Examples: "McKinsey Global Institute 2024 Report", "Gartner Magic Quadrant Q3 2024"
-- Note key findings from each source
-- Assess confidence level (high/medium/low)
+Extract REAL publication names from research (not filenames). Note key findings and confidence level per source.
 
 ### 5. NARRATIVE TRANSITIONS
-Plan how slides connect:
-- Identify pairs of slides that need strong transitions
-- Explain WHY the transition makes sense (causal, temporal, contrast?)
-- Draft the actual bridge phrase to use
+For slide pairs needing strong transitions: explain WHY (causal, temporal, contrast?) and draft bridge phrase.
 
-### 6. ANTICIPATED PUSHBACK (3-5 pushbacks)
-Think like a skeptical CFO/CTO:
-- What type of pushback? (skepticism, cost_concern, timeline, feasibility, risk, scope)
-- What's the specific objection they'll raise?
-- What evidence counters this objection?
-- How can you reframe the objection as an opportunity?
+### 6. ANTICIPATED PUSHBACK (3-5)
+Think like a skeptical CFO/CTO: specific objection, evidence to counter, reframing as opportunity.
 
 ### 7. COMPETITIVE POSITIONING
-Prepare for "why you?" questions:
-
-PRIMARY COMPETITORS (identify top 2-3):
-For each, provide:
-- name: Who they are (be specific: "McKinsey", "Deloitte Digital", "internal IT team")
-- theirStrength: Acknowledge what they're good at (builds credibility)
-- ourCounter: Why we're better for THIS specific situation
-- bridgePhrase: "While [competitor] excels at [X], what you need here is [Y]..."
-
-INTERNAL TEAM RESPONSE:
-- Address "why not do this ourselves?" directly
-- Focus on: speed, specialized expertise, objectivity, resource constraints
-
-DO-NOTHING RISK:
-- Quantify the cost of inaction
-- Create urgency without being pushy
-- Frame as "every quarter of delay costs [X]"
+- primaryCompetitors: acknowledge their strength, explain why we're better for THIS engagement
+- internalTeamResponse: address "why not do this ourselves?"
+- doNothingRisk: quantify cost of inaction
 
 ### 8. BRIDGE PHRASES LIBRARY
-Pre-write escape hatches for difficult moments:
-
-DONT_KNOW_ANSWER (2-3 phrases):
-- "That's a great question - I want to give you accurate numbers, so let me follow up"
-- "I don't have that specific data point, but what I can tell you is..."
-
-HOSTILE_INTERRUPTION (2-3 phrases):
-- "I appreciate the pushback - let me make sure I understand your concern..."
-- "You're raising an important point. Let me address that directly..."
-
-GOING_OFF_TOPIC (2-3 phrases):
-- "Great point - can we table it for Q&A so we stay on track?"
-- "Definitely worth discussing - let's come back after I show you [next section]"
-
-TECHNICAL_DIVE (2-3 phrases):
-- "Happy to go deeper - should we do that now or schedule a technical deep-dive?"
-- "I can walk through the architecture - would that be more useful now or in a follow-up?"
-
-LOSING_THE_ROOM (2-3 phrases):
-- "Let me pause - is this landing? What would be most useful to focus on?"
-- "I'm sensing we should shift gears - what's your biggest question right now?"
+Pre-written escape phrases (2-3 each) for: dontKnowAnswer, hostileInterruption, goingOffTopic, technicalDive, losingTheRoom
 
 ## SLIDES TO OUTLINE
 
@@ -2006,7 +1773,7 @@ For each content slide, provide a lightweight outline:
 - slideIndex: Position within section (0-based)
 - sectionName: Section name
 - slideTagline: The slide's tagline
-- narrativePosition: Where it sits in the arc (opening_hook, context_setting, evidence_building, insight_reveal, implication, call_to_action)
+- narrativePosition: Where it sits in the arc (${NARRATIVE_POSITIONS.join(", ")})
 - keyTalkingPoint: The ONE most important point (will be expanded in Pass 2)
 - primaryQuestion: Most likely question this slide triggers
 - primarySource: Main source to cite (authoritative name, not filename)

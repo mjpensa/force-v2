@@ -1,4 +1,4 @@
-import { getCurrentDateContext, assembleResearchContent, getAcronymRules, extractKeyStats } from './common.js';
+import { getCurrentDateContext, assembleResearchContent, getAcronymRules, extractKeyStats, getSourceExtractionRules, formatDateContext } from './common.js';
 
 export const documentSchema = {
   type: "object",
@@ -62,35 +62,9 @@ export const documentSchema = {
           type: "string",
           description: "The actual authoritative source cited in the research (e.g., 'JPMorgan Q4 2024 Annual Report', 'Federal Reserve Economic Data', 'Gartner Market Analysis 2024'). Extract the real source name from within the research content, NOT the filename."
         },
-        tensionPoint: {
-          type: "string",
-          description: "The core tension or conflict driving urgency (e.g., 'Competitors gaining ground while internal systems lag'). Identifies what forces are in opposition."
-        },
-        evidenceChain: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              dataPoint: {
-                type: "string",
-                description: "Specific statistic or fact extracted from research"
-              },
-              source: {
-                type: "string",
-                description: "Authoritative source name for this data point"
-              },
-              implication: {
-                type: "string",
-                description: "What this data point means for the organization"
-              }
-            },
-            required: ["dataPoint", "source", "implication"]
-          },
-          description: "2-3 key evidence chains supporting the executive summary claims, tracing data → source → implication"
-        }
       },
       required: ["situation", "insight", "action", "source"],
-      description: "Structured executive summary: Situation (what is) → Insight (so what) → Action (now what), with optional tensionPoint and evidenceChain for analytical depth"
+      description: "Structured executive summary: Situation (what is) → Insight (so what) → Action (now what)"
     },
     analysisOverview: {
       type: "object",
@@ -160,14 +134,6 @@ export const documentSchema = {
             type: "string",
             description: "Strategic implications - what this means for the organization's decision-making"
           },
-          counterargument: {
-            type: "string",
-            description: "Strongest objection or risk to the section's recommendation - addressing this shows analytical balance and rigor"
-          },
-          synthesisNote: {
-            type: "string",
-            description: "REQUIRED connection statement showing how this section relates to others. Format: '[CONNECTION_TYPE]: [explanation]' where CONNECTION_TYPE is one of: BUILDS_ON (extends previous section's point), DEEPENS (adds nuance to earlier claim), CHALLENGES (presents counterpoint), PIVOTS (shifts focus with clear bridge), RESOLVES (synthesizes prior tensions). Example: 'DEEPENS: The cost implications outlined above become acute when we examine implementation timelines.'"
-          },
           supportingEvidence: {
             type: "array",
             items: {
@@ -196,7 +162,7 @@ export const documentSchema = {
             description: "Section paragraphs - keep each paragraph 2-4 sentences, evidence-backed"
           }
         },
-        required: ["heading", "keyInsight", "paragraphs", "synthesisNote"]
+        required: ["heading", "keyInsight", "paragraphs"]
       },
       description: "One section per swimlane topic, covering research findings and strategic implications"
     }
@@ -206,18 +172,7 @@ export const documentSchema = {
 
 export const documentPrompt = `You are a senior strategy consultant writing an executive briefing for C-suite leadership.
 
-SOURCE EXTRACTION (Reference Material):
-- Research documents contain references to actual authoritative sources (reports, filings, publications)
-- You MUST extract and use these REAL source names, NOT the uploaded filenames
-- Look for patterns like: "According to [Source]", "per [Report Name]", "[Organization] reports", citations, footnotes
-- Examples of authoritative sources to extract:
-  * Official reports: "JPMorgan 2024 Annual Report", "Federal Reserve Economic Data Q3 2024"
-  * Research firms: "Gartner Magic Quadrant 2024", "McKinsey Global Institute Study"
-  * Regulatory filings: "SEC Form 10-K", "CFTC Rule 17a-4 Guidance"
-  * Industry publications: "Risk.net Analysis", "Bloomberg Terminal Data"
-  * Academic/standards: "ISDA CDM Specification v3.0", "Basel III Framework"
-- If a research document doesn't cite a specific source, use the document's apparent origin (e.g., "Internal Market Analysis" or "Competitive Intelligence Brief")
-- NEVER use the uploaded filename (like "research.md" or "data.pdf") as the source
+${getSourceExtractionRules('compact')}
 
 ACRONYMS (CRITICAL - USE EXACT STANDARD CAPITALIZATION IN ALL TEXT):
 
@@ -267,10 +222,10 @@ STEP 7 - NARRATIVE THREAD: Map out how the topics connect:
 ONLY AFTER completing all 7 reasoning steps, generate the title, executiveSummary, and sections. Your reasoning should directly inform the content.
 
 STRUCTURE & OUTPUT FORMAT (Mechanics):
-- executiveSummary: Object with situation (fact), insight ($ impact), action (directive), source, tensionPoint, evidenceChain
+- executiveSummary: Object with situation (fact), insight ($ impact), action (directive), source
 - analysisOverview: Object with narrative, keyThemes, criticalFindings, strategicContext
 - sections: One section per swimlane topic with detailed analysis
-- Each section: insight-driven heading, key takeaway, supporting evidence, counterargument, synthesisNote, 2-4 focused paragraphs
+- Each section: insight-driven heading, key takeaway, supporting evidence, 2-4 focused paragraphs
 - keyInsight: Single sentence with the most important point from that section
 - supportingEvidence: 2-4 citations per section linking claims to research quotes
 
@@ -290,9 +245,7 @@ OUTPUT JSON:
     "situation": "Specific fact about what has happened or is happening (with numbers)",
     "insight": "Quantified impact to THIS organization in dollars or percentage",
     "action": "[Role] [verb] [object] by [date] - max 12 words",
-    "source": "Actual Authoritative Source Name (e.g., 'Goldman Sachs 2024 Annual Report')",
-    "tensionPoint": "The core conflict driving urgency (optional but encouraged)",
-    "evidenceChain": [{"dataPoint": "stat", "source": "source name", "implication": "what it means"}]
+    "source": "Actual Authoritative Source Name (e.g., 'Goldman Sachs 2024 Annual Report')"
   },
   "analysisOverview": {
     "narrative": "2-3 compelling paragraphs setting strategic context...",
@@ -304,8 +257,6 @@ OUTPUT JSON:
     {
       "heading": "Insight-led heading (not topic label)",
       "keyInsight": "Single most important takeaway from this section",
-      "counterargument": "Strongest objection or risk to this recommendation",
-      "synthesisNote": "How this section connects to other sections",
       "supportingEvidence": [{"claim": "Assertion", "quote": "Direct quote", "source": "Source Name"}],
       "paragraphs": ["paragraph 1", "paragraph 2"]
     }
@@ -373,15 +324,6 @@ The executive summary must follow a strict causal chain:
    - One action only. No compound sentences. No rationale.
    - Example: "CTO greenlight CDM pilot by Q2 2025."
 
-4. TENSION POINT (optional but encouraged):
-   - Identify the core conflict driving urgency
-   - What forces are in opposition? What's at stake if nothing changes?
-   - Example: "Competitors accelerating while legacy systems constrain response"
-
-5. EVIDENCE CHAIN (2-3 entries):
-   - For each key claim, explicitly trace: data point → source → implication
-   - This demonstrates analytical rigor and source fidelity
-
 EXECUTIVE SUMMARY ANTI-PATTERNS (NEVER do these):
 - NEVER say what is "unknown", "unclear", or "uncertain" - only state what IS known
 - NEVER use "undermines", "exposes to risk", or other vague threat language without specific $ amounts
@@ -405,41 +347,8 @@ situation: "JPMorgan deployed ISDA CDM for derivatives reporting in Q4 2024, cut
 insight: "Bank of America's manual processes now cost $2.3M more per quarter than JPMorgan's, with the gap widening 15% annually."
 action: "CTO approve CDM pilot by Q2 2025."
 source: "JPMorgan Chase Q4 2024 Investor Presentation"
-tensionPoint: "First-mover competitors locking in cost advantages while legacy systems block rapid response"
-evidenceChain: [
-  {"dataPoint": "60% reconciliation time reduction", "source": "JPMorgan Q4 2024 Investor Presentation", "implication": "Competitors achieving automation benefits now"},
-  {"dataPoint": "$2.3M quarterly cost gap", "source": "Internal cost analysis", "implication": "Gap compounds 15% annually without action"}
-]
 
-WHY IT'S GOOD: Situation states a specific fact. Insight quantifies THIS firm's disadvantage in dollars. Action is 6 words with clear owner/deadline. Source is the ACTUAL authoritative source. TensionPoint captures the conflict. EvidenceChain traces claims to sources.
-
-SYNTHESIS NOTE REQUIREMENTS (MANDATORY for each section):
-The synthesisNote field is REQUIRED. Format: "[CONNECTION_TYPE]: [explanation]"
-
-CONNECTION TYPES (choose the most accurate):
-- BUILDS_ON: Extends or expands the previous section's main point
-- DEEPENS: Adds nuance, detail, or complexity to an earlier claim
-- CHALLENGES: Presents a counterpoint, tension, or complication
-- PIVOTS: Shifts focus to a new dimension with explicit bridge
-- RESOLVES: Synthesizes or reconciles tensions from prior sections
-
-SECTION-SPECIFIC FORMATS:
-- First section: "ESTABLISHES: [what foundation this section lays for the document]"
-- Middle sections: "[CONNECTION_TYPE]: [how this connects to section X and advances the argument]"
-- Final section: "RESOLVES: [how this synthesizes the preceding analysis into actionable conclusion]"
-
-GOOD EXAMPLES:
-- "BUILDS_ON: The cost pressures identified in Market Analysis become acute when we examine implementation timelines."
-- "CHALLENGES: While the efficiency gains above appear compelling, regulatory constraints introduce significant friction."
-- "PIVOTS: Having established the competitive landscape, we now examine the internal capabilities required to respond."
-- "RESOLVES: The technology, cost, and competitive factors above converge on a single strategic imperative."
-
-ANTI-PATTERNS (DO NOT USE):
-- ❌ "This section discusses..." (describes, doesn't connect)
-- ❌ "Moving on to..." (transition word without connection logic)
-- ❌ "Another important topic..." (no relationship to prior content)
-- ❌ "See above" or "As mentioned" (vague back-references)
-- ❌ Empty or generic statements that could apply to any document
+WHY IT'S GOOD: Situation states a specific fact. Insight quantifies THIS firm's disadvantage in dollars. Action is 6 words with clear owner/deadline. Source is the ACTUAL authoritative source.
 
 TRANSITIONS & FLOW:
 - Connect sections with forward references: "This cost pressure intensifies when we examine..."
@@ -486,10 +395,6 @@ Structure your sections to build momentum:
 - Middle Sections: DEEPEN STAKES - Compound the implications, show interconnections
 - Final Section: CONVERGE TO ACTION - The path forward, with clear urgency
 
-Each section's synthesisNote must use the CONNECTION_TYPE format and reference specific findings:
-- BAD: "This section covers technology implications" (no connection type, vague)
-- GOOD: "BUILDS_ON: The $2.3M quarterly cost gap identified above makes technology modernization not optional but existential"
-
 ANALYTICAL RIGOR (Highest Priority - Apply to ALL Content):
 
 CHAIN OF REASONING (Required for every major claim):
@@ -506,64 +411,19 @@ Example chain:
 RIGOR REQUIREMENTS:
 - Each section must contain at least 2 specific data points extracted from research
 - Quantify impact: use percentages, dollar amounts, timeframes - never "significant" or "substantial"
-- Address the strongest counterargument or risk in your recommendations (fill counterargument field)
 - Distinguish between correlation and causation
 - Every claim must trace directly to provided research
-- Fill the evidenceChain array to demonstrate source fidelity
 
-STEEL MAN COUNTERARGUMENTS (Required for analytical credibility):
-Each section's counterargument field must present the STRONGEST possible objection - not a weak strawman.
-
-WEAK counterarguments to AVOID:
-- "Implementation may be complex" (vague)
-- "Some stakeholders might resist change" (generic)
-- "There could be unforeseen challenges" (empty)
-- "The timeline might be aggressive" (non-specific)
-
-STRONG counterarguments to USE:
-- "The $2.3M savings assumes 100% adoption—historical enterprise rollouts achieve 60% in year one, reducing realistic first-year savings to $1.4M"
-- "JPMorgan's 60% reduction occurred with a $50M technology investment; smaller institutions may see 30-40% at proportional cost"
-- "DRR compliance drives standardization, but early adopters risk rework if CFTC modifies CDM requirements before Q1 2026 finalization"
-
-A strong counterargument:
-1. Cites specific numbers or precedents
-2. Challenges a core assumption in your recommendation
-3. Forces you to strengthen your argument by addressing it
-
-NEW SCHEMA FIELDS (Use these to demonstrate quality):
-- tensionPoint: Identify the core conflict creating urgency. What forces are in opposition?
-- evidenceChain: For each key claim, explicitly trace data → source → implication
-- counterargument: What's the strongest objection? Addressing it shows rigor.
-- synthesisNote: How does this section connect to others? Build the narrative arc.`;
+`;
 
 function extractCausalRelationships(content) {
-  if (!content) return { relationships: [], comparisons: [], trajectories: [], windows: [] };
+  if (!content) return { comparisons: [], windows: [] };
 
-  // Causal relationship patterns
-  const causalPatterns = [
-    // Effect BECAUSE cause
-    /([^.]{20,100})\s+(?:because|due to|as a result of|resulting from|driven by)\s+([^.]{20,100})/gi,
-    // Cause LED TO effect
-    /([^.]{20,100})\s+(?:led to|resulted in|caused|triggered|enabled|drove|produced)\s+([^.]{20,100})/gi,
-    // IF cause THEN effect (conditional)
-    /(?:if|when|once)\s+([^,]{15,80}),?\s+(?:then\s+)?([^.]{15,80})/gi
-  ];
-
-  // Comparison patterns (for DATA → COMPARISON transformation)
   const comparisonPatterns = [
     /([^.]{10,80})\s+(?:outpacing|outperforming|ahead of|leading)\s+([^.]{10,80})/gi,
     /([^.]{10,80})\s+(?:lagging|behind|trailing|falling short of)\s+([^.]{10,80})/gi,
     /([^.]{10,80})\s+(?:compared to|versus|relative to|against)\s+([^.]{10,80})/gi
   ];
-
-  // Trajectory patterns (for DATA → TRAJECTORY transformation)
-  const trajectoryPatterns = [
-    /([^.]{15,100})\s+(?:accelerating|growing|increasing|expanding|rising)\s*(?:at|by)?\s*(\d+[^.]{0,50})/gi,
-    /([^.]{15,100})\s+(?:compounding|widening|narrowing|declining|shrinking)\s*(?:at|by)?\s*(\d+[^.]{0,50})/gi,
-    /(?:at this|at the current)\s+(?:rate|pace)[^.]{0,30}([^.]{20,100})/gi
-  ];
-
-  // Window/deadline patterns (for DATA → WINDOW transformation)
   const windowPatterns = [
     /(?:deadline|due date|target date)[^.]{0,20}(Q[1-4]\s*20\d{2}|[A-Z][a-z]+\s+\d{4})/gi,
     /(?:by|before|until)\s+(Q[1-4]\s*20\d{2})[^.]{0,50}/gi,
@@ -571,68 +431,23 @@ function extractCausalRelationships(content) {
     /(Q[1-4]\s*20\d{2})[^.]{0,30}(?:deadline|compliance|requirement|mandate)/gi
   ];
 
-  const relationships = [];
-  const comparisons = [];
-  const trajectories = [];
-  const windows = [];
-  const seen = new Set();
+  const comparisons = [], windows = [], seen = new Set();
 
-  // Extract causal relationships
-  for (const pattern of causalPatterns) {
-    pattern.lastIndex = 0;
-    let match;
-    while ((match = pattern.exec(content)) !== null && relationships.length < 10) {  // Increased from 5
-      const key = `rel:${match[1].substring(0, 30)}|${match[2].substring(0, 30)}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        relationships.push({
-          cause: match[1].trim().substring(0, 150),
-          effect: match[2].trim().substring(0, 150)
-        });
-      }
+  for (const p of comparisonPatterns) {
+    p.lastIndex = 0; let m;
+    while ((m = p.exec(content)) !== null && comparisons.length < 8) {
+      const k = `comp:${m[0].substring(0, 40)}`;
+      if (!seen.has(k)) { seen.add(k); comparisons.push(m[0].trim().substring(0, 200)); }
     }
   }
-
-  // Extract comparisons
-  for (const pattern of comparisonPatterns) {
-    pattern.lastIndex = 0;
-    let match;
-    while ((match = pattern.exec(content)) !== null && comparisons.length < 8) {  // Increased from 4
-      const key = `comp:${match[0].substring(0, 40)}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        comparisons.push(match[0].trim().substring(0, 200));
-      }
+  for (const p of windowPatterns) {
+    p.lastIndex = 0; let m;
+    while ((m = p.exec(content)) !== null && windows.length < 8) {
+      const k = `win:${m[0].substring(0, 40)}`;
+      if (!seen.has(k)) { seen.add(k); windows.push(m[0].trim().substring(0, 150)); }
     }
   }
-
-  // Extract trajectories
-  for (const pattern of trajectoryPatterns) {
-    pattern.lastIndex = 0;
-    let match;
-    while ((match = pattern.exec(content)) !== null && trajectories.length < 8) {  // Increased from 4
-      const key = `traj:${match[0].substring(0, 40)}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        trajectories.push(match[0].trim().substring(0, 200));
-      }
-    }
-  }
-
-  // Extract windows/deadlines
-  for (const pattern of windowPatterns) {
-    pattern.lastIndex = 0;
-    let match;
-    while ((match = pattern.exec(content)) !== null && windows.length < 8) {  // Increased from 4
-      const key = `win:${match[0].substring(0, 40)}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        windows.push(match[0].trim().substring(0, 150));
-      }
-    }
-  }
-
-  return { relationships, comparisons, trajectories, windows };
+  return { comparisons, windows };
 }
 
 function generateSwimlaneSectionInstructions(swimlanes) {
@@ -695,7 +510,7 @@ export function generateDocumentPrompt(userPrompt, researchFiles, swimlanes = []
 
   // Enhanced research pre-processing
   const { stats, contextualStats, sources } = extractKeyStats(researchContent);
-  const { relationships, comparisons, trajectories, windows } = extractCausalRelationships(researchContent);
+  const { comparisons, windows } = extractCausalRelationships(researchContent);
   const swimlaneInstructions = generateSwimlaneSectionInstructions(swimlanes);
   const dateContext = getCurrentDateContext();
   const contextualStatsFormatted = contextualStats.length > 0
@@ -704,15 +519,9 @@ export function generateDocumentPrompt(userPrompt, researchFiles, swimlanes = []
   const sourcesFormatted = sources.length > 0
     ? sources.join(', ')
     : 'Extract authoritative sources mentioned within the research content';
-  const causalFormatted = relationships.length > 0
-    ? relationships.map(r => `- "${r.cause}" → "${r.effect}"`).join('\n')
-    : 'Identify cause-effect relationships from the research';
   const comparisonsFormatted = comparisons.length > 0
     ? comparisons.map((c, i) => `${i + 1}. "${c}"`).join('\n')
     : 'No direct comparisons found - look for competitive positioning in the research';
-  const trajectoriesFormatted = trajectories.length > 0
-    ? trajectories.map((t, i) => `${i + 1}. "${t}"`).join('\n')
-    : 'No trajectory indicators found - identify growth/decline patterns in the research';
   const windowsFormatted = windows.length > 0
     ? windows.map((w, i) => `${i + 1}. "${w}"`).join('\n')
     : 'No explicit deadlines found - identify time-sensitive factors in the research';
@@ -720,18 +529,7 @@ export function generateDocumentPrompt(userPrompt, researchFiles, swimlanes = []
   return `${documentPrompt}
 ${swimlaneInstructions}
 
-CURRENT DATE CONTEXT (use for time-appropriate recommendations):
-- Today's date: ${dateContext.fullDate} (${dateContext.month} ${dateContext.year})
-- Current quarter: ${dateContext.currentQuarter}
-- Next quarter: ${dateContext.nextQuarter}
-- Next year: ${dateContext.nextYear}
-
-When setting action deadlines in the executiveSummary:
-- Use realistic future dates based on today's date
-- Near-term actions: ${dateContext.nextQuarter} or ${dateContext.quarterPlusTwo}
-- Medium-term milestones: ${dateContext.endOfYear} or Q1-Q2 ${dateContext.nextYear}
-- NEVER use past dates or dates that have already occurred
-- Ensure deadlines are achievable given the current date
+${formatDateContext(dateContext, 'document')}
 
 KEY DATA POINTS WITH CONTEXT (use these for evidence chains):
 ${contextualStatsFormatted}
@@ -741,14 +539,8 @@ RAW STATISTICS FOUND: ${stats || 'Extract numbers from research'}
 AUTHORITATIVE SOURCES MENTIONED IN RESEARCH (use for source field, NOT filenames):
 ${sourcesFormatted}
 
-CAUSAL RELATIONSHIPS IDENTIFIED (use for insight development):
-${causalFormatted}
-
 COMPETITIVE COMPARISONS FOUND (use for DATA → COMPARISON transformation):
 ${comparisonsFormatted}
-
-TRAJECTORY INDICATORS FOUND (use for DATA → TRAJECTORY transformation):
-${trajectoriesFormatted}
 
 DEADLINES & WINDOWS FOUND (use for DATA → WINDOW transformation):
 ${windowsFormatted}
@@ -775,12 +567,10 @@ GENERATION SEQUENCE (Follow this order strictly):
 
 4. THEN - Generate analysisOverview (themes from narrativeThread, findings from keyDataPoints)
 
-5. FINALLY - Generate sections (each building on the narrativeThread, addressing counterarguments)
+5. FINALLY - Generate sections (each building on the narrativeThread)
 
 QUALITY CHECK before finalizing:
 - Does executiveSummary.insight match reasoning.stakesQuantified?
-- Does executiveSummary.tensionPoint match reasoning.tensionAnalysis?
-- Do section counterarguments relate to reasoning.counterargument?
 - Does the narrative flow match reasoning.narrativeThread?
 
 Generate the document JSON now. The "reasoning" object MUST be completed FIRST. The executiveSummary MUST reference specific data from the research and use authoritative sources (not filenames).${swimlanes.length > 0 ? ` You MUST create exactly ${swimlanes.length} sections, one for each swimlane topic listed above.` : ''}`;
