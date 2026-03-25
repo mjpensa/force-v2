@@ -2,7 +2,7 @@ import PptxGenJS from 'pptxgenjs';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { toSentenceCase, normalizeBodyText, truncateToSentence, enforceTitleLineCount, formatTitle, formatSectionTitle, formatBody, checkAcronym, ACRONYMS_UPPER, ACRONYMS_MIXED } from '../../shared/text-utils.js';
+import { normalizeBodyText, truncateToSentence, formatTitle, formatSectionTitle, formatBody } from '../../Public/shared/text-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

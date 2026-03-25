@@ -48,7 +48,7 @@ export const roadmapSchema = {
   required: ["title", "timeColumns", "data", "legend"]
 };
 
-export const roadmapPrompt = `You are an expert project management analyst. Your job is to analyze a user's prompt and research files to build a complete Gantt chart data object.
+const roadmapPrompt = `You are an expert project management analyst. Your job is to analyze a user's prompt and research files to build a complete Gantt chart data object.
 
 You MUST respond with *only* a valid JSON object matching the schema.
 

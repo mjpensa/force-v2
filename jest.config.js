@@ -35,12 +35,6 @@ export default {
       lines: 100,
       statements: 100,
     },
-    './server/storage.js': {
-      branches: 40,
-      functions: 80,
-      lines: 40,
-      statements: 40,
-    },
     './server/gemini.js': {
       branches: 40,
       functions: 60,

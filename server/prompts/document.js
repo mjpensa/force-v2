@@ -170,7 +170,7 @@ export const documentSchema = {
   required: ["reasoning", "title", "executiveSummary", "analysisOverview", "sections"]
 };
 
-export const documentPrompt = `You are a senior strategy consultant writing an executive briefing for C-suite leadership.
+const documentPrompt = `You are a senior strategy consultant writing an executive briefing for C-suite leadership.
 
 ${getSourceExtractionRules('compact')}
 

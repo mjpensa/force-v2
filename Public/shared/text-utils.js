@@ -24,7 +24,7 @@ export const ACRONYMS_MIXED = {
   'u.s.': 'U.S.', 'u.k.': 'U.K.', 'e.u.': 'E.U.'
 };
 
-export const COMPANY_NAMES = {
+const COMPANY_NAMES = {
   'jpmorgan': 'JPMorgan', 'jpm': 'JPM'
 };
 

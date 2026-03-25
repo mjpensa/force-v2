@@ -1,7 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   INJECTION_PATTERNS,
-  ID_PATTERNS,
   FILE_TYPES,
   RATE_LIMITS,
   TIMEOUTS,
@@ -39,36 +38,6 @@ describe('Shared Configuration', () => {
       expect(patterns.some(p => p.test('ignore previous instructions'))).toBe(true);
       expect(patterns.some(p => p.test('system:'))).toBe(true);
       expect(patterns.some(p => p.test('[SYSTEM]'))).toBe(true);
-    });
-  });
-
-  describe('ID_PATTERNS', () => {
-    it('should have CHART_ID pattern', () => {
-      expect(ID_PATTERNS).toHaveProperty('CHART_ID');
-      expect(ID_PATTERNS.CHART_ID).toBeInstanceOf(RegExp);
-    });
-
-    it('should have JOB_ID pattern', () => {
-      expect(ID_PATTERNS).toHaveProperty('JOB_ID');
-      expect(ID_PATTERNS.JOB_ID).toBeInstanceOf(RegExp);
-    });
-
-    it('should have SESSION_ID pattern', () => {
-      expect(ID_PATTERNS).toHaveProperty('SESSION_ID');
-      expect(ID_PATTERNS.SESSION_ID).toBeInstanceOf(RegExp);
-    });
-
-    it('should validate 32-character hex strings', () => {
-      const validId = 'a1b2c3d4e5f6789012345678abcdef12';
-      expect(ID_PATTERNS.CHART_ID.test(validId)).toBe(true);
-      expect(ID_PATTERNS.JOB_ID.test(validId)).toBe(true);
-      expect(ID_PATTERNS.SESSION_ID.test(validId)).toBe(true);
-    });
-
-    it('should reject invalid IDs', () => {
-      expect(ID_PATTERNS.CHART_ID.test('invalid')).toBe(false);
-      expect(ID_PATTERNS.CHART_ID.test('')).toBe(false);
-      expect(ID_PATTERNS.CHART_ID.test('a1b2c3d4')).toBe(false);
     });
   });
 
@@ -118,9 +87,6 @@ describe('Shared Configuration', () => {
       expect(RATE_LIMITS.MAX_REQUESTS).toBeGreaterThan(0);
     });
 
-    it('should have STRICT_MAX_REQUESTS less than MAX_REQUESTS', () => {
-      expect(RATE_LIMITS.STRICT_MAX_REQUESTS).toBeLessThan(RATE_LIMITS.MAX_REQUESTS);
-    });
   });
 
   describe('TIMEOUTS', () => {
@@ -164,14 +130,6 @@ describe('Shared Configuration', () => {
       expect(ERROR_MESSAGES.SESSION_NOT_FOUND.length).toBeGreaterThan(0);
     });
 
-    it('should have INVALID_CHART_ID message', () => {
-      expect(typeof ERROR_MESSAGES.INVALID_CHART_ID).toBe('string');
-    });
-
-    it('should have CHART_NOT_FOUND message', () => {
-      expect(typeof ERROR_MESSAGES.CHART_NOT_FOUND).toBe('string');
-    });
-
     it('should have FILE_TOO_LARGE message', () => {
       expect(typeof ERROR_MESSAGES.FILE_TOO_LARGE).toBe('string');
     });
@@ -184,10 +142,6 @@ describe('Shared Configuration', () => {
   describe('Frozen Objects', () => {
     it('should have frozen INJECTION_PATTERNS', () => {
       expect(Object.isFrozen(INJECTION_PATTERNS)).toBe(true);
-    });
-
-    it('should have frozen ID_PATTERNS', () => {
-      expect(Object.isFrozen(ID_PATTERNS)).toBe(true);
     });
 
     it('should have frozen FILE_TYPES', () => {

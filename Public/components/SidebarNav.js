@@ -9,7 +9,6 @@ const ICONS = {
 
 export class SidebarNav {
   constructor(options = {}) {
-    this.onNavigate = options.onNavigate || (() => {});
     this.activeView = options.activeView || 'roadmap';
     this.sessionId = options.sessionId || '';
     this.isExpanded = false;
@@ -109,7 +108,6 @@ export class SidebarNav {
   _handleNavClick(view) {
     if (view === this.activeView) return;
     this._setActiveView(view);
-    this.onNavigate(view);
     window.location.hash = view;
   }
 

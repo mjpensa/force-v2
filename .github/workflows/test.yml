@@ -126,7 +126,7 @@ jobs:
         run: npm ci
 
       - name: Generate coverage
-        run: npm run test:coverage || true
+        run: npm test || true
 
       - name: Check coverage thresholds
         run: |

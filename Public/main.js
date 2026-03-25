@@ -184,7 +184,6 @@ async function handleChartGenerate(event) {
   const generateBtn = document.getElementById('generate-btn');
   const loadingIndicator = document.getElementById('loading-indicator');
   const errorMessage = document.getElementById('error-message');
-  const chartOutput = document.getElementById('chart-output');
   if (generateBtn.disabled) return; // Already processing
   generateBtn.disabled = true;
   const originalBtnText = generateBtn.textContent;
@@ -244,7 +243,6 @@ async function handleChartGenerate(event) {
     }
     loadingIndicator.style.display = 'flex';
     errorMessage.style.display = 'none';
-    chartOutput.innerHTML = ''; // Clear old chart
     startProgressTimer();
     const response = await fetch('/api/content/generate', {
       method: 'POST',

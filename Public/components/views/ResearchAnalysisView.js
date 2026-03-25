@@ -1,3 +1,9 @@
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text || '';
+  return div.innerHTML;
+}
+
 export class ResearchAnalysisView {
   constructor(analysisData = null, sessionId = null) {
     this.analysisData = analysisData;
@@ -251,8 +257,8 @@ export class ResearchAnalysisView {
     events.slice(0, 5).forEach(event => {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td>${this._escapeHtml(event.event)}</td>
-        <td>${this._escapeHtml(event.dateInfo)}</td>
+        <td>${escapeHtml(event.event)}</td>
+        <td>${escapeHtml(event.dateInfo)}</td>
         <td><span class="quality-badge quality-${event.quality}">${this._formatQuality(event.quality)}</span></td>
       `;
       tbody.appendChild(row);
@@ -288,8 +294,8 @@ export class ResearchAnalysisView {
       timelineInfo.className = 'timeline-span-info';
       timelineInfo.innerHTML = `
         <span class="timeline-label">Timeline Span:</span>
-        <span class="timeline-value">${this._escapeHtml(data.timelineSpan.spanDescription)}</span>
-        <span class="timeline-range">(${this._escapeHtml(data.timelineSpan.earliestDate)} - ${this._escapeHtml(data.timelineSpan.latestDate)})</span>
+        <span class="timeline-value">${escapeHtml(data.timelineSpan.spanDescription)}</span>
+        <span class="timeline-range">(${escapeHtml(data.timelineSpan.earliestDate)} - ${escapeHtml(data.timelineSpan.latestDate)})</span>
       `;
       section.appendChild(timelineInfo);
     }
@@ -342,7 +348,7 @@ export class ResearchAnalysisView {
       itemEl.className = `action-item impact-${item.impact || 'medium'}`;
       itemEl.innerHTML = `
         <div class="action-content">
-          <span class="action-text">${this._escapeHtml(item.action)}</span>
+          <span class="action-text">${escapeHtml(item.action)}</span>
         </div>
         <div class="action-badges">
           <span class="impact-badge impact-${item.impact}">${item.impact} impact</span>
@@ -363,12 +369,12 @@ export class ResearchAnalysisView {
       sourceEl.className = 'source-item';
       sourceEl.innerHTML = `
         <div class="source-header">
-          <span class="source-type">${this._escapeHtml(source.sourceType)}</span>
+          <span class="source-type">${escapeHtml(source.sourceType)}</span>
           <span class="priority-badge priority-${source.priority}">${source.priority}</span>
         </div>
-        <div class="source-reason">${this._escapeHtml(source.reason)}</div>
+        <div class="source-reason">${escapeHtml(source.reason)}</div>
         <div class="source-improvement">
-          <strong>Expected improvement:</strong> ${this._escapeHtml(source.expectedImprovement)}
+          <strong>Expected improvement:</strong> ${escapeHtml(source.expectedImprovement)}
         </div>
       `;
       sourcesList.appendChild(sourceEl);
@@ -390,7 +396,7 @@ export class ResearchAnalysisView {
   _createCard(label, value, { className = 'stat-card', valueClass = 'stat-value', labelClass = 'stat-label' } = {}) {
     const card = document.createElement('div');
     card.className = className;
-    const safeValue = this._escapeHtml(String(value ?? '—'));
+    const safeValue = escapeHtml(String(value ?? '—'));
     card.innerHTML = `<div class="${valueClass}">${safeValue}</div><div class="${labelClass}">${label}</div>`;
     return card;
   }
@@ -470,12 +476,6 @@ export class ResearchAnalysisView {
     if (clampedScore >= 5) return 'adequate';
     if (clampedScore >= 3) return 'poor';
     return 'inadequate';
-  }
-  _escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   }
   destroy() {
     this.themeClickHandlers.forEach((handlers, element) => {

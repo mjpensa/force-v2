@@ -157,8 +157,7 @@ class ContentViewer {
     const initialView = hash || 'roadmap';
     this.sidebarNav = new SidebarNav({
       activeView: initialView,
-      sessionId: this.sessionId,
-      onNavigate: () => {}
+      sessionId: this.sessionId
     });
     const sidebarElement = this.sidebarNav.render();
     document.body.appendChild(sidebarElement);

@@ -8,7 +8,7 @@ function isRateLimitError(error) {
   return error.message && (error.message.includes('429') || error.message.includes('RESOURCE_EXHAUSTED'));
 }
 
-export async function retryWithBackoff(operation, retryCount = CONFIG.API.RETRY_COUNT, onRetry = null) {
+async function retryWithBackoff(operation, retryCount = CONFIG.API.RETRY_COUNT, onRetry = null) {
   let lastError = null;
   for (let attempt = 0; attempt < retryCount; attempt++) {
     try {

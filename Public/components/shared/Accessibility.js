@@ -1,4 +1,4 @@
-export function announceToScreenReader(message, priority = 'polite') {
+function announceToScreenReader(message, priority = 'polite') {
   let liveRegion = document.getElementById('aria-live-region');
   if (!liveRegion) {
     liveRegion = document.createElement('div');

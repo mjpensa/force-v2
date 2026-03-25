@@ -1,4 +1,4 @@
-import { toSentenceCase, sanitizeText, normalizeBodyText, truncateToSentence } from '../../../shared/text-utils.js';
+import { toSentenceCase, sanitizeText, normalizeBodyText, truncateToSentence } from '../../shared/text-utils.js';
 import { createDropdownMenu } from '../../utils/dom.js';
 import { SpeakerNotesManager } from './SpeakerNotesManager.js';
 

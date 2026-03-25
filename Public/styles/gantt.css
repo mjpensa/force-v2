@@ -410,10 +410,6 @@
   transform: scale(1.02);
   z-index: 1000;
 }
-.gantt-time-cell.drag-over {
-  background-color: rgba(186, 57, 48, 0.1) !important;
-  transition: background-color 0.15s ease;
-}
 .drag-indicator {
   animation: fadeInDown 0.3s ease;
 }
@@ -436,18 +432,6 @@ body.dragging {
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-}
-.gantt-bar-area.valid-drop-zone {
-  background-color: rgba(80, 175, 123, 0.15) !important; 
-  outline: 2px dashed rgba(80, 175, 123, 0.5);
-  outline-offset: -2px;
-  transition: background-color 0.15s ease, outline 0.15s ease;
-}
-.gantt-bar-area.invalid-drop-zone {
-  background-color: rgba(186, 57, 48, 0.15) !important; 
-  outline: 2px dashed rgba(186, 57, 48, 0.5);
-  outline-offset: -2px;
-  transition: background-color 0.15s ease, outline 0.15s ease;
 }
 .context-menu {
   position: absolute;

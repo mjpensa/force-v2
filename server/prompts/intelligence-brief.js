@@ -58,7 +58,7 @@ export const intelligenceBriefSchema = {
   required: ["keyInsights", "talkingPoints", "anticipatedQuestions", "recommendedNextSteps"]
 };
 
-export const INTELLIGENCE_BRIEF_SYSTEM_PROMPT = `You are a senior management consultant preparing a pre-meeting intelligence brief. Your role is to synthesize research and analysis into actionable meeting preparation.
+const INTELLIGENCE_BRIEF_SYSTEM_PROMPT = `You are a senior management consultant preparing a pre-meeting intelligence brief. Your role is to synthesize research and analysis into actionable meeting preparation.
 
 ## Your Task
 Create a one-page meeting brief that helps the presenter walk into the meeting fully prepared. The brief synthesizes:

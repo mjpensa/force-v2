@@ -33,11 +33,9 @@ export const CONFIG = {
   },
   API: {
     GEMINI_MODEL: 'gemini-2.5-flash',
-    BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
     RETRY_COUNT: 3,
     RETRY_BASE_DELAY_MS: 1000, // 1 second base delay
     TIMEOUT_MS: 300000, // 5 minutes - under typical proxy timeouts to prevent 502 errors
-    MAX_OUTPUT_TOKENS_CHART: 65536,
     MAX_OUTPUT_TOKENS_ANALYSIS: 65536,
     MAX_OUTPUT_TOKENS_QA: 8192,
     THINKING_BUDGET_ANALYSIS: 24576, // Maximum thinking tokens for task analysis (complex reasoning)
@@ -73,7 +71,6 @@ export const CONFIG = {
   },
   ERRORS: {
     MISSING_TASK_NAME: 'Missing taskName or entity',
-    SESSION_NOT_FOUND: ERROR_MESSAGES.SESSION_NOT_FOUND,
     QUESTION_REQUIRED: 'Question is required and must be non-empty',
     ENTITY_REQUIRED: 'Entity is required',
     TASK_NAME_REQUIRED: 'Task name is required',

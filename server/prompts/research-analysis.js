@@ -157,7 +157,7 @@ export const researchAnalysisSchema = {
   ]
 };
 
-export const researchAnalysisPrompt = `You are an expert research analyst specializing in evaluating research quality for project timeline and Gantt chart creation. Your job is to analyze uploaded research documents and provide a comprehensive assessment of how well the research supports creating accurate, detailed Gantt charts.
+const researchAnalysisPrompt = `You are an expert research analyst specializing in evaluating research quality for project timeline and Gantt chart creation. Your job is to analyze uploaded research documents and provide a comprehensive assessment of how well the research supports creating accurate, detailed Gantt charts.
 
 You MUST respond with *only* a valid JSON object matching the schema.
 

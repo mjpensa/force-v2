@@ -1,8 +1,8 @@
 import { InteractiveGanttHandler } from './InteractiveGanttHandler.js';
 
 export class ResizableGantt extends InteractiveGanttHandler {
-  constructor(gridElement, ganttData, onTaskResize) {
-    super(gridElement, ganttData, onTaskResize);
+  constructor(gridElement, ganttData, onTaskUpdate) {
+    super(gridElement, ganttData, onTaskUpdate);
   }
 
   _handleMouseDown(event) {
