@@ -62,6 +62,13 @@ export default {
         'glass-4': '0 24px 64px rgba(12, 35, 64, 0.30), inset 0 2px 0 rgba(255, 255, 255, 0.15)',
       },
 
+      // Glassmorphic Text Colors (for text-glass-* utilities)
+      textColor: {
+        'glass-primary': 'rgba(255, 255, 255, 1)',
+        'glass-secondary': 'rgba(255, 255, 255, 0.7)',
+        'glass-muted': 'rgba(255, 255, 255, 0.5)',
+      },
+
       // Glassmorphic Background Colors (for bg-glass-* utilities)
       backgroundColor: {
         'glass-5': 'rgba(255, 255, 255, 0.05)',
