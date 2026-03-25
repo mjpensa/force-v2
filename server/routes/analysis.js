@@ -1,7 +1,7 @@
 import express from 'express';
 import { CONFIG } from '../config.js';
 import { callGeminiForJson, callGeminiForText } from '../gemini.js';
-import { TASK_ANALYSIS_SYSTEM_PROMPT, TASK_ANALYSIS_SCHEMA, getQASystemPrompt } from '../prompts/analysis.js';
+import { getTaskAnalysisSystemPrompt, TASK_ANALYSIS_SCHEMA, getQASystemPrompt } from '../prompts/analysis.js';
 import { apiLimiter } from '../middleware.js';
 import { sanitizePrompt } from '../utils.js';
 import { sessions, touchSession } from './content.js';
@@ -40,7 +40,7 @@ ${researchText}
   - Task Name: ${sanitizedTaskName}`;
   const payload = {
     contents: [{ parts: [{ text: geminiUserQuery }] }],
-    systemInstruction: { parts: [{ text: TASK_ANALYSIS_SYSTEM_PROMPT }] },
+    systemInstruction: { parts: [{ text: getTaskAnalysisSystemPrompt() }] },
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: TASK_ANALYSIS_SCHEMA,

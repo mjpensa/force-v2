@@ -82,3 +82,68 @@ export function createModal(config = {}) {
     close
   };
 }
+
+/**
+ * Create a glassmorphic three-dot dropdown menu.
+ * @param {Object} config
+ * @param {string} [config.containerClass] - Additional class for the container
+ * @param {string} [config.triggerLabel='Open menu'] - aria-label for the trigger button
+ * @param {Array<Object|'divider'>} config.items - Menu items or 'divider' strings
+ * @param {number} [config.minWidth] - Override dropdown min-width in px
+ * @returns {{ container: HTMLElement, dropdown: HTMLElement, trigger: HTMLElement, open: Function, close: Function }}
+ */
+export function createDropdownMenu(config) {
+  const { containerClass = '', triggerLabel = 'Open menu', items = [], minWidth } = config;
+
+  const container = document.createElement('div');
+  container.className = `dropdown-menu ${containerClass}`.trim();
+
+  const trigger = document.createElement('button');
+  trigger.className = 'dropdown-menu-trigger';
+  trigger.setAttribute('aria-label', triggerLabel);
+  trigger.setAttribute('aria-haspopup', 'true');
+  trigger.setAttribute('aria-expanded', 'false');
+  trigger.innerHTML = '<span class="menu-dot"></span><span class="menu-dot"></span><span class="menu-dot"></span>';
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'dropdown-menu-panel';
+  dropdown.setAttribute('role', 'menu');
+  if (minWidth) dropdown.style.minWidth = `${minWidth}px`;
+
+  for (const itemDef of items) {
+    if (itemDef === 'divider') {
+      const divider = document.createElement('div');
+      divider.className = 'menu-divider';
+      divider.setAttribute('role', 'separator');
+      dropdown.appendChild(divider);
+      continue;
+    }
+    const item = document.createElement('button');
+    if (itemDef.id) item.id = itemDef.id;
+    item.className = itemDef.className || 'menu-item';
+    item.setAttribute('role', 'menuitem');
+    item.setAttribute('aria-label', itemDef.ariaLabel || itemDef.text);
+    if (itemDef.keepOpen) item.dataset.keepOpen = 'true';
+    item.innerHTML = `<span class="menu-item-icon">${itemDef.icon || ''}</span><span class="menu-item-text">${itemDef.text}</span>`;
+    if (itemDef.onClick) item.addEventListener('click', itemDef.onClick);
+    dropdown.appendChild(item);
+  }
+
+  container.appendChild(trigger);
+  container.appendChild(dropdown);
+
+  let isOpen = false;
+  const open = () => { isOpen = true; dropdown.classList.add('open'); trigger.setAttribute('aria-expanded', 'true'); };
+  const close = () => { isOpen = false; dropdown.classList.remove('open'); trigger.setAttribute('aria-expanded', 'false'); };
+
+  trigger.addEventListener('click', (e) => { e.stopPropagation(); isOpen ? close() : open(); });
+  document.addEventListener('click', (e) => {
+    if (isOpen && !dropdown.contains(e.target) && !trigger.contains(e.target)) close();
+  });
+  dropdown.addEventListener('click', (e) => {
+    const menuItem = e.target.closest('.menu-item');
+    if (menuItem && !menuItem.dataset.keepOpen) close();
+  });
+
+  return { container, dropdown, trigger, open, close };
+}

@@ -13,7 +13,7 @@ export function announceToScreenReader(message, priority = 'polite') {
   liveRegion.textContent = '';
   setTimeout(() => { liveRegion.textContent = message; }, 100);
 }
-export function trapFocus(container) {
+function trapFocus(container) {
   const focusable = container.querySelectorAll('a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])');
   const first = focusable[0], last = focusable[focusable.length - 1];
   function handleTab(e) {
@@ -25,7 +25,7 @@ export function trapFocus(container) {
   if (first) first.focus();
   return () => container.removeEventListener('keydown', handleTab);
 }
-export function addSkipLink(targetId, label = 'Skip to main content') {
+function addSkipLink(targetId, label = 'Skip to main content') {
   if (document.getElementById('skip-link')) return;
   const link = document.createElement('a');
   link.id = 'skip-link';

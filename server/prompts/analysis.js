@@ -1,4 +1,7 @@
-export const TASK_ANALYSIS_SYSTEM_PROMPT = `You are a senior project management analyst analyzing a specific task from research documents.
+import { getCurrentDateContext } from './common.js';
+export function getTaskAnalysisSystemPrompt() {
+  const dateContext = getCurrentDateContext();
+  return `You are a senior project management analyst analyzing a specific task from research documents.
 Respond with ONLY a valid JSON object matching the schema. Keep your analysis concise and factual.
 **REQUIRED FIELDS:**
 - taskName: The task name
@@ -26,9 +29,10 @@ Respond with ONLY a valid JSON object matching the schema. Keep your analysis co
 - keyMetrics: Top 3-5 success metrics, formatted as a bulleted list
 **GUIDELINES:**
 - Extract facts directly from research - no speculation
-- Determine status based on current date (November 2025)
+- Determine status based on current date (${dateContext.month} ${dateContext.year})
 - Keep all text fields concise - use bullet points for lists
 - Properly escape quotes and newlines in JSON strings`;
+}
 export function getQASystemPrompt(taskName, entity) {
   return `You are a project analyst. Your job is to answer a user's question about a specific task.
 **CRITICAL RULES:**

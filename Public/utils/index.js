@@ -6,7 +6,8 @@ export {
   safeGetElement,
   safeQuerySelector,
   createButton,
-  createModal
+  createModal,
+  createDropdownMenu
 } from './dom.js';
 
 // Date utilities
