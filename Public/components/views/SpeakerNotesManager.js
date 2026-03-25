@@ -107,9 +107,11 @@ export class SpeakerNotesManager {
     this.speakerNotesLoading = true;
     this._showLoading(true);
 
+    // Clear any leaked interval from a prior rapid call
+    if (this._elapsedInterval) clearInterval(this._elapsedInterval);
+
     const contentEl = document.getElementById('speaker-notes-content');
     const startTime = Date.now();
-    let elapsedInterval = null;
 
     const updateElapsedTime = () => {
       const elapsedEl = document.getElementById('notes-elapsed-time');
@@ -130,7 +132,7 @@ export class SpeakerNotesManager {
           <div class="notes-progress-bar"><div class="notes-progress-fill"></div></div>
         </div>
       `;
-      elapsedInterval = setInterval(updateElapsedTime, 1000);
+      this._elapsedInterval = setInterval(updateElapsedTime, 1000);
     }
 
     const controller = new AbortController();
@@ -144,7 +146,7 @@ export class SpeakerNotesManager {
       });
 
       clearTimeout(timeoutId);
-      if (elapsedInterval) clearInterval(elapsedInterval);
+      if (this._elapsedInterval) clearInterval(this._elapsedInterval);
       const result = await response.json();
 
       if (result.status === 'completed' && result.data) {
@@ -166,7 +168,7 @@ export class SpeakerNotesManager {
       }
     } catch (error) {
       clearTimeout(timeoutId);
-      if (elapsedInterval) clearInterval(elapsedInterval);
+      if (this._elapsedInterval) clearInterval(this._elapsedInterval);
       console.error('[SpeakerNotes] Request failed:', error);
 
       const isTimeout = error.name === 'AbortError';

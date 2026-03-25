@@ -2,7 +2,7 @@
 export const COLORS = {
   red: 'DA291C',           // Section headers
   black: '000000',         // Body text
-  navy: '032340',          // Table header background
+  navy: '0C2340',          // Table header background (matches PPTX brand)
   white: 'FFFFFF',         // Table header text
   gray: '808080',          // Subtitle/caption
   borderLight: 'CCCCCC',   // Data row borders

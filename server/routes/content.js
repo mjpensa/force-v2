@@ -174,6 +174,7 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
   }
 });
 
+// API-only — not exposed in UI (functional for programmatic access)
 router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), async (req, res) => {
   const REGENERATE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
   req.setTimeout(REGENERATE_TIMEOUT_MS);
@@ -485,6 +486,7 @@ router.get('/:sessionId/:viewType', (req, res) => {
   }
 });
 
+// API-only — not exposed in UI (stateless export for programmatic access)
 router.post('/slides/export', express.json({ limit: '50mb' }), async (req, res) => {
   try {
     const { slides } = req.body;
@@ -508,6 +510,7 @@ router.post('/slides/export', express.json({ limit: '50mb' }), async (req, res) 
   }
 });
 
+// API-only — not exposed in UI (stateless export for programmatic access)
 router.post('/document/export', express.json({ limit: '50mb' }), async (req, res) => {
   try {
     const { document } = req.body;
