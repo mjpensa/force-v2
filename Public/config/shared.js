@@ -51,8 +51,6 @@ export const VALIDATION = {
 
 export const ERROR_MESSAGES = {
   SESSION_NOT_FOUND: 'Session not found or expired. Please regenerate the chart.',
-  INVALID_CHART_ID: 'Invalid chart ID format',
-  CHART_NOT_FOUND: 'Chart not found or expired. Charts are available for 30 days after generation.',
   FILE_TOO_LARGE: 'File too large. Maximum size is 10MB per file.',
   TOO_MANY_FILES: 'Too many files. Maximum is 500 files per upload.',
   FIELD_TOO_LARGE: 'Field value too large. Maximum total size is 200MB.',

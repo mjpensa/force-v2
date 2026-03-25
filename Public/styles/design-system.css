@@ -401,41 +401,6 @@ body.view-roadmap .ambient-logo-container {
   color: var(--glass-text-primary);
   transform: translateY(-2px);
 }
-.stats-grid-glass {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  margin-bottom: 8px;
-}
-@media (max-width: 640px) {
-  .stats-grid-glass {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-.stat-card-glass {
-  background: var(--glass-white-8);
-  backdrop-filter: blur(var(--blur-sm));
-  -webkit-backdrop-filter: blur(var(--blur-sm));
-  border: 1px solid var(--glass-white-12);
-  border-radius: var(--radius-glass-sm);
-  padding: 5px;
-  text-align: center;
-  transition: all 0.2s ease;
-}
-.stat-card-glass:hover {
-  background: var(--glass-white-10);
-  transform: translateY(-1px);
-}
-.stat-card-glass .stat-value {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--glass-text-primary);
-}
-.stat-card-glass .stat-label {
-  font-size: 8px;
-  color: var(--glass-text-muted);
-  margin-top: 1px;
-}
 .file-list-glass {
   background: var(--glass-white-5);
   backdrop-filter: blur(var(--blur-sm));
@@ -569,8 +534,7 @@ body.view-roadmap .ambient-logo-container {
   to { transform: rotate(360deg); }
 }
 .textarea-glass:focus-visible,
-.dropzone-glass:focus-visible,
-.stat-card-glass:focus-visible {
+.dropzone-glass:focus-visible {
   outline: 3px solid var(--color-glass-success);
   outline-offset: 2px;
   box-shadow: 0 0 0 6px rgba(80, 175, 123, 0.15);
@@ -605,8 +569,6 @@ body.view-roadmap .ambient-logo-container {
   }
   .dropzone-glass,
   .dropzone-glass:hover,
-  .stat-card-glass,
-  .stat-card-glass:hover,
   .upload-icon-container,
   .upload-icon-container svg {
     transition: none !important;
@@ -636,8 +598,7 @@ body.view-roadmap .ambient-logo-container {
   .form-glass-panel,
   .dropzone-glass,
   .textarea-glass,
-  .file-list-glass,
-  .stat-card-glass {
+  .file-list-glass {
     border-width: 2px;
     border-color: rgba(255, 255, 255, 0.5);
   }
@@ -668,7 +629,6 @@ body.view-roadmap .ambient-logo-container {
   .dropzone-glass,
   .textarea-glass,
   .file-list-glass,
-  .stat-card-glass,
   .button-glass-primary {
     border: 2px solid CanvasText;
     background: Canvas;
