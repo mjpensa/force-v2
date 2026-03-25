@@ -8,26 +8,27 @@ import { sessions, touchSession } from './content.js';
 
 const router = express.Router();
 
+function resolveResearchText(req, res) {
+  const { sessionId, researchText: directResearchText } = req.body;
+  if (directResearchText) return directResearchText;
+  if (sessionId) {
+    const session = sessions.get(sessionId);
+    if (!session) { res.status(404).json({ error: 'Session not found or expired' }); return null; }
+    touchSession(sessionId);
+    return session.researchFiles?.map(f => f.content).join('\n\n') || '';
+  }
+  res.status(400).json({ error: 'Either sessionId or researchText is required' });
+  return null;
+}
+
 router.post('/get-task-analysis', apiLimiter, async (req, res) => {
-  const { taskName, entity, sessionId, researchText: directResearchText } = req.body;
+  const { taskName, entity } = req.body;
 
   if (!taskName || !entity) {
     return res.status(400).json({ error: CONFIG.ERRORS.MISSING_TASK_NAME });
   }
-  let researchText = directResearchText;
-
-  if (!researchText && sessionId) {
-    const session = sessions.get(sessionId);
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found or expired' });
-    }
-    touchSession(sessionId);
-    researchText = session.researchFiles?.map(f => f.content).join('\n\n') || '';
-  }
-
-  if (!researchText) {
-    return res.status(400).json({ error: 'Either sessionId or researchText is required for analysis' });
-  }
+  const researchText = resolveResearchText(req, res);
+  if (researchText === null) return;
   const sanitizedEntity = sanitizePrompt(entity);
   const sanitizedTaskName = sanitizePrompt(taskName);
   const geminiUserQuery = `**CRITICAL REMINDER:** You MUST escape all newlines (\\n) and double-quotes (") found in the research content before placing them into the final JSON string values.
@@ -63,7 +64,7 @@ ${researchText}
 });
 
 router.post('/ask-question', apiLimiter, async (req, res) => {
-  const { taskName, entity, question, sessionId, researchText: directResearchText } = req.body;
+  const { taskName, entity, question } = req.body;
   if (!question || typeof question !== 'string' || !question.trim()) {
     return res.status(400).json({ error: CONFIG.ERRORS.QUESTION_REQUIRED });
   }
@@ -75,20 +76,8 @@ router.post('/ask-question', apiLimiter, async (req, res) => {
   if (!taskName || typeof taskName !== 'string' || !taskName.trim()) {
     return res.status(400).json({ error: CONFIG.ERRORS.TASK_NAME_REQUIRED });
   }
-  let researchText = directResearchText;
-
-  if (!researchText && sessionId) {
-    const session = sessions.get(sessionId);
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found or expired' });
-    }
-    touchSession(sessionId);
-    researchText = session.researchFiles?.map(f => f.content).join('\n\n') || '';
-  }
-
-  if (!researchText) {
-    return res.status(400).json({ error: 'Either sessionId or researchText is required for Q&A' });
-  }
+  const researchText = resolveResearchText(req, res);
+  if (researchText === null) return;
   if (question.trim().length > CONFIG.VALIDATION.MAX_QUESTION_LENGTH) {
     return res.status(400).json({ error: CONFIG.ERRORS.QUESTION_TOO_LONG });
   }

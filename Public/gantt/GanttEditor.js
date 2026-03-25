@@ -126,173 +126,64 @@ export class GanttEditor {
     this.onRender();
   }
 
-  makeEditable(labelElement, taskIndex) {
-    const originalText = labelElement.textContent;
-
-    labelElement.setAttribute('contenteditable', 'true');
-    labelElement.classList.add('editing');
-    labelElement.focus();
-
+  _makeInlineEditable(element, onSave) {
+    if (!element) return;
+    const originalText = element.textContent;
+    element.setAttribute('contenteditable', 'true');
+    element.classList.add('editing');
+    element.focus();
     const range = document.createRange();
-    range.selectNodeContents(labelElement);
+    range.selectNodeContents(element);
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
 
-    const saveChanges = async () => {
-      labelElement.setAttribute('contenteditable', 'false');
-      labelElement.classList.remove('editing');
-
-      const newText = labelElement.textContent.trim();
-      labelElement.textContent = newText;
-
+    const saveChanges = () => {
+      element.setAttribute('contenteditable', 'false');
+      element.classList.remove('editing');
+      const newText = element.textContent.trim();
+      element.textContent = newText;
       if (newText && newText !== originalText) {
-        this.ganttData.data[taskIndex].title = newText;
+        onSave(newText);
       } else {
-        labelElement.textContent = originalText;
+        element.textContent = originalText;
       }
     };
-
     const cancelEdit = () => {
-      labelElement.setAttribute('contenteditable', 'false');
-      labelElement.classList.remove('editing');
-      labelElement.textContent = originalText;
+      element.setAttribute('contenteditable', 'false');
+      element.classList.remove('editing');
+      element.textContent = originalText;
     };
-
     const blurHandler = () => {
       saveChanges();
-      labelElement.removeEventListener('blur', blurHandler);
+      element.removeEventListener('blur', blurHandler);
     };
-
-    labelElement.addEventListener('blur', blurHandler);
-
-    const keyHandler = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        labelElement.blur();
-      }
+    element.addEventListener('blur', blurHandler);
+    element.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); element.blur(); }
       if (e.key === 'Escape') {
         e.preventDefault();
-        labelElement.removeEventListener('blur', blurHandler);
+        element.removeEventListener('blur', blurHandler);
         cancelEdit();
-        labelElement.removeEventListener('keydown', keyHandler);
       }
-    };
+    });
+  }
 
-    labelElement.addEventListener('keydown', keyHandler);
+  makeEditable(labelElement, taskIndex) {
+    this._makeInlineEditable(labelElement, (newText) => {
+      this.ganttData.data[taskIndex].title = newText;
+    });
   }
 
   makeChartTitleEditable() {
-    if (!this.titleElement) return;
-
-    const originalText = this.titleElement.textContent;
-
-    this.titleElement.setAttribute('contenteditable', 'true');
-    this.titleElement.classList.add('editing');
-    this.titleElement.focus();
-
-    const range = document.createRange();
-    range.selectNodeContents(this.titleElement);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-
-    const saveChanges = async () => {
-      this.titleElement.setAttribute('contenteditable', 'false');
-      this.titleElement.classList.remove('editing');
-
-      const newText = this.titleElement.textContent.trim();
-      this.titleElement.textContent = newText;
-
-      if (newText && newText !== originalText) {
-        this.ganttData.title = newText;
-      } else {
-        this.titleElement.textContent = originalText;
-      }
-    };
-
-    const cancelEdit = () => {
-      this.titleElement.setAttribute('contenteditable', 'false');
-      this.titleElement.classList.remove('editing');
-      this.titleElement.textContent = originalText;
-    };
-
-    const blurHandler = () => {
-      saveChanges();
-      this.titleElement.removeEventListener('blur', blurHandler);
-    };
-
-    this.titleElement.addEventListener('blur', blurHandler);
-
-    const keyHandler = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        this.titleElement.blur();
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        this.titleElement.removeEventListener('blur', blurHandler);
-        cancelEdit();
-        this.titleElement.removeEventListener('keydown', keyHandler);
-      }
-    };
-
-    this.titleElement.addEventListener('keydown', keyHandler);
+    this._makeInlineEditable(this.titleElement, (newText) => {
+      this.ganttData.title = newText;
+    });
   }
 
   makeLegendLabelEditable(labelElement, legendIndex) {
-    const originalText = labelElement.textContent;
-
-    labelElement.setAttribute('contenteditable', 'true');
-    labelElement.classList.add('editing');
-    labelElement.focus();
-
-    const range = document.createRange();
-    range.selectNodeContents(labelElement);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-
-    const saveChanges = async () => {
-      labelElement.setAttribute('contenteditable', 'false');
-      labelElement.classList.remove('editing');
-
-      const newText = labelElement.textContent.trim();
-      labelElement.textContent = newText;
-
-      if (newText && newText !== originalText) {
-        this.ganttData.legend[legendIndex].label = newText;
-      } else {
-        labelElement.textContent = originalText;
-      }
-    };
-
-    const cancelEdit = () => {
-      labelElement.setAttribute('contenteditable', 'false');
-      labelElement.classList.remove('editing');
-      labelElement.textContent = originalText;
-    };
-
-    const blurHandler = () => {
-      saveChanges();
-      labelElement.removeEventListener('blur', blurHandler);
-    };
-
-    labelElement.addEventListener('blur', blurHandler);
-
-    const keyHandler = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        labelElement.blur();
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        labelElement.removeEventListener('blur', blurHandler);
-        cancelEdit();
-        labelElement.removeEventListener('keydown', keyHandler);
-      }
-    };
-
-    labelElement.addEventListener('keydown', keyHandler);
+    this._makeInlineEditable(labelElement, (newText) => {
+      this.ganttData.legend[legendIndex].label = newText;
+    });
   }
 }

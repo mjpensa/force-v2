@@ -1,3 +1,9 @@
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text || '';
+  return div.innerHTML;
+}
+
 export class SpeakerNotesManager {
   constructor(view) {
     this.view = view;
@@ -199,18 +205,9 @@ export class SpeakerNotesManager {
     const contentEl = document.getElementById('speaker-notes-content');
     if (!contentEl) return;
 
-    const currentSlide = this.slides[this.index];
-    const slideIndicator = document.getElementById('speaker-notes-slide-indicator');
-    if (slideIndicator) {
-      if (currentSlide?.tagline) {
-        slideIndicator.textContent = `\u2014 ${currentSlide.tagline}`;
-      } else if (currentSlide?.layout === 'sectionTitle') {
-        slideIndicator.textContent = `\u2014 ${currentSlide.sectionTitle || currentSlide.swimlane || 'Section'}`;
-      } else {
-        slideIndicator.textContent = `\u2014 Slide ${this.index + 1}`;
-      }
-    }
+    this.updateSlideIndicator();
 
+    const currentSlide = this.slides[this.index];
     if (currentSlide?.layout === 'sectionTitle') {
       contentEl.innerHTML = `
         <div class="notes-placeholder">
@@ -253,7 +250,7 @@ export class SpeakerNotesManager {
           ${matchInfo.reason === 'duplicate_taglines' ? `
             <details class="notes-debug">
               <summary>Sections with this tagline</summary>
-              <ul>${matchInfo.duplicateSections.map(s => `<li>${s}</li>`).join('')}</ul>
+              <ul>${matchInfo.duplicateSections.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
             </details>
           ` : ''}
         </div>
@@ -465,11 +462,11 @@ export class SpeakerNotesManager {
         <div class="notes-section">
           <h4 class="notes-section-title">\ud83d\udcac Talking Points</h4>
           <ul class="notes-list">
-            ${notes.narrative.talkingPoints.map(point => `<li>${this._escapeHtml(point)}</li>`).join('')}
+            ${notes.narrative.talkingPoints.map(point => `<li>${escapeHtml(point)}</li>`).join('')}
           </ul>
           ${notes.narrative.keyPhrase ? `
             <div class="key-phrase">
-              <strong>Key Phrase:</strong> "${this._escapeHtml(notes.narrative.keyPhrase)}"
+              <strong>Key Phrase:</strong> "${escapeHtml(notes.narrative.keyPhrase)}"
             </div>
           ` : ''}
         </div>
@@ -480,46 +477,32 @@ export class SpeakerNotesManager {
       sections.push(`
         <div class="notes-section">
           <h4 class="notes-section-title">\ud83d\udd04 Transitions</h4>
-          ${notes.narrative.transitionIn ? `<p><strong>\u2190 From previous:</strong> ${this._escapeHtml(notes.narrative.transitionIn)}</p>` : ''}
-          ${notes.narrative.transitionOut ? `<p><strong>\u2192 To next:</strong> ${this._escapeHtml(notes.narrative.transitionOut)}</p>` : ''}
+          ${notes.narrative.transitionIn ? `<p><strong>\u2190 From previous:</strong> ${escapeHtml(notes.narrative.transitionIn)}</p>` : ''}
+          ${notes.narrative.transitionOut ? `<p><strong>\u2192 To next:</strong> ${escapeHtml(notes.narrative.transitionOut)}</p>` : ''}
         </div>
       `);
     }
 
     if (notes.stakeholderAngles) {
       const angles = notes.stakeholderAngles;
+      const STAKEHOLDERS = [
+        { key: 'cfo', icon: '\ud83d\udcb0', label: 'CFO' },
+        { key: 'cto', icon: '\u2699\ufe0f', label: 'CTO' },
+        { key: 'ceo', icon: '\ud83c\udfaf', label: 'CEO' },
+        { key: 'operations', icon: '\ud83d\udd27', label: 'Ops' },
+      ];
+      const STAKEHOLDER_ROLES = { cfo: 'cfo', cto: 'cto', ceo: 'ceo', operations: 'ops' };
       sections.push(`
         <div class="notes-section">
           <h4 class="notes-section-title">\ud83d\udc65 Stakeholder Angles</h4>
           <div class="stakeholder-tabs">
-            ${angles.cfo ? `
-              <div class="stakeholder-tab" data-role="cfo">
-                <span class="stakeholder-icon">\ud83d\udcb0</span>
-                <span class="stakeholder-label">CFO</span>
-                <p class="stakeholder-angle">${this._escapeHtml(angles.cfo)}</p>
+            ${STAKEHOLDERS.filter(s => angles[s.key]).map(s => `
+              <div class="stakeholder-tab" data-role="${STAKEHOLDER_ROLES[s.key]}">
+                <span class="stakeholder-icon">${s.icon}</span>
+                <span class="stakeholder-label">${s.label}</span>
+                <p class="stakeholder-angle">${escapeHtml(angles[s.key])}</p>
               </div>
-            ` : ''}
-            ${angles.cto ? `
-              <div class="stakeholder-tab" data-role="cto">
-                <span class="stakeholder-icon">\u2699\ufe0f</span>
-                <span class="stakeholder-label">CTO</span>
-                <p class="stakeholder-angle">${this._escapeHtml(angles.cto)}</p>
-              </div>
-            ` : ''}
-            ${angles.ceo ? `
-              <div class="stakeholder-tab" data-role="ceo">
-                <span class="stakeholder-icon">\ud83c\udfaf</span>
-                <span class="stakeholder-label">CEO</span>
-                <p class="stakeholder-angle">${this._escapeHtml(angles.ceo)}</p>
-              </div>
-            ` : ''}
-            ${angles.operations ? `
-              <div class="stakeholder-tab" data-role="ops">
-                <span class="stakeholder-icon">\ud83d\udd27</span>
-                <span class="stakeholder-label">Ops</span>
-                <p class="stakeholder-angle">${this._escapeHtml(angles.operations)}</p>
-              </div>
-            ` : ''}
+            `).join('')}
           </div>
         </div>
       `);
@@ -532,24 +515,24 @@ export class SpeakerNotesManager {
           ${notes.anticipatedQuestions.map(qa => `
             <div class="qa-item qa-severity-${qa.severity || 'probing'}">
               <div class="qa-header">
-                <span class="severity-badge severity-${qa.severity || 'probing'}">${(qa.severity || 'probing').replace(/_/g, ' ')}</span>
-                <span class="pushback-type">${qa.pushbackType?.replace(/_/g, ' ')}</span>
+                <span class="severity-badge severity-${qa.severity || 'probing'}">${escapeHtml((qa.severity || 'probing').replace(/_/g, ' '))}</span>
+                <span class="pushback-type">${escapeHtml(qa.pushbackType?.replace(/_/g, ' '))}</span>
               </div>
-              <p class="question"><strong>Q:</strong> ${this._escapeHtml(qa.question)}</p>
-              <p class="response"><strong>A:</strong> ${this._escapeHtml(qa.response)}</p>
+              <p class="question"><strong>Q:</strong> ${escapeHtml(qa.question)}</p>
+              <p class="response"><strong>A:</strong> ${escapeHtml(qa.response)}</p>
               ${qa.escalationResponse ? `
                 <div class="escalation-response">
-                  <strong>If they push back:</strong> ${this._escapeHtml(qa.escalationResponse)}
+                  <strong>If they push back:</strong> ${escapeHtml(qa.escalationResponse)}
                 </div>
               ` : ''}
               ${qa.bridgeToStrength ? `
                 <div class="bridge-to-strength">
-                  <strong>Pivot to strength:</strong> ${this._escapeHtml(qa.bridgeToStrength)}
+                  <strong>Pivot to strength:</strong> ${escapeHtml(qa.bridgeToStrength)}
                 </div>
               ` : ''}
               ${qa.deferralOption ? `
                 <div class="deferral-option">
-                  <strong>Defer with:</strong> "${this._escapeHtml(qa.deferralOption)}"
+                  <strong>Defer with:</strong> "${escapeHtml(qa.deferralOption)}"
                 </div>
               ` : ''}
             </div>
@@ -562,46 +545,39 @@ export class SpeakerNotesManager {
       sections.push(`
         <div class="notes-section">
           <h4 class="notes-section-title">\ud83d\udcd6 Story Context</h4>
-          <p class="narrative-position"><strong>Position:</strong> ${notes.storyContext.narrativePosition?.replace(/_/g, ' ')}</p>
-          ${notes.storyContext.precededBy ? `<p><strong>Preceded by:</strong> ${this._escapeHtml(notes.storyContext.precededBy)}</p>` : ''}
-          ${notes.storyContext.followedBy ? `<p><strong>Followed by:</strong> ${this._escapeHtml(notes.storyContext.followedBy)}</p>` : ''}
-          ${notes.storyContext.soWhat ? `<p class="so-what"><strong>So What:</strong> ${this._escapeHtml(notes.storyContext.soWhat)}</p>` : ''}
+          <p class="narrative-position"><strong>Position:</strong> ${escapeHtml(notes.storyContext.narrativePosition?.replace(/_/g, ' '))}</p>
+          ${notes.storyContext.precededBy ? `<p><strong>Preceded by:</strong> ${escapeHtml(notes.storyContext.precededBy)}</p>` : ''}
+          ${notes.storyContext.followedBy ? `<p><strong>Followed by:</strong> ${escapeHtml(notes.storyContext.followedBy)}</p>` : ''}
+          ${notes.storyContext.soWhat ? `<p class="so-what"><strong>So What:</strong> ${escapeHtml(notes.storyContext.soWhat)}</p>` : ''}
           ${notes.storyContext.timeGuidance ? `
             <div class="time-guidance">
               <span class="time-badge">\u23f1\ufe0f ${notes.storyContext.timeGuidance.suggestedDuration || '2-3 min'}</span>
               ${notes.storyContext.timeGuidance.canCondense ? '<span class="condensable-badge">Can condense</span>' : ''}
               ${notes.storyContext.timeGuidance.condensedVersion ? `
-                <p class="condensed-version"><strong>Short version:</strong> "${this._escapeHtml(notes.storyContext.timeGuidance.condensedVersion)}"</p>
+                <p class="condensed-version"><strong>Short version:</strong> "${escapeHtml(notes.storyContext.timeGuidance.condensedVersion)}"</p>
               ` : ''}
               ${notes.storyContext.timeGuidance.mustInclude?.length ? `
-                <p class="must-include"><strong>Must include:</strong> ${notes.storyContext.timeGuidance.mustInclude.join(' \u2022 ')}</p>
+                <p class="must-include"><strong>Must include:</strong> ${notes.storyContext.timeGuidance.mustInclude.map(s => escapeHtml(s)).join(' \u2022 ')}</p>
               ` : ''}
             </div>
           ` : ''}
           ${notes.storyContext.callToAction ? `
             <div class="cta-variants">
               <h5>Call-to-Action Options:</h5>
-              ${notes.storyContext.callToAction.warmAudience ? `
-                <div class="cta-option cta-warm">
-                  <span class="cta-label">\ud83d\udfe2 Warm</span>
-                  <p>${this._escapeHtml(notes.storyContext.callToAction.warmAudience.ask)}</p>
-                  ${notes.storyContext.callToAction.warmAudience.timeline ? `<p class="cta-timeline">${this._escapeHtml(notes.storyContext.callToAction.warmAudience.timeline)}</p>` : ''}
+              ${[
+                { key: 'warmAudience', css: 'cta-warm', icon: '\ud83d\udfe2', label: 'Warm', extraKey: 'timeline', extraCss: 'cta-timeline', extraWrap: v => v },
+                { key: 'neutralAudience', css: 'cta-neutral', icon: '\ud83d\udfe1', label: 'Neutral', extraKey: 'nextStep', extraCss: 'cta-next-step', extraWrap: v => v },
+                { key: 'hostileAudience', css: 'cta-hostile', icon: '\ud83d\udd34', label: 'Hostile', extraKey: 'fallback', extraCss: 'cta-fallback', extraWrap: v => `<em>Fallback: ${v}</em>` },
+              ].filter(c => notes.storyContext.callToAction[c.key]).map(c => {
+                const aud = notes.storyContext.callToAction[c.key];
+                return `
+                <div class="cta-option ${c.css}">
+                  <span class="cta-label">${c.icon} ${c.label}</span>
+                  <p>${escapeHtml(aud.ask)}</p>
+                  ${aud[c.extraKey] ? `<p class="${c.extraCss}">${c.extraWrap(escapeHtml(aud[c.extraKey]))}</p>` : ''}
                 </div>
-              ` : ''}
-              ${notes.storyContext.callToAction.neutralAudience ? `
-                <div class="cta-option cta-neutral">
-                  <span class="cta-label">\ud83d\udfe1 Neutral</span>
-                  <p>${this._escapeHtml(notes.storyContext.callToAction.neutralAudience.ask)}</p>
-                  ${notes.storyContext.callToAction.neutralAudience.nextStep ? `<p class="cta-next-step">${this._escapeHtml(notes.storyContext.callToAction.neutralAudience.nextStep)}</p>` : ''}
-                </div>
-              ` : ''}
-              ${notes.storyContext.callToAction.hostileAudience ? `
-                <div class="cta-option cta-hostile">
-                  <span class="cta-label">\ud83d\udd34 Hostile</span>
-                  <p>${this._escapeHtml(notes.storyContext.callToAction.hostileAudience.ask)}</p>
-                  ${notes.storyContext.callToAction.hostileAudience.fallback ? `<p class="cta-fallback"><em>Fallback: ${this._escapeHtml(notes.storyContext.callToAction.hostileAudience.fallback)}</em></p>` : ''}
-                </div>
-              ` : ''}
+              `;
+              }).join('')}
             </div>
           ` : ''}
         </div>
@@ -614,9 +590,9 @@ export class SpeakerNotesManager {
           <h4 class="notes-section-title">\ud83d\udcda Sources</h4>
           ${notes.sourceAttribution.map(src => `
             <div class="source-item">
-              <p class="claim">"${this._escapeHtml(src.claim)}"</p>
-              <p class="source"><strong>Source:</strong> ${this._escapeHtml(src.source)}</p>
-              <span class="confidence confidence-${src.confidence}">${src.confidence?.replace(/_/g, ' ')}</span>
+              <p class="claim">"${escapeHtml(src.claim)}"</p>
+              <p class="source"><strong>Source:</strong> ${escapeHtml(src.source)}</p>
+              <span class="confidence confidence-${src.confidence}">${escapeHtml(src.confidence?.replace(/_/g, ' '))}</span>
             </div>
           `).join('')}
         </div>
@@ -628,13 +604,13 @@ export class SpeakerNotesManager {
         <div class="notes-section notes-section-collapsed">
           <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">\ud83d\udd0d Content Derivation</h4>
           <div class="notes-section-body">
-            <p><strong>Sources:</strong> ${notes.generationTransparency.primarySources?.join(', ') || 'N/A'}</p>
+            <p><strong>Sources:</strong> ${notes.generationTransparency.primarySources?.map(s => escapeHtml(s)).join(', ') || 'N/A'}</p>
             <p><strong>Method:</strong> ${notes.generationTransparency.derivationMethod || 'N/A'}</p>
-            ${notes.generationTransparency.dataLineage ? `<p><strong>Lineage:</strong> ${this._escapeHtml(notes.generationTransparency.dataLineage)}</p>` : ''}
+            ${notes.generationTransparency.dataLineage ? `<p><strong>Lineage:</strong> ${escapeHtml(notes.generationTransparency.dataLineage)}</p>` : ''}
             ${notes.generationTransparency.assumptions?.length ? `
               <p><strong>Assumptions:</strong></p>
               <ul class="assumptions-list">
-                ${notes.generationTransparency.assumptions.map(a => `<li>${this._escapeHtml(a)}</li>`).join('')}
+                ${notes.generationTransparency.assumptions.map(a => `<li>${escapeHtml(a)}</li>`).join('')}
               </ul>
             ` : ''}
           </div>
@@ -648,10 +624,10 @@ export class SpeakerNotesManager {
           <h4 class="notes-section-title">\ud83c\udfc6 Credibility Anchors</h4>
           ${notes.credibilityAnchors.map(anchor => `
             <div class="credibility-item credibility-${anchor.type || 'research'}">
-              <span class="credibility-type">${(anchor.type || 'research').replace(/_/g, ' ')}</span>
-              <p class="credibility-statement">${this._escapeHtml(anchor.statement)}</p>
-              <p class="drop-phrase"><strong>Say:</strong> "${this._escapeHtml(anchor.dropPhrase)}"</p>
-              <p class="full-citation"><em>${this._escapeHtml(anchor.fullCitation)}</em></p>
+              <span class="credibility-type">${escapeHtml((anchor.type || 'research').replace(/_/g, ' '))}</span>
+              <p class="credibility-statement">${escapeHtml(anchor.statement)}</p>
+              <p class="drop-phrase"><strong>Say:</strong> "${escapeHtml(anchor.dropPhrase)}"</p>
+              <p class="full-citation"><em>${escapeHtml(anchor.fullCitation)}</em></p>
             </div>
           `).join('')}
         </div>
@@ -660,34 +636,25 @@ export class SpeakerNotesManager {
 
     if (notes.riskMitigation) {
       const rm = notes.riskMitigation;
-      const hasContent = rm.implementationRisk || rm.reputationalRisk || rm.careerRisk;
-      if (hasContent) {
+      const RISKS = [
+        { key: 'implementationRisk', label: 'Implementation Risk' },
+        { key: 'reputationalRisk', label: 'Reputational Risk' },
+        { key: 'careerRisk', label: 'Career Risk' },
+      ];
+      const riskBlocks = RISKS.filter(r => rm[r.key]).map(r => `
+                <div class="risk-block">
+                  <h5>${r.label}</h5>
+                  <p class="risk-concern"><em>"${escapeHtml(rm[r.key].concern)}"</em></p>
+                  <p class="risk-response">${escapeHtml(rm[r.key].response)}</p>
+                  ${rm[r.key].proofPoint ? `<p class="risk-proof">Proof: ${escapeHtml(rm[r.key].proofPoint)}</p>` : ''}
+                </div>
+              `).join('');
+      if (riskBlocks) {
         sections.push(`
           <div class="notes-section notes-section-collapsed">
             <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">\ud83d\udee1\ufe0f Risk Mitigation</h4>
             <div class="notes-section-body">
-              ${rm.implementationRisk ? `
-                <div class="risk-block">
-                  <h5>Implementation Risk</h5>
-                  <p class="risk-concern"><em>"${this._escapeHtml(rm.implementationRisk.concern)}"</em></p>
-                  <p class="risk-response">${this._escapeHtml(rm.implementationRisk.response)}</p>
-                  ${rm.implementationRisk.proofPoint ? `<p class="risk-proof">Proof: ${this._escapeHtml(rm.implementationRisk.proofPoint)}</p>` : ''}
-                </div>
-              ` : ''}
-              ${rm.reputationalRisk ? `
-                <div class="risk-block">
-                  <h5>Reputational Risk</h5>
-                  <p class="risk-concern"><em>"${this._escapeHtml(rm.reputationalRisk.concern)}"</em></p>
-                  <p class="risk-response">${this._escapeHtml(rm.reputationalRisk.response)}</p>
-                </div>
-              ` : ''}
-              ${rm.careerRisk ? `
-                <div class="risk-block">
-                  <h5>Career Risk</h5>
-                  <p class="risk-concern"><em>"${this._escapeHtml(rm.careerRisk.concern)}"</em></p>
-                  <p class="risk-response">${this._escapeHtml(rm.careerRisk.response)}</p>
-                </div>
-              ` : ''}
+              ${riskBlocks}
             </div>
           </div>
         `);
@@ -703,16 +670,16 @@ export class SpeakerNotesManager {
             ${signals.losingThem ? `
               <div class="signal-block signal-losing">
                 <h5>\u26a0\ufe0f Losing Them</h5>
-                <p><strong>Watch for:</strong> ${signals.losingThem.signs?.join(', ') || 'N/A'}</p>
-                <p><strong>Pivot:</strong> ${this._escapeHtml(signals.losingThem.pivotStrategy)}</p>
-                ${signals.losingThem.emergencyBridge ? `<p class="emergency-bridge"><strong>Emergency exit:</strong> "${this._escapeHtml(signals.losingThem.emergencyBridge)}"</p>` : ''}
+                <p><strong>Watch for:</strong> ${signals.losingThem.signs?.map(s => escapeHtml(s)).join(', ') || 'N/A'}</p>
+                <p><strong>Pivot:</strong> ${escapeHtml(signals.losingThem.pivotStrategy)}</p>
+                ${signals.losingThem.emergencyBridge ? `<p class="emergency-bridge"><strong>Emergency exit:</strong> "${escapeHtml(signals.losingThem.emergencyBridge)}"</p>` : ''}
               </div>
             ` : ''}
             ${signals.winningThem ? `
               <div class="signal-block signal-winning">
                 <h5>\u2705 Winning Them</h5>
-                <p><strong>Look for:</strong> ${signals.winningThem.signs?.join(', ') || 'N/A'}</p>
-                <p><strong>Accelerate:</strong> ${this._escapeHtml(signals.winningThem.accelerationOption)}</p>
+                <p><strong>Look for:</strong> ${signals.winningThem.signs?.map(s => escapeHtml(s)).join(', ') || 'N/A'}</p>
+                <p><strong>Accelerate:</strong> ${escapeHtml(signals.winningThem.accelerationOption)}</p>
               </div>
             ` : ''}
           </div>
@@ -726,10 +693,10 @@ export class SpeakerNotesManager {
         <div class="notes-section quick-reference-section">
           <h4 class="notes-section-title">\u26a1 Quick Reference</h4>
           <div class="cheat-sheet">
-            ${qr.keyNumber ? `<div class="cheat-item cheat-number"><span class="cheat-label">Key Number</span>${this._escapeHtml(qr.keyNumber)}</div>` : ''}
-            ${qr.keyPhrase ? `<div class="cheat-item cheat-phrase"><span class="cheat-label">Key Phrase</span>"${this._escapeHtml(qr.keyPhrase)}"</div>` : ''}
-            ${qr.keyProof ? `<div class="cheat-item cheat-proof"><span class="cheat-label">Proof Point</span>${this._escapeHtml(qr.keyProof)}</div>` : ''}
-            ${qr.keyAsk ? `<div class="cheat-item cheat-ask"><span class="cheat-label">Ask For</span>${this._escapeHtml(qr.keyAsk)}</div>` : ''}
+            ${qr.keyNumber ? `<div class="cheat-item cheat-number"><span class="cheat-label">Key Number</span>${escapeHtml(qr.keyNumber)}</div>` : ''}
+            ${qr.keyPhrase ? `<div class="cheat-item cheat-phrase"><span class="cheat-label">Key Phrase</span>"${escapeHtml(qr.keyPhrase)}"</div>` : ''}
+            ${qr.keyProof ? `<div class="cheat-item cheat-proof"><span class="cheat-label">Proof Point</span>${escapeHtml(qr.keyProof)}</div>` : ''}
+            ${qr.keyAsk ? `<div class="cheat-item cheat-ask"><span class="cheat-label">Ask For</span>${escapeHtml(qr.keyAsk)}</div>` : ''}
           </div>
         </div>
       `;
@@ -749,7 +716,7 @@ export class SpeakerNotesManager {
       sections.push(`
         <div class="reasoning-item">
           <h5 class="reasoning-label">\ud83c\udfaf Narrative Arc</h5>
-          <p class="reasoning-value">${this._escapeHtml(reasoning.presentationNarrativeArc)}</p>
+          <p class="reasoning-value">${escapeHtml(reasoning.presentationNarrativeArc)}</p>
         </div>
       `);
     }
@@ -759,17 +726,17 @@ export class SpeakerNotesManager {
       sections.push(`
         <div class="reasoning-item">
           <h5 class="reasoning-label">\ud83d\udc64 Audience Profile</h5>
-          ${profile.primaryStakeholder ? `<p><strong>Decision Maker:</strong> ${this._escapeHtml(profile.primaryStakeholder)}</p>` : ''}
+          ${profile.primaryStakeholder ? `<p><strong>Decision Maker:</strong> ${escapeHtml(profile.primaryStakeholder)}</p>` : ''}
           ${profile.painPoints?.length ? `
             <p><strong>Pain Points:</strong></p>
             <ul class="reasoning-list">
-              ${profile.painPoints.map(p => `<li>${this._escapeHtml(p)}</li>`).join('')}
+              ${profile.painPoints.map(p => `<li>${escapeHtml(p)}</li>`).join('')}
             </ul>
           ` : ''}
           ${profile.decisionCriteria?.length ? `
             <p><strong>Decision Criteria:</strong></p>
             <ul class="reasoning-list">
-              ${profile.decisionCriteria.map(c => `<li>${this._escapeHtml(c)}</li>`).join('')}
+              ${profile.decisionCriteria.map(c => `<li>${escapeHtml(c)}</li>`).join('')}
             </ul>
           ` : ''}
         </div>
@@ -783,10 +750,10 @@ export class SpeakerNotesManager {
           ${reasoning.keyEvidenceChains.map((chain, i) => `
             <div class="evidence-chain">
               <p class="chain-number">Chain ${i + 1}</p>
-              <p><strong>Evidence:</strong> ${this._escapeHtml(chain.evidence)}</p>
-              <p><strong>Insight:</strong> ${this._escapeHtml(chain.insight)}</p>
-              ${chain.anticipatedQuestion ? `<p><strong>Q:</strong> ${this._escapeHtml(chain.anticipatedQuestion)}</p>` : ''}
-              ${chain.preparedResponse ? `<p><strong>A:</strong> ${this._escapeHtml(chain.preparedResponse)}</p>` : ''}
+              <p><strong>Evidence:</strong> ${escapeHtml(chain.evidence)}</p>
+              <p><strong>Insight:</strong> ${escapeHtml(chain.insight)}</p>
+              ${chain.anticipatedQuestion ? `<p><strong>Q:</strong> ${escapeHtml(chain.anticipatedQuestion)}</p>` : ''}
+              ${chain.preparedResponse ? `<p><strong>A:</strong> ${escapeHtml(chain.preparedResponse)}</p>` : ''}
             </div>
           `).join('')}
         </div>
@@ -799,12 +766,12 @@ export class SpeakerNotesManager {
           <h5 class="reasoning-label">\ud83d\udcda Source Inventory</h5>
           ${reasoning.sourceInventory.map(src => `
             <div class="source-inventory-item">
-              <p class="source-name"><strong>${this._escapeHtml(src.sourceName)}</strong>
+              <p class="source-name"><strong>${escapeHtml(src.sourceName)}</strong>
                 <span class="confidence-badge confidence-${src.confidenceLevel}">${src.confidenceLevel}</span>
               </p>
               ${src.keyFindings?.length ? `
                 <ul class="findings-list">
-                  ${src.keyFindings.map(f => `<li>${this._escapeHtml(f)}</li>`).join('')}
+                  ${src.keyFindings.map(f => `<li>${escapeHtml(f)}</li>`).join('')}
                 </ul>
               ` : ''}
             </div>
@@ -819,10 +786,10 @@ export class SpeakerNotesManager {
           <h5 class="reasoning-label">\u26a1 Anticipated Pushback</h5>
           ${reasoning.anticipatedPushback.map(pb => `
             <div class="pushback-item">
-              <span class="pushback-type-badge">${pb.pushbackType?.replace(/_/g, ' ')}</span>
-              <p class="objection"><strong>Objection:</strong> "${this._escapeHtml(pb.specificObjection)}"</p>
-              <p><strong>Counter:</strong> ${this._escapeHtml(pb.evidenceToCounter)}</p>
-              <p><strong>Reframe:</strong> ${this._escapeHtml(pb.reframingStrategy)}</p>
+              <span class="pushback-type-badge">${escapeHtml(pb.pushbackType?.replace(/_/g, ' '))}</span>
+              <p class="objection"><strong>Objection:</strong> "${escapeHtml(pb.specificObjection)}"</p>
+              <p><strong>Counter:</strong> ${escapeHtml(pb.evidenceToCounter)}</p>
+              <p><strong>Reframe:</strong> ${escapeHtml(pb.reframingStrategy)}</p>
             </div>
           `).join('')}
         </div>
@@ -838,10 +805,10 @@ export class SpeakerNotesManager {
             <div class="competitors-list">
               ${cp.primaryCompetitors.map(comp => `
                 <div class="competitor-card">
-                  <p class="competitor-name"><strong>${this._escapeHtml(comp.name)}</strong></p>
-                  <p class="competitor-strength"><em>Their strength:</em> ${this._escapeHtml(comp.theirStrength)}</p>
-                  <p class="our-counter"><em>Our counter:</em> ${this._escapeHtml(comp.ourCounter)}</p>
-                  <p class="bridge-phrase">"${this._escapeHtml(comp.bridgePhrase)}"</p>
+                  <p class="competitor-name"><strong>${escapeHtml(comp.name)}</strong></p>
+                  <p class="competitor-strength"><em>Their strength:</em> ${escapeHtml(comp.theirStrength)}</p>
+                  <p class="our-counter"><em>Our counter:</em> ${escapeHtml(comp.ourCounter)}</p>
+                  <p class="bridge-phrase">"${escapeHtml(comp.bridgePhrase)}"</p>
                 </div>
               `).join('')}
             </div>
@@ -849,13 +816,13 @@ export class SpeakerNotesManager {
           ${cp.internalTeamResponse ? `
             <div class="internal-team-block">
               <strong>If they ask "why not in-house?":</strong>
-              <p>${this._escapeHtml(cp.internalTeamResponse)}</p>
+              <p>${escapeHtml(cp.internalTeamResponse)}</p>
             </div>
           ` : ''}
           ${cp.doNothingRisk ? `
             <div class="do-nothing-risk">
               <strong>Cost of inaction:</strong>
-              <p>${this._escapeHtml(cp.doNothingRisk)}</p>
+              <p>${escapeHtml(cp.doNothingRisk)}</p>
             </div>
           ` : ''}
         </div>
@@ -868,36 +835,18 @@ export class SpeakerNotesManager {
         <div class="reasoning-item">
           <h5 class="reasoning-label">\ud83c\udf09 Bridge Phrases</h5>
           <div class="bridge-phrases-grid">
-            ${bp.dontKnowAnswer?.length ? `
-              <div class="phrase-category">
-                <h6>Don't Know Answer</h6>
-                <ul>${bp.dontKnowAnswer.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
+            ${[
+              { key: 'dontKnowAnswer', label: "Don't Know Answer", css: '' },
+              { key: 'hostileInterruption', label: 'Hostile Interruption', css: ' phrase-hostile' },
+              { key: 'goingOffTopic', label: 'Going Off Topic', css: '' },
+              { key: 'technicalDive', label: 'Technical Deep-Dive', css: '' },
+              { key: 'losingTheRoom', label: 'Losing the Room', css: ' phrase-warning' },
+            ].filter(c => bp[c.key]?.length).map(c => `
+              <div class="phrase-category${c.css}">
+                <h6>${c.label}</h6>
+                <ul>${bp[c.key].map(p => `<li>"${escapeHtml(p)}"</li>`).join('')}</ul>
               </div>
-            ` : ''}
-            ${bp.hostileInterruption?.length ? `
-              <div class="phrase-category phrase-hostile">
-                <h6>Hostile Interruption</h6>
-                <ul>${bp.hostileInterruption.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
-              </div>
-            ` : ''}
-            ${bp.goingOffTopic?.length ? `
-              <div class="phrase-category">
-                <h6>Going Off Topic</h6>
-                <ul>${bp.goingOffTopic.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
-              </div>
-            ` : ''}
-            ${bp.technicalDive?.length ? `
-              <div class="phrase-category">
-                <h6>Technical Deep-Dive</h6>
-                <ul>${bp.technicalDive.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
-              </div>
-            ` : ''}
-            ${bp.losingTheRoom?.length ? `
-              <div class="phrase-category phrase-warning">
-                <h6>Losing the Room</h6>
-                <ul>${bp.losingTheRoom.map(p => `<li>"${this._escapeHtml(p)}"</li>`).join('')}</ul>
-              </div>
-            ` : ''}
+            `).join('')}
           </div>
         </div>
       `);
@@ -914,13 +863,6 @@ export class SpeakerNotesManager {
         </div>
       </div>
     `;
-  }
-
-  _escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   }
 
   updateSlideIndicator() {

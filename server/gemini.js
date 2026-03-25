@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { CONFIG } from './config.js';
 import { jsonrepair } from 'jsonrepair';
 
-const genAI = new GoogleGenerativeAI(process.env.API_KEY);
+export const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
 function isRateLimitError(error) {
   return error.message && (error.message.includes('429') || error.message.includes('RESOURCE_EXHAUSTED'));

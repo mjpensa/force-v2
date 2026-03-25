@@ -82,12 +82,7 @@ export class ResearchAnalysisView {
     return header;
   }
   _renderSummarySection() {
-    const section = document.createElement('section');
-    section.className = 'analysis-section summary-section';
-    const sectionTitle = document.createElement('h2');
-    sectionTitle.className = 'section-title';
-    sectionTitle.textContent = 'Executive Summary';
-    section.appendChild(sectionTitle);
+    const section = this._createSection('summary', 'Executive Summary');
     if (this.analysisData.summary) {
       const summary = document.createElement('p');
       summary.className = 'summary-text';
@@ -95,30 +90,14 @@ export class ResearchAnalysisView {
       section.appendChild(summary);
     }
     if (this.analysisData.keyFindings && this.analysisData.keyFindings.length > 0) {
-      const findingsTitle = document.createElement('h3');
-      findingsTitle.className = 'subsection-title';
-      findingsTitle.textContent = 'Key Findings';
-      section.appendChild(findingsTitle);
-      const findingsList = document.createElement('ul');
-      findingsList.className = 'key-findings-list';
-      this.analysisData.keyFindings.forEach(finding => {
-        const li = document.createElement('li');
-        li.textContent = finding;
-        findingsList.appendChild(li);
-      });
-      section.appendChild(findingsList);
+      section.appendChild(this._createListSection('Key Findings', this.analysisData.keyFindings, 'key-findings'));
     }
     return section;
   }
   _renderGanttReadiness() {
     const readiness = this.analysisData.ganttReadiness;
     if (!readiness) return document.createElement('div');
-    const section = document.createElement('section');
-    section.className = 'analysis-section gantt-readiness-section';
-    const sectionTitle = document.createElement('h2');
-    sectionTitle.className = 'section-title';
-    sectionTitle.textContent = 'Gantt Chart Readiness';
-    section.appendChild(sectionTitle);
+    const section = this._createSection('gantt-readiness', 'Gantt Chart Readiness');
     const verdictContainer = document.createElement('div');
     verdictContainer.className = `readiness-verdict verdict-${readiness.readinessVerdict}`;
     const verdictIcon = document.createElement('span');
@@ -136,15 +115,14 @@ export class ResearchAnalysisView {
     const totalThemes = readiness.totalThemes ?? 0;
     const estimatedTasks = readiness.estimatedTasks ?? '—';
     const interval = this._formatInterval(readiness.recommendedTimeInterval);
-    statsGrid.appendChild(this._createStatCard('Ready Themes', `${readyThemes}/${totalThemes}`, 'themes'));
-    statsGrid.appendChild(this._createStatCard('Estimated Tasks', estimatedTasks, 'tasks'));
-    statsGrid.appendChild(this._createStatCard('Recommended Interval', interval, 'interval'));
+    statsGrid.appendChild(this._createCard('Ready Themes', `${readyThemes}/${totalThemes}`, { className: 'stat-card stat-themes' }));
+    statsGrid.appendChild(this._createCard('Estimated Tasks', estimatedTasks, { className: 'stat-card stat-tasks' }));
+    statsGrid.appendChild(this._createCard('Recommended Interval', interval, { className: 'stat-card stat-interval' }));
     section.appendChild(statsGrid);
     return section;
   }
   _renderCriticalGaps() {
-    const section = document.createElement('section');
-    section.className = 'analysis-section critical-gaps-section';
+    const section = this._createSection('critical-gaps');
     const alert = document.createElement('div');
     alert.className = 'critical-gaps-alert';
     const alertHeader = document.createElement('div');
@@ -154,24 +132,12 @@ export class ResearchAnalysisView {
       <span class="alert-title">Critical Gaps to Address</span>
     `;
     alert.appendChild(alertHeader);
-    const gapsList = document.createElement('ul');
-    gapsList.className = 'gaps-list';
-    this.analysisData.criticalGaps.forEach(gap => {
-      const li = document.createElement('li');
-      li.textContent = gap;
-      gapsList.appendChild(li);
-    });
-    alert.appendChild(gapsList);
+    alert.appendChild(this._createListSection('Gaps', this.analysisData.criticalGaps, 'critical-gaps'));
     section.appendChild(alert);
     return section;
   }
   _renderThemesSection() {
-    const section = document.createElement('section');
-    section.className = 'analysis-section themes-section';
-    const sectionTitle = document.createElement('h2');
-    sectionTitle.className = 'section-title';
-    sectionTitle.textContent = 'Theme Analysis';
-    section.appendChild(sectionTitle);
+    const section = this._createSection('themes', 'Theme Analysis');
     const themesContainer = document.createElement('div');
     themesContainer.className = 'themes-container';
     if (this.analysisData.themes && this.analysisData.themes.length > 0) {
@@ -258,17 +224,9 @@ export class ResearchAnalysisView {
         this.expandedThemes.delete(index);
       }
     };
-    // Keyboard handler for accessibility (Enter/Space)
-    const keydownHandler = (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        clickHandler();
-      }
-    };
     header.addEventListener('click', clickHandler);
-    header.addEventListener('keydown', keydownHandler);
-    // Store handlers for cleanup
-    this.themeClickHandlers.set(header, { click: clickHandler, keydown: keydownHandler });
+    // Store handler for cleanup
+    this.themeClickHandlers.set(header, { click: clickHandler });
     return card;
   }
   _renderSampleEventsTable(events) {
@@ -306,30 +264,21 @@ export class ResearchAnalysisView {
   _renderDataCompleteness() {
     const data = this.analysisData.dataCompleteness;
     if (!data) {
-      const section = document.createElement('section');
-      section.className = 'analysis-section data-completeness-section';
-      const sectionTitle = document.createElement('h2');
-      sectionTitle.className = 'section-title';
-      sectionTitle.textContent = 'Data Completeness';
-      section.appendChild(sectionTitle);
+      const section = this._createSection('data-completeness', 'Data Completeness');
       const emptyMsg = document.createElement('p');
       emptyMsg.className = 'completeness-empty-message';
       emptyMsg.textContent = 'Data completeness information is not available.';
       section.appendChild(emptyMsg);
       return section;
     }
-    const section = document.createElement('section');
-    section.className = 'analysis-section data-completeness-section';
-    const sectionTitle = document.createElement('h2');
-    sectionTitle.className = 'section-title';
-    sectionTitle.textContent = 'Data Completeness';
-    section.appendChild(sectionTitle);
+    const section = this._createSection('data-completeness', 'Data Completeness');
     const metricsGrid = document.createElement('div');
     metricsGrid.className = 'completeness-metrics-grid';
-    metricsGrid.appendChild(this._createMetricCard('Total Dates Found', data.totalDatesFound));
-    metricsGrid.appendChild(this._createMetricCard('Events Identified', data.totalEventsIdentified));
-    metricsGrid.appendChild(this._createMetricCard('Events with Dates', data.eventsWithDates));
-    metricsGrid.appendChild(this._createMetricCard('Events without Dates', data.eventsWithoutDates));
+    const metricOpts = { className: 'metric-card', valueClass: 'metric-value', labelClass: 'metric-label' };
+    metricsGrid.appendChild(this._createCard('Total Dates Found', data.totalDatesFound, metricOpts));
+    metricsGrid.appendChild(this._createCard('Events Identified', data.totalEventsIdentified, metricOpts));
+    metricsGrid.appendChild(this._createCard('Events with Dates', data.eventsWithDates, metricOpts));
+    metricsGrid.appendChild(this._createCard('Events without Dates', data.eventsWithoutDates, metricOpts));
     section.appendChild(metricsGrid);
     if (data.dateSpecificityBreakdown) {
       section.appendChild(this._renderDateSpecificityChart(data.dateSpecificityBreakdown));
@@ -385,12 +334,7 @@ export class ResearchAnalysisView {
     return container;
   }
   _renderActionItems() {
-    const section = document.createElement('section');
-    section.className = 'analysis-section action-items-section';
-    const sectionTitle = document.createElement('h2');
-    sectionTitle.className = 'section-title';
-    sectionTitle.textContent = 'Recommended Actions';
-    section.appendChild(sectionTitle);
+    const section = this._createSection('action-items', 'Recommended Actions');
     const itemsList = document.createElement('div');
     itemsList.className = 'action-items-list';
     this.analysisData.actionItems.forEach(item => {
@@ -411,12 +355,7 @@ export class ResearchAnalysisView {
     return section;
   }
   _renderSuggestedSources() {
-    const section = document.createElement('section');
-    section.className = 'analysis-section suggested-sources-section';
-    const sectionTitle = document.createElement('h2');
-    sectionTitle.className = 'section-title';
-    sectionTitle.textContent = 'Suggested Additional Sources';
-    section.appendChild(sectionTitle);
+    const section = this._createSection('suggested-sources', 'Suggested Additional Sources');
     const sourcesList = document.createElement('div');
     sourcesList.className = 'sources-list';
     this.analysisData.suggestedSources.forEach(source => {
@@ -440,32 +379,31 @@ export class ResearchAnalysisView {
   _createScoreBadge(score, rating, size = 'medium') {
     const safeScore = (typeof score === 'number' && !isNaN(score)) ? score : '—';
     const badge = document.createElement('div');
-    badge.className = `score-badge score-${this._getRatingClass(rating || this._scoreToRating(score))} size-${size}`;
+    const ratingClass = (rating || this._scoreToRating(score)) || 'adequate';
+    badge.className = `score-badge score-${ratingClass} size-${size}`;
     badge.innerHTML = `
       <span class="score-value">${safeScore}</span>
       <span class="score-max">/10</span>
     `;
     return badge;
   }
-  _createStatCard(label, value, type) {
-    const safeValue = value ?? '—';
+  _createCard(label, value, { className = 'stat-card', valueClass = 'stat-value', labelClass = 'stat-label' } = {}) {
     const card = document.createElement('div');
-    card.className = `stat-card stat-${type}`;
-    card.innerHTML = `
-      <div class="stat-value">${safeValue}</div>
-      <div class="stat-label">${label}</div>
-    `;
+    card.className = className;
+    const safeValue = this._escapeHtml(String(value ?? '—'));
+    card.innerHTML = `<div class="${valueClass}">${safeValue}</div><div class="${labelClass}">${label}</div>`;
     return card;
   }
-  _createMetricCard(label, value) {
-    const safeValue = value ?? '—';
-    const card = document.createElement('div');
-    card.className = 'metric-card';
-    card.innerHTML = `
-      <div class="metric-value">${safeValue}</div>
-      <div class="metric-label">${label}</div>
-    `;
-    return card;
+  _createSection(modifier, title) {
+    const section = document.createElement('section');
+    section.className = `analysis-section ${modifier}-section`;
+    if (title) {
+      const h2 = document.createElement('h2');
+      h2.className = 'section-title';
+      h2.textContent = title;
+      section.appendChild(h2);
+    }
+    return section;
   }
   _createListSection(title, items, type) {
     const container = document.createElement('div');
@@ -533,9 +471,6 @@ export class ResearchAnalysisView {
     if (clampedScore >= 3) return 'poor';
     return 'inadequate';
   }
-  _getRatingClass(rating) {
-    return rating || 'adequate';
-  }
   _escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -545,7 +480,6 @@ export class ResearchAnalysisView {
   destroy() {
     this.themeClickHandlers.forEach((handlers, element) => {
       element.removeEventListener('click', handlers.click);
-      element.removeEventListener('keydown', handlers.keydown);
     });
     this.themeClickHandlers.clear();
     this.expandedThemes.clear();

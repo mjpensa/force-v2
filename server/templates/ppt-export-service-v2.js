@@ -2,6 +2,7 @@ import PptxGenJS from 'pptxgenjs';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { toSentenceCase, normalizeBodyText, truncateToSentence, enforceTitleLineCount, formatTitle, formatSectionTitle, formatBody, checkAcronym, ACRONYMS_UPPER, ACRONYMS_MIXED } from '../../shared/text-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,6 +21,9 @@ const COLORS = {
   darkGray: '6B7280',   // Page numbers on white backgrounds
   mutedWhite: '999999'  // Page numbers on dark backgrounds (~60% white)
 };
+
+const SHARED_LOGO = { x: SLIDE.WIDTH - 0.75, y: SLIDE.HEIGHT - 0.50, w: 0.30 * (816/569), h: 0.30 };
+const SHARED_PAGE_NUMBER = { w: 0.5, h: 0.2 };
 
 const LAYOUTS = {
   sectionTitle: {
@@ -42,19 +46,11 @@ const LAYOUTS = {
       w: 2,
       h: 0.04
     },
-    // Logo actual dimensions: 816x569 (aspect ratio ~1.434:1)
-    // Reduced size for cleaner web rendering
-    logo: {
-      x: SLIDE.WIDTH - 0.75,
-      y: SLIDE.HEIGHT - 0.50,
-      w: 0.30 * (816 / 569),  // ~0.43 inches (calculated from aspect ratio)
-      h: 0.30
-    },
+    logo: SHARED_LOGO,
     pageNumber: {
       x: pctX(2.11),
-      y: SLIDE.HEIGHT - pctY(3.43) - 0.3,  // bottom position - element height
-      w: 0.5,
-      h: 0.3
+      y: SLIDE.HEIGHT - pctY(3.43) - 0.3,
+      ...SHARED_PAGE_NUMBER
     }
   },
   twoColumn: {
@@ -83,19 +79,11 @@ const LAYOUTS = {
       w: pctX(10),
       h: pctX(10)  // Square aspect ratio
     },
-    // Logo actual dimensions: 816x569 (aspect ratio ~1.434:1)
-    // Reduced size for cleaner web rendering
-    logo: {
-      x: SLIDE.WIDTH - 0.75,
-      y: SLIDE.HEIGHT - 0.50,
-      w: 0.30 * (816 / 569),  // ~0.43 inches
-      h: 0.30
-    },
+    logo: SHARED_LOGO,
     pageNumber: {
       x: pctX(2.11),
-      y: SLIDE.HEIGHT - pctY(3.43) - 0.3,  // bottom position - element height
-      w: 0.5,
-      h: 0.3
+      y: SLIDE.HEIGHT - pctY(3.43) - 0.3,
+      ...SHARED_PAGE_NUMBER
     }
   },
   threeColumn: {
@@ -126,18 +114,11 @@ const LAYOUTS = {
       w: pctX(10),
       h: pctX(10)  // Square aspect ratio
     },
-    // Reduced size for cleaner web rendering
-    logo: {
-      x: SLIDE.WIDTH - 0.75,
-      y: SLIDE.HEIGHT - 0.50,
-      w: 0.30 * (816 / 569),  // ~0.43 inches
-      h: 0.30
-    },
+    logo: SHARED_LOGO,
     pageNumber: {
       x: pctX(2.10),
-      y: SLIDE.HEIGHT - pctY(3.43) - 0.3,  // bottom position - element height
-      w: 0.5,
-      h: 0.3
+      y: SLIDE.HEIGHT - pctY(3.43) - 0.3,
+      ...SHARED_PAGE_NUMBER
     }
   }
 };
@@ -166,208 +147,6 @@ function loadAssets() {
 
   assetsLoaded = true;
 }
-const ACRONYMS_UPPER = [
-  'DRR', 'CDM', 'API', 'APIS', 'ROI', 'KPI', 'KPIS', 'CEO', 'CTO', 'CFO', 'COO', 'CIO',
-  'AI', 'ML', 'US', 'UK', 'EU', 'UN', 'CFTC', 'SEC', 'FDA', 'EPA',
-  'UTI', 'UPI', 'ESG', 'DEI', 'M&A', 'IPO', 'ETF', 'ETL', 'GDP', 'B2B', 'B2C', 'P2P',
-  'AWS', 'GCP', 'IT', 'HR', 'PR', 'R&D', 'P&L',
-  'CPMI', 'IOSCO', 'OTC', 'FX', 'USD', 'EUR', 'GBP',
-  'CRM', 'ERP', 'ISDA', 'LEI', 'EMIR', 'SFTR', 'NFA',  // Note: MiFID handled in ACRONYMS_MIXED
-  'FINRA', 'OCC', 'DTCC', 'SWIFT', 'ISO', 'XML', 'JSON', 'REST', 'SDK'
-];
-const ACRONYMS_MIXED = {
-  'fpml': 'FpML',
-  'saas': 'SaaS',
-  'paas': 'PaaS',
-  'iaas': 'IaaS',
-  'regtech': 'RegTech',
-  'fintech': 'FinTech',
-  'devops': 'DevOps',
-  'mifid': 'MiFID',  // Can be MiFID or MIFID depending on context
-  // Proper nouns with periods (place names must always be capitalized)
-  'u.s.': 'U.S.',
-  'u.k.': 'U.K.',
-  'e.u.': 'E.U.'
-};
-
-function checkSingleAcronym(word) {
-  if (!word) return { isAcronym: false, value: word };
-
-  const lowerWord = word.toLowerCase();
-  const upperWord = word.toUpperCase();
-
-  // Check mixed-case acronyms first (exact match needed)
-  if (ACRONYMS_MIXED[lowerWord]) {
-    return { isAcronym: true, value: ACRONYMS_MIXED[lowerWord] };
-  }
-
-  // Check ALL CAPS acronyms
-  if (ACRONYMS_UPPER.includes(upperWord)) {
-    return { isAcronym: true, value: upperWord };
-  }
-
-  // Dynamic check: 2-5 uppercase letters/numbers (already uppercase = acronym)
-  if (/^[A-Z][A-Z0-9]{1,4}$/.test(word)) {
-    return { isAcronym: true, value: word };
-  }
-
-  return { isAcronym: false, value: word };
-}
-
-function getAcronymForm(word) {
-  if (!word) return { isAcronym: false, value: word };
-
-  // Handle slashed compound acronyms like "CDM/DRR"
-  if (word.includes('/')) {
-    const parts = word.split('/');
-    const results = parts.map(part => checkSingleAcronym(part));
-    const allAcronyms = results.every(r => r.isAcronym);
-
-    if (allAcronyms) {
-      return { isAcronym: true, value: results.map(r => r.value).join('/') };
-    }
-    return { isAcronym: false, value: word };
-  }
-
-  return checkSingleAcronym(word);
-}
-
-function toSentenceCase(text) {
-  if (!text) return '';
-
-  return text.split('\n').map((line, lineIndex) => {
-    const words = line.split(/(\s+)/);
-
-    return words.map((word, wordIndex) => {
-      if (/^\s*$/.test(word)) return word;
-
-      // Check if word is an acronym and get correct form
-      const acronymResult = getAcronymForm(word);
-      if (acronymResult.isAcronym) {
-        return acronymResult.value;
-      }
-
-      // First word of first line: capitalize
-      if (lineIndex === 0 && wordIndex === 0) {
-        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-      }
-
-      // All other words: lowercase
-      return word.toLowerCase();
-    }).join('');
-  }).join('\n');
-}
-
-// Enforce 3-4 lines for title (merge if >4, keep as-is if 3-4)
-function enforceTitleLineCount(title, maxCharsPerLine = 10) {
-  if (!title) return '';
-
-  let lines = title.split('\n').map(l => l.trim()).filter(l => l);
-
-  // If already 3 or 4 lines, keep as-is
-  if (lines.length >= 3 && lines.length <= 4) {
-    return lines.join('\n');
-  }
-
-  // If fewer than 3 lines, just return what we have (don't pad)
-  if (lines.length < 3) {
-    return lines.join('\n');
-  }
-
-  // Merge lines if more than 4, respecting character limits
-  while (lines.length > 4) {
-    // Find the shortest pair that won't exceed character limit
-    let bestMergeIndex = -1;
-    let bestCombinedLength = Infinity;
-
-    for (let i = 0; i < lines.length - 1; i++) {
-      const combinedLength = lines[i].length + lines[i + 1].length + 1; // +1 for space
-      // Only consider merges that stay within character limit
-      if (combinedLength <= maxCharsPerLine && combinedLength < bestCombinedLength) {
-        bestCombinedLength = combinedLength;
-        bestMergeIndex = i;
-      }
-    }
-
-    if (bestMergeIndex === -1) {
-      // No valid merge possible without exceeding char limit - truncate to 4 lines
-      lines = lines.slice(0, 4);
-      break;
-    }
-
-    lines[bestMergeIndex] = lines[bestMergeIndex] + ' ' + lines[bestMergeIndex + 1];
-    lines.splice(bestMergeIndex + 1, 1);
-  }
-
-  return lines.join('\n');
-}
-
-// Format title: sentence case + enforce 3-4 lines
-function formatTitle(title, maxCharsPerLine = 10) {
-  const sentenceCase = toSentenceCase(title);
-  return enforceTitleLineCount(sentenceCase, maxCharsPerLine);
-}
-
-function formatSectionTitle(title) {
-  if (!title) return '';
-
-  // Apply acronym corrections to each word
-  return title.split(/(\s+)/).map(word => {
-    if (/^\s*$/.test(word)) return word;
-    const acronymResult = getAcronymForm(word);
-    if (acronymResult.isAcronym) {
-      return acronymResult.value;
-    }
-    return word;
-  }).join('');
-}
-
-// Truncate text to a character limit at sentence boundary (matches SlidesView.js)
-function truncateToSentence(text, maxChars = 415) {
-  if (!text) return '';
-  text = text.trim().replace(/\n/g, ' '); // Normalize whitespace
-  if (text.length <= maxChars) return text;
-
-  // Find last sentence end before the limit
-  const truncated = text.substring(0, maxChars);
-  const lastPeriod = truncated.lastIndexOf('.');
-  const lastQuestion = truncated.lastIndexOf('?');
-  const lastExclaim = truncated.lastIndexOf('!');
-  const lastSentenceEnd = Math.max(lastPeriod, lastQuestion, lastExclaim);
-
-  if (lastSentenceEnd > maxChars * 0.6) {
-    // Found a sentence end in the last 40% of allowed text
-    return text.substring(0, lastSentenceEnd + 1);
-  }
-  // No good sentence break, cut at word boundary
-  return truncated.replace(/\s+\S*$/, '') + '.';
-}
-
-// Normalize body text: all-caps words to proper case, preserves known acronyms
-function normalizeBodyText(text) {
-  if (!text) return '';
-
-  // Match all-caps words (3+ letters) that aren't known acronyms
-  return text.replace(/\b([A-Z]{3,})\b/g, (match) => {
-    const acronymResult = getAcronymForm(match);
-    if (acronymResult.isAcronym) {
-      return acronymResult.value; // Keep as-is
-    }
-    // Convert to proper case (first letter uppercase, rest lowercase)
-    return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase();
-  });
-}
-
-// Format body paragraphs with normalization and truncation
-function formatBody(p1, p2, maxChars = 415) {
-  const parts = [];
-  // Pipeline: normalize caps → truncate
-  if (p1) parts.push(truncateToSentence(normalizeBodyText(p1), maxChars));
-  if (p2) parts.push(truncateToSentence(normalizeBodyText(p2), maxChars));
-  // Single \n creates paragraph break; paraSpaceAfter handles the spacing
-  return parts.join('\n');
-}
-
 function getSectionLabel(slideData) {
   const label = slideData.tagline || slideData.section || slideData.sectionLabel;
   return label ? String(label).toUpperCase() : '';
@@ -602,7 +381,6 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
       h: L.swimlaneLabel.h,
       fontSize: 14,
       fontFace: 'Work Sans SemiBold',
-      bold: false,
       color: COLORS.white,
       align: 'left',
       charSpacing: 1
@@ -616,7 +394,6 @@ function addSectionTitleSlide(pptx, data, slideNumber) {
     h: L.title.h,
     fontSize: 72,
     fontFace: 'Work Sans Thin',
-    bold: false,
     color: COLORS.white,
     align: 'center',
     valign: 'middle',
@@ -647,7 +424,6 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
       h: L.tagline.h,
       fontSize: 12,
       fontFace: 'Work Sans SemiBold',
-      bold: false,
       color: COLORS.red,
       align: 'left',
       charSpacing: 0.5
@@ -661,7 +437,6 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
     h: L.title.h,
     fontSize: 72,
     fontFace: 'Work Sans Thin',
-    bold: false,
     color: COLORS.navy,
     align: 'left',
     valign: 'top',
@@ -676,7 +451,6 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
       h: L.body.h,
       fontSize: 10.5,
       fontFace: 'Work Sans',
-      bold: false,
       color: COLORS.navy,
       align: 'left',
       valign: 'top',
@@ -704,7 +478,6 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
       h: L.tagline.h,
       fontSize: 12,
       fontFace: 'Work Sans SemiBold',
-      bold: false,
       color: COLORS.red,
       align: 'left',
       charSpacing: 0.5
@@ -718,7 +491,6 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
     h: L.title.h,
     fontSize: 44,
     fontFace: 'Work Sans Light',
-    bold: false,
     color: COLORS.navy,
     align: 'left',
     valign: 'top',
@@ -743,8 +515,7 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
         h: L.columns.h,
         fontSize: 10.5,
         fontFace: 'Work Sans',
-        bold: false,
-        color: COLORS.navy,
+          color: COLORS.navy,
         align: 'left',
         valign: 'top',
         lineSpacingMultiple: 1.30

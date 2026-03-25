@@ -1,5 +1,6 @@
 import { CONFIG } from '../config.js';
 import { findTodayColumnPosition } from '../Utils.js';
+import { createDropdownMenu } from '../utils/dom.js';
 
 export class GanttComponents {
   constructor(chart) {
@@ -206,129 +207,23 @@ export class GanttComponents {
   }
 
   createHeaderMenu(isEditMode) {
-    const menuContainer = document.createElement('div');
-    menuContainer.className = 'gantt-header-menu';
-
-    const triggerBtn = document.createElement('button');
-    triggerBtn.className = 'gantt-menu-trigger';
-    triggerBtn.setAttribute('aria-label', 'Open chart menu');
-    triggerBtn.setAttribute('aria-haspopup', 'true');
-    triggerBtn.setAttribute('aria-expanded', 'false');
-    triggerBtn.innerHTML = `
-      <span class="menu-dot"></span>
-      <span class="menu-dot"></span>
-      <span class="menu-dot"></span>
-    `;
-
-    const dropdown = document.createElement('div');
-    dropdown.className = 'gantt-menu-dropdown';
-    dropdown.setAttribute('role', 'menu');
-
-    const editModeItem = this._createMenuItem({
-      id: 'edit-mode-toggle-btn',
-      icon: isEditMode ? '🔓' : '🔒',
-      text: isEditMode ? 'Edit Mode: ON' : 'Edit Mode: OFF',
-      className: `menu-item edit-mode-item ${isEditMode ? 'active' : ''}`,
-      ariaLabel: 'Toggle edit mode to enable or disable chart customization'
+    const { container } = createDropdownMenu({
+      containerClass: 'gantt-header-menu',
+      triggerLabel: 'Open chart menu',
+      minWidth: 200,
+      items: [
+        { id: 'edit-mode-toggle-btn', icon: isEditMode ? '\uD83D\uDD13' : '\uD83D\uDD12',
+          text: isEditMode ? 'Edit Mode: ON' : 'Edit Mode: OFF',
+          className: `menu-item edit-mode-item ${isEditMode ? 'active' : ''}`,
+          ariaLabel: 'Toggle edit mode', keepOpen: true },
+        'divider',
+        { id: 'export-png-btn', icon: '\uD83D\uDCF7', text: 'Export as PNG', ariaLabel: 'Export as PNG image' },
+        { id: 'export-svg-btn', icon: '\uD83C\uDFA8', text: 'Export as SVG', ariaLabel: 'Export as SVG' },
+        'divider',
+        { id: 'copy-url-btn', icon: '\uD83D\uDD17', text: 'Copy Share URL', ariaLabel: 'Copy shareable URL' },
+      ]
     });
-    dropdown.appendChild(editModeItem);
-
-    dropdown.appendChild(this._createMenuDivider());
-
-    const exportPngItem = this._createMenuItem({
-      id: 'export-png-btn',
-      icon: '📷',
-      text: 'Export as PNG',
-      className: 'menu-item',
-      ariaLabel: 'Export Gantt chart as PNG image'
-    });
-    dropdown.appendChild(exportPngItem);
-
-    const exportSvgItem = this._createMenuItem({
-      id: 'export-svg-btn',
-      icon: '🎨',
-      text: 'Export as SVG',
-      className: 'menu-item',
-      ariaLabel: 'Export Gantt chart as SVG vector image'
-    });
-    dropdown.appendChild(exportSvgItem);
-
-    dropdown.appendChild(this._createMenuDivider());
-
-    const copyUrlItem = this._createMenuItem({
-      id: 'copy-url-btn',
-      icon: '🔗',
-      text: 'Copy Share URL',
-      className: 'menu-item',
-      ariaLabel: 'Copy shareable URL to clipboard'
-    });
-    dropdown.appendChild(copyUrlItem);
-
-    menuContainer.appendChild(triggerBtn);
-    menuContainer.appendChild(dropdown);
-    this._setupMenuBehavior(triggerBtn, dropdown);
-
-    return menuContainer;
-  }
-
-  _createMenuItem({ id, icon, text, className, ariaLabel }) {
-    const item = document.createElement('button');
-    item.id = id;
-    item.className = className;
-    item.setAttribute('role', 'menuitem');
-    item.setAttribute('aria-label', ariaLabel);
-    item.innerHTML = `
-      <span class="menu-item-icon">${icon}</span>
-      <span class="menu-item-text">${text}</span>
-    `;
-    return item;
-  }
-
-  _createMenuDivider() {
-    const divider = document.createElement('div');
-    divider.className = 'menu-divider';
-    divider.setAttribute('role', 'separator');
-    return divider;
-  }
-
-  _setupMenuBehavior(trigger, dropdown) {
-    let isOpen = false;
-
-    const openMenu = () => {
-      isOpen = true;
-      dropdown.classList.add('open');
-      trigger.setAttribute('aria-expanded', 'true');
-    };
-
-    const closeMenu = () => {
-      isOpen = false;
-      dropdown.classList.remove('open');
-      trigger.setAttribute('aria-expanded', 'false');
-    };
-
-    trigger.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (isOpen) {
-        closeMenu();
-      } else {
-        openMenu();
-      }
-    });
-
-    document.addEventListener('click', (e) => {
-      if (isOpen && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
-        closeMenu();
-      }
-    });
-
-    dropdown.addEventListener('click', (e) => {
-      const menuItem = e.target.closest('.menu-item');
-      if (menuItem) {
-        if (menuItem.id !== 'edit-mode-toggle-btn') {
-          closeMenu();
-        }
-      }
-    });
+    return container;
   }
 
   addTodayLine(gridElement, ganttData, today) {

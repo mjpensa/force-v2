@@ -1,4 +1,5 @@
-import { toSentenceCasePreservingAcronyms, sanitizeText, normalizeBodyText } from './text.js';
+import { toSentenceCase, sanitizeText, normalizeBodyText, truncateToSentence } from '../../../shared/text-utils.js';
+import { createDropdownMenu } from '../../utils/dom.js';
 import { SpeakerNotesManager } from './SpeakerNotesManager.js';
 
 function renderSlide(slide, index) {
@@ -138,7 +139,7 @@ function renderTwoColumnSlide(slide, index) {
     overflow-wrap: normal;
   `;
   const titleText = slide.title || '';
-  const sentenceCase = toSentenceCasePreservingAcronyms(titleText);
+  const sentenceCase = toSentenceCase(titleText);
   let lines = sentenceCase.split('\n').map(l => l.trim()).filter(l => l);
 
   if (lines.length > 4) {
@@ -168,27 +169,12 @@ function renderTwoColumnSlide(slide, index) {
     overflow: hidden;
   `;
 
-  const MAX_CHARS = 415;
-
-  const truncateToSentence = (text) => {
-    if (text.length <= MAX_CHARS) return text;
-    const truncated = text.substring(0, MAX_CHARS);
-    const lastPeriod = truncated.lastIndexOf('.');
-    const lastQuestion = truncated.lastIndexOf('?');
-    const lastExclaim = truncated.lastIndexOf('!');
-    const lastSentenceEnd = Math.max(lastPeriod, lastQuestion, lastExclaim);
-    if (lastSentenceEnd > MAX_CHARS * 0.6) {
-      return text.substring(0, lastSentenceEnd + 1);
-    }
-    return truncated.replace(/\s+\S*$/, '') + '.';
-  };
-
   let paragraphs = [];
   if (slide.paragraph1 || slide.paragraph2) {
-    if (slide.paragraph1) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1.trim().replace(/\n/g, ' ')))));
-    if (slide.paragraph2) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2.trim().replace(/\n/g, ' ')))));
+    if (slide.paragraph1) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1.trim().replace(/\n/g, ' '))), 415));
+    if (slide.paragraph2) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2.trim().replace(/\n/g, ' '))), 415));
   } else if (slide.body) {
-    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(normalizeBodyText(sanitizeText(p.trim().replace(/\n/g, ' ')))));
+    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(normalizeBodyText(sanitizeText(p.trim().replace(/\n/g, ' '))), 415));
   }
   body.innerHTML = paragraphs.map(p => {
     return `<p style="margin: 0 0 0.8em 0;">${p}</p>`;
@@ -279,26 +265,12 @@ function renderThreeColumnSlide(slide, index) {
   `;
 
   const titleText = slide.title || '';
-  const sentenceCase = toSentenceCasePreservingAcronyms(titleText);
+  const sentenceCase = toSentenceCase(titleText);
   let lines = sentenceCase.split('\n').map(l => l.trim()).filter(l => l);
   if (lines.length > 4) lines = lines.slice(0, 4);
   while (lines.length < 4) lines.push('');
   title.textContent = lines.join('\n');
   el.appendChild(title);
-
-  const MAX_CHARS = 400;
-  const truncateToSentence = (text) => {
-    if (!text || text.length <= MAX_CHARS) return text || '';
-    const truncated = text.substring(0, MAX_CHARS);
-    const lastPeriod = truncated.lastIndexOf('.');
-    const lastQuestion = truncated.lastIndexOf('?');
-    const lastExclaim = truncated.lastIndexOf('!');
-    const lastSentenceEnd = Math.max(lastPeriod, lastQuestion, lastExclaim);
-    if (lastSentenceEnd > MAX_CHARS * 0.6) {
-      return text.substring(0, lastSentenceEnd + 1);
-    }
-    return truncated.replace(/\s+\S*$/, '') + '.';
-  };
 
   const columnsContainer = document.createElement('div');
   columnsContainer.style.cssText = `
@@ -312,9 +284,9 @@ function renderThreeColumnSlide(slide, index) {
   `;
 
   const columnTexts = [
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1))),
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2))),
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph3 || slide.paragraph1)))
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1)), 400),
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2)), 400),
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph3 || slide.paragraph1)), 400)
   ];
 
   columnTexts.forEach(text => {
@@ -639,98 +611,18 @@ export class SlidesView {
   }
 
   _createHeaderMenu() {
-    const menuContainer = document.createElement('div');
-    menuContainer.className = 'slides-header-menu';
-
-    const triggerBtn = document.createElement('button');
-    triggerBtn.className = 'slides-menu-trigger';
-    triggerBtn.setAttribute('aria-label', 'Open slides menu');
-    triggerBtn.setAttribute('aria-haspopup', 'true');
-    triggerBtn.setAttribute('aria-expanded', 'false');
-    triggerBtn.innerHTML = `
-      <span class="menu-dot"></span>
-      <span class="menu-dot"></span>
-      <span class="menu-dot"></span>
-    `;
-
-    const dropdown = document.createElement('div');
-    dropdown.className = 'slides-menu-dropdown';
-    dropdown.setAttribute('role', 'menu');
-
-    const toggleNotesItem = this._createMenuItem({
-      id: 'toggle-notes-btn',
-      icon: '\ud83d\udcdd',
-      text: 'Show Notes',
-      ariaLabel: 'Toggle speaker notes panel'
+    const { container } = createDropdownMenu({
+      containerClass: 'slides-header-menu',
+      triggerLabel: 'Open slides menu',
+      minWidth: 220,
+      items: [
+        { id: 'toggle-notes-btn', icon: '\ud83d\udcdd', text: 'Show Notes', ariaLabel: 'Toggle speaker notes panel',
+          onClick: () => this._notesManager.toggle() },
+        { id: 'export-ppt-btn', icon: '\ud83d\udcca', text: 'Export to PowerPoint', ariaLabel: 'Export slides as PowerPoint presentation',
+          onClick: () => this._exportToPPT() },
+      ]
     });
-    toggleNotesItem.addEventListener('click', () => this._notesManager.toggle());
-    dropdown.appendChild(toggleNotesItem);
-
-    const exportPptItem = this._createMenuItem({
-      id: 'export-ppt-btn',
-      icon: '\ud83d\udcca',
-      text: 'Export to PowerPoint',
-      ariaLabel: 'Export slides as PowerPoint presentation'
-    });
-    exportPptItem.addEventListener('click', () => this._exportToPPT());
-    dropdown.appendChild(exportPptItem);
-
-    menuContainer.appendChild(triggerBtn);
-    menuContainer.appendChild(dropdown);
-    this._setupMenuBehavior(triggerBtn, dropdown);
-
-    return menuContainer;
-  }
-
-  _createMenuItem({ id, icon, text, ariaLabel }) {
-    const item = document.createElement('button');
-    item.id = id;
-    item.className = 'menu-item';
-    item.setAttribute('role', 'menuitem');
-    item.setAttribute('aria-label', ariaLabel);
-    item.innerHTML = `
-      <span class="menu-item-icon">${icon}</span>
-      <span class="menu-item-text">${text}</span>
-    `;
-    return item;
-  }
-
-  _setupMenuBehavior(trigger, dropdown) {
-    let isOpen = false;
-
-    const openMenu = () => {
-      isOpen = true;
-      dropdown.classList.add('open');
-      trigger.setAttribute('aria-expanded', 'true');
-    };
-
-    const closeMenu = () => {
-      isOpen = false;
-      dropdown.classList.remove('open');
-      trigger.setAttribute('aria-expanded', 'false');
-    };
-
-    trigger.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (isOpen) {
-        closeMenu();
-      } else {
-        openMenu();
-      }
-    });
-
-    document.addEventListener('click', (e) => {
-      if (isOpen && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
-        closeMenu();
-      }
-    });
-
-    dropdown.addEventListener('click', (e) => {
-      const menuItem = e.target.closest('.menu-item');
-      if (menuItem) {
-        closeMenu();
-      }
-    });
+    return container;
   }
 
   _btn(text, onClick, bgColor = '#444') {

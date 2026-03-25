@@ -1,3 +1,4 @@
+import { pollUntilReady } from './poll.js';
 import { StateManager } from './components/shared/StateManager.js';
 import { SlidesView } from './components/views/SlidesView.js';
 import { DocumentView } from './components/views/DocumentView.js';
@@ -16,82 +17,6 @@ import {
 } from './components/shared/ErrorHandler.js';
 import { loadFooterSVG } from './Utils.js'; // For GanttChart footer
 import { TaskAnalyzer } from './analysis/TaskAnalyzer.js'; // For task clicks
-
-class PollingService {
-  constructor() {
-    this.polls = new Map(); // viewName -> { timeout, attempt, callback }
-    this.config = {
-      baseInterval: 2000,
-      maxInterval: 15000,
-      maxAttempts: 120,
-      backoffFactor: 1.2
-    };
-  }
-
-  start(viewName, callback, options = {}) {
-    this.stop(viewName);
-
-    const config = { ...this.config, ...options };
-    this.polls.set(viewName, {
-      timeout: null,
-      attempt: 0,
-      callback,
-      config
-    });
-
-    this._poll(viewName);
-  }
-
-  stop(viewName) {
-    const poll = this.polls.get(viewName);
-    if (poll?.timeout) {
-      clearTimeout(poll.timeout);
-    }
-    this.polls.delete(viewName);
-  }
-
-  stopAll() {
-    for (const viewName of this.polls.keys()) {
-      this.stop(viewName);
-    }
-  }
-
-  _poll(viewName) {
-    const poll = this.polls.get(viewName);
-    if (!poll) return;
-
-    const { callback, config } = poll;
-
-    if (poll.attempt >= config.maxAttempts) {
-      callback({ status: 'timeout', viewName });
-      this.stop(viewName);
-      return;
-    }
-
-    Promise.resolve(callback({ status: 'polling', attempt: poll.attempt, viewName }))
-      .then(result => {
-        if (result?.done) {
-          this.stop(viewName);
-          return;
-        }
-
-        const interval = Math.min(
-          config.baseInterval * Math.pow(config.backoffFactor, Math.floor(poll.attempt / 5)),
-          config.maxInterval
-        );
-
-        poll.attempt++;
-        poll.timeout = setTimeout(() => this._poll(viewName), interval);
-      })
-      .catch(() => {
-        poll.attempt++;
-        poll.timeout = setTimeout(
-          () => this._poll(viewName),
-          Math.min(config.baseInterval * 2, config.maxInterval)
-        );
-      });
-  }
-}
 
 class SSEService {
   constructor() {
@@ -182,7 +107,6 @@ class ContentViewer {
     this.footerSVG = '';
     this.taskAnalyzer = new TaskAnalyzer();
 
-    this.pollingService = new PollingService();
     this.sseService = new SSEService(); // Real-time updates (fallback to polling)
     this._useSSE = true; // Try SSE first, fallback to polling on failure
   }
@@ -485,80 +409,37 @@ class ContentViewer {
   }
 
   async _fetchAndCacheContent(viewName) {
-    if (this.stateManager.state.content[viewName]) {
-      return;
-    }
-
+    if (this.stateManager.state.content[viewName]) return;
     try {
-      const response = await fetch(`/api/content/${this.sessionId}/${viewName}`);
-      if (!response.ok) return;
-
-      const data = await response.json();
-      if (data.status === 'completed' && data.data) {
-        const isValidData = this._validateViewData(viewName, data.data);
-        if (isValidData) {
-          this.stateManager.setState({
-            content: { ...this.stateManager.state.content, [viewName]: data.data }
-          });
-        }
+      const result = await pollUntilReady(this.sessionId, viewName, { maxAttempts: 1 });
+      const isValid = this._validateViewData(viewName, result.data);
+      if (isValid) {
+        this.stateManager.setState({ content: { ...this.stateManager.state.content, [viewName]: result.data } });
       }
-    } catch (error) {
-      console.error(`[SSE] Failed to fetch content for ${viewName}:`, error);
-    }
+    } catch (_) { /* ignore — SSE will retry */ }
   }
 
   _startPollingFallback(views) {
     views.forEach(viewName => {
-      this.pollingService.start(`bg-${viewName}`, async ({ status, attempt }) => {
-        if (status === 'timeout') {
-          this._updateTabStatus(viewName, 'failed');
-          return { done: true };
-        }
-
-        try {
-          const response = await fetch(`/api/content/${this.sessionId}/${viewName}`);
-          if (!response.ok) {
-            this._updateTabStatus(viewName, 'failed');
-            return { done: true };
-          }
-
-          const data = await response.json();
-          if (data.status === 'completed' && data.data) {
-            const isValidData = this._validateViewData(viewName, data.data);
-            if (!isValidData) {
-              this._updateTabStatus(viewName, 'failed');
-              return { done: true };
-            }
+      pollUntilReady(this.sessionId, viewName, { baseInterval: 3000, maxAttempts: 100 })
+        .then(result => {
+          const isValid = this._validateViewData(viewName, result.data);
+          if (isValid) {
             this._updateTabStatus(viewName, 'ready');
             if (!this.stateManager.state.content[viewName]) {
-              this.stateManager.setState({
-                content: { ...this.stateManager.state.content, [viewName]: data.data }
-              });
+              this.stateManager.setState({ content: { ...this.stateManager.state.content, [viewName]: result.data } });
             }
-            return { done: true };
-          }
-
-          if (data.status === 'error') {
-            this._updateTabStatus(viewName, 'failed');
-            return { done: true };
-          }
-
-          if (data.status === 'processing' || data.status === 'pending') {
-            this._updateTabStatus(viewName, 'processing');
           } else {
-            this._updateTabStatus(viewName, 'loading');
+            this._updateTabStatus(viewName, 'failed');
           }
-
-          return { done: false };
-        } catch (error) {
-          return { done: false }; // Continue polling on network errors
-        }
-      }, { baseInterval: 3000, maxAttempts: 100 });
+        })
+        .catch(() => {
+          this._updateTabStatus(viewName, 'failed');
+        });
     });
   }
   destroy() {
     this.sseService.stopAll();
-    this.pollingService.stopAll();
 
     if (this.sidebarNav) {
       this.sidebarNav.destroy();

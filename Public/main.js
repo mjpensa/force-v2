@@ -1,3 +1,4 @@
+import { pollUntilReady } from './poll.js';
 import { FILE_TYPES } from './config.js';
 const SUPPORTED_FILE_MIMES = FILE_TYPES.MIMES;
 const SUPPORTED_FILE_EXTENSIONS = FILE_TYPES.EXTENSIONS;
@@ -178,65 +179,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
-async function pollForPhase2Content(sessionId, viewType, generateBtn) {
-  const POLL_INTERVAL = 2000; // Poll every 2 seconds
-  const MAX_ATTEMPTS = 300; // 5 minutes maximum (300 seconds)
-  let attempts = 0;
-  let isPolling = false; // Prevent concurrent polls
-  const poll = async () => {
-    if (isPolling) {
-      return;
-    }
-    if (attempts >= MAX_ATTEMPTS) {
-      throw new Error('Content generation timed out after 5 minutes. Please try again.');
-    }
-    isPolling = true;
-    attempts++;
-    try {
-      const response = await fetch(`/api/content/${sessionId}/${viewType}`);
-      if (!response.ok) {
-        let errorText = `Server error: ${response.status}`;
-        try {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const err = await response.json();
-            errorText = err.message || err.error || errorText;
-            if (err.hint) {
-            }
-          } else {
-            const text = await response.text();
-            errorText = text.substring(0, 200) || errorText;
-          }
-        } catch (parseError) {
-        }
-        throw new Error(errorText);
-      }
-      const content = await response.json();
-      if (generateBtn) {
-        generateBtn.textContent = `Generating ${viewType}... (${attempts}s)`;
-      }
-      if (content.status === 'completed') {
-        return content.data; // Return the content data
-      } else if (content.status === 'error' || content.status === 'failed') {
-        throw new Error(content.error || `${viewType} generation failed with unknown error`);
-      } else if (content.status === 'processing' || content.status === 'pending') {
-        isPolling = false;
-        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
-        return await poll(); // Recursive call
-      } else {
-        throw new Error(`Unknown content status: ${content.status}`);
-      }
-    } catch (error) {
-      isPolling = false;
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
-        return await poll(); // Retry
-      }
-      throw error;
-    }
-  };
-  return await poll();
-}
 async function handleChartGenerate(event) {
   event.preventDefault(); // Stop form from reloading page
   const generateBtn = document.getElementById('generate-btn');
@@ -328,7 +270,13 @@ async function handleChartGenerate(event) {
     if (!sessionId) {
       throw new Error('Server did not return a session ID');
     }
-    const ganttData = await pollForPhase2Content(sessionId, 'roadmap', generateBtn);
+    const result = await pollUntilReady(sessionId, 'roadmap', {
+      onTick: (attempt, elapsed) => {
+        const seconds = Math.floor(elapsed / 1000);
+        generateBtn.textContent = `Generating... (${seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`})`;
+      }
+    });
+    const ganttData = result.data;
     if (!ganttData || typeof ganttData !== 'object') {
       throw new Error('Invalid chart data structure: Expected object, received ' + typeof ganttData);
     }

@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { jsonrepair } from 'jsonrepair';
 import { generateRoadmapPrompt, roadmapSchema } from './prompts/roadmap.js';
 import { generateSlidesPrompt, generateSlidesOutlinePrompt, generateSpeakerNotesPrompt, generateSpeakerNotesOutlinePrompt, slidesSchema, slidesOutlineSchema, speakerNotesSchema, speakerNotesOutlineSchema } from './prompts/slides.js';
@@ -6,8 +5,7 @@ import { generateDocumentPrompt, documentSchema } from './prompts/document.js';
 import { generateResearchAnalysisPrompt, researchAnalysisSchema } from './prompts/research-analysis.js';
 import { generateIntelligenceBriefPrompt, intelligenceBriefSchema } from './prompts/intelligence-brief.js';
 import { CONFIG } from './config.js';
-
-const genAI = new GoogleGenerativeAI(process.env.API_KEY);
+import { genAI } from './gemini.js';
 const GENERATION_TIMEOUT_MS = 360000; // 6 minutes
 
 class APIQueue {
@@ -336,15 +334,9 @@ async function generateRoadmap(userPrompt, researchFiles) {
 }
 async function generateSlides(userPrompt, researchFiles, swimlanes = []) {
   try {
-    const augmentedSwimlanes = createAugmentedSwimlanes(swimlanes);
-
-    const outlinePrompt = generateSlidesOutlinePrompt(userPrompt, researchFiles, augmentedSwimlanes);
-    const outline = await generateWithGemini(outlinePrompt, slidesOutlineSchema, 'SlideOutline', SLIDES_OUTLINE_CONFIG);
-
-    const fullPrompt = generateSlidesPrompt(userPrompt, researchFiles, augmentedSwimlanes, outline);
-    const data = await generateWithGemini(fullPrompt, slidesSchema, 'Slides', SLIDES_CONFIG);
-
-    return { success: true, data };
+    const outlineResult = await generateSlidesOutlineOnly(userPrompt, researchFiles, swimlanes);
+    if (!outlineResult.success) return outlineResult;
+    return generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, outlineResult.data);
   } catch (error) {
     return { success: false, error: error.message };
   }

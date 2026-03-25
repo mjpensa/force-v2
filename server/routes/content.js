@@ -8,7 +8,29 @@ import { fileCache } from '../cache/FileCache.js';
 
 const router = express.Router();
 
+// --- Constants ---
+
+const VIEW_TYPE_MAP = {
+  'roadmap': 'roadmap',
+  'slides': 'slides',
+  'document': 'document',
+  'research-analysis': 'researchAnalysis'
+};
+const VALID_VIEW_TYPES = Object.keys(VIEW_TYPE_MAP);
+
 // --- Route helpers ---
+
+async function processUploadedFiles(files) {
+  const sortedFiles = files.sort((a, b) => a.originalname.localeCompare(b.originalname));
+  return Promise.all(sortedFiles.map(async (file) => {
+    const content = await fileCache.get(file.buffer, file.mimetype, file.originalname);
+    return { filename: file.originalname, content };
+  }));
+}
+
+function sanitizeFilename(title) {
+  return title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
+}
 
 function getSessionOrFail(req, res, message) {
   const { sessionId } = req.params;
@@ -20,6 +42,7 @@ function getSessionOrFail(req, res, message) {
     });
     return null;
   }
+  session.lastAccessed = Date.now(); // auto-touch
   return session;
 }
 
@@ -116,16 +139,7 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
         error: 'At least one research file is required'
       });
     }
-    const sortedFiles = files.sort((a, b) => a.originalname.localeCompare(b.originalname));
-    const fileProcessingPromises = sortedFiles.map(async (file) => {
-      const content = await fileCache.get(file.buffer, file.mimetype, file.originalname);
-
-      return {
-        filename: file.originalname,
-        content: content
-      };
-    });
-    const researchFiles = await Promise.all(fileProcessingPromises);
+    const researchFiles = await processUploadedFiles(files);
     const results = await generateAllContent(prompt, researchFiles);
     const sessionId = generateSessionId();
     const now = Date.now();
@@ -169,10 +183,9 @@ router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), as
     const { viewType } = req.params;
     const { prompt } = req.body;
     const files = req.files;
-    const validViewTypes = ['roadmap', 'slides', 'document', 'research-analysis'];
-    if (!validViewTypes.includes(viewType)) {
+    if (!VALID_VIEW_TYPES.includes(viewType)) {
       return res.status(400).json({
-        error: `Invalid view type. Must be one of: ${validViewTypes.join(', ')}`
+        error: `Invalid view type. Must be one of: ${VALID_VIEW_TYPES.join(', ')}`
       });
     }
     if (!prompt || typeof prompt !== 'string') {
@@ -186,12 +199,7 @@ router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), as
         error: 'At least one research file is required'
       });
     }
-    const sortedFiles = files.sort((a, b) => a.originalname.localeCompare(b.originalname));
-    const fileProcessingPromises = sortedFiles.map(async (file) => {
-      const content = await fileCache.get(file.buffer, file.mimetype, file.originalname);
-      return { filename: file.originalname, content };
-    });
-    const researchFiles = await Promise.all(fileProcessingPromises);
+    const researchFiles = await processUploadedFiles(files);
     const result = await regenerateContent(viewType, prompt, researchFiles);
 
     res.json({
@@ -214,10 +222,9 @@ router.post('/:sessionId/regenerate/:viewType', express.json(), async (req, res)
   try {
     const { sessionId, viewType } = req.params;
     const { prompt: newPrompt } = req.body;
-    const validViewTypes = ['roadmap', 'slides', 'document', 'research-analysis'];
-    if (!validViewTypes.includes(viewType)) {
+    if (!VALID_VIEW_TYPES.includes(viewType)) {
       return res.status(400).json({
-        error: `Invalid view type. Must be one of: ${validViewTypes.join(', ')}`
+        error: `Invalid view type. Must be one of: ${VALID_VIEW_TYPES.join(', ')}`
       });
     }
     const session = getSessionOrFail(req, res, 'Please upload files again to regenerate content.');
@@ -229,11 +236,10 @@ router.post('/:sessionId/regenerate/:viewType', express.json(), async (req, res)
       });
     }
 
-    touchSession(sessionId);
     const researchFiles = session.researchFiles;
     const prompt = newPrompt || session.prompt;
     const result = await regenerateContent(viewType, prompt, researchFiles);
-    const contentKey = viewType === 'research-analysis' ? 'researchAnalysis' : viewType;
+    const contentKey = VIEW_TYPE_MAP[viewType];
     if (result.success) {
       session.content[contentKey] = result;
       session.lastAccessed = Date.now();
@@ -273,7 +279,7 @@ router.get('/:sessionId/slides/export', async (req, res) => {
       company: 'BIP'
     });
     const title = slides.title || 'Presentation';
-    const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
+    const safeTitle = sanitizeFilename(title);
     exportFile(res, pptxBuffer, `${safeTitle}.pptx`, 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
 
   } catch (error) {
@@ -291,7 +297,6 @@ router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
     const session = getSessionOrFail(req, res);
     if (!session) return;
 
-    touchSession(req.params.sessionId);
     const slidesResult = session.content.slides;
     if (!slidesResult || !slidesResult.success || !slidesResult.data) {
       return res.status(400).json({
@@ -357,7 +362,7 @@ router.get('/:sessionId/document/export', async (req, res) => {
       creator: 'BIP'
     });
     const title = documentData.title || 'Executive_Summary';
-    const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
+    const safeTitle = sanitizeFilename(title);
     exportFile(res, docxBuffer, `${safeTitle}.docx`, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
   } catch (error) {
@@ -394,7 +399,6 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
       });
     }
 
-    touchSession(sessionId);
     const sessionData = {
       sources: session.researchFiles || [],
       document: session.content.document?.data || null,
@@ -441,19 +445,11 @@ router.get('/:sessionId/:viewType', (req, res) => {
     const { sessionId, viewType } = req.params;
     const session = getSessionOrFail(req, res, 'Session may have expired or does not exist. Please generate new content.');
     if (!session) return;
-    touchSession(sessionId);
-    const viewTypeMap = {
-      'roadmap': 'roadmap',
-      'slides': 'slides',
-      'document': 'document',
-      'research-analysis': 'researchAnalysis'
-    };
-
-    const contentKey = viewTypeMap[viewType];
+    const contentKey = VIEW_TYPE_MAP[viewType];
     if (!contentKey) {
       return res.status(400).json({
         error: 'Invalid view type',
-        message: `View type must be one of: ${Object.keys(viewTypeMap).join(', ')}`
+        message: `View type must be one of: ${VALID_VIEW_TYPES.join(', ')}`
       });
     }
 
@@ -504,7 +500,7 @@ router.post('/slides/export', express.json({ limit: '50mb' }), async (req, res) 
       company: 'BIP'
     });
     const title = slides.title || 'Presentation';
-    const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
+    const safeTitle = sanitizeFilename(title);
     exportFile(res, pptxBuffer, `${safeTitle}.pptx`, 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
 
   } catch (error) {
@@ -526,7 +522,7 @@ router.post('/document/export', express.json({ limit: '50mb' }), async (req, res
       creator: 'BIP'
     });
     const title = document.title || 'Executive_Summary';
-    const safeTitle = title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
+    const safeTitle = sanitizeFilename(title);
     exportFile(res, docxBuffer, `${safeTitle}.docx`, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
   } catch (error) {
@@ -542,10 +538,10 @@ router.post('/update-task-dates', express.json(), (req, res) => {
       return res.status(400).json({ error: 'sessionId and taskIndex are required' });
     }
 
-    const session = sessions.get(sessionId);
-    if (!session) return res.status(404).json({ error: 'Session not found' });
+    req.params.sessionId = sessionId;
+    const session = getSessionOrFail(req, res);
+    if (!session) return;
 
-    touchSession(sessionId);
     const roadmapData = session.content.roadmap?.data;
     if (!roadmapData || !roadmapData.data || !roadmapData.data[taskIndex]) {
       return res.status(400).json({ error: 'Task not found in roadmap data' });
@@ -570,10 +566,10 @@ router.post('/update-task-color', express.json(), (req, res) => {
       return res.status(400).json({ error: 'sessionId, taskIndex, and color are required' });
     }
 
-    const session = sessions.get(sessionId);
-    if (!session) return res.status(404).json({ error: 'Session not found' });
+    req.params.sessionId = sessionId;
+    const session = getSessionOrFail(req, res);
+    if (!session) return;
 
-    touchSession(sessionId);
     const roadmapData = session.content.roadmap?.data;
     if (!roadmapData || !roadmapData.data || !roadmapData.data[taskIndex]) {
       return res.status(400).json({ error: 'Task not found in roadmap data' });

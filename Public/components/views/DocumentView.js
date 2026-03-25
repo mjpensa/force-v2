@@ -1,3 +1,5 @@
+import { createDropdownMenu } from '../../utils/dom.js';
+
 export class DocumentView {
   constructor(documentData = null, sessionId = null) {
     this.documentData = documentData;
@@ -5,7 +7,6 @@ export class DocumentView {
     this.container = null;
     this.activeSectionId = null;
     this.scrollHandler = null;
-    this.resizeObserver = null;
     this.tocLinks = new Map(); // sectionId -> tocLink element
   }
 
@@ -711,92 +712,18 @@ export class DocumentView {
   }
 
   _createDocumentMenu() {
-    const menuContainer = document.createElement('div');
-    menuContainer.className = 'document-header-menu';
-    const triggerBtn = document.createElement('button');
-    triggerBtn.className = 'document-menu-trigger';
-    triggerBtn.setAttribute('aria-label', 'Open document menu');
-    triggerBtn.setAttribute('aria-haspopup', 'true');
-    triggerBtn.setAttribute('aria-expanded', 'false');
-    triggerBtn.innerHTML = `
-      <span class="menu-dot"></span>
-      <span class="menu-dot"></span>
-      <span class="menu-dot"></span>
-    `;
-    const dropdown = document.createElement('div');
-    dropdown.className = 'document-menu-dropdown';
-    dropdown.setAttribute('role', 'menu');
-    const exportWordItem = this._createDocMenuItem({
-      id: 'export-word-btn',
-      icon: '📄',
-      text: 'Export to Word',
-      ariaLabel: 'Export document as Word file'
+    const { container } = createDropdownMenu({
+      containerClass: 'document-header-menu',
+      triggerLabel: 'Open document menu',
+      minWidth: 180,
+      items: [
+        { id: 'export-word-btn', icon: '📄', text: 'Export to Word', ariaLabel: 'Export document as Word file',
+          onClick: () => this._exportToDocx() },
+        { id: 'intelligence-brief-btn', icon: '🎯', text: 'Pre-Meeting Intelligence Brief', ariaLabel: 'Generate pre-meeting intelligence brief',
+          onClick: () => this._showIntelligenceBriefModal() },
+      ]
     });
-    exportWordItem.addEventListener('click', () => this._exportToDocx());
-    dropdown.appendChild(exportWordItem);
-    const intelligenceBriefItem = this._createDocMenuItem({
-      id: 'intelligence-brief-btn',
-      icon: '🎯',
-      text: 'Pre-Meeting Intelligence Brief',
-      ariaLabel: 'Generate pre-meeting intelligence brief'
-    });
-    intelligenceBriefItem.addEventListener('click', () => this._showIntelligenceBriefModal());
-    dropdown.appendChild(intelligenceBriefItem);
-
-    menuContainer.appendChild(triggerBtn);
-    menuContainer.appendChild(dropdown);
-    this._setupDocMenuBehavior(triggerBtn, dropdown);
-
-    return menuContainer;
-  }
-
-  _createDocMenuItem({ id, icon, text, ariaLabel }) {
-    const item = document.createElement('button');
-    item.id = id;
-    item.className = 'menu-item';
-    item.setAttribute('role', 'menuitem');
-    item.setAttribute('aria-label', ariaLabel);
-    item.innerHTML = `
-      <span class="menu-item-icon">${icon}</span>
-      <span class="menu-item-text">${text}</span>
-    `;
-    return item;
-  }
-
-  _setupDocMenuBehavior(trigger, dropdown) {
-    let isOpen = false;
-
-    const openMenu = () => {
-      isOpen = true;
-      dropdown.classList.add('open');
-      trigger.setAttribute('aria-expanded', 'true');
-    };
-
-    const closeMenu = () => {
-      isOpen = false;
-      dropdown.classList.remove('open');
-      trigger.setAttribute('aria-expanded', 'false');
-    };
-
-    trigger.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (isOpen) {
-        closeMenu();
-      } else {
-        openMenu();
-      }
-    });
-    document.addEventListener('click', (e) => {
-      if (isOpen && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
-        closeMenu();
-      }
-    });
-    dropdown.addEventListener('click', (e) => {
-      const menuItem = e.target.closest('.menu-item');
-      if (menuItem) {
-        closeMenu();
-      }
-    });
+    return container;
   }
 
   _showIntelligenceBriefModal() {
@@ -934,11 +861,6 @@ export class DocumentView {
       this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
       this.scrollHandler = null;
       this.scrollContainer = null;
-    }
-
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-      this.resizeObserver = null;
     }
 
     this.tocLinks.clear();
