@@ -91,24 +91,24 @@
   text-align: center;
   padding: 20px;
 }
-.analysis-section {
+.modal-body .analysis-section {
   margin-bottom: 20px;
 }
-.analysis-section:last-child {
+.modal-body .analysis-section:last-child {
   margin-bottom: 0;
 }
-.analysis-section h4 {
-  font-size: 20px; 
+.modal-body .analysis-section h4 {
+  font-size: 20px;
   font-weight: 600;
   color: var(--glass-text-primary);
   margin-top: 0;
   margin-bottom: 8px;
-  border-bottom: 1px solid var(--color-border-dark-gray, #383838); 
+  border-bottom: 1px solid var(--color-border-dark-gray, #383838);
   padding-bottom: 4px;
 }
-.analysis-section p {
-  font-size: 18px; 
-  color: #CCCCCC; 
+.modal-body .analysis-section p {
+  font-size: 18px;
+  color: #CCCCCC;
   line-height: 1.6;
   margin: 0;
 }
@@ -253,7 +253,7 @@
 .modal-content {
   max-width: 900px; 
 }
-.analysis-section.collapsible {
+.modal-body .analysis-section.collapsible {
   transition: all 0.3s ease;
 }
 .collapsible-header {
@@ -272,11 +272,11 @@
   transition: transform 0.3s ease;
   margin-left: 8px;
 }
-.analysis-section.collapsed .scenarios-container,
-.analysis-section.collapsed .risks-container,
-.analysis-section.collapsed .impact-content,
-.analysis-section.collapsed .scheduling-content,
-.analysis-section.collapsed .progress-content,
+.modal-body .analysis-section.collapsed .scenarios-container,
+.modal-body .analysis-section.collapsed .risks-container,
+.modal-body .analysis-section.collapsed .impact-content,
+.modal-body .analysis-section.collapsed .scheduling-content,
+.modal-body .analysis-section.collapsed .progress-content,
 
 .timeline-scenarios-section {
   background-color: #222222;
@@ -312,10 +312,10 @@
   font-size: 18px; 
   color: #CCCCCC;
 }
-.confidence-badge {
-  font-size: 14px; 
+.modal-body .confidence-badge {
+  font-size: 14px;
   font-weight: 600;
-  padding: 4px 10px; 
+  padding: 4px 10px;
   border-radius: 12px;
   text-transform: uppercase;
 }

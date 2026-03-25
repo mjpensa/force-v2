@@ -1,5 +1,5 @@
 {
-  "name": "dynamic-gantt-chart-app",
+  "name": "proposal-studio",
   "version": "1.0.0",
   "description": "Dynamic Gantt chart generator",
   "main": "server.js",
@@ -9,7 +9,6 @@
     "build:css": "tailwindcss -i ./Public/styles/tailwind-source.css -o ./Public/styles/tailwind.css --minify",
     "build:js": "node scripts/build-js.mjs",
     "build": "npm run build:css && npm run build:js",
-    "build:prod": "NODE_ENV=production npm run build",
     "dev:css": "tailwindcss -i ./Public/styles/tailwind-source.css -o ./Public/styles/tailwind.css --watch",
     "test": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --coverage",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --watch",
@@ -19,11 +18,8 @@
     "lint:fix": "eslint 'Public/**/*.js' 'server/**/*.js' 'server.js' --fix --ignore-pattern 'Public/dist/**'",
     "analyze:deps": "depcheck",
     "analyze:dead-code": "knip",
-    "analyze:css": "purgecss --config purgecss.config.cjs",
     "analyze:deps-graph": "madge Public/main.js --image reports/main-deps.svg && madge Public/viewer.js --image reports/viewer-deps.svg && madge server.js --image reports/server-deps.svg",
-    "analyze:all": "npm run lint && npm run analyze:deps && npm run analyze:dead-code",
-    "cleanup:find-todos": "grep -rn 'TODO\\|FIXME\\|HACK\\|XXX' Public/ server/ --include='*.js' || true",
-    "cleanup:find-console": "grep -rn 'console\\.log' Public/ server/ --include='*.js' || true"
+    "analyze:all": "npm run lint && npm run analyze:deps && npm run analyze:dead-code"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -42,21 +38,15 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@jest/globals": "^30.2.0",
-    "@types/jest": "^30.0.0",
     "autoprefixer": "^10.4.21",
     "depcheck": "^1.4.7",
     "esbuild": "^0.24.0",
     "eslint": "^9.39.1",
     "eslint-plugin-unused-imports": "^4.3.0",
-    "form-data": "^4.0.5",
     "jest": "^30.2.0",
     "knip": "^5.70.2",
     "madge": "^8.0.0",
-    "node-fetch": "^3.3.2",
-    "node-mocks-http": "^1.17.2",
     "postcss": "^8.5.4",
-    "purgecss": "^7.0.2",
-    "supertest": "^7.1.4",
     "tailwindcss": "^3.4.17"
   }
 }
