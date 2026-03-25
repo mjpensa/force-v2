@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { findTodayColumnPosition, createButton } from '../Utils.js';
+import { findTodayColumnPosition } from '../Utils.js';
 
 export class GanttComponents {
   constructor(chart) {

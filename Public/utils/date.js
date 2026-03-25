@@ -3,7 +3,7 @@
  * @param {Date} date - The date to get the week number for
  * @returns {number} - Week number (1-52/53)
  */
-export function getWeek(date) {
+function getWeek(date) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);

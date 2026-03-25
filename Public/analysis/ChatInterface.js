@@ -3,7 +3,6 @@ export class ChatInterface {
   constructor(container, taskIdentifier) {
     this.container = container;
     this.taskIdentifier = taskIdentifier;
-    this.history = [];
   }
   render() {
     if (!this.container) {

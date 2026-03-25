@@ -7,14 +7,6 @@ export class DraggableGantt extends InteractiveGanttHandler {
     this.dragIndicator = null;
   }
 
-  enableDragging() {
-    this.enable();
-  }
-
-  disableDragging() {
-    this.disable();
-  }
-
   _handleMouseDown(event) {
     const bar = event.target.closest('.gantt-bar');
     if (!bar) return;

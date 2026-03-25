@@ -342,8 +342,3 @@ Analyze this research thoroughly and provide a comprehensive quality assessment 
 Respond with ONLY the JSON object.`;
 }
 
-export default {
-  researchAnalysisSchema,
-  researchAnalysisPrompt,
-  generateResearchAnalysisPrompt
-};

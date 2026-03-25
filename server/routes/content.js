@@ -1,7 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import { generateAllContent, regenerateContent, generateIntelligenceBrief, generateSpeakerNotesAsync } from '../generators.js';
-import { uploadMiddleware, handleUploadErrors } from '../middleware.js';
+import { uploadMiddleware } from '../middleware.js';
 import { generatePptx } from '../templates/ppt-export-service-v2.js';
 import { generateDocx, generateIntelligenceBriefDocx } from '../templates/docx-export-service.js';
 import { fileCache } from '../cache/FileCache.js';
@@ -131,7 +131,7 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
     const now = Date.now();
     sessions.set(sessionId, {
       prompt,
-      researchFiles: researchFiles.map(f => ({ filename: f.filename, content: f.content })),
+      researchFiles,
       content: {
         roadmap: results.roadmap,
         slides: results.slides,
@@ -588,6 +588,4 @@ router.post('/update-task-color', express.json(), (req, res) => {
     handleGenerationError(error, res, 'update task color');
   }
 });
-router.use(handleUploadErrors);
-
 export default router;

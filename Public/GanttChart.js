@@ -248,15 +248,6 @@ export class GanttChart {
       }
     };
 
-    const onTaskResize = async (taskInfo) => {
-      if (taskInfo.sessionId) {
-        await fetchJSON('/api/content/update-task-dates', {
-          method: 'POST',
-          body: JSON.stringify(taskInfo)
-        });
-      }
-    };
-
     const onColorChange = async (taskInfo) => {
       if (taskInfo.sessionId) {
         await fetchJSON('/api/content/update-task-color', {
@@ -276,7 +267,7 @@ export class GanttChart {
     this.resizableGantt = new ResizableGantt(
       this.gridElement,
       this.ganttData,
-      onTaskResize
+      onTaskUpdate
     );
 
     this.contextMenu = new ContextMenu(

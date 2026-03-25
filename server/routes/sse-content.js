@@ -3,9 +3,6 @@ import { sessions } from './content.js';
 
 const router = express.Router();
 
-// Track active SSE connections for cleanup
-const activeConnections = new Map();
-
 router.get('/stream/:sessionId', (req, res) => {
   const { sessionId } = req.params;
 
@@ -32,9 +29,6 @@ router.get('/stream/:sessionId', (req, res) => {
     return;
   }
 
-  // Track this connection
-  const connectionId = `${sessionId}-${Date.now()}`;
-  activeConnections.set(connectionId, res);
   const interval = setInterval(() => {
     const currentSession = sessions.get(sessionId);
 
@@ -83,7 +77,6 @@ router.get('/stream/:sessionId', (req, res) => {
   // Cleanup function
   const cleanup = () => {
     clearInterval(interval);
-    activeConnections.delete(connectionId);
     res.end();
   };
 

@@ -5,14 +5,6 @@ export class ResizableGantt extends InteractiveGanttHandler {
     super(gridElement, ganttData, onTaskResize);
   }
 
-  enableResizing() {
-    this.enable();
-  }
-
-  disableResizing() {
-    this.disable();
-  }
-
   _handleMouseDown(event) {
     const bar = event.target.closest('.gantt-bar');
     if (!bar) return;

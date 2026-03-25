@@ -1,26 +1,14 @@
 /**
  * Safely get an element by ID
  * @param {string} id - Element ID
- * @param {string} context - Context for logging
  * @returns {HTMLElement|null}
  */
-export function safeGetElement(id, context = '') {
-  const element = document.getElementById(id);
-  return element;
+export function safeGetElement(id) {
+  return document.getElementById(id);
 }
 
-export function safeQuerySelector(selector, context = '') {
-  const element = document.querySelector(selector);
-  return element;
-}
-
-export function isSafeUrl(url) {
-  try {
-    const parsed = new URL(url);
-    return ['http:', 'https:'].includes(parsed.protocol);
-  } catch (e) {
-    return false;
-  }
+export function safeQuerySelector(selector) {
+  return document.querySelector(selector);
 }
 
 export function createButton(config) {

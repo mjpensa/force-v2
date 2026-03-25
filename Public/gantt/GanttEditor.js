@@ -31,16 +31,9 @@ export class GanttEditor {
       const iconEl = editModeBtn.querySelector('.menu-item-icon');
       const textEl = editModeBtn.querySelector('.menu-item-text');
 
-      if (iconEl && textEl) {
-        // New glassmorphic menu structure
-        iconEl.textContent = this.isEditMode ? '🔓' : '🔒';
-        textEl.textContent = this.isEditMode ? 'Edit Mode: ON' : 'Edit Mode: OFF';
-        editModeBtn.classList.toggle('active', this.isEditMode);
-      } else {
-        // Legacy button structure
-        editModeBtn.textContent = this.isEditMode ? '🔓 Edit Mode: ON' : '🔒 Edit Mode: OFF';
-        editModeBtn.style.backgroundColor = this.isEditMode ? '#50AF7B' : '#BA3930';
-      }
+      iconEl.textContent = this.isEditMode ? '🔓' : '🔒';
+      textEl.textContent = this.isEditMode ? 'Edit Mode: ON' : 'Edit Mode: OFF';
+      editModeBtn.classList.toggle('active', this.isEditMode);
 
       editModeBtn.setAttribute('aria-pressed', this.isEditMode ? 'true' : 'false');
 
@@ -56,10 +49,10 @@ export class GanttEditor {
 
   enableAllEditFeatures() {
     if (this.draggableGantt) {
-      this.draggableGantt.enableDragging();
+      this.draggableGantt.enable();
     }
     if (this.resizableGantt) {
-      this.resizableGantt.enableResizing();
+      this.resizableGantt.enable();
     }
     if (this.contextMenu) {
       this.contextMenu.enable();
@@ -79,10 +72,10 @@ export class GanttEditor {
 
   disableAllEditFeatures() {
     if (this.draggableGantt) {
-      this.draggableGantt.disableDragging();
+      this.draggableGantt.disable();
     }
     if (this.resizableGantt) {
-      this.resizableGantt.disableResizing();
+      this.resizableGantt.disable();
     }
     if (this.contextMenu) {
       this.contextMenu.disable();

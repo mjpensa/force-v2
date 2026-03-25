@@ -5,14 +5,12 @@ export { fetchJSON } from './fetch.js';
 export {
   safeGetElement,
   safeQuerySelector,
-  isSafeUrl,
   createButton,
   createModal
 } from './dom.js';
 
 // Date utilities
 export {
-  getWeek,
   findTodayColumnPosition
 } from './date.js';
 

@@ -82,8 +82,8 @@ function createHeading(text, level = 1) {
   };
 
   const style = headingStyles[level] || headingStyles[2];
-  const spaceBefore = level === 1 ? SPACING.sectionLargeBefore : SPACING.sectionSmallBefore;
-  const spaceAfter = level === 1 ? SPACING.sectionLargeAfter : SPACING.sectionSmallAfter;
+  const spaceBefore = SPACING.sectionBefore;
+  const spaceAfter = SPACING.sectionAfter;
 
   return new Paragraph({
     heading: style.level,
@@ -101,24 +101,6 @@ function createParagraph(text, options = {}) {
     },
     alignment: options.alignment || AlignmentType.LEFT,
     children: [styledText(text, options.style || STYLES.body)]
-  });
-}
-
-function createLabel(text) {
-  return new Paragraph({
-    spacing: { before: SPACING.sectionGap, after: 100 },
-    children: [styledText(text.toUpperCase(), STYLES.label)]
-  });
-}
-
-function createKeyInsight(text) {
-  return new Paragraph({
-    spacing: { before: 200, after: 200 },
-    border: {
-      left: { style: BorderStyle.SINGLE, size: 24, color: hexColor(COLORS.navy) }
-    },
-    indent: { left: 200 },
-    children: [styledText(text, STYLES.keyInsight)]
   });
 }
 

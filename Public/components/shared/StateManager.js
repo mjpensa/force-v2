@@ -3,146 +3,26 @@ export class StateManager {
   constructor() {
     this.state = {
       sessionId: null,
-      currentView: 'roadmap',  // 'roadmap' | 'slides' | 'document' | 'research-analysis'
       content: {
         roadmap: null,
         slides: null,
         document: null,
         'research-analysis': null
-      },
-      loading: {
-        roadmap: false,
-        slides: false,
-        document: false,
-        'research-analysis': false
-      },
-      errors: {
-        roadmap: null,
-        slides: null,
-        document: null,
-        'research-analysis': null
-      },
-      ui: {
-        menuOpen: false,
-        fullscreen: false
       }
     };
-    this.listeners = [];
-    this.viewListeners = {};  // View-specific listeners
-
-    // Performance optimizations: request deduplication
-    this._pendingRequests = new Map();
-
-    // Batch state updates for performance
-    this._pendingStateUpdates = [];
-    this._updateScheduled = false;
-  }
-  getState() {
-    return { ...this.state };
   }
   setState(updates) {
-    const previousState = { ...this.state };
-    this.state = this.deepMerge(this.state, updates);
-    this.notifyListeners(previousState, this.state);
+    Object.assign(this.state, updates);
   }
-
-  // Batch multiple state updates into a single render cycle for performance
-  batchSetState(updates) {
-    this._pendingStateUpdates.push(updates);
-    if (!this._updateScheduled) {
-      this._updateScheduled = true;
-      // Use microtask to batch updates within the same event loop
-      queueMicrotask(() => this._flushStateUpdates());
-    }
-  }
-
-  _flushStateUpdates() {
-    if (this._pendingStateUpdates.length === 0) {
-      this._updateScheduled = false;
-      return;
-    }
-
-    const previousState = { ...this.state };
-
-    // Merge all pending updates into a single state change
-    for (const updates of this._pendingStateUpdates) {
-      this.state = this.deepMerge(this.state, updates);
-    }
-
-    this._pendingStateUpdates = [];
-    this._updateScheduled = false;
-
-    // Single notification for all batched updates
-    this.notifyListeners(previousState, this.state);
-  }
-  deepMerge(target, source) {
-    const result = { ...target };
-    for (const key in source) {
-      if (source[key] instanceof Object && !Array.isArray(source[key])) {
-        result[key] = this.deepMerge(target[key] || {}, source[key]);
-      } else {
-        result[key] = source[key];
-      }
-    }
-    return result;
-  }
-  subscribe(listener) {
-    this.listeners.push(listener);
-    return () => {
-      this.listeners = this.listeners.filter(l => l !== listener);
-    };
-  }
-  notifyListeners(previousState, newState) {
-    this.listeners.forEach(listener => {
-      try {
-        listener(newState, previousState);
-      } catch (error) {
-      }
-    });
-    for (const viewName in this.viewListeners) {
-      if (newState.content[viewName] !== previousState.content[viewName]) {
-        this.viewListeners[viewName].forEach(listener => {
-          try {
-            listener(newState.content[viewName], previousState.content[viewName]);
-          } catch (error) {
-          }
-        });
-      }
-    }
-  }
-  async loadView(viewName, forceRefresh = false) {
-    if (!forceRefresh && this.state.content[viewName]) {
+  async loadView(viewName) {
+    if (this.state.content[viewName]) {
       return this.state.content[viewName];
     }
 
-    // Request deduplication: reuse pending request for same view
-    const requestKey = `${this.state.sessionId}:${viewName}`;
-    if (!forceRefresh && this._pendingRequests.has(requestKey)) {
-      return this._pendingRequests.get(requestKey);
-    }
-    const requestPromise = this._executeLoadView(viewName, forceRefresh);
-    this._pendingRequests.set(requestKey, requestPromise);
-
-    try {
-      const result = await requestPromise;
-      return result;
-    } finally {
-      // Clean up pending request
-      this._pendingRequests.delete(requestKey);
-    }
+    return this._executeLoadView(viewName);
   }
 
-  async _executeLoadView(viewName, forceRefresh) {
-    if (forceRefresh) {
-      this.setState({
-        content: { ...this.state.content, [viewName]: null },
-        errors: { ...this.state.errors, [viewName]: null }
-      });
-    }
-    this.setState({
-      loading: { ...this.state.loading, [viewName]: true },
-      errors: { ...this.state.errors, [viewName]: null }
-    });
+  async _executeLoadView(viewName) {
     try {
       const response = await fetchWithRetry(
         `/api/content/${this.state.sessionId}/${viewName}`,
@@ -226,8 +106,7 @@ export class StateManager {
         }
       }
       this.setState({
-        content: { ...this.state.content, [viewName]: data },
-        loading: { ...this.state.loading, [viewName]: false }
+        content: { ...this.state.content, [viewName]: data }
       });
       return data;
     } catch (error) {
@@ -239,24 +118,7 @@ export class StateManager {
             ErrorSeverity.MEDIUM,
             { viewName, originalError: error }
           );
-      this.setState({
-        loading: { ...this.state.loading, [viewName]: false },
-        errors: { ...this.state.errors, [viewName]: appError.message }
-      });
       throw appError;
     }
-  }
-  clear() {
-    this._pendingRequests.clear();
-    this._pendingStateUpdates = [];
-    this._updateScheduled = false;
-
-    this.setState({
-      sessionId: null,
-      currentView: 'roadmap',
-      content: { roadmap: null, slides: null, document: null, 'research-analysis': null },
-      loading: { roadmap: false, slides: false, document: false, 'research-analysis': false },
-      errors: { roadmap: null, slides: null, document: null, 'research-analysis': null }
-    });
   }
 }

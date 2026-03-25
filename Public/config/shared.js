@@ -12,12 +12,6 @@ export const INJECTION_PATTERNS = [
   { pattern: /pretend\s+(you\s+are|to\s+be)\s+/gi, replacement: '[REDACTED]' }
 ];
 
-export const ID_PATTERNS = {
-  CHART_ID: /^[a-f0-9]{32}$/i,
-  JOB_ID: /^[a-f0-9]{32}$/i,
-  SESSION_ID: /^[a-f0-9]{32}$/i
-};
-
 export const FILE_TYPES = {
   MIMES: [
     'text/markdown',
@@ -34,8 +28,7 @@ export const FILE_TYPES = {
  */
 export const RATE_LIMITS = {
   WINDOW_MS: 15 * 60 * 1000, // 15 minutes
-  MAX_REQUESTS: 100,
-  STRICT_MAX_REQUESTS: 20 // For resource-intensive endpoints
+  MAX_REQUESTS: 100
 };
 
 export const TIMEOUTS = {
@@ -63,12 +56,10 @@ export const ERROR_MESSAGES = {
   FILE_TOO_LARGE: 'File too large. Maximum size is 10MB per file.',
   TOO_MANY_FILES: 'Too many files. Maximum is 500 files per upload.',
   FIELD_TOO_LARGE: 'Field value too large. Maximum total size is 200MB.',
-  RATE_LIMIT_EXCEEDED: 'Too many requests from this IP, please try again later.',
-  STRICT_RATE_LIMIT_EXCEEDED: 'Too many chart generation requests. Please try again in 15 minutes.'
+  RATE_LIMIT_EXCEEDED: 'Too many requests from this IP, please try again later.'
 };
 
 Object.freeze(INJECTION_PATTERNS);
-Object.freeze(ID_PATTERNS);
 Object.freeze(FILE_TYPES);
 Object.freeze(RATE_LIMITS);
 Object.freeze(TIMEOUTS);

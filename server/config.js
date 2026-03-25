@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import {
   INJECTION_PATTERNS,
-  ID_PATTERNS,
   FILE_TYPES,
   RATE_LIMITS,
   TIMEOUTS,
@@ -22,9 +21,6 @@ function validateEnvironment() {
   if (missing.length > 0) {
     missing.forEach(key => console.error(`  ${key}=your_value_here`));
     process.exit(1);
-  }
-  if (process.env.API_KEY && process.env.API_KEY.length < 10) {
-    // API key seems too short - could add warning here
   }
 }
 
@@ -65,33 +61,27 @@ export const CONFIG = {
   RATE_LIMIT: {
     WINDOW_MS: RATE_LIMITS.WINDOW_MS,
     MAX_REQUESTS: RATE_LIMITS.MAX_REQUESTS,
-    STRICT_MAX_REQUESTS: RATE_LIMITS.STRICT_MAX_REQUESTS
   },
   CACHE: {
     STATIC_ASSETS_MAX_AGE: 86400 // 1 day in seconds
   },
   SECURITY: {
-    INJECTION_PATTERNS: INJECTION_PATTERNS,
-    PATTERNS: ID_PATTERNS
+    INJECTION_PATTERNS: INJECTION_PATTERNS
   },
   VALIDATION: {
     MAX_QUESTION_LENGTH: VALIDATION.MAX_QUESTION_LENGTH
   },
   ERRORS: {
     MISSING_TASK_NAME: 'Missing taskName or entity',
-    MISSING_SESSION_ID: 'Missing sessionId',
     SESSION_NOT_FOUND: ERROR_MESSAGES.SESSION_NOT_FOUND,
     QUESTION_REQUIRED: 'Question is required and must be non-empty',
     ENTITY_REQUIRED: 'Entity is required',
     TASK_NAME_REQUIRED: 'Task name is required',
     QUESTION_TOO_LONG: 'Question too long (max 1000 characters)',
-    INVALID_CHART_ID: ERROR_MESSAGES.INVALID_CHART_ID,
-    CHART_NOT_FOUND: ERROR_MESSAGES.CHART_NOT_FOUND,
     FILE_TOO_LARGE: ERROR_MESSAGES.FILE_TOO_LARGE,
     TOO_MANY_FILES: ERROR_MESSAGES.TOO_MANY_FILES,
     FIELD_TOO_LARGE: ERROR_MESSAGES.FIELD_TOO_LARGE,
     RATE_LIMIT_EXCEEDED: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED,
-    STRICT_RATE_LIMIT_EXCEEDED: ERROR_MESSAGES.STRICT_RATE_LIMIT_EXCEEDED,
     INVALID_FILE_EXTENSION: (ext) => `Invalid file extension: .${ext}. Only .md, .txt, and .docx files are allowed.`,
     INVALID_FILE_TYPE: (type) => `Invalid file type: ${type}. Only .md, .txt, and .docx files are allowed.`
   }
@@ -105,7 +95,6 @@ Object.freeze(CONFIG.TIMEOUTS);
 Object.freeze(CONFIG.RATE_LIMIT);
 Object.freeze(CONFIG.CACHE);
 Object.freeze(CONFIG.SECURITY);
-Object.freeze(CONFIG.SECURITY.PATTERNS);
 Object.freeze(CONFIG.VALIDATION);
 Object.freeze(CONFIG.ERRORS);
 

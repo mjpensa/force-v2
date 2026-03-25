@@ -11,20 +11,18 @@ export class GanttExporter {
     const targetRatio = ratioW / ratioH; // 9:16 = 0.5625
     const sourceRatio = sourceWidth / sourceHeight;
 
-    let targetWidth, targetHeight, scale, offsetX, offsetY;
+    let targetWidth, targetHeight, offsetX, offsetY;
 
     if (sourceRatio > targetRatio) {
       // Source is wider than target ratio - fit to width, add vertical padding
       targetWidth = sourceWidth;
       targetHeight = sourceWidth / targetRatio;
-      scale = 1;
       offsetX = 0;
       offsetY = (targetHeight - sourceHeight) / 2;
     } else {
       // Source is taller than target ratio - fit to height, add horizontal padding
       targetHeight = sourceHeight;
       targetWidth = sourceHeight * targetRatio;
-      scale = 1;
       offsetX = (targetWidth - sourceWidth) / 2;
       offsetY = 0;
     }
@@ -32,7 +30,6 @@ export class GanttExporter {
     return {
       targetWidth: Math.ceil(targetWidth),
       targetHeight: Math.ceil(targetHeight),
-      scale,
       offsetX: Math.ceil(offsetX),
       offsetY: Math.ceil(offsetY),
       sourceWidth,

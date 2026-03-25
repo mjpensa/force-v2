@@ -144,9 +144,7 @@ const LAYOUTS = {
 
 let ASSETS = {
   logo: null,
-  logoWhite: null,
-  cornerGraphic: null,
-  cornerGraphicWhite: null
+  cornerGraphic: null
 };
 
 let assetsLoaded = false;
@@ -375,7 +373,7 @@ function getSectionLabel(slideData) {
   return label ? String(label).toUpperCase() : '';
 }
 
-function addCornerGraphic(pptx, slide, layout, isDarkBackground = false) {
+function addCornerGraphic(slide, layout) {
   const pos = layout.cornerGraphic;
 
   if (ASSETS.cornerGraphic) {
@@ -687,7 +685,7 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
       charSpacing: 0.3  // Approximate letter-spacing: 0.02em
     });
   }
-  addCornerGraphic(pptx, slide, L, false);
+  addCornerGraphic(slide, L);
   _addLogo(slide, L);
   _addPageNumber(slide, L, slideNumber);
   _addSpeakerNotes(slide, speakerNotes);
@@ -753,7 +751,7 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
       });
     }
   });
-  addCornerGraphic(pptx, slide, L, false);
+  addCornerGraphic(slide, L);
   _addLogo(slide, L);
   _addPageNumber(slide, L, slideNumber);
   _addSpeakerNotes(slide, speakerNotes);

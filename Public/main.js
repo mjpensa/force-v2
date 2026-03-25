@@ -1,4 +1,4 @@
-import { CONFIG, FILE_TYPES } from './config.js';
+import { FILE_TYPES } from './config.js';
 const SUPPORTED_FILE_MIMES = FILE_TYPES.MIMES;
 const SUPPORTED_FILE_EXTENSIONS = FILE_TYPES.EXTENSIONS;
 const SUPPORTED_FILES_STRING = SUPPORTED_FILE_EXTENSIONS.join(', ');
@@ -14,27 +14,6 @@ function formatFileSize(bytes) {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-function updateFolderStats(files, validFiles) {
-    const folderStats = document.getElementById('folder-stats');
-    const totalFiles = document.getElementById('total-files');
-    const validFilesEl = document.getElementById('valid-files');
-    const totalSize = document.getElementById('total-size');
-    const fileTypes = document.getElementById('file-types');
-    let size = 0;
-    for (const file of validFiles) {
-        size += file.size;
-    }
-    const types = new Set();
-    for (const file of validFiles) {
-        const ext = '.' + file.name.split('.').pop().toLowerCase();
-        types.add(ext);
-    }
-    totalFiles.textContent = files.length;
-    validFilesEl.textContent = validFiles.length;
-    totalSize.textContent = formatFileSize(size);
-    fileTypes.textContent = Array.from(types).join(', ') || 'None';
-    folderStats.classList.add('hidden');
 }
 async function processFiles(files) {
     const fileInput = document.getElementById('upload-input');
@@ -107,7 +86,6 @@ async function processFiles(files) {
         fileListContainer.classList.add('hidden');
         return;
     }
-    updateFolderStats(filesArray, validFiles);
     fileList.innerHTML = ''; // Clear previous list
     const displayLimit = 50;
     const displayFiles = validFiles.slice(0, displayLimit);

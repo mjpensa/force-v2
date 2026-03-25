@@ -207,8 +207,3 @@ ${sessionContext}
 Generate a concise, one-page intelligence brief optimized for this specific meeting. Focus on the insights and talking points most relevant to the stated objective and attendees. Pull specific data and evidence from the session analysis above.`;
 }
 
-export default {
-  intelligenceBriefSchema,
-  INTELLIGENCE_BRIEF_SYSTEM_PROMPT,
-  generateIntelligenceBriefPrompt
-};

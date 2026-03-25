@@ -641,12 +641,6 @@
   font-size: 12px;
   color: #B3B3B3; 
 }
-.milestone-completed .milestone-name {
-  color: #CCCCCC;
-}
-.milestone-pending .milestone-name {
-  color: var(--glass-text-primary);
-}
 .blockers-section {
   margin-top: 16px;
   padding-top: 16px;
@@ -788,21 +782,6 @@
 }
 .fact-value.confidence-low {
   color: var(--color-accent-red, #BA3930);
-}
-.quick-fact.alert-fact {
-  background-color: #2F120F;
-  margin: 0 -16px;
-  padding: 10px 16px;
-  border-left: 3px solid var(--color-accent-red, #BA3930);
-}
-.quick-fact.alert-fact .fact-label {
-  color: var(--glass-text-primary);
-  font-weight: 600;
-}
-.quick-fact.alert-fact .fact-value {
-  color: var(--color-accent-red, #BA3930);
-  font-weight: 700;
-  font-size: 16px;
 }
 .timeline-scenarios-section,
 .risks-section,
