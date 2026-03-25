@@ -26,8 +26,8 @@
   --glass-white-25: rgba(255, 255, 255, 0.25);
   --glass-white-30: rgba(255, 255, 255, 0.30);
   --glass-text-primary: #FFFFFF;
-  --glass-text-secondary: rgba(255, 255, 255, 0.80);
-  --glass-text-muted: rgba(255, 255, 255, 0.60);
+  --glass-text-secondary: rgba(255, 255, 255, 0.55);
+  --glass-text-muted: rgba(255, 255, 255, 0.40);
   --blur-xs: 4px;
   --blur-sm: 8px;
   --blur-md: 12px;

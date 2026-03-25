@@ -65,8 +65,8 @@ export default {
       // Glassmorphic Text Colors (for text-glass-* utilities)
       textColor: {
         'glass-primary': 'rgba(255, 255, 255, 1)',
-        'glass-secondary': 'rgba(255, 255, 255, 0.7)',
-        'glass-muted': 'rgba(255, 255, 255, 0.5)',
+        'glass-secondary': 'rgba(255, 255, 255, 0.55)',
+        'glass-muted': 'rgba(255, 255, 255, 0.4)',
       },
 
       // Glassmorphic Background Colors (for bg-glass-* utilities)
