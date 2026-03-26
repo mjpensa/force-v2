@@ -1,4 +1,4 @@
-import { createDropdownMenu } from '../../utils/dom.js';
+import { createDropdownMenu, escapeHtml } from '../../utils/dom.js';
 
 export class DocumentView {
   constructor(documentData = null, sessionId = null) {
@@ -370,7 +370,7 @@ export class DocumentView {
       if (this.documentData.meta.version) metaItems.push(`v${this.documentData.meta.version}`);
 
       meta.innerHTML = metaItems.map(item =>
-        `<span class="meta-item">${item}</span>`
+        `<span class="meta-item">${escapeHtml(item)}</span>`
       ).join('<span class="meta-divider">•</span>');
 
       header.appendChild(meta);

@@ -4,7 +4,16 @@ import multer from 'multer';
 import { CONFIG } from './config.js';
 export function configureHelmet() {
   return helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:"],
+        connectSrc: ["'self'"],
+      }
+    },
     crossOriginEmbedderPolicy: false // Required for some external resources
   });
 }

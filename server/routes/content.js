@@ -1,5 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
+import rateLimit from 'express-rate-limit';
 import { generateAllContent, generateIntelligenceBrief, generateSpeakerNotesAsync } from '../generators.js';
 import { uploadMiddleware } from '../middleware.js';
 import { generatePptx } from '../templates/ppt-export-service-v2.js';
@@ -7,6 +8,12 @@ import { generateDocx, generateIntelligenceBriefDocx } from '../templates/docx-e
 import { fileCache } from '../cache/FileCache.js';
 
 const router = express.Router();
+
+const generationLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 3,
+  message: { error: 'Too many generation requests. Please wait before trying again.' }
+});
 
 // --- Constants ---
 
@@ -47,10 +54,8 @@ function getSessionOrFail(req, res, message) {
 }
 
 function handleGenerationError(error, res, context = 'process request') {
-  res.status(500).json({
-    error: `Failed to ${context}`,
-    details: error.message
-  });
+  console.error(`[${context}] Error:`, error.message);
+  res.status(500).json({ error: `Failed to ${context}. Please try again.` });
 }
 
 function exportFile(res, buffer, filename, contentType) {
@@ -104,7 +109,7 @@ function formatUserError(rawError, viewType) {
   return `Failed to generate ${viewType}: ${truncated}${rawError.length > 150 ? '...' : ''}`;
 }
 
-router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, res) => {
+router.post('/generate', generationLimiter, uploadMiddleware.array('researchFiles'), async (req, res) => {
   const GENERATE_TIMEOUT_MS = 25 * 60 * 1000;
   req.setTimeout(GENERATE_TIMEOUT_MS);
   res.setTimeout(GENERATE_TIMEOUT_MS);
@@ -185,7 +190,7 @@ router.get('/:sessionId/slides/export', async (req, res) => {
   }
 });
 
-router.post('/:sessionId/slides/speaker-notes', async (req, res) => {
+router.post('/:sessionId/slides/speaker-notes', generationLimiter, async (req, res) => {
   // 20 minutes: covers worst case of 3 API calls (outline + retry + full notes) at 6 min each
   const SPEAKER_NOTES_TIMEOUT_MS = 20 * 60 * 1000;
   req.setTimeout(SPEAKER_NOTES_TIMEOUT_MS);
@@ -268,7 +273,7 @@ router.get('/:sessionId/document/export', async (req, res) => {
   }
 });
 
-router.post('/:sessionId/intelligence-brief/generate', express.json(), async (req, res) => {
+router.post('/:sessionId/intelligence-brief/generate', generationLimiter, express.json(), async (req, res) => {
   const BRIEF_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
   req.setTimeout(BRIEF_TIMEOUT_MS);
   res.setTimeout(BRIEF_TIMEOUT_MS);
@@ -384,10 +389,20 @@ router.get('/:sessionId/:viewType', (req, res) => {
 
 router.post('/update-task-dates', express.json(), (req, res) => {
   try {
-    const { sessionId, taskIndex, newStartCol, newEndCol } = req.body;
+    const { sessionId } = req.body;
 
-    if (!sessionId || taskIndex === undefined) {
-      return res.status(400).json({ error: 'sessionId and taskIndex are required' });
+    const taskIndex = Number(req.body.taskIndex);
+    if (!Number.isInteger(taskIndex) || taskIndex < 0) {
+      return res.status(400).json({ error: 'Invalid taskIndex' });
+    }
+    const newStartCol = Number(req.body.newStartCol);
+    const newEndCol = Number(req.body.newEndCol);
+    if (!Number.isInteger(newStartCol) || !Number.isInteger(newEndCol) || newStartCol < 0 || newEndCol < 0) {
+      return res.status(400).json({ error: 'Invalid column values' });
+    }
+
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId is required' });
     }
 
     req.params.sessionId = sessionId;
@@ -401,8 +416,8 @@ router.post('/update-task-dates', express.json(), (req, res) => {
 
     const task = roadmapData.data[taskIndex];
     if (task.bar) {
-      if (newStartCol !== undefined) task.bar.startCol = newStartCol;
-      if (newEndCol !== undefined) task.bar.endCol = newEndCol;
+      task.bar.startCol = newStartCol;
+      task.bar.endCol = newEndCol;
     }
     res.json({ success: true, task });
   } catch (error) {
@@ -412,10 +427,19 @@ router.post('/update-task-dates', express.json(), (req, res) => {
 
 router.post('/update-task-color', express.json(), (req, res) => {
   try {
-    const { sessionId, taskIndex, color } = req.body;
+    const { sessionId } = req.body;
 
-    if (!sessionId || taskIndex === undefined || !color) {
-      return res.status(400).json({ error: 'sessionId, taskIndex, and color are required' });
+    const taskIndex = Number(req.body.taskIndex);
+    if (!Number.isInteger(taskIndex) || taskIndex < 0) {
+      return res.status(400).json({ error: 'Invalid taskIndex' });
+    }
+    const { color } = req.body;
+    if (typeof color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(color)) {
+      return res.status(400).json({ error: 'Invalid color format' });
+    }
+
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId is required' });
     }
 
     req.params.sessionId = sessionId;

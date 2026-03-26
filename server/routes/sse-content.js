@@ -1,17 +1,19 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { sessions } from './content.js';
 
 const router = express.Router();
 const VIEWS = ['roadmap', 'slides', 'document', 'researchAnalysis'];
 
-router.get('/stream/:sessionId', (req, res) => {
+const sseLimiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
+
+router.get('/stream/:sessionId', sseLimiter, (req, res) => {
   const { sessionId } = req.params;
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
-  res.setHeader('Access-Control-Allow-Origin', '*');
 
   sendEvent(res, 'connected', { sessionId, timestamp: Date.now() });
 

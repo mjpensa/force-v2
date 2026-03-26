@@ -1,5 +1,5 @@
 import { toSentenceCase, sanitizeText, normalizeBodyText, truncateToSentence } from '../../shared/text-utils.js';
-import { createDropdownMenu } from '../../utils/dom.js';
+import { createDropdownMenu, escapeHtml } from '../../utils/dom.js';
 import { SpeakerNotesManager } from './SpeakerNotesManager.js';
 
 /** Append BIP logo, page-number footer, and optional corner graphic to a slide element. */
@@ -192,7 +192,7 @@ function renderTwoColumnSlide(slide, index) {
     paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(normalizeBodyText(sanitizeText(p.trim().replace(/\n/g, ' '))), 415));
   }
   body.innerHTML = paragraphs.map(p => {
-    return `<p style="margin: 0 0 0.8em 0;">${p}</p>`;
+    return `<p style="margin: 0 0 0.8em 0;">${escapeHtml(p)}</p>`;
   }).join('');
 
   el.appendChild(body);
