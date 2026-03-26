@@ -5,13 +5,14 @@ import { CONFIG } from './config.js';
 import { getFileExtension } from './utils.js';
 export function configureHelmet() {
   return helmet({
-    contentSecurityPolicy: false, // Disabled to allow Tailwind CDN (will be removed in production)
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false // Required for some external resources
   });
 }
 export function configureCacheControl(req, res, next) {
   if (req.path.match(/\.(jpg|jpeg|png|gif|ico|css|js|svg)$/)) {
-    res.set('Cache-Control', `public, max-age=${CONFIG.CACHE.STATIC_ASSETS_MAX_AGE}`);
+    const maxAge = process.env.NODE_ENV === 'production' ? CONFIG.CACHE.STATIC_ASSETS_MAX_AGE : 0;
+    res.set('Cache-Control', `public, max-age=${maxAge}`);
   } else {
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   }

@@ -297,7 +297,7 @@ async function handleChartGenerate(event) {
     stopProgressTimer();
     loadingIndicator.style.display = 'none';
     window.location.href = `/viewer.html?sessionId=${sessionId}#roadmap`;
-    return; // Skip finally block — page is navigating
+    return;
   } catch (error) {
     errorMessage.textContent = `Error: ${error.message}`;
     errorMessage.style.display = 'block';
