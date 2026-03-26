@@ -67,10 +67,6 @@ export class GanttRenderer {
         barAreaEl.style.cursor = 'pointer';
       }
 
-      if (!isSwimlane) {
-        this._addHoverEffects(labelEl, barAreaEl);
-      }
-
       rowsFragment.appendChild(labelEl);
       rowsFragment.appendChild(barAreaEl);
     });
@@ -208,21 +204,6 @@ export class GanttRenderer {
 
     gridElement.addEventListener('click', this._gridClickHandler);
     gridElement.addEventListener('dblclick', this._gridDblClickHandler);
-  }
-
-  _addHoverEffects(labelEl, barAreaEl) {
-    labelEl.addEventListener('mouseenter', () => {
-      barAreaEl.classList.add('row-hover');
-    });
-    labelEl.addEventListener('mouseleave', () => {
-      barAreaEl.classList.remove('row-hover');
-    });
-    barAreaEl.addEventListener('mouseenter', () => {
-      barAreaEl.classList.add('row-hover');
-    });
-    barAreaEl.addEventListener('mouseleave', () => {
-      barAreaEl.classList.remove('row-hover');
-    });
   }
 
   _createVirtualizedRows(gridElement, ganttData, numCols) {

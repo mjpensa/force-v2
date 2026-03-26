@@ -1,4 +1,5 @@
-import { PerformanceTimer, fetchJSON } from './Utils.js';
+import { PerformanceTimer } from './utils/performance.js';
+import { fetchJSON } from './utils/fetch.js';
 import {
   DraggableGantt,
   ResizableGantt,

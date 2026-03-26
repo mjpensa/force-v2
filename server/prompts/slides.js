@@ -1,4 +1,4 @@
-import { getCurrentDateContext, assembleResearchContent, validatePromptInputs, getAcronymRules, extractKeyStats, getSourceExtractionRules, formatDateContext, NARRATIVE_POSITIONS } from './common.js';
+import { getCurrentDateContext, assembleResearchContent, getAcronymRules, extractKeyStats, getSourceExtractionRules, formatDateContext, NARRATIVE_POSITIONS } from './common.js';
 
 /**
  * Formats extracted stats, sources, and contextual evidence for prompt injection.
@@ -814,16 +814,14 @@ export const speakerNotesOutlineSchema = {
   required: ["reasoning", "slideOutlines"]
 };
 
-export function generateSlidesOutlinePrompt(userPrompt, researchFiles, swimlanes = []) {
-  const validFiles = validatePromptInputs(userPrompt, researchFiles, 'outline generation');
-
+export function generateSlidesOutlinePrompt(userPrompt, researchFiles, swimlanes = [], precomputed = null) {
   // Convert array to formatted string
-  const researchContent = assembleResearchContent(validFiles);
+  const researchContent = precomputed?.researchContent || assembleResearchContent(researchFiles);
 
   // Extract key statistics
-  const { stats, sources, contextualStats } = extractKeyStats(researchContent);
+  const { stats, sources, contextualStats } = precomputed?.keyStats || extractKeyStats(researchContent);
   // Get current temporal context
-  const dateContext = getCurrentDateContext();
+  const dateContext = precomputed?.dateContext || getCurrentDateContext();
 
   // Format swimlanes for the prompt (including fixed Overview and Conclusion sections)
   const swimlaneList = formatSwimlaneList(swimlanes, 'related tasks');
@@ -1004,9 +1002,7 @@ function getFrameworkSignalPhrases(framework) {
  * @param {object|null} outline - Optional narrative outline from pass 1 for guided generation
  * @returns {string} Complete prompt for AI
  */
-export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = [], outline = null) {
-  const validFiles = validatePromptInputs(userPrompt, researchFiles, 'slide generation');
-
+export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = [], outline = null, precomputed = null) {
   // Validate swimlane objects if provided (allowing isFixed property for Overview/Conclusion)
   if (swimlanes && swimlanes.length > 0) {
     const invalidSwimlane = swimlanes.find(s => !s || typeof s.name !== 'string' || (typeof s.taskCount !== 'number' && !s.isFixed));
@@ -1016,12 +1012,12 @@ export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = [], 
   }
 
   // Convert array to formatted string (consistent with other generators)
-  const researchContent = assembleResearchContent(validFiles);
+  const researchContent = precomputed?.researchContent || assembleResearchContent(researchFiles);
 
   // Extract key statistics to force AI to use real data
-  const { stats, sources, contextualStats } = extractKeyStats(researchContent);
+  const { stats, sources, contextualStats } = precomputed?.keyStats || extractKeyStats(researchContent);
   // Get current temporal context
-  const dateContext = getCurrentDateContext();
+  const dateContext = precomputed?.dateContext || getCurrentDateContext();
 
   // Format swimlanes for the prompt (including fixed Overview and Conclusion sections)
   const swimlaneList = formatSwimlaneList(swimlanes, 'related tasks in roadmap');

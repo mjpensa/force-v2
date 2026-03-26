@@ -226,8 +226,8 @@ You MUST respond with *only* a valid JSON object matching the schema.
     - **VERIFY TASKS STARTING BEFORE RANGE:** Specifically check for tasks/events that STARTED BEFORE the user's time range but EXTEND INTO IT. These are commonly missed. If research mentions a project starting in 2018 and the user requests 2020-2025, that project MUST be included with startCol=1 if it's still ongoing or ended after 2020.
 `;
 
-export function generateRoadmapPrompt(userPrompt, researchFiles) {
-  const researchContent = assembleResearchContent(researchFiles);
+export function generateRoadmapPrompt(userPrompt, researchFiles, precomputed = null) {
+  const researchContent = precomputed?.researchContent || assembleResearchContent(researchFiles);
 
   return `${roadmapPrompt}
 

@@ -184,8 +184,9 @@
   background-color: var(--color-border-dark-gray, #383838); 
 }
 .gantt-bar-area.task:hover,
-.gantt-bar-area.task.row-hover {
-  background-color: #546579; 
+.gantt-bar-area.task.row-hover,
+.gantt-row-label.task:hover + .gantt-bar-area.task {
+  background-color: #546579;
   cursor: pointer;
 }
 .gantt-bar-area.swimlane {
@@ -243,12 +244,6 @@
 .gantt-bar.resizing::after {
   content: '⋮⋮'; 
   opacity: 1;
-}
-.gantt-grid.edit-mode-enabled .gantt-bar:hover::before:hover,
-.gantt-grid.edit-mode-enabled .gantt-bar:hover::after:hover {
-  background: rgba(80, 175, 123, 0.95);
-  color: white;
-  transform: translateY(-50%) scale(1.1);
 }
 .gantt-bar[data-color="priority-red"] { background-color: #EF4444; } 
 .gantt-bar[data-color="medium-red"] { background-color: #FB923C; } 

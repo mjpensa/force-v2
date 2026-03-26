@@ -505,14 +505,14 @@ ANTI-PATTERNS FOR SWIMLANE SECTIONS:
 `;
 }
 
-export function generateDocumentPrompt(userPrompt, researchFiles, swimlanes = []) {
-  const researchContent = assembleResearchContent(researchFiles);
+export function generateDocumentPrompt(userPrompt, researchFiles, swimlanes = [], precomputed = null) {
+  const researchContent = precomputed?.researchContent || assembleResearchContent(researchFiles);
 
   // Enhanced research pre-processing
-  const { stats, contextualStats, sources } = extractKeyStats(researchContent);
+  const { stats, contextualStats, sources } = precomputed?.keyStats || extractKeyStats(researchContent);
   const { comparisons, windows } = extractCausalRelationships(researchContent);
   const swimlaneInstructions = generateSwimlaneSectionInstructions(swimlanes);
-  const dateContext = getCurrentDateContext();
+  const dateContext = precomputed?.dateContext || getCurrentDateContext();
   const contextualStatsFormatted = contextualStats.length > 0
     ? contextualStats.map((s, i) => `${i + 1}. "${s}"`).join('\n')
     : 'No contextual statistics found - extract key data points from the research text';

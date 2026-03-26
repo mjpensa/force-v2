@@ -236,8 +236,8 @@ Calculate the overall score as a weighted average:
 - **needs-improvement**: 1-2 themes are Gantt-ready, or overall score 4-5.9
 - **insufficient**: No themes are Gantt-ready, or overall score < 4`;
 
-export function generateResearchAnalysisPrompt(userPrompt, researchFiles) {
-  const researchContent = assembleResearchContent(researchFiles);
+export function generateResearchAnalysisPrompt(userPrompt, researchFiles, precomputed = null) {
+  const researchContent = precomputed?.researchContent || assembleResearchContent(researchFiles);
 
   const timestamp = new Date().toISOString();
 

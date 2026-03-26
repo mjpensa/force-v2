@@ -273,46 +273,10 @@
   background-color: #2F120F;
   color: var(--color-accent-red, #BA3930);
 }
-.severity-high {
-  background-color: #2F120F;
-  color: var(--color-accent-red, #BA3930);
-}
-.severity-medium {
-  background-color: #382A13;
-  color: #EE9E20;
-}
-.severity-low {
-  background-color: #2A2A2A;
-  color: #B3B3B3;
-}
-.risks-section {
-  background-color: #222222;
-  border: 1px solid var(--color-border-dark-gray, #383838);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 24px;
-}
-.impact-section {
-  background-color: #222222;
-  border: 1px solid var(--color-border-dark-gray, #383838);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 24px;
-}
-.scheduling-section {
-  background-color: #222222;
-  border: 1px solid var(--color-border-dark-gray, #383838);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 24px;
-}
-.progress-section {
-  background-color: #222222;
-  border: 1px solid var(--color-border-dark-gray, #383838);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 24px;
-}
+.risks-section,
+.impact-section,
+.scheduling-section,
+.progress-section,
 .accelerators-section {
   background-color: #222222;
   border: 1px solid var(--color-border-dark-gray, #383838);

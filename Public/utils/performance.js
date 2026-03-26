@@ -17,8 +17,4 @@ export class PerformanceTimer {
     const duration = Math.round(performance.now() - this.startTime);
     return duration;
   }
-
-  getMarks() {
-    return this.marks;
-  }
 }

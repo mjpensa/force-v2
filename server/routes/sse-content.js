@@ -85,29 +85,6 @@ router.get('/stream/:sessionId', (req, res) => {
   req.on('error', cleanup);
 });
 
-router.get('/stream/:sessionId/status', (req, res) => {
-  const { sessionId } = req.params;
-
-  const session = sessions.get(sessionId);
-  if (!session) {
-    return res.status(404).json({
-      error: 'Session not found',
-      sessionId
-    });
-  }
-
-  res.json({
-    sessionId,
-    timestamp: Date.now(),
-    content: {
-      roadmap: getContentStatus(session, 'roadmap'),
-      slides: getContentStatus(session, 'slides'),
-      document: getContentStatus(session, 'document'),
-      researchAnalysis: getContentStatus(session, 'researchAnalysis')
-    }
-  });
-});
-
 function getContentStatus(session, viewName) {
   const content = session.content[viewName];
 

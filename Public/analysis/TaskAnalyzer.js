@@ -1,4 +1,5 @@
-import { safeGetElement, safeQuerySelector, buildAnalysisSection, createModal } from '../Utils.js';
+import { safeGetElement, safeQuerySelector, createModal } from '../utils/dom.js';
+import { buildAnalysisSection } from '../utils/analysis-builders.js';
 import { ChatInterface } from './ChatInterface.js';
 export class TaskAnalyzer {
   constructor() {

@@ -137,13 +137,16 @@ export function createDropdownMenu(config) {
   const close = () => { isOpen = false; dropdown.classList.remove('open'); trigger.setAttribute('aria-expanded', 'false'); };
 
   trigger.addEventListener('click', (e) => { e.stopPropagation(); isOpen ? close() : open(); });
-  document.addEventListener('click', (e) => {
+  const outsideClickHandler = (e) => {
     if (isOpen && !dropdown.contains(e.target) && !trigger.contains(e.target)) close();
-  });
+  };
+  document.addEventListener('click', outsideClickHandler);
   dropdown.addEventListener('click', (e) => {
     const menuItem = e.target.closest('.menu-item');
     if (menuItem && !menuItem.dataset.keepOpen) close();
   });
 
-  return { container, dropdown, trigger, open, close };
+  const destroy = () => { document.removeEventListener('click', outsideClickHandler); };
+
+  return { container, dropdown, trigger, open, close, destroy };
 }

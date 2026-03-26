@@ -32,7 +32,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Work Sans', 'sans-serif'],
       },
 
       // Glassmorphic Backdrop Blur

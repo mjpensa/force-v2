@@ -1,8 +1,5 @@
 import { pollUntilReady } from './poll.js';
 import { StateManager } from './components/shared/StateManager.js';
-import { SlidesView } from './components/views/SlidesView.js';
-import { DocumentView } from './components/views/DocumentView.js';
-import { ResearchAnalysisView } from './components/views/ResearchAnalysisView.js';
 import { addLazyLoadingStyles, initLazyLoading } from './components/shared/LazyLoader.js';
 import { SidebarNav } from './components/SidebarNav.js';
 import {
@@ -15,8 +12,7 @@ import {
 import {
   showErrorNotification
 } from './components/shared/ErrorHandler.js';
-import { loadFooterSVG } from './Utils.js'; // For GanttChart footer
-import { TaskAnalyzer } from './analysis/TaskAnalyzer.js'; // For task clicks
+import { loadFooterSVG } from './utils/assets.js';
 
 class SSEService {
   constructor() {
@@ -88,10 +84,6 @@ class SSEService {
     }
   }
 
-  isConnected(sessionId) {
-    const eventSource = this.eventSources.get(sessionId);
-    return eventSource?.readyState === EventSource.OPEN;
-  }
 }
 
 class ContentViewer {
@@ -105,7 +97,7 @@ class ContentViewer {
     this.contentContainer = null;
     this.sidebarNav = null;
     this.footerSVG = '';
-    this.taskAnalyzer = new TaskAnalyzer();
+    this.taskAnalyzer = null;
 
     this.sseService = new SSEService(); // Real-time updates (fallback to polling)
     this._useSSE = true; // Try SSE first, fallback to polling on failure
@@ -119,8 +111,6 @@ class ContentViewer {
         skipLink: true,
         skipLinkTarget: 'main-content',
         announceRouteChanges: true,
-        validateHeadings: true,
-        validateImages: true,
         focusManagement: true
       });
       this.sessionId = this._getSessionIdFromURL();
@@ -213,9 +203,14 @@ class ContentViewer {
         throw error;
       }
       markPerformance(`render-${viewName}-start`);
-      const viewClasses = { slides: SlidesView, document: DocumentView, 'research-analysis': ResearchAnalysisView };
-      if (viewClasses[viewName]) {
-        this._renderView(viewClasses[viewName], viewData);
+      const viewLoaders = {
+        slides: () => import('./components/views/SlidesView.js').then(m => m.SlidesView),
+        document: () => import('./components/views/DocumentView.js').then(m => m.DocumentView),
+        'research-analysis': () => import('./components/views/ResearchAnalysisView.js').then(m => m.ResearchAnalysisView),
+      };
+      if (viewLoaders[viewName]) {
+        const ViewClass = await viewLoaders[viewName]();
+        this._renderView(ViewClass, viewData);
       } else {
         await this._renderRoadmapView(viewData);
       }
@@ -259,7 +254,11 @@ class ContentViewer {
       if (!data.data || !Array.isArray(data.data)) {
         throw new Error('Invalid data array in chart data');
       }
-      const handleTaskClick = (taskIdentifier) => {
+      const handleTaskClick = async (taskIdentifier) => {
+        if (!this.taskAnalyzer) {
+          const { TaskAnalyzer } = await import('./analysis/TaskAnalyzer.js');
+          this.taskAnalyzer = new TaskAnalyzer();
+        }
         this.taskAnalyzer.showAnalysis(taskIdentifier);
       };
       const ganttDataWithSession = { ...data, sessionId: this.sessionId };

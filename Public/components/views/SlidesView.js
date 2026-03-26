@@ -436,7 +436,7 @@ export class SlidesView {
 
   _renderTableOfContents() {
     const tocContainer = document.createElement('div');
-    tocContainer.className = 'slides-toc';
+    tocContainer.className = 'toc-sidebar slides-toc';
 
     const tocTitle = document.createElement('h3');
     tocTitle.className = 'toc-title';
@@ -611,7 +611,7 @@ export class SlidesView {
   }
 
   _createHeaderMenu() {
-    const { container } = createDropdownMenu({
+    const { container, destroy } = createDropdownMenu({
       containerClass: 'slides-header-menu',
       triggerLabel: 'Open slides menu',
       minWidth: 220,
@@ -622,6 +622,7 @@ export class SlidesView {
           onClick: () => this._exportToPPT() },
       ]
     });
+    this._menuCleanup = destroy;
     return container;
   }
 
@@ -693,5 +694,11 @@ export class SlidesView {
   }
 
   destroy() {
+    if (this._menuCleanup) this._menuCleanup();
+    if (this._notesManager?._elapsedInterval) clearInterval(this._notesManager._elapsedInterval);
+    this.sectionStartIndices?.clear();
+    this.slideIndices?.clear();
+    this.sectionSlides?.clear();
+    this.tocLinks?.clear();
   }
 }

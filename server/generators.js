@@ -4,6 +4,7 @@ import { generateSlidesPrompt, generateSlidesOutlinePrompt, generateSpeakerNotes
 import { generateDocumentPrompt, documentSchema } from './prompts/document.js';
 import { generateResearchAnalysisPrompt, researchAnalysisSchema } from './prompts/research-analysis.js';
 import { generateIntelligenceBriefPrompt, intelligenceBriefSchema } from './prompts/intelligence-brief.js';
+import { assembleResearchContent, extractKeyStats, getCurrentDateContext } from './prompts/common.js';
 import { CONFIG } from './config.js';
 import { genAI } from './gemini.js';
 const GENERATION_TIMEOUT_MS = 360000; // 6 minutes
@@ -299,29 +300,29 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     throw new Error(`Failed to generate ${contentType}: ${error.message}`);
   }
 }
-async function generateRoadmap(userPrompt, researchFiles) {
+async function generateRoadmap(userPrompt, researchFiles, precomputed = null) {
   try {
-    const prompt = generateRoadmapPrompt(userPrompt, researchFiles);
+    const prompt = generateRoadmapPrompt(userPrompt, researchFiles, precomputed);
     const data = await generateWithGemini(prompt, roadmapSchema, 'Roadmap', ROADMAP_CONFIG);
     return { success: true, data };
   } catch (error) {
     return { success: false, error: error.message };
   }
 }
-async function generateSlides(userPrompt, researchFiles, swimlanes = []) {
+async function generateSlides(userPrompt, researchFiles, swimlanes = [], precomputed = null) {
   try {
-    const outlineResult = await generateSlidesOutlineOnly(userPrompt, researchFiles, swimlanes);
+    const outlineResult = await generateSlidesOutlineOnly(userPrompt, researchFiles, swimlanes, precomputed);
     if (!outlineResult.success) return outlineResult;
-    return generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, outlineResult.data);
+    return generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, outlineResult.data, precomputed);
   } catch (error) {
     return { success: false, error: error.message };
   }
 }
 
-async function generateSlidesOutlineOnly(userPrompt, researchFiles, swimlanes = []) {
+async function generateSlidesOutlineOnly(userPrompt, researchFiles, swimlanes = [], precomputed = null) {
   try {
     const augmentedSwimlanes = createAugmentedSwimlanes(swimlanes);
-    const outlinePrompt = generateSlidesOutlinePrompt(userPrompt, researchFiles, augmentedSwimlanes);
+    const outlinePrompt = generateSlidesOutlinePrompt(userPrompt, researchFiles, augmentedSwimlanes, precomputed);
     const outline = await generateWithGemini(outlinePrompt, slidesOutlineSchema, 'SlideOutline', SLIDES_OUTLINE_CONFIG);
 
     return { success: true, data: outline };
@@ -331,11 +332,11 @@ async function generateSlidesOutlineOnly(userPrompt, researchFiles, swimlanes = 
   }
 }
 
-async function generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, outline) {
+async function generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, outline, precomputed = null) {
   try {
     const augmentedSwimlanes = createAugmentedSwimlanes(swimlanes);
 
-    const fullPrompt = generateSlidesPrompt(userPrompt, researchFiles, augmentedSwimlanes, outline);
+    const fullPrompt = generateSlidesPrompt(userPrompt, researchFiles, augmentedSwimlanes, outline, precomputed);
     const data = await generateWithGemini(fullPrompt, slidesSchema, 'Slides', SLIDES_CONFIG);
 
     return { success: true, data };
@@ -371,7 +372,7 @@ async function generateSpeakerNotes(slidesData, researchFiles, userPrompt) {
   }
 }
 
-async function generateDocument(userPrompt, researchFiles, swimlanes = []) {
+async function generateDocument(userPrompt, researchFiles, swimlanes = [], precomputed = null) {
   const MAX_RETRIES = 2;
   let lastResult = null;
   let lastValidation = null;
@@ -380,7 +381,7 @@ async function generateDocument(userPrompt, researchFiles, swimlanes = []) {
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const prompt = generateDocumentPrompt(userPrompt, researchFiles, swimlanes);
+      const prompt = generateDocumentPrompt(userPrompt, researchFiles, swimlanes, precomputed);
       const data = await generateWithGemini(prompt, documentSchema, 'Document', DOCUMENT_CONFIG);
       const validation = validateExecutiveSummary(data.executiveSummary);
       const coherenceValidation = validateReasoningCoherence(data.reasoning, data.executiveSummary);
@@ -412,9 +413,9 @@ async function generateDocument(userPrompt, researchFiles, swimlanes = []) {
     coherenceIssues: lastCoherenceValidation?.issues || []
   };
 }
-async function generateResearchAnalysis(userPrompt, researchFiles) {
+async function generateResearchAnalysis(userPrompt, researchFiles, precomputed = null) {
   try {
-    const prompt = generateResearchAnalysisPrompt(userPrompt, researchFiles);
+    const prompt = generateResearchAnalysisPrompt(userPrompt, researchFiles, precomputed);
     const data = await generateWithGemini(prompt, researchAnalysisSchema, 'ResearchAnalysis', RESEARCH_ANALYSIS_CONFIG);
     return { success: true, data };
   } catch (error) {
@@ -439,13 +440,19 @@ export async function generateIntelligenceBrief(sessionData, meetingContext) {
 // 3-phase pipeline: Phase 0 (Research), Phase 1 (Roadmap + Outline), Phase 2 (Slides + Document)
 // Speaker notes generated on-demand via generateSpeakerNotesAsync()
 export async function generateAllContent(userPrompt, researchFiles) {
+  // Pre-compute redundant data once for all generators
+  const researchContent = assembleResearchContent(researchFiles);
+  const keyStats = extractKeyStats(researchContent);
+  const dateContext = getCurrentDateContext();
+  const precomputed = { researchContent, keyStats, dateContext };
+
   const researchAnalysisPromise = apiQueue.add(
-    () => generateResearchAnalysis(userPrompt, researchFiles), 'ResearchAnalysis'
+    () => generateResearchAnalysis(userPrompt, researchFiles, precomputed), 'ResearchAnalysis'
   );
 
   const phase1Tasks = [
-    { task: () => generateRoadmap(userPrompt, researchFiles), name: 'Roadmap' },
-    { task: () => generateSlidesOutlineOnly(userPrompt, researchFiles, []), name: 'SlidesOutline' }
+    { task: () => generateRoadmap(userPrompt, researchFiles, precomputed), name: 'Roadmap' },
+    { task: () => generateSlidesOutlineOnly(userPrompt, researchFiles, [], precomputed), name: 'SlidesOutline' }
   ];
   const [roadmap, slidesOutline] = await apiQueue.runAll(phase1Tasks);
 
@@ -460,11 +467,11 @@ export async function generateAllContent(userPrompt, researchFiles) {
   const phase2Tasks = [
     {
       task: () => slidesOutline.success
-        ? generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, reconciledOutline)
-        : generateSlides(userPrompt, researchFiles, swimlanes),
+        ? generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, reconciledOutline, precomputed)
+        : generateSlides(userPrompt, researchFiles, swimlanes, precomputed),
       name: 'Slides'
     },
-    { task: () => generateDocument(userPrompt, researchFiles, swimlanes), name: 'Document' }
+    { task: () => generateDocument(userPrompt, researchFiles, swimlanes, precomputed), name: 'Document' }
   ];
   const [slides, document] = await apiQueue.runAll(phase2Tasks);
 

@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { findTodayColumnPosition } from '../Utils.js';
+import { findTodayColumnPosition } from '../utils/date.js';
 import { createDropdownMenu } from '../utils/dom.js';
 
 export class GanttComponents {

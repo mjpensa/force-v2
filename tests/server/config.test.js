@@ -125,11 +125,6 @@ describe('Shared Configuration', () => {
   });
 
   describe('ERROR_MESSAGES', () => {
-    it('should have SESSION_NOT_FOUND message', () => {
-      expect(typeof ERROR_MESSAGES.SESSION_NOT_FOUND).toBe('string');
-      expect(ERROR_MESSAGES.SESSION_NOT_FOUND.length).toBeGreaterThan(0);
-    });
-
     it('should have FILE_TOO_LARGE message', () => {
       expect(typeof ERROR_MESSAGES.FILE_TOO_LARGE).toBe('string');
     });

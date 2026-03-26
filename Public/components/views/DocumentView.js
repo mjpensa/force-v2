@@ -60,7 +60,7 @@ export class DocumentView {
 
   _renderTableOfContents() {
     const tocContainer = document.createElement('div');
-    tocContainer.className = 'document-toc';
+    tocContainer.className = 'toc-sidebar document-toc';
 
     const tocTitle = document.createElement('h3');
     tocTitle.className = 'toc-title';
@@ -712,7 +712,7 @@ export class DocumentView {
   }
 
   _createDocumentMenu() {
-    const { container } = createDropdownMenu({
+    const { container, destroy } = createDropdownMenu({
       containerClass: 'document-header-menu',
       triggerLabel: 'Open document menu',
       minWidth: 180,
@@ -723,6 +723,7 @@ export class DocumentView {
           onClick: () => this._showIntelligenceBriefModal() },
       ]
     });
+    this._menuCleanup = destroy;
     return container;
   }
 
@@ -857,6 +858,8 @@ export class DocumentView {
   }
 
   destroy() {
+    if (this._menuCleanup) this._menuCleanup();
+
     if (this.scrollHandler && this.scrollContainer) {
       this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
       this.scrollHandler = null;

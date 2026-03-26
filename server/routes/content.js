@@ -159,13 +159,11 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
     res.json({
       status: 'completed',
       sessionId,
-      prompt,
-      researchFiles: researchFiles.map(f => f.filename),
-      content: {
-        roadmap: results.roadmap,
-        slides: results.slides,
-        document: results.document,
-        researchAnalysis: results.researchAnalysis
+      views: {
+        roadmap: results.roadmap.success,
+        slides: results.slides.success,
+        document: results.document.success,
+        researchAnalysis: results.researchAnalysis.success
       }
     });
 

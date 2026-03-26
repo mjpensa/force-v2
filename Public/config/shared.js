@@ -39,9 +39,7 @@ export const TIMEOUTS = {
 export const FILE_LIMITS = {
   MAX_SIZE_BYTES: 10 * 1024 * 1024, // 10MB per file
   MAX_SIZE_MB: 10,
-  MAX_TOTAL_SIZE_MB: 50,
   MAX_COUNT: 500, // Server allows up to 500 for folder uploads
-  MAX_COUNT_UI: 10, // UI default for simple uploads
   MAX_FIELD_SIZE_BYTES: 200 * 1024 * 1024 // 200MB total
 };
 
@@ -50,7 +48,6 @@ export const VALIDATION = {
 };
 
 export const ERROR_MESSAGES = {
-  SESSION_NOT_FOUND: 'Session not found or expired. Please regenerate the chart.',
   FILE_TOO_LARGE: 'File too large. Maximum size is 10MB per file.',
   TOO_MANY_FILES: 'Too many files. Maximum is 500 files per upload.',
   FIELD_TOO_LARGE: 'Field value too large. Maximum total size is 200MB.',

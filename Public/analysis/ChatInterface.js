@@ -1,4 +1,4 @@
-import { safeGetElement, safeQuerySelector } from '../Utils.js';
+import { safeGetElement, safeQuerySelector } from '../utils/dom.js';
 export class ChatInterface {
   constructor(container, taskIdentifier) {
     this.container = container;
