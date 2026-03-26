@@ -171,6 +171,27 @@ export class DocumentView {
     return container;
   }
 
+  /**
+   * Build a labeled subsection: container div with h3 label, then call itemRenderer
+   * to populate the body element.
+   * @param {string} containerClass - CSS class for the wrapper div
+   * @param {string} title - h3 label text
+   * @param {function} itemRenderer - receives the container div and populates it after the h3
+   * @returns {HTMLElement}
+   */
+  _buildOverviewBlock(containerClass, title, itemRenderer) {
+    const block = document.createElement('div');
+    block.className = containerClass;
+
+    const label = document.createElement('h3');
+    label.className = 'overview-section-label';
+    label.textContent = title;
+    block.appendChild(label);
+
+    itemRenderer(block);
+    return block;
+  }
+
   _renderAnalysisOverview() {
     const overview = this.documentData.analysisOverview;
     if (!overview) return null;
@@ -201,92 +222,71 @@ export class DocumentView {
       container.appendChild(narrativeContainer);
     }
     if (overview.keyThemes && Array.isArray(overview.keyThemes) && overview.keyThemes.length > 0) {
-      const themesContainer = document.createElement('div');
-      themesContainer.className = 'overview-themes';
+      container.appendChild(this._buildOverviewBlock('overview-themes', 'Key Themes', (block) => {
+        const themesList = document.createElement('div');
+        themesList.className = 'themes-list';
 
-      const themesLabel = document.createElement('h3');
-      themesLabel.className = 'overview-section-label';
-      themesLabel.textContent = 'Key Themes';
-      themesContainer.appendChild(themesLabel);
+        overview.keyThemes.forEach(theme => {
+          const themeItem = document.createElement('div');
+          themeItem.className = 'theme-item';
 
-      const themesList = document.createElement('div');
-      themesList.className = 'themes-list';
+          const themeName = document.createElement('h4');
+          themeName.className = 'theme-name';
+          themeName.textContent = theme.theme;
+          themeItem.appendChild(themeName);
 
-      overview.keyThemes.forEach(theme => {
-        const themeItem = document.createElement('div');
-        themeItem.className = 'theme-item';
+          if (theme.description) {
+            const themeDesc = document.createElement('p');
+            themeDesc.className = 'theme-description';
+            themeDesc.textContent = theme.description;
+            themeItem.appendChild(themeDesc);
+          }
 
-        const themeName = document.createElement('h4');
-        themeName.className = 'theme-name';
-        themeName.textContent = theme.theme;
-        themeItem.appendChild(themeName);
+          if (theme.affectedTopics && Array.isArray(theme.affectedTopics) && theme.affectedTopics.length > 0) {
+            const topicsContainer = document.createElement('div');
+            topicsContainer.className = 'theme-topics';
 
-        if (theme.description) {
-          const themeDesc = document.createElement('p');
-          themeDesc.className = 'theme-description';
-          themeDesc.textContent = theme.description;
-          themeItem.appendChild(themeDesc);
-        }
+            theme.affectedTopics.forEach(topic => {
+              const topicBadge = document.createElement('span');
+              topicBadge.className = 'theme-topic-badge';
+              topicBadge.textContent = topic;
+              topicsContainer.appendChild(topicBadge);
+            });
 
-        if (theme.affectedTopics && Array.isArray(theme.affectedTopics) && theme.affectedTopics.length > 0) {
-          const topicsContainer = document.createElement('div');
-          topicsContainer.className = 'theme-topics';
+            themeItem.appendChild(topicsContainer);
+          }
 
-          theme.affectedTopics.forEach(topic => {
-            const topicBadge = document.createElement('span');
-            topicBadge.className = 'theme-topic-badge';
-            topicBadge.textContent = topic;
-            topicsContainer.appendChild(topicBadge);
-          });
+          themesList.appendChild(themeItem);
+        });
 
-          themeItem.appendChild(topicsContainer);
-        }
-
-        themesList.appendChild(themeItem);
-      });
-
-      themesContainer.appendChild(themesList);
-      container.appendChild(themesContainer);
+        block.appendChild(themesList);
+      }));
     }
     if (overview.criticalFindings && Array.isArray(overview.criticalFindings) && overview.criticalFindings.length > 0) {
-      const findingsContainer = document.createElement('div');
-      findingsContainer.className = 'overview-findings';
+      container.appendChild(this._buildOverviewBlock('overview-findings', 'Critical Findings', (block) => {
+        const findingsList = document.createElement('ul');
+        findingsList.className = 'findings-list';
 
-      const findingsLabel = document.createElement('h3');
-      findingsLabel.className = 'overview-section-label';
-      findingsLabel.textContent = 'Critical Findings';
-      findingsContainer.appendChild(findingsLabel);
+        overview.criticalFindings.forEach(finding => {
+          const li = document.createElement('li');
+          li.className = 'finding-item';
+          li.textContent = finding;
+          findingsList.appendChild(li);
+        });
 
-      const findingsList = document.createElement('ul');
-      findingsList.className = 'findings-list';
-
-      overview.criticalFindings.forEach(finding => {
-        const li = document.createElement('li');
-        li.className = 'finding-item';
-        li.textContent = finding;
-        findingsList.appendChild(li);
-      });
-
-      findingsContainer.appendChild(findingsList);
-      container.appendChild(findingsContainer);
+        block.appendChild(findingsList);
+      }));
     }
     if (overview.strategicContext) {
-      const contextContainer = document.createElement('div');
-      contextContainer.className = 'overview-context';
-
-      const contextLabel = document.createElement('h3');
-      contextLabel.className = 'overview-section-label';
-      contextLabel.textContent = 'Strategic Context';
-      contextContainer.appendChild(contextLabel);
-      const paragraphs = overview.strategicContext.split(/\n\n+/).filter(p => p.trim());
-      paragraphs.forEach(para => {
-        const p = document.createElement('p');
-        p.className = 'context-paragraph';
-        p.textContent = para.trim();
-        contextContainer.appendChild(p);
-      });
-
-      container.appendChild(contextContainer);
+      container.appendChild(this._buildOverviewBlock('overview-context', 'Strategic Context', (block) => {
+        const paragraphs = overview.strategicContext.split(/\n\n+/).filter(p => p.trim());
+        paragraphs.forEach(para => {
+          const p = document.createElement('p');
+          p.className = 'context-paragraph';
+          p.textContent = para.trim();
+          block.appendChild(p);
+        });
+      }));
     }
 
     return container;

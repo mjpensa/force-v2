@@ -53,53 +53,16 @@ function loadAllImages(selector) {
   images.forEach(img => loadImage(img));
 }
 export function addLazyLoadingStyles() {
-  if (document.getElementById('lazy-loading-styles')) {
-    return; // Already added
-  }
+  if (document.getElementById('lazy-loading-styles')) return;
   const style = document.createElement('style');
   style.id = 'lazy-loading-styles';
-  style.textContent = `
-    /* Lazy loading image states */
-    img[data-src] {
-      background: var(--color-background, #f3f4f6);
-      min-height: 100px;
-    }
-    img[data-src].loading {
-      opacity: 0.6;
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    img[data-src].loaded {
-      animation: fadeIn 0.3s ease-in;
-    }
-    img[data-src].error {
-      background: var(--color-background, #f3f4f6);
-      border: 2px dashed var(--color-border, #e5e7eb);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    img[data-src].error::after {
-      content: '⚠️ Image unavailable';
-      color: var(--color-text-tertiary, #9ca3af);
-      font-size: 0.875rem;
-      padding: 1rem;
-    }
-    @keyframes pulse {
-      0%, 100% {
-        opacity: 0.6;
-      }
-      50% {
-        opacity: 0.4;
-      }
-    }
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-      to {
-        opacity: 1;
-      }
-    }
-  `;
+  style.textContent =
+    'img[data-src]{background:var(--color-background,#f3f4f6);min-height:100px}' +
+    'img[data-src].loading{opacity:.6;animation:pulse 1.5s ease-in-out infinite}' +
+    'img[data-src].loaded{animation:fadeIn .3s ease-in}' +
+    'img[data-src].error{background:var(--color-background,#f3f4f6);border:2px dashed var(--color-border,#e5e7eb);display:inline-flex;align-items:center;justify-content:center}' +
+    'img[data-src].error::after{content:"\\26A0\\FE0F Image unavailable";color:var(--color-text-tertiary,#9ca3af);font-size:.875rem;padding:1rem}' +
+    '@keyframes pulse{0%,100%{opacity:.6}50%{opacity:.4}}' +
+    '@keyframes fadeIn{from{opacity:0}to{opacity:1}}';
   document.head.appendChild(style);
 }

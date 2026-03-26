@@ -104,66 +104,39 @@ export class GanttExporter {
   }
 
   initializeListeners() {
-    this._addExportListener();
-    this._addSvgExportListener();
+    this._addExportListener('export-png-btn', 'png');
+    this._addExportListener('export-svg-btn', 'svg');
     this._addCopyUrlListener();
   }
 
-  _addExportListener() {
-    const exportBtn = document.getElementById('export-png-btn');
+  _addExportListener(buttonId, format) {
+    const exportBtn = document.getElementById(buttonId);
     if (!exportBtn || !this.chartContainer) return;
+
+    const label = `Export as ${format.toUpperCase()}`;
+    const loadingMessage = format === 'svg'
+      ? 'Generating vector SVG...'
+      : 'Generating high-resolution PNG...';
 
     exportBtn.addEventListener('click', async () => {
       exportBtn.textContent = 'Exporting...';
       exportBtn.disabled = true;
 
-      const loadingOverlay = this._createExportLoadingOverlay();
+      const loadingOverlay = this._createExportLoadingOverlay(loadingMessage);
       document.body.appendChild(loadingOverlay);
 
       try {
         const aspectRatioCanvas = await this._captureChart();
 
-        const link = document.createElement('a');
-        link.download = 'gantt-chart.png';
-        link.href = aspectRatioCanvas.toDataURL('image/png');
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        let href;
+        let revokeUrl = null;
 
-        exportBtn.textContent = 'Export as PNG';
-        exportBtn.disabled = false;
-        document.body.removeChild(loadingOverlay);
-      } catch (err) {
-        exportBtn.textContent = 'Export as PNG';
-        exportBtn.disabled = false;
-        if (loadingOverlay.parentNode) {
-          document.body.removeChild(loadingOverlay);
-        }
-        alert('Error exporting chart. See console for details.');
-      }
-    });
-  }
+        if (format === 'svg') {
+          const imageData = aspectRatioCanvas.toDataURL('image/png');
+          const width = aspectRatioCanvas.width;
+          const height = aspectRatioCanvas.height;
 
-  _addSvgExportListener() {
-    const exportBtn = document.getElementById('export-svg-btn');
-    if (!exportBtn || !this.chartContainer) return;
-
-    exportBtn.addEventListener('click', async () => {
-      exportBtn.textContent = 'Exporting...';
-      exportBtn.disabled = true;
-
-      const loadingOverlay = this._createExportLoadingOverlay('Generating vector SVG...');
-      document.body.appendChild(loadingOverlay);
-
-      try {
-        const aspectRatioCanvas = await this._captureChart();
-        const imageData = aspectRatioCanvas.toDataURL('image/png');
-
-        const width = aspectRatioCanvas.width;
-        const height = aspectRatioCanvas.height;
-
-        const svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+          const svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
      width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <title>Gantt Chart Export</title>
@@ -174,28 +147,35 @@ export class GanttExporter {
          preserveAspectRatio="xMidYMid meet"/>
 </svg>`;
 
-        const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
+          const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+          href = URL.createObjectURL(blob);
+          revokeUrl = href;
+        } else {
+          href = aspectRatioCanvas.toDataURL('image/png');
+        }
 
         const link = document.createElement('a');
-        link.download = 'gantt-chart.svg';
-        link.href = url;
+        link.download = `gantt-chart.${format}`;
+        link.href = href;
         link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
 
-        exportBtn.textContent = 'Export as SVG';
+        if (revokeUrl) {
+          URL.revokeObjectURL(revokeUrl);
+        }
+
+        exportBtn.textContent = label;
         exportBtn.disabled = false;
         document.body.removeChild(loadingOverlay);
       } catch (err) {
-        exportBtn.textContent = 'Export as SVG';
+        exportBtn.textContent = label;
         exportBtn.disabled = false;
         if (loadingOverlay.parentNode) {
           document.body.removeChild(loadingOverlay);
         }
-        alert('Error exporting chart as SVG. See console for details.');
+        alert(`Error exporting chart as ${format.toUpperCase()}. See console for details.`);
       }
     });
   }
@@ -251,23 +231,6 @@ export class GanttExporter {
     notification.textContent = message;
     notification.setAttribute('role', 'alert');
     notification.setAttribute('aria-live', 'polite');
-
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 16px 24px;
-      background: ${type === 'success' ? '#50AF7B' : type === 'error' ? '#DC3545' : '#1976D2'};
-      color: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      z-index: 10001;
-      max-width: 400px;
-      font-family: 'Work Sans', sans-serif;
-      font-size: 14px;
-      line-height: 1.5;
-      animation: slideInRight 0.3s ease-out;
-    `;
 
     document.body.appendChild(notification);
 

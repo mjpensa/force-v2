@@ -1,15 +1,6 @@
 export const intelligenceBriefSchema = {
   type: "object",
   properties: {
-    meetingContext: {
-      type: "object",
-      properties: {
-        objective: { type: "string", description: "What we aim to achieve" },
-        attendees: { type: "string", description: "Who will be in the room" },
-        duration: { type: "string", description: "Suggested meeting duration" }
-      },
-      required: ["objective", "attendees"]
-    },
     keyInsights: {
       type: "array",
       items: { type: "string" },
@@ -66,35 +57,6 @@ Create a one-page meeting brief that helps the presenter walk into the meeting f
 2. The strategic roadmap analysis
 3. The slide deck messaging
 4. The executive document analysis
-
-## Content Guidelines
-
-### Key Insights (3-4)
-- The most critical findings that must be communicated
-- Prioritize insights that align with the meeting objective
-- Each insight should be a complete, standalone statement
-
-### Talking Points (4-6)
-- Structured points with supporting evidence
-- Pull specific data, quotes, or findings from the research
-- Order by importance or logical flow
-
-### Anticipated Questions
-- What will the client likely ask?
-- Prepare concise, confident responses
-- Reference specific analysis when possible
-
-### Roadmap Highlights
-- Which phases or milestones are most relevant to this meeting?
-- Connect roadmap items to client priorities
-
-### Recommended Next Steps
-- Concrete, actionable proposals
-- Include ownership and timing suggestions
-
-### Caution Areas
-- Sensitive topics to handle carefully
-- Potential objections to anticipate
 
 ## Tone
 - Confident and well-prepared

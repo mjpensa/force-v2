@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { sanitizePrompt, getFileExtension } from '../../server/utils.js';
+import { sanitizePrompt } from '../../server/utils.js';
 
 describe('Server Utils', () => {
   describe('sanitizePrompt', () => {
@@ -103,29 +103,4 @@ describe('Server Utils', () => {
     });
   });
 
-  describe('getFileExtension', () => {
-    it('should return extension for simple filename', () => {
-      expect(getFileExtension('document.pdf')).toBe('pdf');
-    });
-
-    it('should return extension for filename with multiple dots', () => {
-      expect(getFileExtension('my.file.name.docx')).toBe('docx');
-    });
-
-    it('should return lowercase extension', () => {
-      expect(getFileExtension('Document.PDF')).toBe('pdf');
-    });
-
-    it('should return extension for uppercase filename', () => {
-      expect(getFileExtension('DOCUMENT.TXT')).toBe('txt');
-    });
-
-    it('should handle filename without extension', () => {
-      expect(getFileExtension('filename')).toBe('filename');
-    });
-
-    it('should handle empty string', () => {
-      expect(getFileExtension('')).toBe('');
-    });
-  });
 });

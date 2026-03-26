@@ -1,7 +1,42 @@
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text || '';
-  return div.innerHTML;
+import { escapeHtml } from '../../utils/dom.js';
+
+const MATCH_TYPES = {
+  partial_section: { css: 'notes-match-partial', title: 'Matched via partial section name', label: 'Partial match' },
+  tagline_only:    { css: 'notes-match-fallback', title: 'Matched by tagline only - verify correct slide', label: 'Fallback match' },
+  index_disambiguated:    { css: 'notes-match-partial', title: 'Resolved duplicate taglines using slide index', label: 'Index matched' },
+  position_disambiguated: { css: 'notes-match-fallback', title: 'Matched by position - low confidence', label: 'Position guess' },
+  fuzzy_tagline:   { css: 'notes-match-partial', title: 'Matched via similar tagline text', label: 'Fuzzy match' },
+  fuzzy_section:   { css: 'notes-match-partial', title: 'Matched via similar tagline and section', label: 'Fuzzy + section' },
+  section_index_fallback: null // handled dynamically (needs matchInfo interpolation)
+};
+
+function _placeholderHTML(type, title, hint, extra = '') {
+  return `
+    <div class="notes-placeholder${type ? ' notes-' + type : ''}">
+      <p>${title}</p>
+      ${hint ? `<p class="notes-hint">${hint}</p>` : ''}
+      ${extra}
+    </div>
+  `;
+}
+
+function _wrapSection(icon, title, bodyHTML, { collapsible = false } = {}) {
+  if (collapsible) {
+    return `
+      <div class="notes-section notes-section-collapsed">
+        <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">${icon} ${title}</h4>
+        <div class="notes-section-body">
+          ${bodyHTML}
+        </div>
+      </div>
+    `;
+  }
+  return `
+    <div class="notes-section">
+      <h4 class="notes-section-title">${icon} ${title}</h4>
+      ${bodyHTML}
+    </div>
+  `;
 }
 
 export class SpeakerNotesManager {
@@ -124,14 +159,11 @@ export class SpeakerNotesManager {
     };
 
     if (contentEl) {
-      contentEl.innerHTML = `
-        <div class="notes-placeholder notes-loading">
-          <p>Generating speaker notes...</p>
-          <p class="notes-hint">This typically takes 2-3 minutes. You can continue navigating slides.</p>
-          <p class="notes-elapsed">Elapsed: <span id="notes-elapsed-time">0s</span></p>
-          <div class="notes-progress-bar"><div class="notes-progress-fill"></div></div>
-        </div>
-      `;
+      contentEl.innerHTML = _placeholderHTML('loading',
+        'Generating speaker notes...',
+        'This typically takes 2-3 minutes. You can continue navigating slides.',
+        '<p class="notes-elapsed">Elapsed: <span id="notes-elapsed-time">0s</span></p><div class="notes-progress-bar"><div class="notes-progress-fill"></div></div>'
+      );
       this._elapsedInterval = setInterval(updateElapsedTime, 1000);
     }
 
@@ -157,13 +189,11 @@ export class SpeakerNotesManager {
       } else {
         console.error('[SpeakerNotes] Generation failed:', result.error);
         if (contentEl) {
-          contentEl.innerHTML = `
-            <div class="notes-placeholder notes-error">
-              <p>Failed to generate speaker notes.</p>
-              <p class="notes-hint">${result.error || 'Unknown error occurred.'}</p>
-              <button class="notes-retry-btn" onclick="this.closest('.slides-view-container').__view__._notesManager.generateOnDemand()">Retry</button>
-            </div>
-          `;
+          contentEl.innerHTML = _placeholderHTML('error',
+            'Failed to generate speaker notes.',
+            result.error || 'Unknown error occurred.',
+            '<button class="notes-retry-btn" onclick="this.closest(\'.slides-view-container\').__view__._notesManager.generateOnDemand()">Retry</button>'
+          );
         }
       }
     } catch (error) {
@@ -178,13 +208,11 @@ export class SpeakerNotesManager {
         : error.message;
 
       if (contentEl) {
-        contentEl.innerHTML = `
-          <div class="notes-placeholder notes-error">
-            <p>${errorTitle}</p>
-            <p class="notes-hint">${errorHint}</p>
-            <button class="notes-retry-btn" onclick="this.closest('.slides-view-container').__view__._notesManager.generateOnDemand()">Retry</button>
-          </div>
-        `;
+        contentEl.innerHTML = _placeholderHTML('error',
+          errorTitle,
+          errorHint,
+          '<button class="notes-retry-btn" onclick="this.closest(\'.slides-view-container\').__view__._notesManager.generateOnDemand()">Retry</button>'
+        );
       }
     } finally {
       this.speakerNotesLoading = false;
@@ -211,23 +239,19 @@ export class SpeakerNotesManager {
 
     const currentSlide = this.slides[this.index];
     if (currentSlide?.layout === 'sectionTitle') {
-      contentEl.innerHTML = `
-        <div class="notes-placeholder">
-          <p>Section title slides do not have speaker notes.</p>
-          <p class="notes-hint">Navigate to a content slide to view notes.</p>
-        </div>
-      `;
+      contentEl.innerHTML = _placeholderHTML('',
+        'Section title slides do not have speaker notes.',
+        'Navigate to a content slide to view notes.'
+      );
       return;
     }
 
     if (!this.speakerNotes?.slides || this.speakerNotes.slides.length === 0) {
-      contentEl.innerHTML = `
-        <div class="notes-placeholder notes-error">
-          <p>Speaker notes not available.</p>
-          <p class="notes-hint">Notes may not have been generated for this presentation, or generation may have failed.</p>
-          <p class="notes-action">Try regenerating the slides to include speaker notes.</p>
-        </div>
-      `;
+      contentEl.innerHTML = _placeholderHTML('error',
+        'Speaker notes not available.',
+        'Notes may not have been generated for this presentation, or generation may have failed.',
+        '<p class="notes-action">Try regenerating the slides to include speaker notes.</p>'
+      );
       return;
     }
 
@@ -245,18 +269,16 @@ export class SpeakerNotesManager {
         hintMessage = 'The slide tagline may have changed after notes were generated.';
       }
 
-      contentEl.innerHTML = `
-        <div class="notes-placeholder notes-warning">
-          <p>${errorMessage}</p>
-          <p class="notes-hint">${hintMessage}</p>
-          ${matchInfo.reason === 'duplicate_taglines' ? `
-            <details class="notes-debug">
-              <summary>Sections with this tagline</summary>
-              <ul>${matchInfo.duplicateSections.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
-            </details>
-          ` : ''}
-        </div>
-      `;
+      contentEl.innerHTML = _placeholderHTML('warning',
+        errorMessage,
+        hintMessage,
+        matchInfo.reason === 'duplicate_taglines' ? `
+          <details class="notes-debug">
+            <summary>Sections with this tagline</summary>
+            <ul>${matchInfo.duplicateSections.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
+          </details>
+        ` : ''
+      );
       return;
     }
 
@@ -264,18 +286,9 @@ export class SpeakerNotesManager {
       const reasoningHTML = this._renderReasoningSection();
       const slideNotesHTML = this._renderNotesHTML(notes);
       let matchIndicator = '';
-      if (matchInfo.matchType === 'partial_section') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Matched via partial section name">Partial match</div>`;
-      } else if (matchInfo.matchType === 'tagline_only') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-fallback" title="Matched by tagline only - verify correct slide">Fallback match</div>`;
-      } else if (matchInfo.matchType === 'index_disambiguated') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Resolved duplicate taglines using slide index">Index matched</div>`;
-      } else if (matchInfo.matchType === 'position_disambiguated') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-fallback" title="Matched by position - low confidence">Position guess</div>`;
-      } else if (matchInfo.matchType === 'fuzzy_tagline') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Matched via similar tagline text">Fuzzy match</div>`;
-      } else if (matchInfo.matchType === 'fuzzy_section') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-partial" title="Matched via similar tagline and section">Fuzzy + section</div>`;
+      const matchDef = MATCH_TYPES[matchInfo.matchType];
+      if (matchDef) {
+        matchIndicator = `<div class="notes-match-indicator ${matchDef.css}" title="${matchDef.title}">${matchDef.label}</div>`;
       } else if (matchInfo.matchType === 'section_index_fallback') {
         matchIndicator = `<div class="notes-match-indicator notes-match-fallback" title="Matched by position in section - verify correct notes (expected: ${matchInfo.tagline}, got: ${matchInfo.matchedTagline})">Index fallback</div>`;
       }
@@ -284,13 +297,11 @@ export class SpeakerNotesManager {
       this._attachCollapsibleToggleHandlers(contentEl);
     } catch (renderError) {
       console.error('[SpeakerNotes] Failed to render notes:', renderError);
-      contentEl.innerHTML = `
-        <div class="notes-placeholder notes-error">
-          <p>Failed to render speaker notes.</p>
-          <p class="notes-hint">Error: ${renderError.message}</p>
-          <p class="notes-action">Try refreshing the page or regenerating notes.</p>
-        </div>
-      `;
+      contentEl.innerHTML = _placeholderHTML('error',
+        'Failed to render speaker notes.',
+        `Error: ${renderError.message}`,
+        '<p class="notes-action">Try refreshing the page or regenerating notes.</p>'
+      );
     }
   }
 
@@ -460,9 +471,7 @@ export class SpeakerNotesManager {
     const sections = [];
 
     if (notes.narrative?.talkingPoints?.length) {
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">\ud83d\udcac Talking Points</h4>
+      sections.push(_wrapSection('\ud83d\udcac', 'Talking Points', `
           <ul class="notes-list">
             ${notes.narrative.talkingPoints.map(point => `<li>${escapeHtml(point)}</li>`).join('')}
           </ul>
@@ -471,18 +480,14 @@ export class SpeakerNotesManager {
               <strong>Key Phrase:</strong> "${escapeHtml(notes.narrative.keyPhrase)}"
             </div>
           ` : ''}
-        </div>
-      `);
+      `));
     }
 
     if (notes.narrative?.transitionIn || notes.narrative?.transitionOut) {
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">\ud83d\udd04 Transitions</h4>
+      sections.push(_wrapSection('\ud83d\udd04', 'Transitions', `
           ${notes.narrative.transitionIn ? `<p><strong>\u2190 From previous:</strong> ${escapeHtml(notes.narrative.transitionIn)}</p>` : ''}
           ${notes.narrative.transitionOut ? `<p><strong>\u2192 To next:</strong> ${escapeHtml(notes.narrative.transitionOut)}</p>` : ''}
-        </div>
-      `);
+      `));
     }
 
     if (notes.stakeholderAngles) {
@@ -494,9 +499,7 @@ export class SpeakerNotesManager {
         { key: 'operations', icon: '\ud83d\udd27', label: 'Ops' },
       ];
       const STAKEHOLDER_ROLES = { cfo: 'cfo', cto: 'cto', ceo: 'ceo', operations: 'ops' };
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">\ud83d\udc65 Stakeholder Angles</h4>
+      sections.push(_wrapSection('\ud83d\udc65', 'Stakeholder Angles', `
           <div class="stakeholder-tabs">
             ${STAKEHOLDERS.filter(s => angles[s.key]).map(s => `
               <div class="stakeholder-tab" data-role="${STAKEHOLDER_ROLES[s.key]}">
@@ -506,14 +509,11 @@ export class SpeakerNotesManager {
               </div>
             `).join('')}
           </div>
-        </div>
-      `);
+      `));
     }
 
     if (notes.anticipatedQuestions?.length) {
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">\u2753 Anticipated Questions</h4>
+      sections.push(_wrapSection('\u2753', 'Anticipated Questions', `
           ${notes.anticipatedQuestions.map(qa => `
             <div class="qa-item qa-severity-${qa.severity || 'probing'}">
               <div class="qa-header">
@@ -539,14 +539,11 @@ export class SpeakerNotesManager {
               ` : ''}
             </div>
           `).join('')}
-        </div>
-      `);
+      `));
     }
 
     if (notes.storyContext) {
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">\ud83d\udcd6 Story Context</h4>
+      sections.push(_wrapSection('\ud83d\udcd6', 'Story Context', `
           <p class="narrative-position"><strong>Position:</strong> ${escapeHtml(notes.storyContext.narrativePosition?.replace(/_/g, ' '))}</p>
           ${notes.storyContext.precededBy ? `<p><strong>Preceded by:</strong> ${escapeHtml(notes.storyContext.precededBy)}</p>` : ''}
           ${notes.storyContext.followedBy ? `<p><strong>Followed by:</strong> ${escapeHtml(notes.storyContext.followedBy)}</p>` : ''}
@@ -582,14 +579,11 @@ export class SpeakerNotesManager {
               }).join('')}
             </div>
           ` : ''}
-        </div>
-      `);
+      `));
     }
 
     if (notes.sourceAttribution?.length) {
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">\ud83d\udcda Sources</h4>
+      sections.push(_wrapSection('\ud83d\udcda', 'Sources', `
           ${notes.sourceAttribution.map(src => `
             <div class="source-item">
               <p class="claim">"${escapeHtml(src.claim)}"</p>
@@ -597,15 +591,11 @@ export class SpeakerNotesManager {
               <span class="confidence confidence-${src.confidence}">${escapeHtml(src.confidence?.replace(/_/g, ' '))}</span>
             </div>
           `).join('')}
-        </div>
-      `);
+      `));
     }
 
     if (notes.generationTransparency) {
-      sections.push(`
-        <div class="notes-section notes-section-collapsed">
-          <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">\ud83d\udd0d Content Derivation</h4>
-          <div class="notes-section-body">
+      sections.push(_wrapSection('\ud83d\udd0d', 'Content Derivation', `
             <p><strong>Sources:</strong> ${notes.generationTransparency.primarySources?.map(s => escapeHtml(s)).join(', ') || 'N/A'}</p>
             <p><strong>Method:</strong> ${notes.generationTransparency.derivationMethod || 'N/A'}</p>
             ${notes.generationTransparency.dataLineage ? `<p><strong>Lineage:</strong> ${escapeHtml(notes.generationTransparency.dataLineage)}</p>` : ''}
@@ -615,15 +605,11 @@ export class SpeakerNotesManager {
                 ${notes.generationTransparency.assumptions.map(a => `<li>${escapeHtml(a)}</li>`).join('')}
               </ul>
             ` : ''}
-          </div>
-        </div>
-      `);
+      `, { collapsible: true }));
     }
 
     if (notes.credibilityAnchors?.length) {
-      sections.push(`
-        <div class="notes-section">
-          <h4 class="notes-section-title">\ud83c\udfc6 Credibility Anchors</h4>
+      sections.push(_wrapSection('\ud83c\udfc6', 'Credibility Anchors', `
           ${notes.credibilityAnchors.map(anchor => `
             <div class="credibility-item credibility-${anchor.type || 'research'}">
               <span class="credibility-type">${escapeHtml((anchor.type || 'research').replace(/_/g, ' '))}</span>
@@ -632,8 +618,7 @@ export class SpeakerNotesManager {
               <p class="full-citation"><em>${escapeHtml(anchor.fullCitation)}</em></p>
             </div>
           `).join('')}
-        </div>
-      `);
+      `));
     }
 
     if (notes.riskMitigation) {
@@ -652,23 +637,13 @@ export class SpeakerNotesManager {
                 </div>
               `).join('');
       if (riskBlocks) {
-        sections.push(`
-          <div class="notes-section notes-section-collapsed">
-            <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">\ud83d\udee1\ufe0f Risk Mitigation</h4>
-            <div class="notes-section-body">
-              ${riskBlocks}
-            </div>
-          </div>
-        `);
+        sections.push(_wrapSection('\ud83d\udee1\ufe0f', 'Risk Mitigation', riskBlocks, { collapsible: true }));
       }
     }
 
     if (notes.audienceSignals) {
       const signals = notes.audienceSignals;
-      sections.push(`
-        <div class="notes-section notes-section-collapsed">
-          <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">\ud83c\udf21\ufe0f Room Temperature</h4>
-          <div class="notes-section-body">
+      sections.push(_wrapSection('\ud83c\udf21\ufe0f', 'Room Temperature', `
             ${signals.losingThem ? `
               <div class="signal-block signal-losing">
                 <h5>\u26a0\ufe0f Losing Them</h5>
@@ -684,9 +659,7 @@ export class SpeakerNotesManager {
                 <p><strong>Accelerate:</strong> ${escapeHtml(signals.winningThem.accelerationOption)}</p>
               </div>
             ` : ''}
-          </div>
-        </div>
-      `);
+      `, { collapsible: true }));
     }
 
     if (notes.quickReference) {

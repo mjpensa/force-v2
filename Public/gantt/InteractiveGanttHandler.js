@@ -101,6 +101,31 @@ export class InteractiveGanttHandler {
     this.ganttData.data[this.state.taskIndex].bar.endCol = newEndCol;
   }
 
+  async _finishInteraction(className, bodyClassName, extraInfo = {}) {
+    if (!this.state) return;
+
+    const { startCol: newStartCol, endCol: newEndCol } = this.parseGridColumn(this.state.bar.style.gridColumn);
+    const hasChanged = newStartCol !== this.state.originalStartCol || newEndCol !== this.state.originalEndCol;
+
+    if (hasChanged) {
+      this.updateGanttData(newStartCol, newEndCol);
+
+      if (this.callback) {
+        try {
+          await this.callback(this.buildTaskInfo(newStartCol, newEndCol, extraInfo));
+        } catch (error) {
+          this.rollback();
+        }
+      }
+    }
+
+    this._cleanupSubclass();
+    this.cleanup(className, bodyClassName);
+  }
+
+  /** Override in subclasses for interaction-specific cleanup before state reset. */
+  _cleanupSubclass() {}
+
   cleanup(className, bodyClassName) {
     if (this.state?.bar) {
       this.state.bar.classList.remove(className);
@@ -108,17 +133,5 @@ export class InteractiveGanttHandler {
     document.body.style.cursor = '';
     document.body.classList.remove(bodyClassName);
     this.state = null;
-  }
-
-  _handleMouseDown(event) {
-    throw new Error('_handleMouseDown must be implemented by subclass');
-  }
-
-  _handleMouseMove(event) {
-    throw new Error('_handleMouseMove must be implemented by subclass');
-  }
-
-  _handleMouseUp(event) {
-    throw new Error('_handleMouseUp must be implemented by subclass');
   }
 }

@@ -2,7 +2,6 @@ export const ErrorTypes = {
   NETWORK: 'NetworkError',
   API: 'APIError',
   VALIDATION: 'ValidationError',
-  TIMEOUT: 'TimeoutError',
   NOT_FOUND: 'NotFoundError',
   PERMISSION: 'PermissionError',
   UNKNOWN: 'UnknownError'
@@ -68,7 +67,6 @@ export function showErrorNotification(error, options = {}) {
   const messages = {
     [ErrorTypes.NETWORK]: { title: 'Connection Error', message: 'Unable to connect. Check your connection.' },
     [ErrorTypes.API]: { title: 'Server Error', message: 'Server error. Try again.' },
-    [ErrorTypes.TIMEOUT]: { title: 'Timeout', message: 'Request timed out.' },
     [ErrorTypes.NOT_FOUND]: { title: 'Not Found', message: 'The requested resource was not found.' },
     [ErrorTypes.PERMISSION]: { title: 'Permission Denied', message: 'You do not have permission to access this resource.' }
   };

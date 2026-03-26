@@ -62,7 +62,57 @@ function formatSwimlaneList(swimlanes, taskSuffix) {
   }).join('\n');
 }
 
-// Shared sub-schemas used in both speakerNotesSchema and speakerNotesOutlineSchema
+// Shared sub-schemas used across slidesOutlineSchema, speakerNotesSchema, and speakerNotesOutlineSchema
+const audienceProfileSchema = {
+  type: "object",
+  properties: {
+    primaryStakeholder: { type: "string", description: "Key decision-maker (CFO, CTO, Board, etc.)" },
+    painPoints: { type: "array", items: { type: "string" }, description: "Top 3 pain points" },
+    decisionCriteria: { type: "array", items: { type: "string" }, description: "Key decision factors" }
+  }
+};
+
+const keyEvidenceChainsSchema = {
+  type: "array",
+  items: {
+    type: "object",
+    properties: {
+      evidence: { type: "string", description: "Specific data point with source" },
+      insight: { type: "string", description: "What this evidence means" },
+      anticipatedQuestion: { type: "string", description: "Likely question this evidence will trigger" },
+      preparedResponse: { type: "string", description: "Prepared response using ACE framework" }
+    }
+  },
+  description: "3-5 anchor evidence chains that drive Q&A"
+};
+
+const sourceInventorySchema = {
+  type: "array",
+  items: {
+    type: "object",
+    properties: {
+      sourceName: { type: "string", description: "Authoritative source name (not filename)" },
+      keyFindings: { type: "array", items: { type: "string" }, description: "2-3 key findings from this source" },
+      confidenceLevel: { type: "string", enum: ["high", "medium", "low"], description: "How reliable is this source?" }
+    }
+  },
+  description: "Inventory of authoritative sources used"
+};
+
+const anticipatedPushbackSchema = {
+  type: "array",
+  items: {
+    type: "object",
+    properties: {
+      pushbackType: { type: "string", enum: ["skepticism", "cost_concern", "timeline", "feasibility", "risk", "scope", "competitive"] },
+      specificObjection: { type: "string", description: "The exact objection they might raise" },
+      evidenceToCounter: { type: "string", description: "Data point that counters this objection" },
+      reframingStrategy: { type: "string", description: "How to reframe the objection as an opportunity" }
+    }
+  },
+  description: "3-5 hardest pushbacks and how to handle them"
+};
+
 const narrativeTransitionsSchema = {
   type: "array",
   items: {
@@ -148,33 +198,27 @@ const contentSlideSchema = {
     },
     tagline: {
       type: "string",
-      description: "2-word uppercase tagline, max 21 characters (e.g. 'MARGIN EROSION')",
-      nullable: false
+      description: "2-word uppercase tagline, max 21 characters (e.g. 'MARGIN EROSION')"
     },
     title: {
       type: "string",
-      description: "STRICT: EXACTLY 3 or 4 lines total (count the \\n separators - must be 2 or 3). FORBIDDEN: 5+ lines will break layout. Combine short words to reduce line count. twoColumn: max 10 chars/line. threeColumn: max 18 chars/line.",
-      nullable: false
+      description: "STRICT: EXACTLY 3 or 4 lines total (count the \\n separators - must be 2 or 3). FORBIDDEN: 5+ lines will break layout. Combine short words to reduce line count. twoColumn: max 10 chars/line. threeColumn: max 18 chars/line."
     },
     paragraph1: {
       type: "string",
-      description: "First paragraph. 380-410 chars for twoColumn, 370-390 chars for threeColumn.",
-      nullable: false
+      description: "First paragraph. 380-410 chars for twoColumn, 370-390 chars for threeColumn."
     },
     paragraph2: {
       type: "string",
-      description: "Second paragraph. 380-410 chars for twoColumn, 370-390 chars for threeColumn.",
-      nullable: false
+      description: "Second paragraph. 380-410 chars for twoColumn, 370-390 chars for threeColumn."
     },
     paragraph3: {
       type: "string",
-      description: "Third paragraph (threeColumn only). 370-390 characters.",
-      nullable: false
+      description: "Third paragraph (threeColumn only). 370-390 characters."
     },
     subTopic: {
       type: "string",
-      description: "A 2-5 word sub-topic identifier for this slide within the section (e.g., 'Cost Analysis', 'Implementation Timeline', 'Risk Assessment'). Used for TOC navigation. Must be distinct within each section - NO DUPLICATES.",
-      nullable: false
+      description: "A 2-5 word sub-topic identifier for this slide within the section (e.g., 'Cost Analysis', 'Implementation Timeline', 'Risk Assessment'). Used for TOC navigation. Must be distinct within each section - NO DUPLICATES."
     }
   },
   required: ["layout", "tagline", "title", "paragraph1", "paragraph2", "subTopic"]
@@ -328,52 +372,10 @@ export const speakerNotesSchema = {
           type: "string",
           description: "The overall story arc: [Opening Hook] → [Tension Building] → [Resolution/CTA]"
         },
-        audienceProfile: {
-          type: "object",
-          properties: {
-            primaryStakeholder: { type: "string", description: "Key decision-maker (CFO, CTO, Board, etc.)" },
-            painPoints: { type: "array", items: { type: "string" }, description: "Top 3 pain points" },
-            decisionCriteria: { type: "array", items: { type: "string" }, description: "Key decision factors" }
-          }
-        },
-        keyEvidenceChains: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              evidence: { type: "string" },
-              insight: { type: "string" },
-              anticipatedQuestion: { type: "string" },
-              preparedResponse: { type: "string" }
-            }
-          },
-          description: "3-5 anchor evidence chains that drive Q&A"
-        },
-        sourceInventory: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              sourceName: { type: "string" },
-              keyFindings: { type: "array", items: { type: "string" } },
-              confidenceLevel: { type: "string", enum: ["high", "medium", "low"] }
-            }
-          },
-          description: "Inventory of authoritative sources used"
-        },
-        anticipatedPushback: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              pushbackType: { type: "string" },
-              specificObjection: { type: "string" },
-              evidenceToCounter: { type: "string" },
-              reframingStrategy: { type: "string" }
-            }
-          },
-          description: "Hardest pushbacks and how to handle them"
-        },
+        audienceProfile: audienceProfileSchema,
+        keyEvidenceChains: keyEvidenceChainsSchema,
+        sourceInventory: sourceInventorySchema,
+        anticipatedPushback: anticipatedPushbackSchema,
         narrativeTransitions: narrativeTransitionsSchema,
         competitivePositioning: competitivePositioningSchema,
         bridgePhrases: bridgePhrasesSchema
@@ -715,64 +717,11 @@ export const speakerNotesOutlineSchema = {
           type: "string",
           description: "The overall story arc: [Opening Hook] → [Tension Building] → [Resolution/CTA]. What is the single thread connecting all slides?"
         },
-        audienceProfile: {
-          type: "object",
-          properties: {
-            primaryStakeholder: {
-              type: "string",
-              description: "Who is the key decision-maker? (e.g., CFO, CTO, Board)"
-            },
-            painPoints: {
-              type: "array",
-              items: { type: "string" },
-              description: "Top 3 pain points this audience cares about"
-            },
-            decisionCriteria: {
-              type: "array",
-              items: { type: "string" },
-              description: "What factors will drive their decision? (ROI, risk, timeline, etc.)"
-            }
-          }
-        },
-        keyEvidenceChains: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              evidence: { type: "string", description: "Specific data point with source" },
-              insight: { type: "string", description: "What this evidence means" },
-              anticipatedQuestion: { type: "string", description: "Likely question this evidence will trigger" },
-              preparedResponse: { type: "string", description: "Prepared response using ACE framework" }
-            }
-          },
-          description: "3-5 anchor evidence chains that will drive Q&A"
-        },
-        sourceInventory: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              sourceName: { type: "string", description: "Authoritative source name (not filename)" },
-              keyFindings: { type: "array", items: { type: "string" }, description: "2-3 key findings from this source" },
-              confidenceLevel: { type: "string", enum: ["high", "medium", "low"], description: "How reliable is this source?" }
-            }
-          },
-          description: "Inventory of sources to cite in speaker notes"
-        },
+        audienceProfile: audienceProfileSchema,
+        keyEvidenceChains: keyEvidenceChainsSchema,
+        sourceInventory: sourceInventorySchema,
         narrativeTransitions: narrativeTransitionsSchema,
-        anticipatedPushback: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              pushbackType: { type: "string", enum: ["skepticism", "cost_concern", "timeline", "feasibility", "risk", "scope"] },
-              specificObjection: { type: "string", description: "The exact objection they might raise" },
-              evidenceToCounter: { type: "string", description: "Data point that counters this objection" },
-              reframingStrategy: { type: "string", description: "How to reframe the objection as an opportunity" }
-            }
-          },
-          description: "3-5 hardest pushbacks and how to handle them"
-        },
+        anticipatedPushback: anticipatedPushbackSchema,
         competitivePositioning: competitivePositioningSchema,
         bridgePhrases: bridgePhrasesSchema
       },
@@ -879,12 +828,7 @@ You MUST complete the 'reasoning' object FIRST, before creating any sections. Th
    - Resolution: What action resolves the tension?
    Format: "[Opening Tension] -> [Deepening Stakes] -> [Resolution/Action]"
 
-2. PRIMARY FRAMEWORK: Name ONE dominant analytical lens from the enum:
-   - SECOND_ORDER_EFFECTS: Trace consequences 2-3 steps deep (If X → Y → Z)
-   - CONTRARIAN: Challenge the obvious conclusion with evidence
-   - COMPETITIVE_DYNAMICS: Frame decisions in competitive context
-   - TEMPORAL_ARBITRAGE: Connect short-term pain to long-term gain
-   - RISK_ASYMMETRY: Show bounded downside vs. unbounded upside
+2. PRIMARY FRAMEWORK: Name ONE dominant analytical lens from the enum (SECOND_ORDER_EFFECTS, CONTRARIAN, COMPETITIVE_DYNAMICS, TEMPORAL_ARBITRAGE, RISK_ASYMMETRY).
 
 3. KEY EVIDENCE CHAINS: Identify 3-5 anchor chains from the research:
    For each: Evidence (specific data with source) -> Insight (what it means) -> Implication (action it drives)
@@ -915,13 +859,7 @@ FOR EACH SECTION, provide:
       Extract REAL numbers from research: percentages, dollar amounts, timeframes, ratios
       EXAMPLE: "50% reconciliation cost reduction at JPMorgan Q4 2024"
 
-   c) "analyticalLens": The ANALYTICAL FRAMEWORK for this slide. MUST be one of the enum values:
-      - "SECOND_ORDER_EFFECTS": If X happens → Y follows → Z results
-      - "CONTRARIAN": Obvious conclusion is X, but evidence shows Y
-      - "COMPETITIVE_DYNAMICS": While we do X, competitors gain/lose Y
-      - "TEMPORAL_ARBITRAGE": Short-term cost X enables long-term advantage Y
-      - "RISK_ASYMMETRY": Downside capped at X, upside extends to Y
-      - "CAUSAL_CHAIN": A causes B which triggers C
+   c) "analyticalLens": Which analytical framework drives this slide's insight (one of the enum values: SECOND_ORDER_EFFECTS, CONTRARIAN, COMPETITIVE_DYNAMICS, TEMPORAL_ARBITRAGE, RISK_ASYMMETRY, CAUSAL_CHAIN).
 
    d) "connectsTo": How this slide's IMPLICATION leads to the next slide's EVIDENCE
       This creates narrative threading between slides.
@@ -1025,24 +963,7 @@ export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = [], 
   // Fixed section content generation instructions
   const fixedSectionContentInstructions = `
 FIXED SECTION CONTENT REQUIREMENTS:
-
-OVERVIEW SECTION (FIRST SECTION - 4-8 slides):
-Generate content that sets the stage for the entire presentation:
-- Slides 1-2 (CONTEXT): Frame the landscape/situation. What problem or opportunity exists? Use compelling statistics from research to establish urgency. Layout: twoColumn for authoritative opening.
-- Slides 3-4 (KEY THEMES): Preview the 2-3 major topics the presentation will cover. Tease insights without deep diving. Give audience a roadmap of what's coming.
-- Slides 5-6 (DATA ANCHOR): Present key statistics that frame the overall challenge/opportunity. These should be the most impactful numbers from the research that justify attention.
-- Slides 7-8 (BRIDGE): Explain why this matters NOW. Create tension that leads into the first content section. End with forward momentum.
-- Tagline style: Situational ("MARKET INFLECTION", "3 CRITICAL PRESSURES", "ADOPTION IMPERATIVE")
-- DO NOT deep dive into any single topic - save that for content sections
-
-CONCLUSION SECTION (LAST SECTION - 4-8 slides):
-Generate content that synthesizes and drives action:
-- Slides 1-2 (SYNTHESIS): Synthesize key insights across ALL previous sections. NOT a summary/repetition - show how insights CONNECT and COMPOUND each other.
-- Slides 3-4 (IMPLICATIONS): What do these findings mean collectively? Strategic impact, competitive positioning, risk/opportunity assessment.
-- Slides 5-6 (RECOMMENDATIONS): Specific, actionable recommendations with timelines. Who does what by when? Prioritized action items.
-- Slides 7-8 (CALL TO ACTION): Clear next steps, decision points required, urgency/cost of inaction. End with compelling forward momentum.
-- Tagline style: Action-oriented ("DECISION FRAMEWORK", "Q2 ADOPTION TARGETS", "COST OF DELAY", "STRATEGIC IMPERATIVE")
-- Reference specific evidence from earlier sections to support recommendations
+Follow outline structure for Overview (first section: context, themes, data anchor, bridge - no deep dives) and Conclusion (last section: synthesis of cross-section connections, strategic implications, actionable recommendations with timelines, call to action with urgency). Each fixed section: 4-8 slides.
 `;
 
   // Build section-specific instructions if swimlanes are provided
@@ -1171,35 +1092,7 @@ OUTLINE REQUIREMENTS (HARD CONSTRAINTS):
 ${sectionInstructions}
 ${outlineConstraint}
 CROSS-SLIDE NARRATIVE THREADING (CRITICAL FOR COHERENCE):
-- Each slide MUST build on the previous slide's implication
-- Use forward-referencing language: "This creates the foundation for...", "Building on this...", "This pressure directly..."
-- Section endings must create tension that the next section resolves
-- ANTI-PATTERN: Isolated "islands" of analysis with no connection between slides
-
-NARRATIVE THREADING VALIDATION (apply to every connectsTo field):
-
-SPECIFICITY TEST:
-- ❌ FAIL: "Leads to next topic" (could apply to any presentation)
-- ✓ PASS: "The $2.3M quarterly gap → compounds into → 15% annual market share erosion"
-
-BIDIRECTIONAL TEST:
-- From slide N: Can you identify exactly which element connects forward?
-- From slide N+1: Can you trace back to the specific trigger from slide N?
-- If either fails, the connection is too weak.
-
-LOGICAL RELATIONSHIP TEST - connectsTo must express one of:
-- CAUSES: "X directly causes Y" (cost pressure → margin compression)
-- ENABLES: "X makes Y possible" (automation → speed advantage)
-- COMPOUNDS: "X amplifies Y" (delay cost + opportunity cost → accelerating gap)
-- CHALLENGES: "X creates tension with Y" (efficiency gains vs. implementation risk)
-- RESOLVES: "X addresses tension from Y" (mitigation strategy → risk from Section 2)
-
-TRANSITION PATTERNS (use in paragraph endings to connect slides):
-- Cause-effect: "This cost pressure directly impacts..." → next slide explores the impact
-- Escalation: "Beyond this, an even larger concern emerges..." → next slide reveals the bigger issue
-- Contrast pivot: "While X appears favorable, Y reveals..." → next slide examines the contradiction
-- Timeline progression: "Having established X, the Q3 deadline forces..." → next slide addresses timeline
-- Evidence stacking: "Combined with [previous point], this data shows..." → builds cumulative case
+Follow the outline's connectsTo fields for narrative flow. Each slide must build on the previous slide's implication using forward-referencing language. Section endings must create tension that the next section resolves. No isolated "islands" of analysis.
 
 ANALYTICAL DEPTH FRAMEWORKS (MANDATORY):
 Go beyond surface-level observations. For EVERY analytical slide, you MUST:
@@ -1383,11 +1276,6 @@ ANTI-PATTERNS TO REJECT:
 - Topic-label taglines: "OVERVIEW", "INTRODUCTION", "SUMMARY", "ANALYSIS"
 - Backward-looking conclusions: "In summary, we discussed..." → forward implications
 
-TAGLINE QUALITY:
-- Taglines must signal INSIGHT, not topic
-- BAD: "EXECUTIVE SUMMARY", "KEY POINTS", "OVERVIEW", "KEY FINDINGS", "COST ANALYSIS", "IMPORTANT FACTORS"
-- GOOD: "MARGIN EROSION", "Q3 DEADLINE", "73% CHURN RISK", "COST WINDOW CLOSING", "ADOPTION LAG WIDENS"
-
 COMPLETE SLIDE EXAMPLES (STUDY THESE):
 
 EXAMPLE - POOR SLIDE (don't do this):
@@ -1418,36 +1306,12 @@ RESEARCH CONTENT:
 ${researchContent}
 
 ${outline ? `
-═══════════════════════════════════════════════════════════════════════════════
-                        OUTLINE FIDELITY CHECKLIST
-        Before generating output, verify each checkpoint against the outline
-═══════════════════════════════════════════════════════════════════════════════
-
-CHECKPOINT 1: TAGLINE FIDELITY
-Each slide MUST use the EXACT tagline from the outline (or minor rewording for impact only).
-Outline specifies these taglines - verify each appears in your output.
-
-CHECKPOINT 2: KEY DATA POINT INCLUSION
-Each slide specifies a keyDataPoint that MUST appear as PRIMARY evidence.
-Verify these data points are prominently featured (not buried or paraphrased away).
-
-CHECKPOINT 3: ANALYTICAL LENS CONSISTENCY
-Primary framework: ${outline.reasoning?.primaryFramework || 'Not specified'}
-At least 50% of slides must use this framework's signal phrases.
-
-CHECKPOINT 4: CONNECTION THREADING
-Each slide's connectsTo field defines how it leads to the next slide.
-Your content must create this logical flow - verify paragraph endings match connectsTo.
-
-CHECKPOINT 5: SECTION ARC COMPLIANCE
-Each section must follow its narrativeArc. Verify:
-- Phase 1 slides (1-2): CONTEXT - what IS happening
-- Phase 2 slides (3-5): ANALYSIS - why it matters
-- Phase 3 slides (final): IMPLICATIONS - what to DO
-
-═══════════════════════════════════════════════════════════════════════════════
-                          END CHECKLIST - NOW GENERATE
-═══════════════════════════════════════════════════════════════════════════════
+OUTLINE FIDELITY CHECKLIST (verify before generating):
+1. TAGLINE FIDELITY: Use EXACT taglines from outline (minor rewording only for impact).
+2. KEY DATA POINTS: Each slide's keyDataPoint MUST appear as PRIMARY evidence.
+3. ANALYTICAL LENS: Primary framework "${outline.reasoning?.primaryFramework || 'Not specified'}" — at least 50% of slides must use its signal phrases.
+4. CONNECTION THREADING: Paragraph endings must match connectsTo fields.
+5. SECTION ARC: Each section follows its narrativeArc (Context → Analysis → Implications).
 ` : ''}
 OUTPUT FORMAT (CRITICAL):
 - Output ONLY valid JSON - no markdown code fences, no explanatory text before or after
@@ -1554,16 +1418,12 @@ Slide ${i + 1} (${so.sectionName} - "${so.slideTagline}"):
 - So-What: ${so.soWhatStatement || 'Not specified'}
 `).join('') || 'No slide outlines'}
 
-═══════════════════════════════════════════════════════════════════════════════
-                     OUTLINE FIDELITY REQUIREMENTS
-═══════════════════════════════════════════════════════════════════════════════
-1. Use the EXACT source names from sourceInventory (not filenames)
-2. Include ALL keyEvidenceChains in your Q&A responses
-3. Use the anticipatedPushback to inform your response strategies
-4. Use the narrativeTransitions for transitionIn/transitionOut
-5. Honor the narrative position and so-what from slideOutlines
-6. Copy the reasoning object to the top-level 'reasoning' field in output
-═══════════════════════════════════════════════════════════════════════════════
+OUTLINE FIDELITY REQUIREMENTS:
+1. Use EXACT source names from sourceInventory (not filenames)
+2. Include ALL keyEvidenceChains in Q&A responses
+3. Use anticipatedPushback for response strategies and narrativeTransitions for transitions
+4. Honor narrative position and so-what from slideOutlines
+5. Copy reasoning object to top-level 'reasoning' field in output
 
 ` : '';
 
@@ -1716,39 +1576,19 @@ This forces you to think deeply about:
 6. What pushback to anticipate and how to handle it
 
 ## REASONING REQUIREMENTS (COMPLETE BEFORE SLIDE OUTLINES)
+Populate all schema reasoning fields. Focus especially on:
 
 ### 1. PRESENTATION NARRATIVE ARC
-Identify the single story thread connecting all slides:
-- Opening Hook: What grabs attention in the first 2 slides?
-- Tension Building: What stakes or urgency builds through the middle?
-- Resolution/CTA: What action does the presentation drive toward?
-Format: "[Opening Hook] → [Tension Building] → [Resolution/CTA]"
+Format: "[Opening Hook] → [Tension Building] → [Resolution/CTA]" — the single story thread connecting all slides.
 
-### 2. AUDIENCE PROFILE
-Think carefully about who will be in the room:
-- Primary Stakeholder: Who is the key decision-maker? (CFO, CTO, CEO, Board?)
-- Pain Points: What 3 things keep them up at night?
-- Decision Criteria: What factors will drive their yes/no? (ROI, risk, timeline, competitive pressure?)
-
-### 3. KEY EVIDENCE CHAINS (3-5 chains)
+### 2. KEY EVIDENCE CHAINS (3-5 chains)
 For each: evidence (data+source) -> insight (so what) -> anticipatedQuestion -> preparedResponse (ACE: Acknowledge, Cite Evidence, Expand)
 
-### 4. SOURCE INVENTORY
+### 3. SOURCE INVENTORY
 Extract REAL publication names from research (not filenames). Note key findings and confidence level per source.
 
-### 5. NARRATIVE TRANSITIONS
-For slide pairs needing strong transitions: explain WHY (causal, temporal, contrast?) and draft bridge phrase.
-
-### 6. ANTICIPATED PUSHBACK (3-5)
+### 4. ANTICIPATED PUSHBACK (3-5)
 Think like a skeptical CFO/CTO: specific objection, evidence to counter, reframing as opportunity.
-
-### 7. COMPETITIVE POSITIONING
-- primaryCompetitors: acknowledge their strength, explain why we're better for THIS engagement
-- internalTeamResponse: address "why not do this ourselves?"
-- doNothingRisk: quantify cost of inaction
-
-### 8. BRIDGE PHRASES LIBRARY
-Pre-written escape phrases (2-3 each) for: dontKnowAnswer, hostileInterruption, goingOffTopic, technicalDive, losingTheRoom
 
 ## SLIDES TO OUTLINE
 

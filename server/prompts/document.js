@@ -228,40 +228,7 @@ STRUCTURE & OUTPUT FORMAT (Mechanics):
 - Each section: insight-driven heading, key takeaway, supporting evidence, 2-4 focused paragraphs
 - keyInsight: Single sentence with the most important point from that section
 - supportingEvidence: 2-4 citations per section linking claims to research quotes
-
-OUTPUT JSON:
-{
-  "reasoning": {
-    "coreInsight": "The single most important finding that changes decisions",
-    "tensionAnalysis": "The central conflict creating urgency (force A vs. force B)",
-    "stakesQuantified": "Specific dollar amount, percentage, or timeline at risk",
-    "keyDataPoints": ["Statistic 1 with source", "Statistic 2 with source", "Statistic 3 with source"],
-    "counterargument": "The strongest objection a skeptical executive would raise",
-    "counterResponse": "How the counterargument is addressed with evidence",
-    "narrativeThread": "How the topics connect: problem → insight → action arc"
-  },
-  "title": "Insight-driven title that signals the core finding",
-  "executiveSummary": {
-    "situation": "Specific fact about what has happened or is happening (with numbers)",
-    "insight": "Quantified impact to THIS organization in dollars or percentage",
-    "action": "[Role] [verb] [object] by [date] - max 12 words",
-    "source": "Actual Authoritative Source Name (e.g., 'Goldman Sachs 2024 Annual Report')"
-  },
-  "analysisOverview": {
-    "narrative": "2-3 compelling paragraphs setting strategic context...",
-    "keyThemes": [{"theme": "Theme Name as Insight", "description": "Why this matters...", "affectedTopics": ["Topic1", "Topic2"]}],
-    "criticalFindings": ["Finding 1 with specifics", "Finding 2 with data"],
-    "strategicContext": "1-2 paragraphs on interconnections and big picture..."
-  },
-  "sections": [
-    {
-      "heading": "Insight-led heading (not topic label)",
-      "keyInsight": "Single most important takeaway from this section",
-      "supportingEvidence": [{"claim": "Assertion", "quote": "Direct quote", "source": "Source Name"}],
-      "paragraphs": ["paragraph 1", "paragraph 2"]
-    }
-  ]
-}
+- Output valid JSON matching the documentSchema. Start with { and end with }
 
 ANALYSIS OVERVIEW - COMPREHENSIVE STRATEGIC SYNTHESIS:
 
@@ -333,14 +300,7 @@ EXECUTIVE SUMMARY ANTI-PATTERNS (NEVER do these):
 - NEVER use passive voice ("implementation status remains unknown")
 - NEVER start with "This analysis..." or "This report..."
 
-EXECUTIVE SUMMARY EXAMPLES:
-
-BAD:
-situation: "Undermines operational efficiency and exposes the firm to mounting regulatory risk"
-insight: "Competitors are already locking in cost reductions by adopting industry-standard data models"
-action: "Chief Technology Officer (CTO) must publicly commit to a CDM/DRR production timeline by Q2 2026, prioritizing derivatives reporting over general digital transformation projects to mitigate competitive and compliance risk."
-
-WHY IT'S BAD: Situation is vague (no specific event). Insight talks about competitors, not THIS firm's $ impact. Action is 35 words with bureaucratic language and embedded rationale.
+EXECUTIVE SUMMARY EXAMPLE (follow this pattern):
 
 GOOD:
 situation: "JPMorgan deployed ISDA CDM for derivatives reporting in Q4 2024, cutting reconciliation time 60% and positioning for automated DRR compliance."
@@ -368,12 +328,8 @@ NARRATIVE ENERGY (Quality Driver):
 
 OPENING STRATEGIES (choose based on research strength):
 1. THE PARADOX: "Banks spend $4.2B annually on reconciliation while the solution costs 10% of that."
-2. THE MOMENT: "On March 15, 2024, JPMorgan's CDM went live. The competitive landscape shifted."
-3. THE NUMBER: "60%. That's how much reconciliation time JPMorgan eliminated in one quarter."
-4. THE QUESTION: "What happens when your largest competitor cuts costs 40% overnight?"
-5. THE STAKES: "$2.3M per quarter. That's the price of waiting."
-6. THE CONTRAST: "JPMorgan automated. Wells Fargo modernized. Bank of America deliberated."
-7. THE TIMELINE: "Q1 2026: DRR compliance deadline. Q4 2024: Competitors already compliant."
+2. THE NUMBER: "60%. That's how much reconciliation time JPMorgan eliminated in one quarter."
+3. THE STAKES: "$2.3M per quarter. That's the price of waiting."
 
 INSIGHT TRANSFORMATION PATTERNS (choose based on your research data):
 Transform raw data into strategic insights using these patterns:
@@ -550,28 +506,5 @@ REQUEST: ${userPrompt}
 RESEARCH:
 ${researchContent}
 
-GENERATION SEQUENCE (Follow this order strictly):
-
-1. FIRST - Complete the "reasoning" object by working through all 7 steps:
-   - coreInsight: What single finding changes decisions?
-   - tensionAnalysis: What forces are in conflict?
-   - stakesQuantified: What specific amount is at risk?
-   - keyDataPoints: What are the 3-5 most compelling statistics?
-   - counterargument: What would a skeptic challenge?
-   - counterResponse: How do you rebut with evidence?
-   - narrativeThread: What's the story arc?
-
-2. THEN - Use your reasoning to generate the title (reflecting your coreInsight)
-
-3. THEN - Generate executiveSummary (situation from keyDataPoints, insight from stakesQuantified, action from narrativeThread)
-
-4. THEN - Generate analysisOverview (themes from narrativeThread, findings from keyDataPoints)
-
-5. FINALLY - Generate sections (each building on the narrativeThread)
-
-QUALITY CHECK before finalizing:
-- Does executiveSummary.insight match reasoning.stakesQuantified?
-- Does the narrative flow match reasoning.narrativeThread?
-
-Generate the document JSON now. The "reasoning" object MUST be completed FIRST. The executiveSummary MUST reference specific data from the research and use authoritative sources (not filenames).${swimlanes.length > 0 ? ` You MUST create exactly ${swimlanes.length} sections, one for each swimlane topic listed above.` : ''}`;
+Generate the document JSON now. Complete the "reasoning" object FIRST (all 7 steps), then use it to drive the title, executiveSummary, analysisOverview, and sections. The executiveSummary MUST reference specific data from the research and use authoritative sources (not filenames).${swimlanes.length > 0 ? ` You MUST create exactly ${swimlanes.length} sections, one for each swimlane topic listed above.` : ''}`;
 }

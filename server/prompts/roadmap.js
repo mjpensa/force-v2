@@ -74,28 +74,15 @@ You MUST respond with *only* a valid JSON object matching the schema.
         **INCLUDE the task if:** TASK_END >= RANGE_START AND TASK_START <= RANGE_END
         **EXCLUDE the task if:** TASK_END < RANGE_START OR TASK_START > RANGE_END
 
-        **CRITICAL EXAMPLES - TASKS STARTING BEFORE THE RANGE:**
-        - Task 2010-2018 on range 2015-2020: INCLUDE (starts before range but ENDS WITHIN IT at 2018)
-        - Task 2010-2016 on range 2015-2020: INCLUDE (starts before range but ENDS WITHIN IT at 2016)
-        - Task 2010-2015 on range 2015-2020: INCLUDE (starts before range but ENDS AT range start)
-        - Task 2010-2025 on range 2015-2020: INCLUDE (starts before AND ends after - spans entire range)
-        - Task 2018-2025 on range 2015-2020: INCLUDE (starts within range, ends after)
-        - Task 2022-2024 on range 2015-2020: EXCLUDE (starts AFTER range ends)
-        - Task 2010-2012 on range 2015-2020: EXCLUDE (ends BEFORE range starts)
-
-        **CRITICAL EXAMPLES - ONGOING TASKS (NO END DATE):**
-        - "Project started 2018" (no end date) on range 2020-2025: INCLUDE - treat as ongoing (TASK_END = 2025), startCol=1
-        - "Initiative launched 2019" (no end date) on range 2020-2025: INCLUDE - treat as ongoing, startCol=1
-        - "Program began 2026" (no end date) on range 2020-2025: EXCLUDE - starts after range ends
-
-        **CRITICAL EXAMPLES - COMPLETED TASKS (NO SPECIFIC END DATE):**
-        - "Project started 2018, now completed" on range 2020-2025: estimate end ~2019, so 2019 < 2020 → EXCLUDE (likely ended before range)
-        - "Project started 2022, recently completed" on range 2020-2025: estimate end ~2023-2024 → INCLUDE (ended within range)
+        **EXAMPLES (range 2015-2020 unless noted):**
+        - Task 2010-2018: INCLUDE (starts before range, ends within)
+        - Task 2010-2025: INCLUDE (spans entire range)
+        - Task 2018-2025: INCLUDE (starts within, ends after)
+        - Task 2022-2024: EXCLUDE (starts after range ends)
+        - Task 2010-2012: EXCLUDE (ends before range starts)
+        - "Project started 2018" (no end date) on range 2020-2025: INCLUDE as ongoing (startCol=1)
+        - "Project started 2022, recently completed" on range 2020-2025: INCLUDE (estimate end ~2023-2024)
         - When in doubt about completed tasks, err toward INCLUSION
-
-        **EDGE CASE - TASK STARTS AT RANGE END:**
-        - Task starts 2025 on range 2020-2025: INCLUDE (2025 <= 2025) - place in last column
-        - Task starts 2020 on range 2020-2025: INCLUDE (2020 >= 2020) - place in first column
 
         **RELATIVE DATES:** Convert relative time references to absolute dates:
         - "3 years ago", "last year", "recently" → calculate from current year
@@ -119,12 +106,7 @@ You MUST respond with *only* a valid JSON object matching the schema.
 
         **KEY INSIGHT:** A task that STARTED BEFORE the user's range but is STILL ONGOING or ENDS WITHIN the range MUST BE INCLUDED. The start date being before the range is NOT a reason to exclude - only exclude if the task ENDED before the range started.
 
-      * **CLIPPING RULES for included tasks:**
-        - If TASK_START < RANGE_START → set startCol=1 (clip to chart start, task bar begins at first column)
-        - If TASK_END > RANGE_END → set endCol to (number of timeColumns + 1) (clip to chart end)
-        - If both → clip both ends (task spans entire visible chart)
-        - **IMPORTANT:** Clipping means the task IS INCLUDED but its bar is truncated to fit the visible range. A clipped task at startCol=1 indicates it began before the chart's time range.
-      * **When dates are ambiguous:** If a task's timing is unclear, INCLUDE it (err on the side of inclusion).
+      * **When dates are ambiguous:** If a task's timing is unclear, INCLUDE it (err on the side of inclusion). See CLIPPING TO CHART BOUNDARIES under BAR LOGIC for how to handle tasks extending beyond the range.
     - **IF NO USER-SPECIFIED RANGE:** Scan ALL research files to identify EVERY date mentioned (past, present, and future). Use the EARLIEST date found as the start and the LATEST date as the end.
     - The timeColumns array MUST align with the determined time range (column 1 = first time period).
 2.  **TIME INTERVAL:** Based on the *total duration* of the time range, you MUST choose an interval using EXACTLY these thresholds:
@@ -207,23 +189,13 @@ You MUST respond with *only* a valid JSON object matching the schema.
     - **Phases:** Any project phase, stage, sprint, or iteration
     - **Historical Events:** Any PAST or COMPLETED activities - these provide essential context
     **EXTRACTION RULES (MANDATORY - DO NOT VIOLATE):**
-    - Do NOT summarize or consolidate similar items - include each one separately with its own row
-    - Do NOT skip items because they seem minor or redundant - include everything mentioned
-    - Do NOT skip items because they are in the PAST - use the OVERLAP CHECK ALGORITHM from section 1 to decide inclusion
-    - Do NOT skip items because they START BEFORE the time range - if the task ENDS within or after the range start, INCLUDE it
-    - Do NOT skip items because they EXTEND BEYOND the time range - if the task STARTS within or before the range end, INCLUDE it
-    - Do NOT skip items because they lack precise dates - use reasonable estimates or null for bar values
-    - Do NOT skip items because similar tasks already exist - each distinct activity gets its own row
-    - **REMINDER: Apply the OVERLAP CHECK ALGORITHM:** TASK_END >= RANGE_START AND TASK_START <= RANGE_END → INCLUDE
+    - Include EVERY distinct activity as its own row — never consolidate, never skip items for being minor, past, before/beyond the range, imprecisely dated, or similar to existing items. Apply the OVERLAP CHECK ALGORITHM (TASK_END >= RANGE_START AND TASK_START <= RANGE_END) to decide inclusion; use null for bar values when dates are truly unknown.
     - If an item appears in multiple places, include it once with the most complete information
     - If dates are mentioned for ANY activity, that activity MUST appear in the chart (if it overlaps with the time range)
     - Err on the side of INCLUSION - when in doubt, add it to the chart
     - **COUNT CHECK:** Before finalizing, count the total number of distinct activities/events/tasks mentioned in the research. Your output should have approximately that many task rows. If your output has significantly fewer rows than activities mentioned, you are consolidating too aggressively.
-    - **VERIFY TIME RANGE COVERAGE:** After extraction, review ALL items and confirm that EVERY event that OVERLAPS with the user's specified time range is included. This includes tasks that start before OR end after the range - if any portion falls within the range, include it.
-    - **VERIFY EARLY DATES:** After extraction, confirm that events from the BEGINNING of the timeline are included with correct startCol values (startCol=1 for the earliest events).
-    - **VERIFY SWIMLANE COMPLETENESS:** After identifying all tasks, review to ensure EVERY distinct topic, entity, organization, or category that has tasks is represented as its own swimlane. Do not merge or consolidate distinct topics into broader categories. Every task must have a swimlane home.
-    - **FINAL VERIFICATION:** Re-read the research one more time and confirm you have not missed ANY event, task, milestone, deadline, or activity. Missing items is a critical failure.
-    - **VERIFY TASKS STARTING BEFORE RANGE:** Specifically check for tasks/events that STARTED BEFORE the user's time range but EXTEND INTO IT. These are commonly missed. If research mentions a project starting in 2018 and the user requests 2020-2025, that project MUST be included with startCol=1 if it's still ongoing or ended after 2020.
+    - **VERIFY EARLY DATES:** Confirm events from the BEGINNING of the timeline have correct startCol values (startCol=1 for the earliest events, including tasks that started before the range).
+    - **VERIFY SWIMLANE COMPLETENESS:** Every distinct topic, entity, or category with tasks must have its own swimlane. Do not merge distinct topics.
 `;
 
 export function generateRoadmapPrompt(userPrompt, researchFiles, precomputed = null) {

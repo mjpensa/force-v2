@@ -15,7 +15,7 @@ export const FONTS = {
   heading: 'Work Sans',
   body: 'Work Sans',
   title: 'Work Sans Light',  // Title only - NOT bold
-  mono: 'Consolas'
+  // Note: mono ('Consolas') removed — zero references across server files
 };
 
 // Page layout (in twips: 1 inch = 1440 twips) - A4 per SKILL.md
@@ -83,30 +83,18 @@ export const STYLES = {
     color: COLORS.red,
     bold: false
   },
-  heading3: {
-    font: FONTS.heading,
-    size: FONT_SIZES.heading1Small, // 14pt
-    color: COLORS.red,
-    bold: false
-  },
+  heading3: null, // Identical to heading2 — aliased after object definition
   body: {
     font: FONTS.body,
     size: FONT_SIZES.body,         // 11pt
     color: COLORS.black
   },
-  label: {
-    font: FONTS.body,
-    size: FONT_SIZES.body,
-    color: COLORS.red,             // Red labels
-    bold: true,
-    allCaps: true
-  },
-  keyInsight: {
+  // label and keyInsight removed — zero references in docx-export-service.js
+  bodyBold: {
     font: FONTS.body,
     size: FONT_SIZES.body,
     color: COLORS.black,
-    bold: true,
-    italics: false
+    bold: true
   },
   quote: {
     font: FONTS.body,
@@ -120,6 +108,8 @@ export const STYLES = {
     color: COLORS.gray
   }
 };
+// heading3 is identical to heading2 — alias rather than duplicate
+STYLES.heading3 = STYLES.heading2;
 
 export const DEFAULT_METADATA = {
   title: 'Executive Summary',

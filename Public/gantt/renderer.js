@@ -114,8 +114,6 @@ export class GanttRenderer {
     barAreaEl.className = `gantt-bar-area ${isSwimlane ? 'swimlane' : 'task'}`;
     barAreaEl.style.gridColumn = `2 / span ${numCols}`;
     barAreaEl.style.gridTemplateColumns = `repeat(${numCols}, 1fr)`;
-    barAreaEl.style.position = 'relative';
-    barAreaEl.style.display = 'grid';
     barAreaEl.setAttribute('data-row-id', `row-${dataIndex}`);
     barAreaEl.setAttribute('data-task-index', dataIndex);
 
@@ -124,9 +122,6 @@ export class GanttRenderer {
       const cellEl = document.createElement('div');
       cellEl.className = 'gantt-time-cell';
       cellEl.style.gridColumn = colIndex;
-      cellEl.style.borderLeft = colIndex > 1 ? `1px solid ${CONFIG.COLORS.GRID_BORDER}` : 'none';
-      cellEl.style.borderBottom = `1px solid ${CONFIG.COLORS.GRID_BORDER}`;
-      cellEl.style.height = '100%';
       cellsFragment.appendChild(cellEl);
     }
     barAreaEl.appendChild(cellsFragment);
@@ -213,16 +208,9 @@ export class GanttRenderer {
     const scrollContainer = document.createElement('div');
     scrollContainer.className = 'gantt-virtualized-container';
     scrollContainer.style.height = `${ganttData.data.length * ROW_HEIGHT}px`;
-    scrollContainer.style.position = 'relative';
-    scrollContainer.style.overflow = 'auto';
-    scrollContainer.style.maxHeight = '600px';
 
     const viewport = document.createElement('div');
     viewport.className = 'gantt-virtualized-viewport';
-    viewport.style.position = 'absolute';
-    viewport.style.top = '0';
-    viewport.style.left = '0';
-    viewport.style.right = '0';
 
     this.virtualScroll = {
       container: scrollContainer,

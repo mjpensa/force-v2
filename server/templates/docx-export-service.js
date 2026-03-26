@@ -58,6 +58,39 @@ const BULLET_NUMBERING = {
   ]
 };
 
+// Shared table cell margins (precomputed twips)
+const CELL_MARGINS = {
+  header: {
+    top: convertInchesToTwip(0.03),
+    bottom: convertInchesToTwip(0.03),
+    left: convertInchesToTwip(0.06),
+    right: convertInchesToTwip(0.06)
+  },
+  data: {
+    top: convertInchesToTwip(0.04),
+    bottom: convertInchesToTwip(0.04),
+    left: convertInchesToTwip(0.06),
+    right: convertInchesToTwip(0.06)
+  },
+  highlight: {
+    top: convertInchesToTwip(0.03),
+    bottom: convertInchesToTwip(0.03),
+    left: convertInchesToTwip(0.02),
+    right: convertInchesToTwip(0.02)
+  }
+};
+
+// Shared table border definition (all 6 borders identical)
+const TABLE_BORDER = { style: BorderStyle.SINGLE, size: 4, color: 'CCCCCC' };
+const TABLE_BORDERS = {
+  top: TABLE_BORDER,
+  bottom: TABLE_BORDER,
+  left: TABLE_BORDER,
+  right: TABLE_BORDER,
+  insideHorizontal: TABLE_BORDER,
+  insideVertical: TABLE_BORDER
+};
+
 function hexColor(color) {
   return color.replace('#', '');
 }
@@ -101,6 +134,24 @@ function createParagraph(text, options = {}) {
     },
     alignment: options.alignment || AlignmentType.LEFT,
     children: [styledText(text, options.style || STYLES.body)]
+  });
+}
+
+function createLabeledParagraph(label, text, options = {}) {
+  const {
+    labelStyle = STYLES.bodyBold,
+    textStyle = STYLES.body,
+    spaceBefore = 150,
+    spaceAfter = 200,
+    indent
+  } = options;
+  return new Paragraph({
+    spacing: { before: spaceBefore, after: spaceAfter },
+    ...(indent ? { indent } : {}),
+    children: [
+      styledText(label, labelStyle),
+      styledText(text, textStyle)
+    ]
   });
 }
 
@@ -184,12 +235,7 @@ function createHeaderCell(text, width) {
       color: 'auto'
     },
     verticalAlign: VerticalAlign.CENTER,
-    margins: {
-      top: convertInchesToTwip(0.03),
-      bottom: convertInchesToTwip(0.03),
-      left: convertInchesToTwip(0.06),
-      right: convertInchesToTwip(0.06)
-    },
+    margins: CELL_MARGINS.header,
     children: [new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [new TextRun({
@@ -220,12 +266,7 @@ function createDataCell(content, width, isFirstCol = false, isAlternateRow = fal
   return new TableCell({
     width: { size: width, type: WidthType.DXA },
     verticalAlign: VerticalAlign.CENTER,
-    margins: {
-      top: convertInchesToTwip(0.04),
-      bottom: convertInchesToTwip(0.04),
-      left: convertInchesToTwip(0.06),
-      right: convertInchesToTwip(0.06)
-    },
+    margins: CELL_MARGINS.data,
     shading: isAlternateRow
       ? { fill: hexColor(COLORS.altRowGray), type: ShadingType.CLEAR, color: 'auto' }
       : undefined,
@@ -242,12 +283,7 @@ function createHighlightCell(text, width) {
       color: 'auto'
     },
     verticalAlign: VerticalAlign.CENTER,
-    margins: {
-      top: convertInchesToTwip(0.03),
-      bottom: convertInchesToTwip(0.03),
-      left: convertInchesToTwip(0.02),
-      right: convertInchesToTwip(0.02)
-    },
+    margins: CELL_MARGINS.highlight,
     children: [new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [new TextRun({
@@ -351,19 +387,10 @@ function createStyledTable(headers, rows, options = {}) {
       })
     }));
   });
-  const tableBorders = {
-    top: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) },
-    bottom: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) },
-    left: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) },
-    right: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) },
-    insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) },
-    insideVertical: { style: BorderStyle.SINGLE, size: 4, color: hexColor(COLORS.borderLight) }
-  };
-
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     layout: TableLayoutType.FIXED,
-    borders: tableBorders,
+    borders: TABLE_BORDERS,
     columnWidths: widths,  // CRITICAL: Explicit columnWidths array
     rows: tableRows
   });
@@ -375,12 +402,10 @@ function buildExecutiveSummary(execSummary) {
   const elements = [];
   elements.push(createHeading('Executive Summary', 1));
   if (execSummary.source) {
-    elements.push(new Paragraph({
-      spacing: { after: 200 },
-      children: [
-        styledText('Source: ', { ...STYLES.source, bold: true }),
-        styledText(execSummary.source, STYLES.source)
-      ]
+    elements.push(createLabeledParagraph('Source: ', execSummary.source, {
+      labelStyle: { ...STYLES.source, bold: true },
+      textStyle: STYLES.source,
+      spaceBefore: 0, spaceAfter: 200
     }));
   }
   if (execSummary.narrative) {
@@ -428,7 +453,7 @@ function buildAnalysisOverview(overview) {
     overview.keyThemes.forEach(theme => {
       elements.push(new Paragraph({
         spacing: { before: 200, after: 100 },
-        children: [styledText(theme.theme, { ...STYLES.body, bold: true })]
+        children: [styledText(theme.theme, STYLES.bodyBold)]
       }));
       if (theme.description) {
         elements.push(createParagraph(theme.description, {
@@ -476,26 +501,16 @@ function buildContentSection(section, index) {
   if (section.keyInsight) {
     elements.push(new Paragraph({
       spacing: { before: 200, after: 200 },
-      children: [styledText(section.keyInsight, { ...STYLES.body, bold: true })]
+      children: [styledText(section.keyInsight, STYLES.bodyBold)]
     }));
   }
   if (section.researchSummary) {
-    elements.push(new Paragraph({
-      spacing: { before: 200, after: 150 },
-      children: [
-        styledText('Research Summary: ', { ...STYLES.body, bold: true }),
-        styledText(section.researchSummary, STYLES.body)
-      ]
+    elements.push(createLabeledParagraph('Research Summary: ', section.researchSummary, {
+      spaceBefore: 200, spaceAfter: 150
     }));
   }
   if (section.implications) {
-    elements.push(new Paragraph({
-      spacing: { before: 150, after: 200 },
-      children: [
-        styledText('Implications: ', { ...STYLES.body, bold: true }),
-        styledText(section.implications, STYLES.body)
-      ]
-    }));
+    elements.push(createLabeledParagraph('Implications: ', section.implications));
   }
   if (section.paragraphs && section.paragraphs.length > 0) {
     section.paragraphs.forEach(para => {
@@ -511,7 +526,7 @@ function buildContentSection(section, index) {
       if (evidence.claim) {
         elements.push(new Paragraph({
           spacing: { before: 200, after: 100 },
-          children: [styledText(evidence.claim, { ...STYLES.body, bold: true })]
+          children: [styledText(evidence.claim, STYLES.bodyBold)]
         }));
       }
       if (evidence.quote) {
@@ -598,20 +613,16 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
       italics: true
     })]
   }));
-  children.push(new Paragraph({
-    spacing: { after: 200 },
-    children: [
-      styledText('Attendees: ', { ...STYLES.body, bold: true, size: 20 }),
-      styledText(meetingContext.meetingAttendees, { ...STYLES.body, size: 20 })
-    ]
+  children.push(createLabeledParagraph('Attendees: ', meetingContext.meetingAttendees, {
+    labelStyle: { ...STYLES.bodyBold, size: 20 },
+    textStyle: { ...STYLES.body, size: 20 },
+    spaceBefore: 0, spaceAfter: 200
   }));
   if (meetingContext.keyConcerns) {
-    children.push(new Paragraph({
-      spacing: { after: 250 },
-      children: [
-        styledText('Key Concerns: ', { ...STYLES.body, bold: true, size: 20 }),
-        styledText(meetingContext.keyConcerns, { ...STYLES.body, size: 20, italics: true })
-      ]
+    children.push(createLabeledParagraph('Key Concerns: ', meetingContext.keyConcerns, {
+      labelStyle: { ...STYLES.bodyBold, size: 20 },
+      textStyle: { ...STYLES.body, size: 20, italics: true },
+      spaceBefore: 0, spaceAfter: 250
     }));
   }
   children.push(new Paragraph({
@@ -633,8 +644,8 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
       children.push(new Paragraph({
         spacing: { before: 100, after: 50 },
         children: [
-          styledText(`${i + 1}. `, { ...STYLES.body, bold: true }),
-          styledText(tp.point, { ...STYLES.body, bold: true })
+          styledText(`${i + 1}. `, STYLES.bodyBold),
+          styledText(tp.point, STYLES.bodyBold)
         ]
       }));
       if (tp.supporting) {
@@ -657,17 +668,12 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
       children.push(new Paragraph({
         spacing: { before: 100, after: 50 },
         children: [
-          styledText('Q: ', { ...STYLES.body, bold: true, color: COLORS.red }),
+          styledText('Q: ', { ...STYLES.bodyBold, color: COLORS.red }),
           styledText(qa.question, { ...STYLES.body, italics: true })
         ]
       }));
-      children.push(new Paragraph({
-        spacing: { after: 100 },
-        indent: { left: 200 },
-        children: [
-          styledText('A: ', { ...STYLES.body, bold: true }),
-          styledText(qa.suggestedResponse, STYLES.body)
-        ]
+      children.push(createLabeledParagraph('A: ', qa.suggestedResponse, {
+        spaceBefore: 0, spaceAfter: 100, indent: { left: 200 }
       }));
     });
   }
@@ -680,12 +686,8 @@ export async function generateIntelligenceBriefDocx(briefData, meetingContext) {
   if (briefData.recommendedNextSteps?.length > 0) {
     children.push(createHeading('Recommended Next Steps', 2));
     briefData.recommendedNextSteps.forEach((step, i) => {
-      children.push(new Paragraph({
-        spacing: { after: 80 },
-        children: [
-          styledText(`${i + 1}. `, { ...STYLES.body, bold: true }),
-          styledText(step, STYLES.body)
-        ]
+      children.push(createLabeledParagraph(`${i + 1}. `, step, {
+        spaceBefore: 0, spaceAfter: 80
       }));
     });
   }

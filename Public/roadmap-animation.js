@@ -206,50 +206,13 @@ window.onload = function() {
         requestAnimationFrame(animate);
     }
 
-    /**
-     * Robust Initialization:
-     * Waits for key DOM elements to be ready AND RENDERED.
-     */
-    function retryInit(attemptsLeft = 10) {
-        // Find all required elements
-        titleEl = document.getElementById('title-block');
-        formEl = document.getElementById('gantt-form');
-        svg = document.getElementById('roadmap-svg');
-        linesGroup = document.getElementById('roadmap-lines');
-        pointsGroup = document.getElementById('roadmap-points');
+    // Grab DOM elements (guaranteed present: script loads after them in the HTML)
+    titleEl = document.getElementById('title-block');
+    formEl = document.getElementById('gantt-form');
+    svg = document.getElementById('roadmap-svg');
+    linesGroup = document.getElementById('roadmap-lines');
+    pointsGroup = document.getElementById('roadmap-points');
 
-        // Check if all elements were found AND are rendered
-        let allElementsReady = false;
-        if (titleEl && formEl && svg && linesGroup && pointsGroup) {
-            // Now, check if they are rendered
-            try {
-                const titleRect = titleEl.getBoundingClientRect();
-                const formRect = formEl.getBoundingClientRect();
-                // Check for valid, non-zero dimensions (or at least that they exist)
-                if (titleRect && formRect) {
-                    allElementsReady = true;
-                }
-            } catch (e) {
-                // Bounding rect failed, not ready
-            }
-        }
-
-        if (allElementsReady) {
-            // All elements found and rendered, proceed
-            console.log("DOM elements are ready, initializing animation.");
-            init();
-            // Start the animation loop
-            animate();
-        } else if (attemptsLeft > 0) {
-            // Elements not found or not rendered, wait and retry
-            console.log("Waiting for DOM elements to render...");
-            setTimeout(() => retryInit(attemptsLeft - 1), 200);
-        } else {
-            // Failed after all attempts
-            console.error("Failed to initialize animation: DOM elements not found or not rendered.");
-        }
-    }
-
-    // Start the initialization check
-    retryInit();
+    init();
+    animate();
 };

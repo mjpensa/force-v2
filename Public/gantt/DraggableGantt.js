@@ -50,45 +50,21 @@ export class DraggableGantt extends InteractiveGanttHandler {
   }
 
   async _handleMouseUp(event) {
-    if (!this.state) return;
+    await this._finishInteraction('dragging', 'dragging');
+  }
 
-    const { startCol: newStartCol, endCol: newEndCol } = this.parseGridColumn(this.state.bar.style.gridColumn);
-    const hasChanged = newStartCol !== this.state.originalStartCol || newEndCol !== this.state.originalEndCol;
-
-    if (hasChanged) {
-      this.updateGanttData(newStartCol, newEndCol);
-
-      if (this.callback) {
-        try {
-          await this.callback(this.buildTaskInfo(newStartCol, newEndCol));
-        } catch (error) {
-          this.rollback();
-        }
-      }
+  _cleanupSubclass() {
+    if (this.state?.bar) {
+      this.state.bar.style.opacity = '1';
     }
-
-    this.state.bar.style.opacity = '1';
     this._removeDragIndicator();
-    this.cleanup('dragging', 'dragging');
   }
 
   _createDragIndicator() {
     this.dragIndicator = document.createElement('div');
     this.dragIndicator.className = 'drag-indicator';
-    this.dragIndicator.style.cssText = `
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: ${CONFIG.COLORS.PRIMARY || '#BA3930'};
-      color: white;
-      padding: 8px 16px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: bold;
-      z-index: 10000;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    `;
-    this.dragIndicator.textContent = '↔ Drag to reschedule task';
+    this.dragIndicator.style.background = CONFIG.COLORS.PRIMARY || '#BA3930';
+    this.dragIndicator.textContent = '\u2194 Drag to reschedule task';
     document.body.appendChild(this.dragIndicator);
   }
 

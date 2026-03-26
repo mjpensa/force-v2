@@ -69,8 +69,3 @@ body.view-roadmap .app-main {
 .has-icon-rail .app-shell {
   padding-left: 0;
 }
-@media print {
-  .app-main {
-    padding: 0;
-  }
-}

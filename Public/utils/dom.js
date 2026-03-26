@@ -1,4 +1,15 @@
 /**
+ * Escape HTML special characters for safe insertion into innerHTML.
+ * @param {string} text
+ * @returns {string}
+ */
+export function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text || '';
+  return div.innerHTML;
+}
+
+/**
  * Safely get an element by ID
  * @param {string} id - Element ID
  * @returns {HTMLElement|null}
@@ -9,24 +20,6 @@ export function safeGetElement(id) {
 
 export function safeQuerySelector(selector) {
   return document.querySelector(selector);
-}
-
-export function createButton(config) {
-  const btn = document.createElement('button');
-  if (config.id) btn.id = config.id;
-  if (config.className) btn.className = config.className;
-  if (config.text) btn.textContent = config.text;
-  if (config.title) btn.title = config.title;
-  if (config.ariaLabel) btn.setAttribute('aria-label', config.ariaLabel);
-  if (config.style) {
-    Object.assign(btn.style, config.style);
-  }
-  if (config.attributes) {
-    Object.entries(config.attributes).forEach(([key, value]) => {
-      btn.setAttribute(key, value);
-    });
-  }
-  return btn;
 }
 
 export function createModal(config = {}) {

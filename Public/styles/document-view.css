@@ -20,10 +20,6 @@
 
 /* ========== TABLE OF CONTENTS ========== */
 
-.document-toc {
-  /* Extends .toc-sidebar from design-system.css — only unique override below */
-}
-
 .toc-title {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
@@ -697,23 +693,7 @@
   }
 
   .document-toc {
-    position: static;
-    width: 100%;
-    top: auto;
-    right: auto;
-    bottom: auto;
-    height: auto;
     margin-bottom: var(--spacing-6);
-    padding: var(--spacing-4);
-    background: var(--glass-white-8);
-    background-image: none;
-    -webkit-backdrop-filter: blur(var(--blur-lg));
-    backdrop-filter: blur(var(--blur-lg));
-    border: var(--border-glass);
-    border-left: var(--border-glass);
-    border-radius: var(--radius-glass-lg);
-    box-shadow: var(--shadow-glass-2);
-    z-index: auto;
   }
 
   /* Move menu to right edge when TOC is inline */
@@ -942,10 +922,6 @@
 
   .finding-item {
     color: black;
-  }
-
-  .finding-item::before {
-    color: #666;
   }
 
   .overview-context {

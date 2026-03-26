@@ -32,7 +32,7 @@ export const CONFIG = {
     TRUST_PROXY_HOPS: 1 // Railway uses single proxy layer
   },
   API: {
-    GEMINI_MODEL: 'gemini-2.5-flash',
+    GEMINI_MODEL: 'gemini-2.5-flash-lite',
     RETRY_COUNT: 3,
     RETRY_BASE_DELAY_MS: 1000, // 1 second base delay
     TIMEOUT_MS: 300000, // 5 minutes - under typical proxy timeouts to prevent 502 errors
@@ -84,14 +84,13 @@ export const CONFIG = {
   }
 };
 
-Object.freeze(CONFIG);
-Object.freeze(CONFIG.SERVER);
-Object.freeze(CONFIG.API);
-Object.freeze(CONFIG.FILES);
-Object.freeze(CONFIG.TIMEOUTS);
-Object.freeze(CONFIG.RATE_LIMIT);
-Object.freeze(CONFIG.CACHE);
-Object.freeze(CONFIG.SECURITY);
-Object.freeze(CONFIG.VALIDATION);
-Object.freeze(CONFIG.ERRORS);
+function deepFreeze(obj) {
+  Object.freeze(obj);
+  for (const val of Object.values(obj)) {
+    if (val && typeof val === 'object' && !Object.isFrozen(val)) deepFreeze(val);
+  }
+  return obj;
+}
+
+deepFreeze(CONFIG);
 

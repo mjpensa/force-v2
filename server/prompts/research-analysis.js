@@ -254,13 +254,6 @@ ${timestamp}
 
 Analyze this research thoroughly and provide a comprehensive quality assessment focused on its fitness for Gantt chart creation. Identify all themes, assess data quality for each, and provide specific, actionable recommendations.
 
-**CRITICAL REQUIREMENTS:**
-1. Use ONLY the research content provided above - do not invent or assume information
-2. Be specific about what IS in the research and what is MISSING
-3. Count dates and events accurately
-4. Every recommendation must be actionable and specific to gaps found
-5. Set generatedAt to the timestamp provided above
-
-Respond with ONLY the JSON object.`;
+Use ONLY the provided research content. Be specific, count accurately, and set generatedAt to the timestamp above. Respond with ONLY the JSON object.`;
 }
 

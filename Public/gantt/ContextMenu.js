@@ -67,35 +67,41 @@ export class ContextMenu {
     this.hide();
   }
   _createMenu() {
+    const colorOptions = [
+      { key: 'priority-red', hex: '#EF4444', label: 'High Priority' },
+      { key: 'medium-red',   hex: '#FB923C', label: 'Medium Priority' },
+      { key: 'mid-grey',     hex: '#14B8A6', label: 'Teal' },
+      { key: 'light-grey',   hex: '#E879F9', label: 'Pink-Purple' },
+      { key: 'white',        hex: '#FFFFFF', label: 'White' },
+      { key: 'dark-blue',    hex: '#3B82F6', label: 'Blue' },
+    ];
+
     const menu = document.createElement('div');
     menu.className = 'context-menu';
-    menu.innerHTML = `
-      <div class="context-menu-title">Change Color</div>
-      <div class="color-option" data-color="priority-red">
-        <span class="color-preview" style="background-color: #EF4444;"></span>
-        <span class="color-label">High Priority</span>
-      </div>
-      <div class="color-option" data-color="medium-red">
-        <span class="color-preview" style="background-color: #FB923C;"></span>
-        <span class="color-label">Medium Priority</span>
-      </div>
-      <div class="color-option" data-color="mid-grey">
-        <span class="color-preview" style="background-color: #14B8A6;"></span>
-        <span class="color-label">Teal</span>
-      </div>
-      <div class="color-option" data-color="light-grey">
-        <span class="color-preview" style="background-color: #E879F9;"></span>
-        <span class="color-label">Pink-Purple</span>
-      </div>
-      <div class="color-option" data-color="white">
-        <span class="color-preview" style="background-color: #FFFFFF;"></span>
-        <span class="color-label">White</span>
-      </div>
-      <div class="color-option" data-color="dark-blue">
-        <span class="color-preview" style="background-color: #3B82F6;"></span>
-        <span class="color-label">Blue</span>
-      </div>
-    `;
+
+    const title = document.createElement('div');
+    title.className = 'context-menu-title';
+    title.textContent = 'Change Color';
+    menu.appendChild(title);
+
+    for (const { key, hex, label } of colorOptions) {
+      const option = document.createElement('div');
+      option.className = 'color-option';
+      option.dataset.color = key;
+
+      const preview = document.createElement('span');
+      preview.className = 'color-preview';
+      preview.style.backgroundColor = hex;
+
+      const labelEl = document.createElement('span');
+      labelEl.className = 'color-label';
+      labelEl.textContent = label;
+
+      option.appendChild(preview);
+      option.appendChild(labelEl);
+      menu.appendChild(option);
+    }
+
     menu.addEventListener('click', (e) => {
       const option = e.target.closest('.color-option');
       if (option) {

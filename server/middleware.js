@@ -2,7 +2,6 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import multer from 'multer';
 import { CONFIG } from './config.js';
-import { getFileExtension } from './utils.js';
 export function configureHelmet() {
   return helmet({
     contentSecurityPolicy: false,
@@ -10,12 +9,7 @@ export function configureHelmet() {
   });
 }
 export function configureCacheControl(req, res, next) {
-  if (req.path.match(/\.(jpg|jpeg|png|gif|ico|css|js|svg)$/)) {
-    const maxAge = process.env.NODE_ENV === 'production' ? CONFIG.CACHE.STATIC_ASSETS_MAX_AGE : 0;
-    res.set('Cache-Control', `public, max-age=${maxAge}`);
-  } else {
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-  }
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   next();
 }
 export function configureTimeout(req, res, next) {
@@ -46,7 +40,7 @@ export const uploadMiddleware = multer({
   },
   fileFilter: (req, file, cb) => {
     const allowedMimes = CONFIG.FILES.ALLOWED_MIMES;
-    const fileExtension = getFileExtension(file.originalname);
+    const fileExtension = file.originalname.toLowerCase().split('.').pop();
     const allowedExtensions = CONFIG.FILES.ALLOWED_EXTENSIONS;
 
     // Security: Always validate extension to prevent MIME type spoofing

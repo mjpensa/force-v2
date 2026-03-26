@@ -2,6 +2,72 @@ import { toSentenceCase, sanitizeText, normalizeBodyText, truncateToSentence } f
 import { createDropdownMenu } from '../../utils/dom.js';
 import { SpeakerNotesManager } from './SpeakerNotesManager.js';
 
+/** Append BIP logo, page-number footer, and optional corner graphic to a slide element. */
+function _appendSlideChrome(slideEl, index, { showCornerGraphic = false, darkBackground = false } = {}) {
+  if (showCornerGraphic) {
+    const cornerGraphic = document.createElement('img');
+    cornerGraphic.src = 'bip corner graphic.svg';
+    cornerGraphic.style.cssText = `
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 10.9%;
+      height: auto;
+    `;
+    slideEl.appendChild(cornerGraphic);
+  }
+
+  const bipLogo = document.createElement('img');
+  bipLogo.src = 'Red BIP Logo.png';
+  bipLogo.style.cssText = `
+    position: absolute;
+    bottom: 3%;
+    right: 2%;
+    height: 4%;
+    width: auto;
+  `;
+  slideEl.appendChild(bipLogo);
+
+  const footer = document.createElement('div');
+  footer.style.cssText = `
+    position: absolute;
+    bottom: 3.43%;
+    left: 2.11%;
+    font-size: clamp(6px, 1cqw, 12px);
+    font-weight: 400;
+    color: ${darkBackground ? 'rgba(255, 255, 255, 0.6)' : '#0C2340'};
+  `;
+  footer.textContent = index + 1;
+  slideEl.appendChild(footer);
+}
+
+/** Create the tagline element used by twoColumn and threeColumn layouts. */
+function _createTagline(slide) {
+  const tagline = document.createElement('div');
+  tagline.style.cssText = `
+    position: absolute;
+    top: 3.45%;
+    left: 2.11%;
+    font-size: clamp(8px, 1.3cqw, 16px);
+    font-weight: 600;
+    color: #DA291C;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  `;
+  tagline.textContent = slide.tagline || '';
+  return tagline;
+}
+
+/** Normalize title text: sentence-case, split into lines, pad to exactly 4 lines. */
+function _normalizeTitleLines(titleText) {
+  const sentenceCase = toSentenceCase(titleText);
+  let lines = sentenceCase.split('\n').map(l => l.trim()).filter(l => l);
+  if (lines.length > 4) lines = lines.slice(0, 4);
+  while (lines.length < 4) lines.push('');
+  return lines.join('\n');
+}
+
 function renderSlide(slide, index) {
   const layout = slide.layout || 'twoColumn';
   if (layout === 'sectionTitle') {
@@ -33,7 +99,6 @@ function renderSectionTitleSlide(slide, index) {
     position: absolute;
     top: 5%;
     left: 4%;
-    font-family: 'Work Sans', sans-serif;
     font-size: clamp(10px, 1.5cqw, 18px);
     font-weight: 600;
     color: #FFFFFF;
@@ -45,7 +110,6 @@ function renderSectionTitleSlide(slide, index) {
 
   const title = document.createElement('div');
   title.style.cssText = `
-    font-family: 'Work Sans', sans-serif;
     font-size: clamp(32px, 8cqw, 96px);
     font-weight: 100;
     color: #FFFFFF;
@@ -68,29 +132,7 @@ function renderSectionTitleSlide(slide, index) {
   `;
   el.appendChild(line);
 
-  const bipLogo = document.createElement('img');
-  bipLogo.src = 'Red BIP Logo.png';
-  bipLogo.style.cssText = `
-    position: absolute;
-    bottom: 3%;
-    right: 2%;
-    height: 4%;
-    width: auto;
-  `;
-  el.appendChild(bipLogo);
-
-  const footer = document.createElement('div');
-  footer.style.cssText = `
-    position: absolute;
-    bottom: 3.43%;
-    left: 2.11%;
-    font-family: 'Work Sans', sans-serif;
-    font-size: clamp(6px, 1cqw, 12px);
-    font-weight: 400;
-    color: rgba(255, 255, 255, 0.6);
-  `;
-  footer.textContent = index + 1;
-  el.appendChild(footer);
+  _appendSlideChrome(el, index, { darkBackground: true });
 
   return el;
 }
@@ -106,21 +148,7 @@ function renderTwoColumnSlide(slide, index) {
     overflow: hidden;
   `;
 
-  const tagline = document.createElement('div');
-  tagline.style.cssText = `
-    position: absolute;
-    top: 3.43%;
-    left: 2.11%;
-    font-family: 'Work Sans', sans-serif;
-    font-size: clamp(8px, 1.3cqw, 16px);
-    font-weight: 600;
-    color: #DA291C;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    white-space: nowrap;
-  `;
-  tagline.textContent = slide.tagline || '';
-  el.appendChild(tagline);
+  el.appendChild(_createTagline(slide));
 
   const title = document.createElement('div');
   title.style.cssText = `
@@ -129,7 +157,6 @@ function renderTwoColumnSlide(slide, index) {
     left: 1.87%;
     width: 44.59%;
     height: 40%;
-    font-family: 'Work Sans', sans-serif;
     font-size: clamp(18px, 6cqw, 72px);
     font-weight: 100;
     line-height: 0.95;
@@ -138,18 +165,7 @@ function renderTwoColumnSlide(slide, index) {
     word-break: keep-all;
     overflow-wrap: normal;
   `;
-  const titleText = slide.title || '';
-  const sentenceCase = toSentenceCase(titleText);
-  let lines = sentenceCase.split('\n').map(l => l.trim()).filter(l => l);
-
-  if (lines.length > 4) {
-    lines = lines.slice(0, 4);
-  }
-  while (lines.length < 4) {
-    lines.push('');
-  }
-
-  title.textContent = lines.join('\n');
+  title.textContent = _normalizeTitleLines(slide.title || '');
   el.appendChild(title);
 
   const body = document.createElement('div');
@@ -159,7 +175,6 @@ function renderTwoColumnSlide(slide, index) {
     width: 44.30%;
     top: 57%;
     bottom: 6%;
-    font-family: 'Work Sans', sans-serif;
     font-size: clamp(7px, 1.15cqw, 14px);
     font-weight: 400;
     line-height: 1.35;
@@ -182,40 +197,7 @@ function renderTwoColumnSlide(slide, index) {
 
   el.appendChild(body);
 
-  const cornerGraphic = document.createElement('img');
-  cornerGraphic.src = 'bip corner graphic.svg';
-  cornerGraphic.style.cssText = `
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 10.9%;
-    height: auto;
-  `;
-  el.appendChild(cornerGraphic);
-
-  const bipLogo = document.createElement('img');
-  bipLogo.src = 'Red BIP Logo.png';
-  bipLogo.style.cssText = `
-    position: absolute;
-    bottom: 3%;
-    right: 2%;
-    height: 4%;
-    width: auto;
-  `;
-  el.appendChild(bipLogo);
-
-  const footer = document.createElement('div');
-  footer.style.cssText = `
-    position: absolute;
-    bottom: 3.43%;
-    left: 2.11%;
-    font-family: 'Work Sans', sans-serif;
-    font-size: clamp(6px, 1cqw, 12px);
-    font-weight: 400;
-    color: #0C2340;
-  `;
-  footer.textContent = index + 1;
-  el.appendChild(footer);
+  _appendSlideChrome(el, index, { showCornerGraphic: true });
 
   return el;
 }
@@ -231,21 +213,7 @@ function renderThreeColumnSlide(slide, index) {
     overflow: hidden;
   `;
 
-  const tagline = document.createElement('div');
-  tagline.style.cssText = `
-    position: absolute;
-    top: 3.47%;
-    left: 2.10%;
-    font-family: 'Work Sans', sans-serif;
-    font-size: clamp(8px, 1.3cqw, 16px);
-    font-weight: 600;
-    color: #DA291C;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    white-space: nowrap;
-  `;
-  tagline.textContent = slide.tagline || '';
-  el.appendChild(tagline);
+  el.appendChild(_createTagline(slide));
 
   const title = document.createElement('div');
   title.style.cssText = `
@@ -254,7 +222,6 @@ function renderThreeColumnSlide(slide, index) {
     left: 1.87%;
     width: 24%;
     height: 40%;
-    font-family: 'Work Sans', sans-serif;
     font-size: clamp(14px, 3.2cqw, 38px);
     font-weight: 300;
     line-height: 0.95;
@@ -263,13 +230,7 @@ function renderThreeColumnSlide(slide, index) {
     word-break: keep-all;
     overflow-wrap: normal;
   `;
-
-  const titleText = slide.title || '';
-  const sentenceCase = toSentenceCase(titleText);
-  let lines = sentenceCase.split('\n').map(l => l.trim()).filter(l => l);
-  if (lines.length > 4) lines = lines.slice(0, 4);
-  while (lines.length < 4) lines.push('');
-  title.textContent = lines.join('\n');
+  title.textContent = _normalizeTitleLines(slide.title || '');
   el.appendChild(title);
 
   const columnsContainer = document.createElement('div');
@@ -293,7 +254,6 @@ function renderThreeColumnSlide(slide, index) {
     const col = document.createElement('div');
     col.style.cssText = `
       flex: 1;
-      font-family: 'Work Sans', sans-serif;
       font-size: clamp(7px, 1.15cqw, 14px);
       font-weight: 400;
       line-height: 1.3;
@@ -305,40 +265,7 @@ function renderThreeColumnSlide(slide, index) {
   });
   el.appendChild(columnsContainer);
 
-  const cornerGraphic = document.createElement('img');
-  cornerGraphic.src = 'bip corner graphic.svg';
-  cornerGraphic.style.cssText = `
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 10.9%;
-    height: auto;
-  `;
-  el.appendChild(cornerGraphic);
-
-  const bipLogo = document.createElement('img');
-  bipLogo.src = 'Red BIP Logo.png';
-  bipLogo.style.cssText = `
-    position: absolute;
-    bottom: 3%;
-    right: 2%;
-    height: 4%;
-    width: auto;
-  `;
-  el.appendChild(bipLogo);
-
-  const footer = document.createElement('div');
-  footer.style.cssText = `
-    position: absolute;
-    bottom: 3.43%;
-    left: 2.11%;
-    font-family: 'Work Sans', sans-serif;
-    font-size: clamp(6px, 1cqw, 12px);
-    font-weight: 400;
-    color: #0C2340;
-  `;
-  footer.textContent = index + 1;
-  el.appendChild(footer);
+  _appendSlideChrome(el, index, { showCornerGraphic: true });
 
   return el;
 }

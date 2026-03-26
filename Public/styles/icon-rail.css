@@ -272,7 +272,6 @@
   color: #ef4444;
 }
 .icon-rail-item-label {
-  margin-left: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;

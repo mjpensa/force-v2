@@ -34,8 +34,6 @@ app.use(cors({
 
 app.use(configureHelmet());
 
-app.disable('x-powered-by');
-
 app.use(configureCacheControl);
 
 app.use(express.json({ limit: '50mb' }));

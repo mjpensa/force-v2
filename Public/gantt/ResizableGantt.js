@@ -1,10 +1,6 @@
 import { InteractiveGanttHandler } from './InteractiveGanttHandler.js';
 
 export class ResizableGantt extends InteractiveGanttHandler {
-  constructor(gridElement, ganttData, onTaskUpdate) {
-    super(gridElement, ganttData, onTaskUpdate);
-  }
-
   _handleMouseDown(event) {
     const bar = event.target.closest('.gantt-bar');
     if (!bar) return;
@@ -56,25 +52,7 @@ export class ResizableGantt extends InteractiveGanttHandler {
   }
 
   async _handleMouseUp(event) {
-    if (!this.state) return;
-
-    const { startCol: newStartCol, endCol: newEndCol } = this.parseGridColumn(this.state.bar.style.gridColumn);
-    const hasChanged = newStartCol !== this.state.originalStartCol || newEndCol !== this.state.originalEndCol;
-
-    if (hasChanged) {
-      this.updateGanttData(newStartCol, newEndCol);
-
-      if (this.callback) {
-        try {
-          await this.callback(this.buildTaskInfo(newStartCol, newEndCol, {
-            resizeHandle: this.state.handle
-          }));
-        } catch (error) {
-          this.rollback();
-        }
-      }
-    }
-
-    this.cleanup('resizing', 'resizing');
+    const extra = this.state ? { resizeHandle: this.state.handle } : {};
+    await this._finishInteraction('resizing', 'resizing', extra);
   }
 }

@@ -54,10 +54,7 @@ export function getAcronymRules(short = false) {
 MIXED CASE acronyms (preserve exact capitalization):
 - FpML, SaaS, PaaS, IaaS, RegTech, FinTech, InsurTech, SupTech, PropTech, DeFi, TradFi, DevOps, GenAI
 
-CAPITALIZATION RULES:
-- NEVER alter acronym capitalization: "fpml" or "Fpml" is WRONG, "FpML" is CORRECT
-- "saas" or "SAAS" is WRONG, "SaaS" is CORRECT
-- "cdm" or "Cdm" is WRONG, "CDM" is CORRECT`;
+NEVER alter acronym capitalization (e.g., "FpML" not "fpml"/"Fpml", "SaaS" not "saas"/"SAAS", "CDM" not "cdm"/"Cdm").`;
 
   if (short) {
     return base;
@@ -66,10 +63,7 @@ CAPITALIZATION RULES:
   return `${base}
 - NEVER split acronyms across lines in titles
 
-TAGLINE EXCEPTION: In taglines, mixed-case acronyms keep their standard form even though surrounding text is uppercase
-- WRONG: "SAAS MIGRATION" - SAAS is incorrect
-- CORRECT: "SaaS MIGRATION" - SaaS keeps standard capitalization
-- CORRECT: "CDM ADOPTION" - CDM is already all caps
+TAGLINE EXCEPTION: In taglines, mixed-case acronyms keep standard form (e.g., "SaaS MIGRATION" not "SAAS MIGRATION").
 
 FALLBACK RULE: For acronyms not listed above, preserve capitalization exactly as found in research documents`;
 }
@@ -235,8 +229,6 @@ ${categories}
 CITATION PATTERNS (use these phrases):
 - "According to [Source], [fact]..."
 - "[Source] reveals [finding]..."
-- "The [Report Name] shows [data]..."
-- "Per [Organization]'s analysis, [insight]..."
 
 SOURCE CITATION ANTI-PATTERNS (NEVER DO):
 - NEVER cite uploaded filenames: "According to research.md..." or "data.pdf shows..."

@@ -1,6 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
-import { generateAllContent, regenerateContent, generateIntelligenceBrief, generateSpeakerNotesAsync } from '../generators.js';
+import { generateAllContent, generateIntelligenceBrief, generateSpeakerNotesAsync } from '../generators.js';
 import { uploadMiddleware } from '../middleware.js';
 import { generatePptx } from '../templates/ppt-export-service-v2.js';
 import { generateDocx, generateIntelligenceBriefDocx } from '../templates/docx-export-service.js';
@@ -100,25 +100,8 @@ function generateSessionId() {
 
 function formatUserError(rawError, viewType) {
   if (!rawError) return `Failed to generate ${viewType}. Please try again.`;
-
-  const errorMappings = [
-    { pattern: /JSON.*parse.*position/i, message: 'The AI response was malformed. Please try again.' },
-    { pattern: /timeout|timed out/i, message: 'Generation took too long. Please try again with simpler content.' },
-    { pattern: /rate limit/i, message: 'Too many requests. Please wait a moment and try again.' },
-    { pattern: /empty.*content|no.*section|invalid.*content/i, message: 'The AI could not generate valid content. Try providing more detailed source material.' },
-    { pattern: /network|connection|ECONNREFUSED/i, message: 'Network error occurred. Please check your connection and try again.' },
-    { pattern: /quota|exceeded/i, message: 'API quota exceeded. Please try again later.' },
-    { pattern: /invalid.*schema|validation.*failed/i, message: 'Generated content did not match expected format. Please try again.' }
-  ];
-
-  for (const mapping of errorMappings) {
-    if (mapping.pattern.test(rawError)) {
-      return mapping.message;
-    }
-  }
-
-  const sanitized = rawError.substring(0, 150);
-  return `Failed to generate ${viewType}: ${sanitized}${rawError.length > 150 ? '...' : ''}`;
+  const truncated = String(rawError).substring(0, 150);
+  return `Failed to generate ${viewType}: ${truncated}${rawError.length > 150 ? '...' : ''}`;
 }
 
 router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, res) => {
@@ -169,90 +152,6 @@ router.post('/generate', uploadMiddleware.array('researchFiles'), async (req, re
 
   } catch (error) {
     handleGenerationError(error, res, 'generate content');
-  }
-});
-
-// API-only — not exposed in UI (functional for programmatic access)
-router.post('/regenerate/:viewType', uploadMiddleware.array('researchFiles'), async (req, res) => {
-  const REGENERATE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
-  req.setTimeout(REGENERATE_TIMEOUT_MS);
-  res.setTimeout(REGENERATE_TIMEOUT_MS);
-
-  try {
-    const { viewType } = req.params;
-    const { prompt } = req.body;
-    const files = req.files;
-    if (!VALID_VIEW_TYPES.includes(viewType)) {
-      return res.status(400).json({
-        error: `Invalid view type. Must be one of: ${VALID_VIEW_TYPES.join(', ')}`
-      });
-    }
-    if (!prompt || typeof prompt !== 'string') {
-      return res.status(400).json({
-        error: 'Invalid request. Required: prompt (string)'
-      });
-    }
-
-    if (!files || files.length === 0) {
-      return res.status(400).json({
-        error: 'At least one research file is required'
-      });
-    }
-    const researchFiles = await processUploadedFiles(files);
-    const result = await regenerateContent(viewType, prompt, researchFiles);
-
-    res.json({
-      viewType,
-      status: result.success ? 'completed' : 'error',
-      data: result.data || null,
-      error: result.error ? formatUserError(result.error, viewType) : null
-    });
-
-  } catch (error) {
-    handleGenerationError(error, res, 'regenerate content');
-  }
-});
-
-router.post('/:sessionId/regenerate/:viewType', express.json(), async (req, res) => {
-  const REGENERATE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
-  req.setTimeout(REGENERATE_TIMEOUT_MS);
-  res.setTimeout(REGENERATE_TIMEOUT_MS);
-
-  try {
-    const { sessionId, viewType } = req.params;
-    const { prompt: newPrompt } = req.body;
-    if (!VALID_VIEW_TYPES.includes(viewType)) {
-      return res.status(400).json({
-        error: `Invalid view type. Must be one of: ${VALID_VIEW_TYPES.join(', ')}`
-      });
-    }
-    const session = getSessionOrFail(req, res, 'Please upload files again to regenerate content.');
-    if (!session) return;
-    if (!session.researchFiles || session.researchFiles.length === 0) {
-      return res.status(400).json({
-        error: 'Session has no cached research files',
-        message: 'Please use the standard regenerate endpoint with file upload.'
-      });
-    }
-
-    const researchFiles = session.researchFiles;
-    const prompt = newPrompt || session.prompt;
-    const result = await regenerateContent(viewType, prompt, researchFiles);
-    const contentKey = VIEW_TYPE_MAP[viewType];
-    if (result.success) {
-      session.content[contentKey] = result;
-      session.lastAccessed = Date.now();
-    }
-
-    res.json({
-      viewType,
-      status: result.success ? 'completed' : 'error',
-      data: result.data || null,
-      error: result.error ? formatUserError(result.error, viewType) : null
-    });
-
-  } catch (error) {
-    handleGenerationError(error, res, 'regenerate content');
   }
 });
 
@@ -375,7 +274,6 @@ router.post('/:sessionId/intelligence-brief/generate', express.json(), async (re
   res.setTimeout(BRIEF_TIMEOUT_MS);
 
   try {
-    const { sessionId } = req.params;
     const { companyName, meetingAttendees, meetingObjective, keyConcerns } = req.body;
     const session = getSessionOrFail(req, res, 'Please generate content first before creating an intelligence brief.');
     if (!session) return;
@@ -481,53 +379,6 @@ router.get('/:sessionId/:viewType', (req, res) => {
 
   } catch (error) {
     handleGenerationError(error, res, 'retrieve content');
-  }
-});
-
-// API-only — not exposed in UI (stateless export for programmatic access)
-router.post('/slides/export', express.json({ limit: '50mb' }), async (req, res) => {
-  try {
-    const { slides } = req.body;
-
-    if (!slides || !slides.sections || !Array.isArray(slides.sections)) {
-      return res.status(400).json({
-        error: 'Invalid slides data',
-        message: 'Request must include slides object with sections array'
-      });
-    }
-    const pptxBuffer = await generatePptx(slides, {
-      author: 'BIP',
-      company: 'BIP'
-    });
-    const title = slides.title || 'Presentation';
-    const safeTitle = sanitizeFilename(title);
-    exportFile(res, pptxBuffer, `${safeTitle}.pptx`, 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
-
-  } catch (error) {
-    handleGenerationError(error, res, 'generate PowerPoint file');
-  }
-});
-
-// API-only — not exposed in UI (stateless export for programmatic access)
-router.post('/document/export', express.json({ limit: '50mb' }), async (req, res) => {
-  try {
-    const { document } = req.body;
-
-    if (!document || !document.title) {
-      return res.status(400).json({
-        error: 'Invalid document data',
-        message: 'Request must include document object with at least a title'
-      });
-    }
-    const docxBuffer = await generateDocx(document, {
-      creator: 'BIP'
-    });
-    const title = document.title || 'Executive_Summary';
-    const safeTitle = sanitizeFilename(title);
-    exportFile(res, docxBuffer, `${safeTitle}.docx`, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-
-  } catch (error) {
-    handleGenerationError(error, res, 'generate Word document');
   }
 });
 

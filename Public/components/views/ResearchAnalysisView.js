@@ -1,8 +1,4 @@
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text || '';
-  return div.innerHTML;
-}
+import { escapeHtml } from '../../utils/dom.js';
 
 export class ResearchAnalysisView {
   constructor(analysisData = null, sessionId = null) {

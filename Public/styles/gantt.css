@@ -12,16 +12,29 @@
   box-sizing: border-box;
 }
 .gantt-title-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: 1px solid #0D0D0D;
+  background-color: #0c2340;
+  border-radius: 8px 8px 0 0;
   transition: all 0.2s;
   position: sticky;
   top: 0;
-  z-index: 20; 
+  z-index: 20;
 }
 .gantt-title {
+  flex: 1;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 0;
   text-align: center;
-  font-size: 1.0rem; 
-  font-weight: 700; 
-  color: var(--glass-text-primary); 
+  font-size: 1.0rem;
+  font-weight: 700;
+  color: var(--glass-text-primary);
   transition: all 0.2s;
 }
 .gantt-title.edit-mode-enabled:hover {
@@ -177,8 +190,15 @@
 .gantt-bar-area {
   position: relative;
   display: grid;
-  align-items: center; 
-  min-height: 16px; 
+  align-items: center;
+  min-height: 16px;
+}
+.gantt-time-cell {
+  border-bottom: 1px solid var(--color-border-dark-gray, #383838);
+  height: 100%;
+}
+.gantt-bar-area > .gantt-time-cell ~ .gantt-time-cell {
+  border-left: 1px solid var(--color-border-dark-gray, #383838);
 }
 .gantt-bar-area.task {
   background-color: var(--color-border-dark-gray, #383838); 
@@ -295,6 +315,35 @@
   font-size: 16px;
   font-weight: 500;
 }
+.chart-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 16px 24px;
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10001;
+  max-width: 400px;
+  font-family: 'Work Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  animation: slideInRight 0.3s ease-out;
+}
+.chart-notification-success { background: #50AF7B; }
+.chart-notification-error { background: #DC3545; }
+.chart-notification-info { background: #1976D2; }
+.gantt-virtualized-container {
+  position: relative;
+  overflow: auto;
+  max-height: 600px;
+}
+.gantt-virtualized-viewport {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
 .gantt-today-line {
   position: absolute;
   width: 1px; 
@@ -406,6 +455,16 @@
   z-index: 1000;
 }
 .drag-indicator {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 10000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   animation: fadeInDown 0.3s ease;
 }
 @keyframes fadeInDown {
@@ -416,6 +475,26 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(20px);
   }
 }
 .gantt-bar[draggable="true"]:hover {

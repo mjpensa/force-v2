@@ -1,14 +1,12 @@
 import { PerformanceTimer } from './utils/performance.js';
 import { fetchJSON } from './utils/fetch.js';
-import {
-  DraggableGantt,
-  ResizableGantt,
-  ContextMenu,
-  GanttExporter,
-  GanttEditor,
-  GanttRenderer,
-  GanttComponents
-} from './gantt/index.js';
+import { GanttRenderer } from './gantt/renderer.js';
+import { GanttComponents } from './gantt/components.js';
+import { DraggableGantt } from './gantt/DraggableGantt.js';
+import { ResizableGantt } from './gantt/ResizableGantt.js';
+import { ContextMenu } from './gantt/ContextMenu.js';
+import { GanttEditor } from './gantt/GanttEditor.js';
+import { GanttExporter } from './gantt/GanttExporter.js';
 
 export class GanttChart {
   constructor(container, ganttData, footerSVG, onTaskClick) {

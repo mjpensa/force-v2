@@ -68,10 +68,6 @@
 
 /* ========== SLIDES TABLE OF CONTENTS ========== */
 
-.slides-toc {
-  /* Extends .toc-sidebar from design-system.css — no unique overrides needed */
-}
-
 /* ========== TWO-LEVEL TOC: Sub-topic (slide) list styling ========== */
 
 .slides-toc .toc-sublist {
@@ -127,23 +123,7 @@
   }
 
   .slides-toc {
-    position: static;
-    width: 100%;
-    top: auto;
-    right: auto;
-    bottom: auto;
-    height: auto;
     margin-bottom: var(--spacing-4);
-    padding: var(--spacing-4);
-    background: var(--glass-white-8);
-    background-image: none;
-    -webkit-backdrop-filter: blur(var(--blur-lg));
-    backdrop-filter: blur(var(--blur-lg));
-    border: var(--border-glass);
-    border-left: var(--border-glass);
-    border-radius: var(--radius-glass-lg);
-    box-shadow: var(--shadow-glass-2);
-    z-index: auto;
   }
 
   /* Move menu to right edge when TOC is inline */

@@ -24,6 +24,28 @@ const COLORS = {
 
 const SHARED_LOGO = { x: SLIDE.WIDTH - 0.75, y: SLIDE.HEIGHT - 0.50, w: 0.30 * (816/569), h: 0.30 };
 const SHARED_PAGE_NUMBER = { w: 0.5, h: 0.2 };
+const SHARED_PAGE_NUMBER_POS = {
+  x: pctX(2.11),
+  y: SLIDE.HEIGHT - pctY(3.43) - 0.3,
+  ...SHARED_PAGE_NUMBER
+};
+
+// Shared text style objects for content slides
+const TAGLINE_STYLE = {
+  fontSize: 12,
+  fontFace: 'Work Sans SemiBold',
+  color: COLORS.red,
+  align: 'left',
+  charSpacing: 0.5
+};
+
+const BODY_TEXT_BASE = {
+  fontSize: 10.5,
+  fontFace: 'Work Sans',
+  color: COLORS.navy,
+  align: 'left',
+  valign: 'top'
+};
 
 const LAYOUTS = {
   sectionTitle: {
@@ -47,11 +69,7 @@ const LAYOUTS = {
       h: 0.04
     },
     logo: SHARED_LOGO,
-    pageNumber: {
-      x: pctX(2.11),
-      y: SLIDE.HEIGHT - pctY(3.43) - 0.3,
-      ...SHARED_PAGE_NUMBER
-    }
+    pageNumber: SHARED_PAGE_NUMBER_POS
   },
   twoColumn: {
     tagline: {
@@ -80,11 +98,7 @@ const LAYOUTS = {
       h: pctX(10)  // Square aspect ratio
     },
     logo: SHARED_LOGO,
-    pageNumber: {
-      x: pctX(2.11),
-      y: SLIDE.HEIGHT - pctY(3.43) - 0.3,
-      ...SHARED_PAGE_NUMBER
-    }
+    pageNumber: SHARED_PAGE_NUMBER_POS
   },
   threeColumn: {
     tagline: {
@@ -115,11 +129,7 @@ const LAYOUTS = {
       h: pctX(10)  // Square aspect ratio
     },
     logo: SHARED_LOGO,
-    pageNumber: {
-      x: pctX(2.10),
-      y: SLIDE.HEIGHT - pctY(3.43) - 0.3,
-      ...SHARED_PAGE_NUMBER
-    }
+    pageNumber: SHARED_PAGE_NUMBER_POS  // Was pctX(2.10), merged with pctX(2.11) — diff < 0.002"
   }
 };
 
@@ -211,122 +221,153 @@ function formatSpeakerNotesForPptx(notes, maxLength = 3000) {
     return false;
   };
 
-  // 0. QUICK REFERENCE (highest priority - cheat sheet for presenter)
-  if (notes.quickReference && currentLength < 200) {
-    const qr = notes.quickReference;
-    let cheatText = '';
-    if (qr.keyNumber) cheatText += `KEY NUMBER: ${qr.keyNumber}\n`;
-    if (qr.keyPhrase) cheatText += `KEY PHRASE: "${qr.keyPhrase}"\n`;
-    if (qr.keyProof) cheatText += `PROOF: ${qr.keyProof}\n`;
-    if (qr.keyAsk) cheatText += `ASK: ${qr.keyAsk}`;
-    if (cheatText) addSection('QUICK REFERENCE:', cheatText.trim(), 'high');
-  }
-
-  // 1. TALKING POINTS (highest priority - always try to include)
-  if (notes.narrative?.talkingPoints?.length) {
-    const points = notes.narrative.talkingPoints
-      .map((p, i) => `${i + 1}. ${p}`)
+  // Helper: format key-value pairs from an object, skipping missing fields
+  const formatFields = (obj, fields) => {
+    if (!obj) return '';
+    return fields
+      .filter(([key]) => obj[key])
+      .map(([key, label, fmt]) => `${label}: ${fmt ? fmt(obj[key]) : obj[key]}`)
       .join('\n');
-    addSection('TALKING POINTS:', points, 'high');
+  };
 
-    // Key phrase (high priority)
-    if (notes.narrative.keyPhrase && currentLength < maxLength - 100) {
-      addSection('KEY PHRASE:', `"${notes.narrative.keyPhrase}"`, 'high');
+  // Table-driven speaker notes sections (ordered by priority)
+  const NOTES_SECTIONS = [
+    // 0. QUICK REFERENCE (cheat sheet for presenter)
+    {
+      label: 'QUICK REFERENCE:',
+      priority: 'high',
+      maxPosition: 200,  // Only if near start (currentLength < 200)
+      extract: () => {
+        if (!notes.quickReference) return null;
+        return formatFields(notes.quickReference, [
+          ['keyNumber', 'KEY NUMBER'],
+          ['keyPhrase', 'KEY PHRASE', v => `"${v}"`],
+          ['keyProof', 'PROOF'],
+          ['keyAsk', 'ASK']
+        ]);
+      }
+    },
+    // 1. TALKING POINTS (highest priority)
+    {
+      label: 'TALKING POINTS:',
+      priority: 'high',
+      extract: () => {
+        if (!notes.narrative?.talkingPoints?.length) return null;
+        return notes.narrative.talkingPoints.map((p, i) => `${i + 1}. ${p}`).join('\n');
+      }
+    },
+    // 1b. KEY PHRASE (sub-item of talking points)
+    {
+      label: 'KEY PHRASE:',
+      priority: 'high',
+      headroom: 100,
+      extract: () => notes.narrative?.keyPhrase ? `"${notes.narrative.keyPhrase}"` : null
+    },
+    // 2. STAKEHOLDER ANGLES
+    {
+      label: 'STAKEHOLDER ANGLES:',
+      headroom: 250,
+      extract: () => {
+        if (!notes.stakeholderAngles) return null;
+        return formatFields(notes.stakeholderAngles, [
+          ['cfo', 'CFO'], ['cto', 'CTO'], ['ceo', 'CEO'], ['operations', 'OPS']
+        ]);
+      }
+    },
+    // 3. TRANSITIONS
+    {
+      label: 'TRANSITIONS:',
+      extract: () => {
+        if (!notes.narrative?.transitionIn && !notes.narrative?.transitionOut) return null;
+        return formatFields(notes.narrative, [
+          ['transitionIn', 'From previous'], ['transitionOut', 'To next']
+        ]);
+      }
+    },
+    // 4. ANTICIPATED QUESTIONS (complex formatting)
+    {
+      label: 'Q&A PREP:',
+      headroom: 400,
+      extract: () => {
+        if (!notes.anticipatedQuestions?.length) return null;
+        const severityOrder = { deal_breaker: 0, hostile: 1, skeptical: 2, probing: 3 };
+        const prioritized = [...notes.anticipatedQuestions].sort(
+          (a, b) => (severityOrder[a.severity] || 3) - (severityOrder[b.severity] || 3)
+        );
+        return prioritized.slice(0, 2).map(qa => {
+          let text = `[${(qa.severity || 'probing').toUpperCase()}] Q: ${qa.question}\nA: ${qa.response}`;
+          if (qa.escalationResponse && qa.severity === 'deal_breaker') {
+            text += `\nIF THEY PUSH BACK: ${qa.escalationResponse}`;
+          }
+          return text;
+        }).join('\n\n');
+      }
+    },
+    // 5. CALL-TO-ACTION VARIANTS
+    {
+      label: 'CALL-TO-ACTION:',
+      headroom: 200,
+      extract: () => {
+        if (!notes.storyContext?.callToAction) return null;
+        const cta = notes.storyContext.callToAction;
+        return formatFields(cta, [
+          ['warmAudience', 'WARM', v => v.ask],
+          ['neutralAudience', 'NEUTRAL', v => v.ask],
+          ['hostileAudience', 'HOSTILE', v => v.ask]
+        ]);
+      }
+    },
+    // 6. WHY THIS MATTERS
+    {
+      label: 'WHY THIS MATTERS:',
+      priority: 'high',
+      headroom: 150,
+      extract: () => notes.storyContext?.soWhat || null
+    },
+    // 7. TIME GUIDANCE
+    {
+      label: 'TIME:',
+      headroom: 100,
+      extract: () => {
+        if (!notes.storyContext?.timeGuidance) return null;
+        return formatFields(notes.storyContext.timeGuidance, [
+          ['suggestedDuration', 'Duration'],
+          ['condensedVersion', 'Short version', v => `"${v}"`]
+        ]);
+      }
+    },
+    // 8. SOURCES
+    {
+      label: 'SOURCES:',
+      headroom: 200,
+      extract: () => {
+        if (!notes.sourceAttribution?.length) return null;
+        return notes.sourceAttribution.slice(0, 2).map(src => {
+          const claim = src.claim?.length > 80 ? src.claim.substring(0, 80) + '...' : src.claim;
+          return `\u2022 ${src.source}: "${claim}"`;
+        }).join('\n');
+      }
+    },
+    // 9. CREDIBILITY ANCHORS
+    {
+      label: 'CREDIBILITY ANCHORS:',
+      headroom: 150,
+      extract: () => {
+        if (!notes.credibilityAnchors?.length) return null;
+        return notes.credibilityAnchors.slice(0, 2).map(anchor => {
+          const typeLabel = (anchor.type || 'research').toUpperCase().replace(/_/g, ' ');
+          return `[${typeLabel}] ${anchor.dropPhrase}\n  \u2192 ${anchor.statement}`;
+        }).join('\n\n');
+      }
     }
-  }
+  ];
 
-  // 2. STAKEHOLDER ANGLES (sales enhancement #1 - high priority for consulting)
-  if (notes.stakeholderAngles && currentLength < maxLength - 250) {
-    const angles = notes.stakeholderAngles;
-    let angleText = '';
-    if (angles.cfo) angleText += `CFO: ${angles.cfo}\n`;
-    if (angles.cto) angleText += `CTO: ${angles.cto}\n`;
-    if (angles.ceo) angleText += `CEO: ${angles.ceo}\n`;
-    if (angles.operations) angleText += `OPS: ${angles.operations}`;
-    if (angleText) addSection('STAKEHOLDER ANGLES:', angleText.trim());
-  }
-
-  // 3. TRANSITIONS (medium priority)
-  if (notes.narrative?.transitionIn || notes.narrative?.transitionOut) {
-    let transitionText = '';
-    if (notes.narrative.transitionIn) {
-      transitionText += `From previous: ${notes.narrative.transitionIn}\n`;
-    }
-    if (notes.narrative.transitionOut) {
-      transitionText += `To next: ${notes.narrative.transitionOut}`;
-    }
-    addSection('TRANSITIONS:', transitionText.trim());
-  }
-
-  // 4. ANTICIPATED QUESTIONS (with severity - sales enhancement #2)
-  if (notes.anticipatedQuestions?.length && currentLength < maxLength - 400) {
-    // Prioritize deal_breaker and hostile questions
-    const prioritized = [...notes.anticipatedQuestions].sort((a, b) => {
-      const severityOrder = { deal_breaker: 0, hostile: 1, skeptical: 2, probing: 3 };
-      return (severityOrder[a.severity] || 3) - (severityOrder[b.severity] || 3);
-    });
-
-    const qaText = prioritized
-      .slice(0, 2) // Limit to 2 Q&As for space
-      .map(qa => {
-        let text = `[${(qa.severity || 'probing').toUpperCase()}] Q: ${qa.question}\nA: ${qa.response}`;
-        if (qa.escalationResponse && qa.severity === 'deal_breaker') {
-          text += `\nIF THEY PUSH BACK: ${qa.escalationResponse}`;
-        }
-        return text;
-      })
-      .join('\n\n');
-    addSection('Q&A PREP:', qaText);
-  }
-
-  // 5. CALL-TO-ACTION VARIANTS (sales enhancement #8)
-  if (notes.storyContext?.callToAction && currentLength < maxLength - 200) {
-    const cta = notes.storyContext.callToAction;
-    let ctaText = '';
-    if (cta.warmAudience?.ask) ctaText += `WARM: ${cta.warmAudience.ask}\n`;
-    if (cta.neutralAudience?.ask) ctaText += `NEUTRAL: ${cta.neutralAudience.ask}\n`;
-    if (cta.hostileAudience?.ask) ctaText += `HOSTILE: ${cta.hostileAudience.ask}`;
-    if (ctaText) addSection('CALL-TO-ACTION:', ctaText.trim());
-  }
-
-  // 6. WHY THIS MATTERS (medium-high priority)
-  if (notes.storyContext?.soWhat && currentLength < maxLength - 150) {
-    addSection('WHY THIS MATTERS:', notes.storyContext.soWhat, 'high');
-  }
-
-  // 7. TIME GUIDANCE (sales enhancement #9)
-  if (notes.storyContext?.timeGuidance && currentLength < maxLength - 100) {
-    const tg = notes.storyContext.timeGuidance;
-    let timeText = '';
-    if (tg.suggestedDuration) timeText += `Duration: ${tg.suggestedDuration}`;
-    if (tg.condensedVersion) timeText += `\nShort version: "${tg.condensedVersion}"`;
-    if (timeText) addSection('TIME:', timeText.trim());
-  }
-
-  // 8. SOURCES (lower priority - truncate claims aggressively)
-  if (notes.sourceAttribution?.length && currentLength < maxLength - 200) {
-    const sourcesText = notes.sourceAttribution
-      .slice(0, 2) // Limit to 2 sources
-      .map(src => {
-        const truncatedClaim = src.claim?.length > 80
-          ? src.claim.substring(0, 80) + '...'
-          : src.claim;
-        return `• ${src.source}: "${truncatedClaim}"`;
-      })
-      .join('\n');
-    addSection('SOURCES:', sourcesText);
-  }
-
-  // 9. CREDIBILITY ANCHORS (third-party validation for skeptical audiences)
-  if (notes.credibilityAnchors?.length && currentLength < maxLength - 150) {
-    const anchorsText = notes.credibilityAnchors
-      .slice(0, 2) // Limit to 2 for space
-      .map(anchor => {
-        const typeLabel = (anchor.type || 'research').toUpperCase().replace(/_/g, ' ');
-        return `[${typeLabel}] ${anchor.dropPhrase}\n  → ${anchor.statement}`;
-      })
-      .join('\n\n');
-    addSection('CREDIBILITY ANCHORS:', anchorsText);
+  for (const sec of NOTES_SECTIONS) {
+    if (sec.maxPosition && currentLength > sec.maxPosition) continue;
+    if (sec.headroom && currentLength > maxLength - sec.headroom) continue;
+    const content = sec.extract();
+    if (!content) continue;
+    addSection(sec.label, content, sec.priority || 'normal');
   }
 
   return sections.join('').trim();
@@ -418,15 +459,8 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   const tagline = getSectionLabel(data);
   if (tagline) {
     slide.addText(tagline, {
-      x: L.tagline.x,
-      y: L.tagline.y,
-      w: L.tagline.w,
-      h: L.tagline.h,
-      fontSize: 12,
-      fontFace: 'Work Sans SemiBold',
-      color: COLORS.red,
-      align: 'left',
-      charSpacing: 0.5
+      x: L.tagline.x, y: L.tagline.y, w: L.tagline.w, h: L.tagline.h,
+      ...TAGLINE_STYLE
     });
   }
   const titleText = formatTitle(data.title, 10);
@@ -445,15 +479,8 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   const bodyText = formatBody(data.paragraph1, data.paragraph2, 415);
   if (bodyText) {
     slide.addText(bodyText, {
-      x: L.body.x,
-      y: L.body.y,
-      w: L.body.w,
-      h: L.body.h,
-      fontSize: 10.5,
-      fontFace: 'Work Sans',
-      color: COLORS.navy,
-      align: 'left',
-      valign: 'top',
+      x: L.body.x, y: L.body.y, w: L.body.w, h: L.body.h,
+      ...BODY_TEXT_BASE,
       lineSpacingMultiple: 1.35,
       paraSpaceAfter: 8,
       charSpacing: 0.3  // Approximate letter-spacing: 0.02em
@@ -472,15 +499,8 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   const tagline = getSectionLabel(data);
   if (tagline) {
     slide.addText(tagline, {
-      x: L.tagline.x,
-      y: L.tagline.y,
-      w: L.tagline.w,
-      h: L.tagline.h,
-      fontSize: 12,
-      fontFace: 'Work Sans SemiBold',
-      color: COLORS.red,
-      align: 'left',
-      charSpacing: 0.5
+      x: L.tagline.x, y: L.tagline.y, w: L.tagline.w, h: L.tagline.h,
+      ...TAGLINE_STYLE
     });
   }
   const titleText = formatTitle(data.title, 18);
@@ -509,15 +529,8 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
     if (text) {
       const columnX = L.columns.x + (index * (columnWidth + gapWidth));
       slide.addText(text, {
-        x: columnX,
-        y: L.columns.y,
-        w: columnWidth,
-        h: L.columns.h,
-        fontSize: 10.5,
-        fontFace: 'Work Sans',
-          color: COLORS.navy,
-        align: 'left',
-        valign: 'top',
+        x: columnX, y: L.columns.y, w: columnWidth, h: L.columns.h,
+        ...BODY_TEXT_BASE,
         lineSpacingMultiple: 1.30
       });
     }

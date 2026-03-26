@@ -16,23 +16,10 @@ export class GanttComponents {
   addTitle(chartWrapper, ganttData, headerMenu = null) {
     const titleContainer = document.createElement('div');
     titleContainer.className = 'gantt-title-container';
-    titleContainer.style.display = 'flex';
-    titleContainer.style.justifyContent = 'space-between';
-    titleContainer.style.alignItems = 'center';
-    titleContainer.style.gap = '10px';
-    titleContainer.style.padding = '8px';
-    titleContainer.style.borderBottom = '1px solid #0D0D0D';
-    titleContainer.style.backgroundColor = '#0c2340';
-    titleContainer.style.borderRadius = '8px 8px 0 0';
 
     const titleElement = document.createElement('div');
     titleElement.className = 'gantt-title';
     titleElement.textContent = ganttData.title;
-    titleElement.style.flex = '1';
-    titleElement.style.padding = '0';
-    titleElement.style.border = 'none';
-    titleElement.style.background = 'none';
-    titleElement.style.borderRadius = '0';
 
     titleElement.addEventListener('dblclick', (e) => {
       e.stopPropagation();
