@@ -1,0 +1,146 @@
+{
+  "reasoning": {
+    "presentationNarrativeArc": "Legacy costs are compounding quarterly -> peer institutions prove 50% cloud savings -> phased pilot de-risks execution -> Q2 2025 decision deadline creates urgency",
+    "audienceProfile": {
+      "primaryStakeholder": "CTO",
+      "painPoints": ["Rising infrastructure costs", "Integration failure frequency", "Competitive cost disadvantage"],
+      "decisionCriteria": ["Proven ROI from peer institutions", "Bounded pilot risk", "Minimal operational disruption"]
+    },
+    "keyEvidenceChains": [
+      {
+        "evidence": "JPMorgan achieved 50% processing cost reduction in Q4 2024 (Annual Technology Review)",
+        "insight": "Cloud migration ROI is proven and reproducible in financial services",
+        "anticipatedQuestion": "Can we achieve similar results given our different technology stack?",
+        "preparedResponse": "Goldman Sachs confirmed 43% savings on a completely different stack in Q1 2025, proving the result is architecture-independent. The phased pilot validates applicability to our specific environment before full commitment."
+      },
+      {
+        "evidence": "73% of mid-tier firms have not initiated digital transformation pilots (McKinsey Digital Survey)",
+        "insight": "A second-mover advantage window exists for firms that act before market saturation",
+        "anticipatedQuestion": "If most firms haven't started, why the urgency?",
+        "preparedResponse": "The 73% figure represents the opportunity window, not permission to wait. Gartner projects late adopters will spend 2.3x more by 2026. The advantage goes to firms that move while proven playbooks are available but before vendor capacity constraints emerge."
+      }
+    ],
+    "sourceInventory": [
+      {
+        "sourceName": "Gartner 2024 Cloud Economics Report",
+        "keyFindings": ["Late adopters spend 2.3x more by 2026", "Phased migration captures 80% of benefits in first wave"],
+        "confidenceLevel": "high"
+      },
+      {
+        "sourceName": "McKinsey Digital Banking Survey 2024",
+        "keyFindings": ["73% of mid-tier firms have not started pilots", "Second-mover window closes at 50% adoption"],
+        "confidenceLevel": "high"
+      }
+    ],
+    "anticipatedPushback": [
+      {
+        "pushbackType": "cost_concern",
+        "specificObjection": "The $400K pilot cost is significant given current budget constraints",
+        "evidenceToCounter": "Pilot ROI is 5.25x ($400K investment vs $2.1M annual savings), with 80% of benefits captured in first wave",
+        "reframingStrategy": "The $400K is not a cost but a de-risking investment. The real cost is $350K per quarter in widening competitive disadvantage."
+      },
+      {
+        "pushbackType": "timeline",
+        "specificObjection": "9-month migration timeline seems aggressive given our complexity",
+        "evidenceToCounter": "JPMorgan completed Phase 1 in one quarter. Our phased approach includes built-in buffer with parallel operations.",
+        "reframingStrategy": "The timeline is conservative compared to peer execution. Phase gates allow pace adjustment without abandoning the initiative."
+      }
+    ],
+    "narrativeTransitions": [
+      {
+        "fromSlide": "COST PRESSURE",
+        "toSlide": "50% SAVINGS",
+        "transitionLogic": "Establishing the cost problem creates demand for the solution evidence",
+        "bridgePhrase": "This cost trajectory raises an obvious question: is there a proven solution? The answer comes from our peer institutions."
+      }
+    ],
+    "competitivePositioning": {
+      "primaryCompetitors": [
+        {
+          "name": "Deloitte Cloud Practice",
+          "theirStrength": "Global delivery scale and established financial services methodology",
+          "ourCounter": "Our approach is tailored to mid-tier complexity, avoiding the over-engineering that inflates large-firm implementations by 40%",
+          "bridgePhrase": "While Deloitte brings global scale, what you need at this stage is focused execution that proves the model before scaling."
+        }
+      ],
+      "internalTeamResponse": "Your team has the domain expertise but not the migration-specific experience. We bring 6 successful migrations to accelerate past the learning curve while your team builds capability through the pilot.",
+      "doNothingRisk": "Each quarter of inaction adds $350K in cost disadvantage. By Q4 2025, the gap reaches $1.4M annually, making migration ROI harder to justify as the savings baseline shifts."
+    },
+    "bridgePhrases": {
+      "dontKnowAnswer": [
+        "That's an excellent question. Let me get you a precise answer within 48 hours rather than speculate.",
+        "I want to give you data-backed specifics on that. Can I follow up with our technical team's analysis?"
+      ],
+      "hostileInterruption": [
+        "I appreciate the directness. Let me address that head-on with the data.",
+        "That's exactly the scrutiny this deserves. Here's what the evidence shows."
+      ],
+      "goingOffTopic": [
+        "That's an important adjacent topic. Let me park it and circle back after we cover the core recommendation.",
+        "Great point. I've noted it for our follow-up discussion. For now, let me connect back to the decision at hand."
+      ],
+      "technicalDive": [
+        "Our technical team can walk through the architecture in detail. For today, the key point is the proven ROI pattern.",
+        "Happy to go deeper on the technical approach. Would a dedicated session with our architects be more productive?"
+      ],
+      "losingTheRoom": [
+        "Let me cut to the bottom line: this is a $2.1M annual opportunity with $400K to prove it works.",
+        "I can see we should focus on what matters most. The core question is: can we afford to wait another quarter?"
+      ]
+    }
+  },
+  "slides": [
+    {
+      "slideIndex": 0,
+      "sectionName": "Overview",
+      "slideTagline": "COST PRESSURE",
+      "narrative": {
+        "talkingPoints": [
+          "[Emphasize] The $4.2M figure is not static. It grows 12% annually as vendor contracts expire and legacy complexity compounds.",
+          "Think of it this way: we are paying a $350K quarterly tax for maintaining the status quo. That compounds.",
+          "[Pause] Eighty percent of our integration failures trace back to middleware we have not updated since 2019."
+        ],
+        "transitionIn": "Let me start with the cost reality that frames this entire conversation.",
+        "transitionOut": "This cost trajectory raises an obvious question: is there a proven solution? The answer comes from our peer institutions.",
+        "keyPhrase": "We pay $350K every quarter just to stand still."
+      },
+      "anticipatedQuestions": [
+        {
+          "question": "How confident are we in the $4.2M baseline figure?",
+          "response": "Very confident. This comes directly from the 2024 internal audit, which reconciled against actual vendor invoices and engineering time allocations. The 12% growth rate is based on three years of actuals, not projections.",
+          "pushbackType": "skepticism",
+          "severity": "probing",
+          "escalationResponse": "I can share the full audit methodology. The key point is that even if the figure is off by 15%, the directional conclusion and migration ROI case remain compelling.",
+          "deferralOption": "I can arrange a walkthrough of the audit methodology with your finance team this week.",
+          "bridgeToStrength": "The fact that we have precise cost data actually strengthens the business case. We can measure migration ROI against a validated baseline."
+        }
+      ],
+      "sourceAttribution": [
+        {
+          "claim": "$4.2M annual infrastructure maintenance cost",
+          "source": "2024 Internal Technology Audit Report, Section 3.2",
+          "confidence": "direct_extraction",
+          "originalText": "Annual maintenance spend reached $4.2M in FY2024, up 12% from prior year"
+        }
+      ],
+      "storyContext": {
+        "narrativePosition": "opening_hook",
+        "precededBy": "This is the opening slide. The audience arrives with varying levels of awareness about infrastructure costs.",
+        "followedBy": "Peer institution savings data that proves the cost problem has a proven solution.",
+        "soWhat": "Legacy costs are not stable. They compound quarterly, creating urgency for migration that grows with each passing quarter.",
+        "timeGuidance": {
+          "suggestedDuration": "3-4 minutes",
+          "canCondense": true,
+          "condensedVersion": "Legacy infrastructure costs $4.2M annually, growing 12% per year, with 80% of integration failures from outdated middleware.",
+          "mustInclude": ["$4.2M annual cost", "12% YoY growth", "80% middleware failure rate"]
+        }
+      },
+      "generationTransparency": {
+        "primarySources": ["2024 Internal Technology Audit Report"],
+        "derivationMethod": "extracted",
+        "assumptions": ["12% growth rate assumed to continue based on contract expiration schedule"],
+        "dataLineage": "Internal audit Section 3.2 (cost baseline) + Section 4.1 (incident analysis) -> slide content"
+      }
+    }
+  ]
+}

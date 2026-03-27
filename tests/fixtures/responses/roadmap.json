@@ -1,0 +1,50 @@
+{
+  "title": "Digital Transformation Roadmap 2024-2026",
+  "timeColumns": ["Q1 2024", "Q2 2024", "Q3 2024", "Q4 2024", "Q1 2025", "Q2 2025", "Q3 2025", "Q4 2025"],
+  "data": [
+    {
+      "title": "IT/Technology",
+      "isSwimlane": true,
+      "entity": "IT/Technology",
+      "taskType": "task"
+    },
+    {
+      "title": "Cloud Migration Phase 1",
+      "isSwimlane": false,
+      "entity": "IT/Technology",
+      "bar": { "startCol": 1, "endCol": 3, "color": "priority-red" },
+      "taskType": "task"
+    },
+    {
+      "title": "Platform Launch",
+      "isSwimlane": false,
+      "entity": "IT/Technology",
+      "bar": { "startCol": 3, "endCol": 4, "color": "priority-red" },
+      "taskType": "milestone"
+    },
+    {
+      "title": "Business/Operations",
+      "isSwimlane": true,
+      "entity": "Business/Operations",
+      "taskType": "task"
+    },
+    {
+      "title": "Process Redesign",
+      "isSwimlane": false,
+      "entity": "Business/Operations",
+      "bar": { "startCol": 2, "endCol": 5, "color": "medium-red" },
+      "taskType": "task"
+    },
+    {
+      "title": "Stakeholder Approval",
+      "isSwimlane": false,
+      "entity": "Business/Operations",
+      "bar": { "startCol": 5, "endCol": 6, "color": "medium-red" },
+      "taskType": "decision"
+    }
+  ],
+  "legend": [
+    { "color": "priority-red", "label": "Technology Implementation" },
+    { "color": "medium-red", "label": "Operational Transformation" }
+  ]
+}

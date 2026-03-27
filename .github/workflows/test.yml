@@ -125,8 +125,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate coverage
-        run: npm test || true
+      - name: Run tests
+        run: npm run test:ci
+        env:
+          GEMINI_DISK_CACHE: 'false'
 
       - name: Check coverage thresholds
         run: |

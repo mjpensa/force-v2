@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { CONFIG } from './config.js';
 import { jsonrepair } from 'jsonrepair';
+import { modelRotator } from './model-rotation.js';
 
 export const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
@@ -32,7 +33,7 @@ async function retryWithBackoff(operation, retryCount = CONFIG.API.RETRY_COUNT, 
 
 async function _callGemini(payload) {
   const model = genAI.getGenerativeModel(
-    { model: CONFIG.API.GEMINI_MODEL },
+    { model: modelRotator.current() },
     { timeout: CONFIG.API.TIMEOUT_MS, apiVersion: 'v1beta' }
   );
   const result = await model.generateContent(payload);

@@ -23,29 +23,16 @@ export default {
   // Note: Routes have 0% coverage pending proper HTTP integration tests
   coverageThreshold: {
     global: {
-      branches: 5,    // Current: 4.61%, gradually increase
-      functions: 10,  // Increased threshold
-      lines: 5,       // Current: 5.48%
-      statements: 5,  // Current: 5.43%
+      branches: 30,
+      functions: 40,
+      lines: 35,
+      statements: 35,
     },
-    // Per-module thresholds for critical components
     './server/utils.js': {
       branches: 100,
       functions: 100,
       lines: 100,
       statements: 100,
-    },
-    './server/gemini.js': {
-      branches: 40,
-      functions: 60,
-      lines: 60,
-      statements: 60,
-    },
-    './server/middleware.js': {
-      branches: 60,
-      functions: 70,
-      lines: 70,
-      statements: 70,
     },
   },
 

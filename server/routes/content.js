@@ -128,7 +128,11 @@ router.post('/generate', generationLimiter, uploadMiddleware.array('researchFile
       });
     }
     const researchFiles = await processUploadedFiles(files);
-    const results = await generateAllContent(prompt, researchFiles);
+    const viewsParam = req.query.views;
+    const requestedViews = viewsParam
+      ? viewsParam.split(',').map(v => v.trim()).filter(v => ['roadmap', 'slides', 'document', 'research-analysis'].includes(v))
+      : null;
+    const results = await generateAllContent(prompt, researchFiles, requestedViews);
     const sessionId = generateSessionId();
     const now = Date.now();
     sessions.set(sessionId, {

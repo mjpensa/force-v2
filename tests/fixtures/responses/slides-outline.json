@@ -1,0 +1,78 @@
+{
+  "reasoning": {
+    "overallNarrativeArc": "Legacy systems drain $4.2M annually -> Cloud migration cuts costs 50% -> Q2 2025 decision window closes for competitive advantage",
+    "primaryFramework": "TEMPORAL_ARBITRAGE",
+    "keyEvidenceChains": [
+      {
+        "evidence": "Cloud migration reduced processing costs 50% at peer institutions (Gartner 2024 Report)",
+        "insight": "First-movers lock in cost advantages that compound quarterly",
+        "implication": "Delay past Q2 2025 creates permanent cost structure disadvantage"
+      },
+      {
+        "evidence": "73% of mid-tier firms have not started digital transformation pilots (McKinsey Digital Survey)",
+        "insight": "Market window exists for second-movers to capture advantage before saturation",
+        "implication": "Launch pilot in Q3 2024 to achieve production readiness by Q1 2025"
+      }
+    ],
+    "crossSectionConnections": [
+      "Technology cost savings enable the business case for operational redesign",
+      "Operational efficiency gains justify the executive approval timeline"
+    ]
+  },
+  "sections": [
+    {
+      "swimlane": "Overview",
+      "narrativeArc": "Rising operational costs threaten margins -> peer institutions prove 50% savings -> Q2 2025 becomes the decision deadline",
+      "slides": [
+        {
+          "tagline": "COST PRESSURE",
+          "keyDataPoint": "$4.2M annual legacy system maintenance costs",
+          "analyticalLens": "RISK_ASYMMETRY",
+          "connectsTo": "Legacy cost burden directly enables the cloud migration savings case in next slide"
+        },
+        {
+          "tagline": "50% SAVINGS",
+          "keyDataPoint": "50% cost reduction at peer institutions post-migration",
+          "analyticalLens": "COMPETITIVE_DYNAMICS",
+          "connectsTo": "Proven savings create urgency for the transformation timeline examined next"
+        }
+      ]
+    },
+    {
+      "swimlane": "IT/Technology",
+      "narrativeArc": "Current infrastructure costs compound quarterly -> cloud architecture solves 80% of integration debt -> phased migration de-risks execution",
+      "slides": [
+        {
+          "tagline": "TECH DEBT",
+          "keyDataPoint": "80% of integration failures trace to legacy middleware",
+          "analyticalLens": "CAUSAL_CHAIN",
+          "connectsTo": "Integration failures drive the cloud migration architecture requirements"
+        },
+        {
+          "tagline": "MIGRATION PATH",
+          "keyDataPoint": "3-phase migration achieves production readiness in 9 months",
+          "analyticalLens": "TEMPORAL_ARBITRAGE",
+          "connectsTo": "Migration timeline feeds into the operational redesign dependencies"
+        }
+      ]
+    },
+    {
+      "swimlane": "Conclusion",
+      "narrativeArc": "Evidence converges on Q2 2025 decision point -> phased approach bounds risk -> executive sponsorship unlocks $2.1M annual savings",
+      "slides": [
+        {
+          "tagline": "DECISION WINDOW",
+          "keyDataPoint": "Q2 2025 competitive window closes for cost advantage capture",
+          "analyticalLens": "TEMPORAL_ARBITRAGE",
+          "connectsTo": "Decision urgency drives the recommended next steps and pilot scope"
+        },
+        {
+          "tagline": "PILOT SCOPE",
+          "keyDataPoint": "$400K pilot investment vs $2.1M annual savings potential",
+          "analyticalLens": "RISK_ASYMMETRY",
+          "connectsTo": "Final call to action for executive approval"
+        }
+      ]
+    }
+  ]
+}

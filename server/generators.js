@@ -7,6 +7,8 @@ import { generateIntelligenceBriefPrompt, intelligenceBriefSchema } from './prom
 import { assembleResearchContent, extractKeyStats, getCurrentDateContext } from './prompts/common.js';
 import { CONFIG } from './config.js';
 import { genAI } from './gemini.js';
+import { diskCache } from './cache/DiskCache.js';
+import { modelRotator } from './model-rotation.js';
 const GENERATION_TIMEOUT_MS = 360000; // 6 minutes
 
 class APIQueue {
@@ -256,6 +258,10 @@ function withTimeout(promise, timeoutMs, operationName) {
 }
 async function generateWithGemini(prompt, schema, contentType, configOverrides = {}) {
   try {
+    const cacheConfig = { schema: schema?.description, contentType, ...configOverrides };
+    const cached = await diskCache.get(prompt, cacheConfig);
+    if (cached) return cached;
+
     const {
       temperature,
       topP,
@@ -273,7 +279,7 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     if (topP !== undefined) generationConfig.topP = topP;
     if (maxOutputTokens !== undefined) generationConfig.maxOutputTokens = maxOutputTokens;
     const model = genAI.getGenerativeModel({
-      model: CONFIG.API.GEMINI_MODEL,
+      model: modelRotator.current(),
       generationConfig
     });
     const result = await withTimeout(
@@ -285,11 +291,13 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     const text = response.text();
     try {
       const data = JSON.parse(text);
+      await diskCache.set(prompt, cacheConfig, data);
       return data;
     } catch (parseError) {
       try {
         const repairedJsonText = jsonrepair(text);
         const repairedData = JSON.parse(repairedJsonText);
+        await diskCache.set(prompt, cacheConfig, repairedData);
         return repairedData;
       } catch (repairError) {
         throw parseError;
@@ -439,22 +447,33 @@ export async function generateIntelligenceBrief(sessionData, meetingContext) {
 
 // 3-phase pipeline: Phase 0 (Research), Phase 1 (Roadmap + Outline), Phase 2 (Slides + Document)
 // Speaker notes generated on-demand via generateSpeakerNotesAsync()
-export async function generateAllContent(userPrompt, researchFiles) {
+export async function generateAllContent(userPrompt, researchFiles, requestedViews = null) {
+  const shouldGenerate = (view) => !requestedViews || requestedViews.includes(view);
+  const skipped = { success: false, error: 'Skipped', skipped: true };
+
   // Pre-compute redundant data once for all generators
   const researchContent = assembleResearchContent(researchFiles);
   const keyStats = extractKeyStats(researchContent);
   const dateContext = getCurrentDateContext();
   const precomputed = { researchContent, keyStats, dateContext };
 
-  const researchAnalysisPromise = apiQueue.add(
-    () => generateResearchAnalysis(userPrompt, researchFiles, precomputed), 'ResearchAnalysis'
-  );
+  const researchAnalysisPromise = shouldGenerate('research-analysis')
+    ? apiQueue.add(
+        () => generateResearchAnalysis(userPrompt, researchFiles, precomputed), 'ResearchAnalysis'
+      )
+    : Promise.resolve(skipped);
 
-  const phase1Tasks = [
-    { task: () => generateRoadmap(userPrompt, researchFiles, precomputed), name: 'Roadmap' },
-    { task: () => generateSlidesOutlineOnly(userPrompt, researchFiles, [], precomputed), name: 'SlidesOutline' }
-  ];
-  const [roadmap, slidesOutline] = await apiQueue.runAll(phase1Tasks);
+  const phase1Tasks = [];
+  if (shouldGenerate('roadmap') || shouldGenerate('slides')) {
+    phase1Tasks.push({ task: () => generateRoadmap(userPrompt, researchFiles, precomputed), name: 'Roadmap' });
+  }
+  if (shouldGenerate('slides')) {
+    phase1Tasks.push({ task: () => generateSlidesOutlineOnly(userPrompt, researchFiles, [], precomputed), name: 'SlidesOutline' });
+  }
+
+  const phase1Results = await apiQueue.runAll(phase1Tasks);
+  const roadmap = phase1Tasks.find(t => t.name === 'Roadmap') ? phase1Results[phase1Tasks.findIndex(t => t.name === 'Roadmap')] : skipped;
+  const slidesOutline = phase1Tasks.find(t => t.name === 'SlidesOutline') ? phase1Results[phase1Tasks.findIndex(t => t.name === 'SlidesOutline')] : skipped;
 
   const swimlanes = roadmap.success ? extractSwimlanesFromRoadmap(roadmap.data) : [];
 
@@ -464,22 +483,27 @@ export async function generateAllContent(userPrompt, researchFiles) {
     reconciledOutline = reconcileOutlineWithSwimlanes(slidesOutline.data, swimlanes);
   }
 
-  const phase2Tasks = [
-    {
+  const phase2Tasks = [];
+  if (shouldGenerate('slides')) {
+    phase2Tasks.push({
       task: () => slidesOutline.success
         ? generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, reconciledOutline, precomputed)
         : generateSlides(userPrompt, researchFiles, swimlanes, precomputed),
       name: 'Slides'
-    },
-    { task: () => generateDocument(userPrompt, researchFiles, swimlanes, precomputed), name: 'Document' }
-  ];
-  const [slides, document] = await apiQueue.runAll(phase2Tasks);
+    });
+  }
+  if (shouldGenerate('document')) {
+    phase2Tasks.push({ task: () => generateDocument(userPrompt, researchFiles, swimlanes, precomputed), name: 'Document' });
+  }
+  const phase2Results = await apiQueue.runAll(phase2Tasks);
+  const slides = phase2Tasks.find(t => t.name === 'Slides') ? phase2Results[phase2Tasks.findIndex(t => t.name === 'Slides')] : skipped;
+  const document = phase2Tasks.find(t => t.name === 'Document') ? phase2Results[phase2Tasks.findIndex(t => t.name === 'Document')] : skipped;
 
   const researchAnalysis = await researchAnalysisPromise;
 
   const speakerNotes = { success: false, error: 'Speaker notes available on-demand', deferred: true };
 
-  return { roadmap, slides, document, researchAnalysis, speakerNotes };
+  return { roadmap: shouldGenerate('roadmap') ? roadmap : skipped, slides, document, researchAnalysis, speakerNotes };
 }
 
 export async function generateSpeakerNotesAsync(slidesData, researchFiles, userPrompt) {
@@ -509,3 +533,6 @@ export async function regenerateContent(viewType, prompt, researchFiles) {
   };
   return await apiQueue.add(task, `Regenerate-${viewType}`);
 }
+
+export { validateExecutiveSummary, validateReasoningCoherence, checkWeakOpener,
+         reconcileOutlineWithSwimlanes, extractSwimlanesFromRoadmap, APIQueue };

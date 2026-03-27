@@ -1,0 +1,146 @@
+{
+  "title": "Research Quality Assessment: Digital Transformation Initiative",
+  "generatedAt": "2025-01-15T10:30:00.000Z",
+  "overallScore": 7.2,
+  "overallRating": "good",
+  "summary": "Research provides strong quantitative evidence from peer institutions with specific cost reduction metrics. Date specificity is adequate for quarterly Gantt intervals, though some implementation milestones lack precise timing.",
+  "keyFindings": [
+    "Strong peer benchmarking data with specific cost reduction percentages from JPMorgan and Goldman Sachs",
+    "Internal audit data provides precise cost baseline ($4.2M annual) for ROI modeling",
+    "Implementation timelines are primarily quarterly rather than monthly, limiting Gantt granularity"
+  ],
+  "themes": [
+    {
+      "name": "Cloud Migration",
+      "description": "Technical migration from legacy on-premise infrastructure to cloud-native architecture",
+      "fitnessScore": 8,
+      "eventDataQuality": "good",
+      "datesCounted": 12,
+      "tasksPotential": 8,
+      "includeableInGantt": true,
+      "strengths": [
+        "Clear phase definitions with quarterly milestones",
+        "Specific cost metrics tied to each phase"
+      ],
+      "gaps": [
+        "Exact start dates for Phase 2 and Phase 3 not specified",
+        "Vendor selection timeline missing"
+      ],
+      "recommendations": [
+        "Add specific vendor evaluation dates from procurement records",
+        "Include Phase 2 kickoff date from project charter"
+      ],
+      "sampleEvents": [
+        {
+          "event": "Cloud Migration Phase 1 Launch",
+          "dateInfo": "Q1 2024",
+          "quality": "approximate"
+        },
+        {
+          "event": "Platform Go-Live",
+          "dateInfo": "Q3 2024",
+          "quality": "approximate"
+        },
+        {
+          "event": "Full Migration Complete",
+          "dateInfo": "2025",
+          "quality": "vague"
+        }
+      ]
+    },
+    {
+      "name": "Operational Transformation",
+      "description": "Business process redesign to leverage new cloud capabilities",
+      "fitnessScore": 6,
+      "eventDataQuality": "adequate",
+      "datesCounted": 6,
+      "tasksPotential": 5,
+      "includeableInGantt": true,
+      "strengths": [
+        "Clear dependency on cloud migration timeline",
+        "Stakeholder approval gates identified"
+      ],
+      "gaps": [
+        "Training timeline not specified",
+        "Change management milestones missing dates"
+      ],
+      "recommendations": [
+        "Add training schedule with specific dates from HR planning documents",
+        "Include change management phase gates from project management office"
+      ],
+      "sampleEvents": [
+        {
+          "event": "Process Redesign Kickoff",
+          "dateInfo": "Q2 2024",
+          "quality": "approximate"
+        },
+        {
+          "event": "Stakeholder Approval",
+          "dateInfo": "Q1 2025",
+          "quality": "approximate"
+        }
+      ]
+    }
+  ],
+  "dataCompleteness": {
+    "totalDatesFound": 18,
+    "totalEventsIdentified": 13,
+    "eventsWithDates": 10,
+    "eventsWithoutDates": 3,
+    "dateSpecificityBreakdown": {
+      "specific": 2,
+      "quarterly": 8,
+      "monthly": 3,
+      "yearly": 3,
+      "relative": 1,
+      "vague": 1
+    },
+    "timelineSpan": {
+      "earliestDate": "Q1 2024",
+      "latestDate": "Q4 2025",
+      "spanDescription": "2 years from Q1 2024 to Q4 2025"
+    }
+  },
+  "ganttReadiness": {
+    "readyThemes": 2,
+    "totalThemes": 2,
+    "estimatedTasks": 13,
+    "recommendedTimeInterval": "quarters",
+    "readinessVerdict": "ready"
+  },
+  "criticalGaps": [
+    "Phase 2 and Phase 3 migration start dates need clarification",
+    "Vendor selection timeline is entirely absent"
+  ],
+  "suggestedSources": [
+    {
+      "sourceType": "Project charter or schedule",
+      "reason": "Would provide specific phase dates and milestone definitions",
+      "expectedImprovement": "Could increase overall score from 7.2 to 8.5+ with precise date data",
+      "priority": "high"
+    },
+    {
+      "sourceType": "Procurement timeline",
+      "reason": "Vendor selection is a critical path item with no date coverage",
+      "expectedImprovement": "Would fill the vendor selection gap and add 3-4 Gantt tasks",
+      "priority": "medium"
+    }
+  ],
+  "actionItems": [
+    {
+      "action": "Obtain project charter with phase start/end dates for cloud migration",
+      "impact": "high",
+      "effort": "low"
+    },
+    {
+      "action": "Request vendor evaluation timeline from procurement team",
+      "impact": "medium",
+      "effort": "low"
+    },
+    {
+      "action": "Add training and change management milestones from HR planning",
+      "impact": "medium",
+      "effort": "medium"
+    }
+  ]
+}

@@ -12,8 +12,9 @@
     "dev:css": "tailwindcss -i ./Public/styles/tailwind-source.css -o ./Public/styles/tailwind.css --watch",
     "test": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --coverage",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --watch",
-    "test:unit": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest tests/unit",
+    "test:unit": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest tests/server tests/public",
     "test:integration": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest tests/integration",
+    "test:ci": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --coverage --ci --forceExit",
     "lint": "eslint 'Public/**/*.js' 'server/**/*.js' 'server.js' --ignore-pattern 'Public/dist/**'",
     "lint:fix": "eslint 'Public/**/*.js' 'server/**/*.js' 'server.js' --fix --ignore-pattern 'Public/dist/**'",
     "analyze:deps": "depcheck",
@@ -47,6 +48,7 @@
     "knip": "^5.70.2",
     "madge": "^8.0.0",
     "postcss": "^8.5.4",
+    "supertest": "^7.2.2",
     "tailwindcss": "^3.4.17"
   }
 }

@@ -1,0 +1,42 @@
+{
+  "title": "Digital Transformation: Capturing the $2.1M Efficiency Opportunity",
+  "sections": [
+    {
+      "swimlane": "Overview",
+      "sectionTitle": "Strategic Imperative",
+      "slides": [
+        {
+          "layout": "twoColumn",
+          "tagline": "COST PRESSURE",
+          "title": "Legacy\nSystems\nDrain $4.2M",
+          "paragraph1": "Current infrastructure maintenance consumes $4.2M annually according to the 2024 internal audit, with costs rising 12% year-over-year as vendor support contracts expire. This trajectory threatens operating margins as competitors who migrated to cloud platforms report 40-50% reductions in comparable costs. The compounding nature of technical debt means each quarter of delay adds approximately $350K in accumulated maintenance burden.",
+          "paragraph2": "Peer institution analysis reveals that organizations delaying cloud migration beyond 18 months face permanent cost structure disadvantages. JPMorgan and Goldman Sachs both completed primary migrations in 2024, locking in operational efficiencies that compound quarterly. The Gartner 2024 Cloud Economics Report projects that late adopters will spend 2.3x more on equivalent capabilities by 2026, creating an urgency window that narrows with each passing quarter.",
+          "subTopic": "Cost Baseline"
+        },
+        {
+          "layout": "threeColumn",
+          "tagline": "50% SAVINGS",
+          "title": "Cloud Cuts\nCosts in Half\nfor Rivals",
+          "paragraph1": "JPMorgan's Q4 2024 cloud migration delivered 50% reduction in processing costs within the first operating quarter, according to their Annual Technology Review. This first-mover advantage compounds as automated scaling eliminates manual capacity planning overhead that persists in legacy environments.",
+          "paragraph2": "Goldman Sachs reported 43% infrastructure savings in their Q1 2025 earnings call, confirming the pattern is reproducible across different technology stacks. Their phased approach proved that migration risk can be bounded while capturing 80% of cost benefits within the initial deployment wave.",
+          "paragraph3": "Mid-tier firms face a narrowing window according to McKinsey's Digital Banking Survey, which found 73% have not initiated pilots. Organizations launching before Q2 2025 can still capture second-mover advantages by leveraging proven playbooks from early adopters without bearing the pioneering risk.",
+          "subTopic": "Peer Benchmarks"
+        }
+      ]
+    },
+    {
+      "swimlane": "IT/Technology",
+      "sectionTitle": "Tech Migration",
+      "slides": [
+        {
+          "layout": "twoColumn",
+          "tagline": "TECH DEBT",
+          "title": "Legacy\nMiddleware\nFails 80%",
+          "paragraph1": "Internal incident analysis reveals 80% of integration failures originate from legacy middleware layers that have not received major updates since 2019. These failures cost an average of 47 engineering hours per incident to resolve, with the frequency increasing 23% quarter-over-quarter as system complexity grows and institutional knowledge erodes through attrition.",
+          "paragraph2": "The root cause traces to architectural decisions made for on-premise scale that actively conflict with modern API-driven integration patterns. Each new business requirement routed through legacy middleware adds compound complexity, creating a technical debt spiral where remediation costs grow faster than maintenance budgets. Cloud-native architecture eliminates this category of failure entirely.",
+          "subTopic": "Integration Failures"
+        }
+      ]
+    }
+  ]
+}
