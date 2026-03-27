@@ -3,7 +3,6 @@ import {
   INJECTION_PATTERNS,
   FILE_TYPES,
   RATE_LIMITS,
-  TIMEOUTS,
   FILE_LIMITS,
   VALIDATION,
   ERROR_MESSAGES
@@ -32,7 +31,6 @@ export const CONFIG = {
     TRUST_PROXY_HOPS: 1 // Railway uses single proxy layer
   },
   API: {
-    GEMINI_MODEL: 'gemini-2.5-flash-lite',
     RETRY_COUNT: 3,
     RETRY_BASE_DELAY_MS: 1000, // 1 second base delay
     TIMEOUT_MS: 300000, // 5 minutes - under typical proxy timeouts to prevent 502 errors
@@ -51,10 +49,6 @@ export const CONFIG = {
     MAX_FIELD_SIZE_BYTES: FILE_LIMITS.MAX_FIELD_SIZE_BYTES,
     ALLOWED_MIMES: FILE_TYPES.MIMES,
     ALLOWED_EXTENSIONS: FILE_TYPES.EXTENSIONS
-  },
-  TIMEOUTS: {
-    REQUEST_MS: TIMEOUTS.REQUEST_MS,
-    RESPONSE_MS: TIMEOUTS.RESPONSE_MS
   },
   RATE_LIMIT: {
     WINDOW_MS: RATE_LIMITS.WINDOW_MS,

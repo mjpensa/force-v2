@@ -2,7 +2,6 @@ import { describe, it, expect, jest } from '@jest/globals';
 import {
   configureHelmet,
   configureCacheControl,
-  configureTimeout,
   handleUploadErrors
 } from '../../server/middleware.js';
 import multer from 'multer';
@@ -38,25 +37,6 @@ describe('Middleware', () => {
     });
   });
 
-  describe('configureTimeout', () => {
-    it('sets request timeout from config', () => {
-      const { req, res, next } = mockReqResNext();
-      configureTimeout(req, res, next);
-      expect(req.setTimeout).toHaveBeenCalledWith(CONFIG.TIMEOUTS.REQUEST_MS);
-    });
-
-    it('sets response timeout from config', () => {
-      const { req, res, next } = mockReqResNext();
-      configureTimeout(req, res, next);
-      expect(res.setTimeout).toHaveBeenCalledWith(CONFIG.TIMEOUTS.RESPONSE_MS);
-    });
-
-    it('calls next()', () => {
-      const { req, res, next } = mockReqResNext();
-      configureTimeout(req, res, next);
-      expect(next).toHaveBeenCalled();
-    });
-  });
 
   describe('handleUploadErrors', () => {
     it('returns 400 for LIMIT_FILE_SIZE', () => {

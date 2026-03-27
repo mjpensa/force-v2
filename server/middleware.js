@@ -21,11 +21,6 @@ export function configureCacheControl(req, res, next) {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   next();
 }
-export function configureTimeout(req, res, next) {
-  req.setTimeout(CONFIG.TIMEOUTS.REQUEST_MS);
-  res.setTimeout(CONFIG.TIMEOUTS.RESPONSE_MS);
-  next();
-}
 export const apiLimiter = rateLimit({
   windowMs: CONFIG.RATE_LIMIT.WINDOW_MS,
   max: CONFIG.RATE_LIMIT.MAX_REQUESTS,

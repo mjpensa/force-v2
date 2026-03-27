@@ -9,7 +9,6 @@ import { CONFIG } from './server/config.js';
 import {
   configureHelmet,
   configureCacheControl,
-  configureTimeout,
   handleUploadErrors
 } from './server/middleware.js';
 
@@ -51,7 +50,6 @@ if (process.env.NODE_ENV === 'production') {
   }));
 }
 
-app.use(configureTimeout);
 let serverStartTime = null;
 app.get('/api/health', (req, res) => {
   res.json({
