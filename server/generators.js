@@ -256,10 +256,10 @@ function withTimeout(promise, timeoutMs, operationName) {
     clearTimeout(timeoutId);
   });
 }
-async function generateWithGemini(prompt, schema, contentType, configOverrides = {}) {
+async function generateWithGemini(prompt, schema, contentType, configOverrides = {}, options = {}) {
   try {
     const cacheConfig = { schema: schema?.description, contentType, ...configOverrides };
-    const cached = await diskCache.get(prompt, cacheConfig);
+    const cached = await diskCache.get(prompt, cacheConfig, options);
     if (cached) return cached;
 
     const {
@@ -305,6 +305,7 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     }
   } catch (error) {
     console.error(`[${contentType}] Generation failed:`, error.message);
+    try { modelRotator.handleError(error); } catch { /* rotation failed or non-rate-limit error */ }
     throw new Error(`Failed to generate ${contentType}: ${error.message}`);
   }
 }
@@ -390,7 +391,8 @@ async function generateDocument(userPrompt, researchFiles, swimlanes = [], preco
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const prompt = generateDocumentPrompt(userPrompt, researchFiles, swimlanes, precomputed);
-      const data = await generateWithGemini(prompt, documentSchema, 'Document', DOCUMENT_CONFIG);
+      const retryOptions = attempt > 0 ? { skipCache: true } : {};
+      const data = await generateWithGemini(prompt, documentSchema, 'Document', DOCUMENT_CONFIG, retryOptions);
       const validation = validateExecutiveSummary(data.executiveSummary);
       const coherenceValidation = validateReasoningCoherence(data.reasoning, data.executiveSummary);
 

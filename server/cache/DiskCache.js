@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, readdir, stat, unlink } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,8 +26,8 @@ export class DiskCache {
     }
   }
 
-  async get(prompt, config) {
-    if (!this.enabled) return null;
+  async get(prompt, config, options = {}) {
+    if (!this.enabled || options.skipCache) return null;
     try {
       await this._ensureDir();
       const hash = this._hashKey(prompt, config);
@@ -56,8 +56,8 @@ export class DiskCache {
     }
   }
 
-  async wrap(prompt, config, fn) {
-    const cached = await this.get(prompt, config);
+  async wrap(prompt, config, fn, options = {}) {
+    const cached = await this.get(prompt, config, options);
     if (cached) return cached;
     const result = await fn();
     await this.set(prompt, config, result);

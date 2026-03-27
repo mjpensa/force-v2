@@ -9,7 +9,7 @@ export const CONFIG = {
     LOGO_HEIGHT: 28
   },
   EXPORT: {
-    ASPECT_RATIO: { width: 9, height: 16 },
+    ASPECT_RATIO: { width: 16, height: 9 },
     SCALE: 2,
     BACKGROUND_COLOR: '#0c2340'
   }

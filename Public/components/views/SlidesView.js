@@ -247,7 +247,7 @@ function renderThreeColumnSlide(slide, index) {
   const columnTexts = [
     truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1)), 400),
     truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2)), 400),
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph3 || slide.paragraph1)), 400)
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph3 || '')), 400)
   ];
 
   columnTexts.forEach(text => {
@@ -492,6 +492,7 @@ export class SlidesView {
   render() {
     const container = document.createElement('div');
     container.className = 'slides-view-container';
+    container.__view__ = this;
     const menu = this._createHeaderMenu();
     container.appendChild(menu);
 

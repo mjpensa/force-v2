@@ -363,19 +363,19 @@
   margin-bottom: var(--spacing-2);
 }
 
-.theme-name {
+.document-content .theme-name {
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
-  color: #FFFFFF !important;
+  color: #FFFFFF;
   margin: 0 0 var(--spacing-2) 0;
   line-height: var(--leading-tight);
 }
 
-.theme-description {
+.document-content .theme-description {
   display: block;
   font-size: var(--text-base);
   line-height: var(--leading-relaxed);
-  color: #FFFFFF !important;
+  color: #FFFFFF;
   margin: 0 0 var(--spacing-2) 0;
   padding: 0;
 }
@@ -399,7 +399,7 @@
   margin-bottom: var(--spacing-6);
 }
 
-.findings-list {
+.document-content .findings-list {
   list-style: disc;
   margin: 0;
   padding-left: var(--spacing-6);
@@ -624,7 +624,7 @@
   background: rgba(80, 175, 123, 0.08);
 }
 
-.priority-badge {
+.document-content .priority-badge {
   font-size: var(--text-xs);
   font-weight: var(--weight-bold);
   text-transform: uppercase;
@@ -637,15 +637,15 @@
   background: var(--glass-text-muted);
 }
 
-.priority-critical .priority-badge {
+.document-content .priority-critical .priority-badge {
   background: var(--color-error, #EF4444);
 }
 
-.priority-high .priority-badge {
+.document-content .priority-high .priority-badge {
   background: var(--color-warning, #F59E0B);
 }
 
-.priority-medium .priority-badge {
+.document-content .priority-medium .priority-badge {
   background: var(--color-glass-success);
 }
 
@@ -762,14 +762,14 @@
     padding: var(--spacing-3);
   }
 
-  .theme-name {
+  .document-content .theme-name {
     font-size: var(--text-sm);
-    color: #FFFFFF !important;
+    color: #FFFFFF;
   }
 
-  .theme-description {
+  .document-content .theme-description {
     font-size: 0.875rem;
-    color: #FFFFFF !important;
+    color: #FFFFFF;
   }
 
   .theme-topic-badge {
@@ -1049,7 +1049,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1300;
   animation: fadeIn 0.2s ease;
 }
 

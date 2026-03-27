@@ -630,10 +630,19 @@ export class DocumentView {
 
     const scrollContainer = document.querySelector('.app-main') || window;
     
-    const sections = this.documentData.sections.map(s => ({
-      id: s.id,
-      element: document.getElementById(s.id)
-    })).filter(s => s.element);
+    const sections = [];
+    const overviewEl = document.getElementById('analysis-overview');
+    if (overviewEl) {
+      sections.push({ id: 'analysis-overview', element: overviewEl });
+    }
+    this.documentData.sections.forEach(s => {
+      const el = document.getElementById(s.id);
+      if (el) sections.push({ id: s.id, element: el });
+    });
+    const closingEl = document.getElementById('document-closing');
+    if (closingEl) {
+      sections.push({ id: 'document-closing', element: closingEl });
+    }
 
     this.scrollHandler = () => {
       const containerTop = scrollContainer === window 

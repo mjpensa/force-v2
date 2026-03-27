@@ -49,6 +49,7 @@ export class GanttRenderer {
 
     if (totalRows > VIRTUALIZATION_THRESHOLD) {
       this._createVirtualizedRows(gridElement, ganttData, numCols);
+      this._setupGridDelegation(gridElement, ganttData);
       return;
     }
 

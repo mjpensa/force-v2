@@ -320,8 +320,7 @@ class ContentViewer {
       title: `${label} Generation Failed`,
       message: errorMessage,
       buttons: [
-        { text: 'Retry Generation', primary: true, onclick: "window.location.href='/'" },
-        { text: 'Generate New Content', onclick: "window.location.href='/'" }
+        { text: 'Generate New Content', primary: true, onclick: "window.location.href='/'" }
       ],
       footer: 'If the problem persists, try generating new content with different source files.'
     });

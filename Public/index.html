@@ -141,7 +141,7 @@
                     </label>
 
                     <!-- The actual file input, hidden but functional -->
-                    <input type="file" id="upload-input" multiple accept=".md, .txt, .docx, application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden">
+                    <input type="file" id="upload-input" multiple accept=".md, .txt, .docx, application/vnd.openxmlformats-officedocument.wordprocessingml.document, .pdf, application/pdf" class="hidden">
                 </section>
 
                 <!-- Form Actions (Button & Loader) - Glassmorphic - scaled down ~30% -->
@@ -161,7 +161,7 @@
             </form>
             
             <!-- Error Message Box - scaled down ~30% -->
-            <div id="error-message" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-4 text-sm md:text-base" style="display: none;"></div>
+            <div id="error-message" class="border rounded-lg relative my-4 text-sm md:text-base px-4 py-3" style="display: none; background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3);"></div>
 
         </main>
     </div>
