@@ -114,7 +114,7 @@ export class GanttRenderer {
     const barAreaEl = document.createElement('div');
     barAreaEl.className = `gantt-bar-area ${isSwimlane ? 'swimlane' : 'task'}`;
     barAreaEl.style.gridColumn = `2 / span ${numCols}`;
-    barAreaEl.style.gridTemplateColumns = `repeat(${numCols}, 1fr)`;
+    barAreaEl.style.gridTemplateColumns = 'subgrid';
     barAreaEl.setAttribute('data-row-id', `row-${dataIndex}`);
     barAreaEl.setAttribute('data-task-index', dataIndex);
 
@@ -123,6 +123,9 @@ export class GanttRenderer {
       const cellEl = document.createElement('div');
       cellEl.className = 'gantt-time-cell';
       cellEl.style.gridColumn = colIndex;
+      cellEl.style.borderLeft = colIndex > 1 ? `1px solid ${CONFIG.COLORS.GRID_BORDER}` : 'none';
+      cellEl.style.borderBottom = `1px solid ${CONFIG.COLORS.GRID_BORDER}`;
+      cellEl.style.height = '100%';
       cellsFragment.appendChild(cellEl);
     }
     barAreaEl.appendChild(cellsFragment);
@@ -136,10 +139,11 @@ export class GanttRenderer {
         if (bar.endCol == null || isNaN(bar.endCol)) {
           bar.endCol = bar.startCol + 1;
         }
+        const clampedEnd = Math.min(bar.endCol, numCols + 1);
         const barEl = document.createElement('div');
         barEl.className = 'gantt-bar';
         barEl.setAttribute('data-color', bar.color || 'default');
-        barEl.style.gridColumn = `${bar.startCol} / ${bar.endCol}`;
+        barEl.style.gridColumn = `${bar.startCol} / ${clampedEnd}`;
         barAreaEl.appendChild(barEl);
       }
     }

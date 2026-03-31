@@ -38,12 +38,12 @@ class APIQueue {
 
 const apiQueue = new APIQueue(2);
 
-// Generation config factory — topK is fixed at 64 for Gemini 2.5 Flash (not configurable)
+// Generation config factory
 const DEFAULTS = { thinkingBudget: 0 };
 const createConfig = (overrides = {}) => ({ ...DEFAULTS, ...overrides });
 
 const DOCUMENT_CONFIG = createConfig({ temperature: 0.65, topP: 0.9, thinkingBudget: 20000, maxOutputTokens: 65536 });
-const ROADMAP_CONFIG = createConfig({ temperature: 0.1, topP: 0.5, thinkingBudget: 1024 });
+const ROADMAP_CONFIG = createConfig({ temperature: 0.1, topP: 0.5, topK: 20, thinkingBudget: 1024 });
 const RESEARCH_ANALYSIS_CONFIG = createConfig({ temperature: 0.4, topP: 0.75, thinkingBudget: 8192 });
 const SLIDES_CONFIG = createConfig({ temperature: 0.55, topP: 0.85, thinkingBudget: 12000, maxOutputTokens: 65536 });
 const SLIDES_OUTLINE_CONFIG = createConfig({ temperature: 0.35, topP: 0.75, thinkingBudget: 20000 });
@@ -265,8 +265,11 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     const {
       temperature,
       topP,
+      topK,
       thinkingBudget = 0,
-      maxOutputTokens
+      maxOutputTokens,
+      frequencyPenalty,
+      presencePenalty
     } = configOverrides;
     const generationConfig = {
       responseMimeType: 'application/json',
@@ -277,7 +280,10 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     }
     if (temperature !== undefined) generationConfig.temperature = temperature;
     if (topP !== undefined) generationConfig.topP = topP;
+    if (topK !== undefined) generationConfig.topK = topK;
     if (maxOutputTokens !== undefined) generationConfig.maxOutputTokens = maxOutputTokens;
+    if (frequencyPenalty !== undefined) generationConfig.frequencyPenalty = frequencyPenalty;
+    if (presencePenalty !== undefined) generationConfig.presencePenalty = presencePenalty;
     const model = genAI.getGenerativeModel({
       model: modelRotator.current(),
       generationConfig

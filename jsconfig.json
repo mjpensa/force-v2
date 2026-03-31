@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "module": "es2022",
+    "moduleResolution": "node",
+    "target": "es2022",
+    "strict": false,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "/*": ["Public/*"]
+    }
+  },
+  "include": ["server/**/*.js", "Public/**/*.js"],
+  "exclude": ["node_modules", "Public/dist", ".gemini-cache"]
+}

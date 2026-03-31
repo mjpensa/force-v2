@@ -67,7 +67,7 @@
   text-align: center;
   background-color: var(--color-navy-deep); 
   border-bottom: 1px solid #0D0D0D; 
-  border-left: 0.5px solid #0D0D0D; 
+  border-left: 1px solid #0D0D0D;
   color: var(--glass-text-primary); 
   position: sticky;
   top: var(--title-height, 50px); 
@@ -194,12 +194,9 @@
   min-height: 16px;
 }
 .gantt-time-cell {
-  border-bottom: 1px solid var(--color-border-dark-gray, #383838);
   height: 100%;
 }
-.gantt-bar-area > .gantt-time-cell ~ .gantt-time-cell {
-  border-left: 1px solid var(--color-border-dark-gray, #383838);
-}
+
 .gantt-bar-area.task {
   background-color: var(--color-border-dark-gray, #383838); 
 }

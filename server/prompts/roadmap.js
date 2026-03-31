@@ -19,10 +19,11 @@ export const roadmapSchema = {
           bar: {
             type: "object",
             properties: {
-              startCol: { type: "number", nullable: true, description: "1-based column index, or null if date unknown" },
-              endCol: { type: "number", nullable: true, description: "1-based column index + 1, or null if date unknown" },
+              startCol: { type: "number", nullable: true, description: "1-based column index where the task starts (e.g. first column = 1), or null if date unknown" },
+              endCol: { type: "number", nullable: true, description: "1-based column index where the task ends, PLUS ONE (e.g. a task spanning columns 1-3 has endCol=4; a single-column task in column 1 has endCol=2). Must be >= startCol + 1. Null if date unknown." },
               color: { type: "string" }
             },
+            required: ["startCol", "endCol", "color"]
           },
           taskType: {
             type: "string",

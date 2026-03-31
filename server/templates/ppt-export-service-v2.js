@@ -476,7 +476,7 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
     valign: 'top',
     lineSpacingMultiple: 0.85
   });
-  const bodyText = formatBody(data.paragraph1, data.paragraph2, 415);
+  const bodyText = formatBody(data.paragraph1, data.paragraph2, 410);
   if (bodyText) {
     slide.addText(bodyText, {
       x: L.body.x, y: L.body.y, w: L.body.w, h: L.body.h,
@@ -520,9 +520,9 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   const gapWidth = L.columnGap;
   const columnWidth = (totalWidth - (2 * gapWidth)) / 3;
   const columnTexts = [
-    truncateToSentence(normalizeBodyText(data.paragraph1), 400),
-    truncateToSentence(normalizeBodyText(data.paragraph2), 400),
-    truncateToSentence(normalizeBodyText(data.paragraph3 || data.paragraph1), 400)
+    truncateToSentence(normalizeBodyText(data.paragraph1), 390),
+    truncateToSentence(normalizeBodyText(data.paragraph2), 390),
+    truncateToSentence(normalizeBodyText(data.paragraph3 || data.paragraph1), 390)
   ];
 
   columnTexts.forEach((text, index) => {

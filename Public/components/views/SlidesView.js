@@ -54,6 +54,9 @@ function _createTagline(slide) {
     letter-spacing: 0.5px;
     text-transform: uppercase;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 45%;
   `;
   tagline.textContent = slide.tagline || '';
   return tagline;
@@ -116,9 +119,11 @@ function renderSectionTitleSlide(slide, index) {
     text-align: center;
     line-height: 1.1;
     max-width: 80%;
+    max-height: 60%;
     padding: 0 10%;
     word-break: normal;
     overflow-wrap: normal;
+    overflow: hidden;
   `;
   title.textContent = slide.sectionTitle || slide.title || '';
   el.appendChild(title);
@@ -164,6 +169,7 @@ function renderTwoColumnSlide(slide, index) {
     white-space: pre-line;
     word-break: keep-all;
     overflow-wrap: normal;
+    overflow: hidden;
   `;
   title.textContent = _normalizeTitleLines(slide.title || '');
   el.appendChild(title);
@@ -186,10 +192,10 @@ function renderTwoColumnSlide(slide, index) {
 
   let paragraphs = [];
   if (slide.paragraph1 || slide.paragraph2) {
-    if (slide.paragraph1) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1.trim().replace(/\n/g, ' '))), 415));
-    if (slide.paragraph2) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2.trim().replace(/\n/g, ' '))), 415));
+    if (slide.paragraph1) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1.trim().replace(/\n/g, ' '))), 410));
+    if (slide.paragraph2) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2.trim().replace(/\n/g, ' '))), 410));
   } else if (slide.body) {
-    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(normalizeBodyText(sanitizeText(p.trim().replace(/\n/g, ' '))), 415));
+    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(normalizeBodyText(sanitizeText(p.trim().replace(/\n/g, ' '))), 410));
   }
   body.innerHTML = paragraphs.map(p => {
     return `<p style="margin: 0 0 0.8em 0;">${escapeHtml(p)}</p>`;
@@ -229,6 +235,7 @@ function renderThreeColumnSlide(slide, index) {
     white-space: pre-line;
     word-break: keep-all;
     overflow-wrap: normal;
+    overflow: hidden;
   `;
   title.textContent = _normalizeTitleLines(slide.title || '');
   el.appendChild(title);
@@ -245,9 +252,9 @@ function renderThreeColumnSlide(slide, index) {
   `;
 
   const columnTexts = [
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1)), 400),
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2)), 400),
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph3 || '')), 400)
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1)), 390),
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2)), 390),
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph3 || '')), 390)
   ];
 
   columnTexts.forEach(text => {

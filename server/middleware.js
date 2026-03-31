@@ -12,6 +12,7 @@ export function configureHelmet() {
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:"],
         connectSrc: ["'self'"],
+        upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
       }
     },
     crossOriginEmbedderPolicy: false // Required for some external resources
