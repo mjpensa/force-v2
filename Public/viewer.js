@@ -194,6 +194,11 @@ class ContentViewer {
         markPerformance(`api-${viewName}-end`);
         measurePerformance(`api-${viewName}`, `api-${viewName}-start`, `api-${viewName}-end`);
       } catch (error) {
+        const isProcessing = error.details?.processing === true;
+        if (isProcessing) {
+          this._showGenerating(viewName);
+          return;
+        }
         const hasEmptyContent = error.details?.emptyContent === true || error.details?.emptyData === true;
         const canRetry = error.details?.canRetry === true || error.details?.emptyData === true;
         const isApiError = error.details?.apiError === true;
@@ -300,6 +305,21 @@ class ContentViewer {
         </p>
       </div>
     `;
+  }
+  _showGenerating(viewName) {
+    const label = viewName.charAt(0).toUpperCase() + viewName.slice(1);
+    this.contentContainer.innerHTML = `
+      <div class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p style="margin-top: 1rem; color: var(--color-text-secondary); font-size: 1.1rem;">
+          Generating ${label}...
+        </p>
+        <p style="margin-top: 0.5rem; color: var(--color-text-tertiary, #888); font-size: 0.875rem;">
+          This may take a minute. The view will load automatically when ready.
+        </p>
+      </div>
+    `;
+    this._updateTabStatus(viewName, 'processing');
   }
   _statusScreen({ icon, color, title, message, buttons, footer }) {
     const container = document.createElement('div');
