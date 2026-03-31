@@ -524,17 +524,24 @@ export async function generateSpeakerNotesAsync(slidesData, researchFiles, userP
     'SpeakerNotes'
   );
 }
-export async function regenerateContent(viewType, prompt, researchFiles) {
+export async function regenerateContent(viewType, prompt, researchFiles, existingContent = {}) {
+  const researchContent = assembleResearchContent(researchFiles);
+  const keyStats = extractKeyStats(researchContent);
+  const dateContext = getCurrentDateContext();
+  const precomputed = { researchContent, keyStats, dateContext };
+  const swimlanes = existingContent.roadmap?.data
+    ? extractSwimlanesFromRoadmap(existingContent.roadmap.data)
+    : [];
   const task = async () => {
     switch (viewType) {
       case 'roadmap':
-        return generateRoadmap(prompt, researchFiles);
+        return generateRoadmap(prompt, researchFiles, precomputed);
       case 'slides':
-        return generateSlides(prompt, researchFiles);
+        return generateSlides(prompt, researchFiles, swimlanes, precomputed);
       case 'document':
-        return generateDocument(prompt, researchFiles);
+        return generateDocument(prompt, researchFiles, swimlanes, precomputed);
       case 'research-analysis':
-        return generateResearchAnalysis(prompt, researchFiles);
+        return generateResearchAnalysis(prompt, researchFiles, precomputed);
       default:
         throw new Error(`Invalid view type: ${viewType}`);
     }

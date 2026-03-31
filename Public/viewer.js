@@ -326,10 +326,38 @@ class ContentViewer {
       title: `${label} Generation Failed`,
       message: errorMessage,
       buttons: [
-        { text: 'Generate New Content', primary: true, onclick: "window.location.href='/'" }
+        { text: 'Retry This View', primary: true, id: `retry-${viewName}-btn` },
+        { text: 'Generate New Content', primary: false, onclick: "window.location.href='/'" }
       ],
       footer: 'If the problem persists, try generating new content with different source files.'
     });
+    const retryBtn = document.getElementById(`retry-${viewName}-btn`);
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => this._regenerateView(viewName));
+    }
+  }
+  async _regenerateView(viewName) {
+    this._showLoading(viewName);
+    this._updateTabStatus(viewName, 'processing');
+    try {
+      const response = await fetch(`/api/content/${this.sessionId}/${viewName}/regenerate`, { method: 'POST' });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Server error' }));
+        throw new Error(err.error || `Server error: ${response.status}`);
+      }
+      const result = await response.json();
+      if (result.status === 'completed' && result.data) {
+        this.stateManager.setState({ content: { ...this.stateManager.state.content, [viewName]: result.data } });
+        this._updateTabStatus(viewName, 'ready');
+        await this._loadView(viewName);
+      } else {
+        this._updateTabStatus(viewName, 'failed');
+        this._showGenerationFailed(viewName, result.error || 'Regeneration failed');
+      }
+    } catch (error) {
+      this._updateTabStatus(viewName, 'failed');
+      this._showGenerationFailed(viewName, error.message);
+    }
   }
   _showError(title, message) {
     this.appRoot.innerHTML = `

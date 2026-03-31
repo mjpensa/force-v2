@@ -1,7 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
-import { generateAllContent, generateIntelligenceBrief, generateSpeakerNotesAsync } from '../generators.js';
+import { generateAllContent, generateIntelligenceBrief, generateSpeakerNotesAsync, regenerateContent } from '../generators.js';
 import { uploadMiddleware } from '../middleware.js';
 import { generatePptx } from '../templates/ppt-export-service-v2.js';
 import { generateDocx, generateIntelligenceBriefDocx } from '../templates/docx-export-service.js';
@@ -343,6 +343,41 @@ router.post('/:sessionId/intelligence-brief/generate', generationLimiter, expres
 
   } catch (error) {
     handleGenerationError(error, res, 'generate intelligence brief');
+  }
+});
+
+router.post('/:sessionId/:viewType/regenerate', generationLimiter, async (req, res) => {
+  const REGEN_TIMEOUT_MS = 10 * 60 * 1000;
+  req.setTimeout(REGEN_TIMEOUT_MS);
+  res.setTimeout(REGEN_TIMEOUT_MS);
+  try {
+    const { viewType } = req.params;
+    const contentKey = VIEW_TYPE_MAP[viewType];
+    if (!contentKey) {
+      return res.status(400).json({
+        error: 'Invalid view type',
+        message: `View type must be one of: ${VALID_VIEW_TYPES.join(', ')}`
+      });
+    }
+    const session = getSessionOrFail(req, res);
+    if (!session) return;
+    if (!session.researchFiles || session.researchFiles.length === 0) {
+      return res.status(400).json({
+        error: 'Research files not available',
+        message: 'Session research files have expired. Please generate new content.'
+      });
+    }
+    const result = await regenerateContent(viewType, session.prompt, session.researchFiles, session.content);
+    if (result.success) {
+      session.content[contentKey] = result;
+      session.lastAccessed = Date.now();
+      return res.json({ status: 'completed', data: result.data });
+    } else {
+      session.content[contentKey] = result;
+      return res.json({ status: 'error', error: formatUserError(result.error, viewType) });
+    }
+  } catch (error) {
+    handleGenerationError(error, res, `regenerate ${req.params.viewType}`);
   }
 });
 
