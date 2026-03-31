@@ -302,21 +302,50 @@ class ContentViewer {
     `;
   }
   _statusScreen({ icon, color, title, message, buttons, footer }) {
-    this.contentContainer.innerHTML = `
-      <div style="padding: 3rem; text-align: center; max-width: 600px; margin: 0 auto;">
-        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(${color}); margin-bottom: 1.5rem;">
-          ${icon}
-        </svg>
-        <h2 style="margin-bottom: 1rem; color: var(--color-text-primary);">${title}</h2>
-        <p style="color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 2rem;">${message}</p>
-        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-          ${buttons.map(b => `<button id="${b.id || ''}" ${b.onclick ? `onclick="${b.onclick}"` : ''}
-            style="padding: 0.75rem 1.5rem; background: ${b.primary ? 'var(--color-primary)' : 'transparent'}; color: ${b.primary ? 'white' : 'var(--color-text-primary)'}; border: ${b.primary ? 'none' : '2px solid var(--color-border)'}; border-radius: 0.5rem; cursor: pointer; font-weight: 500;">
-            ${b.text}</button>`).join('')}
-        </div>
-        ${footer ? `<p style="margin-top: 2rem; font-size: 0.875rem; color: var(--color-text-tertiary);">${footer}</p>` : ''}
-      </div>
-    `;
+    const container = document.createElement('div');
+    container.style.cssText = 'padding: 3rem; text-align: center; max-width: 600px; margin: 0 auto;';
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '80');
+    svg.setAttribute('height', '80');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.style.cssText = `color: var(${color}); margin-bottom: 1.5rem;`;
+    svg.innerHTML = icon;
+    container.appendChild(svg);
+
+    const h2 = document.createElement('h2');
+    h2.style.cssText = 'margin-bottom: 1rem; color: var(--color-text-primary);';
+    h2.textContent = title;
+    container.appendChild(h2);
+
+    const p = document.createElement('p');
+    p.style.cssText = 'color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 2rem;';
+    p.textContent = message;
+    container.appendChild(p);
+
+    const btnContainer = document.createElement('div');
+    btnContainer.style.cssText = 'display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;';
+    for (const b of buttons) {
+      const btn = document.createElement('button');
+      if (b.id) btn.id = b.id;
+      if (b.onclick) btn.setAttribute('onclick', b.onclick);
+      btn.style.cssText = `padding: 0.75rem 1.5rem; background: ${b.primary ? 'var(--color-primary)' : 'transparent'}; color: ${b.primary ? 'white' : 'var(--color-text-primary)'}; border: ${b.primary ? 'none' : '2px solid var(--color-border)'}; border-radius: 0.5rem; cursor: pointer; font-weight: 500;`;
+      btn.textContent = b.text;
+      btnContainer.appendChild(btn);
+    }
+    container.appendChild(btnContainer);
+
+    if (footer) {
+      const footerP = document.createElement('p');
+      footerP.style.cssText = 'margin-top: 2rem; font-size: 0.875rem; color: var(--color-text-tertiary);';
+      footerP.textContent = footer;
+      container.appendChild(footerP);
+    }
+
+    this.contentContainer.innerHTML = '';
+    this.contentContainer.appendChild(container);
   }
   _showGenerationFailed(viewName, errorMessage) {
     const label = viewName.charAt(0).toUpperCase() + viewName.slice(1);
