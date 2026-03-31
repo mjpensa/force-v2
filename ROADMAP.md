@@ -480,20 +480,20 @@ Compiled from 10-agent deep dive across all frontend, backend, prompts, views, C
 
 ## Recommended Implementation Order
 
-### Phase A: Bug fixes (1-2 days)
-1.1 PDF uploads, 1.2 Per-view regeneration, 1.4 SSE JSON.parse crash, 2.1-2.4 Client validation, 3.1 Button label, 3.9 Page title
+### Phase A: Bug fixes — COMPLETE
+~~1.1 PDF uploads, 1.2 Per-view regeneration, 1.4 SSE JSON.parse crash, 1.5 views param fix, 2.1-2.4 Client validation, 3.1 Button label, 3.9 Page title, 3.12 Dropzone reset, 10.2 XSS fix~~
 
-### Phase B: Core UX improvements (3-5 days)
-3.2 Generating placeholder, 3.3 Retry button, 3.7 Re-click retry, 3.8 Error notification styling, 4.15 Slides keyboard nav, 4.14 Slides presentation mode, 7.7 Tooltip arrow
+### Phase B: Core UX improvements — COMPLETE
+~~3.2 Generating placeholder, 3.3 Retry button, 3.7 Re-click retry, 3.8 Error notification styling, 4.15 Slides keyboard nav, 4.14 Slides presentation mode, 7.7 Tooltip arrow~~
 
-### Phase C: Architecture (5-7 days)
-5.1 Async generation + real SSE, 5.2 Narrative spine, 5.3 Research analysis feed-forward, 5.4 Slide self-critique
+### Phase C: Architecture — COMPLETE
+~~5.1 Async generation + real SSE, 5.2 Narrative spine, 5.3 Research analysis feed-forward, 5.4 Slide self-critique~~
 
-### Phase D: New views (4-6 days)
-6.1 SWOT Analysis, 6.2 Risk Register, 6.3 Competitive Analysis
+### Phase D: New views — COMPLETE
+~~6.1 SWOT Analysis, 6.2 Risk Register, 6.3 Competitive Analysis~~
 
-### Phase E: Polish (3-5 days)
-4.16 Slides inline editing, 4.2 Gantt inline edit persistence, 4.25 Research Analysis export, 7.1 Modal unification, 7.2 Gantt token migration, 4.23 Document PDF export
+### Phase E: Polish — COMPLETE
+~~4.16 Slides inline editing, 4.2 Gantt inline edit persistence, 4.25 Research Analysis export, 7.1 Modal unification, 7.2 Gantt token migration, 8.1 Intelligence brief enhancement, 4.23 Document PDF export~~
 
 ### Phase F: Future (scope TBD)
 4.1 Undo/redo, 4.3 Touch support, 9.1 Session persistence, 9.3 User management, 6.4 Additional content types
