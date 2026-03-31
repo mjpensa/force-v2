@@ -464,6 +464,9 @@ ANTI-PATTERNS FOR SWIMLANE SECTIONS:
 export function generateDocumentPrompt(userPrompt, researchFiles, swimlanes = [], precomputed = null) {
   const researchContent = precomputed?.researchContent || assembleResearchContent(researchFiles);
 
+  const spineText = precomputed?.narrativeSpineText || '';
+  const digestText = precomputed?.researchDigestText || '';
+
   // Enhanced research pre-processing
   const { stats, contextualStats, sources } = precomputed?.keyStats || extractKeyStats(researchContent);
   const { comparisons, windows } = extractCausalRelationships(researchContent);
@@ -485,7 +488,7 @@ export function generateDocumentPrompt(userPrompt, researchFiles, swimlanes = []
   return `${documentPrompt}
 ${swimlaneInstructions}
 
-${formatDateContext(dateContext, 'document')}
+${spineText ? spineText + '\n' : ''}${digestText ? digestText + '\n' : ''}${formatDateContext(dateContext, 'document')}
 
 KEY DATA POINTS WITH CONTEXT (use these for evidence chains):
 ${contextualStatsFormatted}

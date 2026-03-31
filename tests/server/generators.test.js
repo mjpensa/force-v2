@@ -61,12 +61,14 @@ const slidesOutlineFixture = loadFixture('slides-outline');
 const slidesFixture = loadFixture('slides');
 const documentFixture = loadFixture('document');
 const researchAnalysisFixture = loadFixture('research-analysis');
+const narrativeSpineFixture = loadFixture('narrative-spine');
 
 describe('generateAllContent', () => {
   it('returns all content types when Gemini returns valid data', async () => {
-    // Sequence: research-analysis runs in parallel with phase1 (roadmap, slides-outline),
-    // then phase2 (slides, document).
+    // Sequence: Phase 0 (narrative-spine + research-analysis in parallel),
+    // Phase 1 (roadmap + slides-outline), Phase 2 (slides + document).
     setupSequence([
+      narrativeSpineFixture,
       researchAnalysisFixture,
       roadmapFixture,
       slidesOutlineFixture,
@@ -91,6 +93,7 @@ describe('generateAllContent', () => {
   it('handles individual view failure gracefully (one fails, others succeed)', async () => {
     let callIndex = 0;
     const fixtures = [
+      narrativeSpineFixture,
       researchAnalysisFixture,
       roadmapFixture,
       slidesOutlineFixture,
@@ -99,8 +102,8 @@ describe('generateAllContent', () => {
     ];
     generateContentMock = jest.fn().mockImplementation(async () => {
       callIndex++;
-      // Fail the 4th call (slides from outline)
-      if (callIndex === 4) throw new Error('Slides generation failed');
+      // Fail the 5th call (slides from outline — after spine, research-analysis, roadmap, slides-outline)
+      if (callIndex === 5) throw new Error('Slides generation failed');
       return { response: { text: () => JSON.stringify(fixtures[callIndex - 1]) } };
     });
 
@@ -117,7 +120,7 @@ describe('generateAllContent', () => {
   });
 
   it('with requestedViews=[roadmap] only generates roadmap', async () => {
-    setupMock(roadmapFixture);
+    setupSequence([narrativeSpineFixture, roadmapFixture]);
 
     const result = await generators.generateAllContent(samplePrompt, sampleResearchFiles, ['roadmap']);
 
@@ -130,7 +133,7 @@ describe('generateAllContent', () => {
   });
 
   it('with requestedViews=[document] only generates document', async () => {
-    setupSequence([documentFixture]);
+    setupSequence([narrativeSpineFixture, documentFixture]);
 
     const result = await generators.generateAllContent(samplePrompt, sampleResearchFiles, ['document']);
 
@@ -140,7 +143,7 @@ describe('generateAllContent', () => {
   });
 
   it('with requestedViews=[research-analysis] only generates research analysis', async () => {
-    setupMock(researchAnalysisFixture);
+    setupSequence([narrativeSpineFixture, researchAnalysisFixture]);
 
     const result = await generators.generateAllContent(samplePrompt, sampleResearchFiles, ['research-analysis']);
 
@@ -153,7 +156,7 @@ describe('generateAllContent', () => {
 
 describe('generateRoadmap (via generateAllContent with requestedViews)', () => {
   it('returns { success: true, data } with valid fixture', async () => {
-    setupMock(roadmapFixture);
+    setupSequence([narrativeSpineFixture, roadmapFixture]);
     const result = await generators.generateAllContent(samplePrompt, sampleResearchFiles, ['roadmap']);
     expect(result.roadmap.success).toBe(true);
     expect(result.roadmap.data.title).toBeDefined();
@@ -181,8 +184,8 @@ describe('generateDocument (via generateAllContent)', () => {
       },
       reasoning: documentFixture.reasoning,
     };
-    // Second call: the good document fixture
-    setupSequence([weakDoc, documentFixture]);
+    // Sequence: spine (Phase 0), then weak doc, then good doc (retry)
+    setupSequence([narrativeSpineFixture, weakDoc, documentFixture]);
 
     const result = await generators.generateAllContent(samplePrompt, sampleResearchFiles, ['document']);
 

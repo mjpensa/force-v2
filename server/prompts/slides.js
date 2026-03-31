@@ -767,6 +767,9 @@ export function generateSlidesOutlinePrompt(userPrompt, researchFiles, swimlanes
   // Convert array to formatted string
   const researchContent = precomputed?.researchContent || assembleResearchContent(researchFiles);
 
+  const spineText = precomputed?.narrativeSpineText || '';
+  const digestText = precomputed?.researchDigestText || '';
+
   // Extract key statistics
   const { stats, sources, contextualStats } = precomputed?.keyStats || extractKeyStats(researchContent);
   // Get current temporal context
@@ -902,7 +905,7 @@ NARRATIVE FLOW REQUIREMENTS:
    - Each section's ending should create tension
    - The next section's opening should resolve or build on that tension
 
-${formatDateContext(dateContext, 'slides')}
+${spineText ? spineText + '\n' : ''}${digestText ? digestText + '\n' : ''}${formatDateContext(dateContext, 'slides')}
 
 ${formatStatsSourcesEvidence(stats, sources, contextualStats, 'use at least 2-3 per slide')}
 
@@ -951,6 +954,9 @@ export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = [], 
 
   // Convert array to formatted string (consistent with other generators)
   const researchContent = precomputed?.researchContent || assembleResearchContent(researchFiles);
+
+  const spineText = precomputed?.narrativeSpineText || '';
+  const digestText = precomputed?.researchDigestText || '';
 
   // Extract key statistics to force AI to use real data
   const { stats, sources, contextualStats } = precomputed?.keyStats || extractKeyStats(researchContent);
@@ -1296,7 +1302,7 @@ EXAMPLE - GOOD SLIDE (do this):
 }
 WHY IT WORKS: Insight-driven tagline, sourced data points, complete evidence-insight-implication chains, specific numbers, power verbs ("slashed", "hemorrhage", "exposing"), forward momentum
 
-${formatDateContext(dateContext, 'slides')}
+${spineText ? spineText + '\n' : ''}${digestText ? digestText + '\n' : ''}${formatDateContext(dateContext, 'slides')}
 
 ${formatStatsSourcesEvidence(stats, sources, contextualStats, 'use at least one per slide')}
 

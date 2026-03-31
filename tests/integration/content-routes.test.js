@@ -44,6 +44,7 @@ const slidesFixture = loadFixture('slides');
 const documentFixture = loadFixture('document');
 const researchAnalysisFixture = loadFixture('research-analysis');
 const slidesOutlineFixture = loadFixture('slides-outline');
+const narrativeSpineFixture = loadFixture('narrative-spine');
 
 // --- App bootstrap ---
 let app, sessions, request;
@@ -98,6 +99,7 @@ describe('POST /api/content/generate', () => {
 
   it('returns 200 with sessionId on valid request', async () => {
     setupSequence([
+      narrativeSpineFixture,
       researchAnalysisFixture,
       roadmapFixture,
       slidesOutlineFixture,

@@ -17,6 +17,7 @@ export function loadAllFixtures() {
     slides: loadFixture('slides'),
     document: loadFixture('document'),
     researchAnalysis: loadFixture('research-analysis'),
+    narrativeSpine: loadFixture('narrative-spine'),
     intelligenceBrief: loadFixture('intelligence-brief'),
     speakerNotes: loadFixture('speaker-notes'),
   };

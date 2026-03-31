@@ -4,7 +4,8 @@ import { generateSlidesPrompt, generateSlidesOutlinePrompt, generateSpeakerNotes
 import { generateDocumentPrompt, documentSchema } from './prompts/document.js';
 import { generateResearchAnalysisPrompt, researchAnalysisSchema } from './prompts/research-analysis.js';
 import { generateIntelligenceBriefPrompt, intelligenceBriefSchema } from './prompts/intelligence-brief.js';
-import { assembleResearchContent, extractKeyStats, getCurrentDateContext } from './prompts/common.js';
+import { assembleResearchContent, extractKeyStats, getCurrentDateContext, buildResearchDigest, formatResearchDigest } from './prompts/common.js';
+import { generateNarrativeSpinePrompt, narrativeSpineSchema, formatNarrativeSpine } from './prompts/narrative-spine.js';
 import { CONFIG } from './config.js';
 import { genAI } from './gemini.js';
 import { diskCache } from './cache/DiskCache.js';
@@ -50,6 +51,7 @@ const SLIDES_OUTLINE_CONFIG = createConfig({ temperature: 0.35, topP: 0.75, thin
 const SPEAKER_NOTES_CONFIG = createConfig({ temperature: 0.55, topP: 0.88, thinkingBudget: 6000 });
 const SPEAKER_NOTES_OUTLINE_CONFIG = createConfig({ temperature: 0.35, topP: 0.75, thinkingBudget: 8000 });
 const INTELLIGENCE_BRIEF_CONFIG = createConfig({ temperature: 0.5, topP: 0.85, thinkingBudget: 8192 });
+const NARRATIVE_SPINE_CONFIG = createConfig({ temperature: 0.2, topP: 0.7, thinkingBudget: 4096, maxOutputTokens: 2048 });
 
 // Shared validation patterns (used across multiple validators)
 const WEAK_OPENERS = /^(this|the|our|in today|as we|it is|there (is|are|has|have))/i;
@@ -429,6 +431,16 @@ async function generateDocument(userPrompt, researchFiles, swimlanes = [], preco
     coherenceIssues: lastCoherenceValidation?.issues || []
   };
 }
+async function generateNarrativeSpine(userPrompt, researchFiles, precomputed = null) {
+  try {
+    const prompt = generateNarrativeSpinePrompt(userPrompt, researchFiles, precomputed);
+    const data = await generateWithGemini(prompt, narrativeSpineSchema, 'NarrativeSpine', NARRATIVE_SPINE_CONFIG);
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
 async function generateResearchAnalysis(userPrompt, researchFiles, precomputed = null) {
   try {
     const prompt = generateResearchAnalysisPrompt(userPrompt, researchFiles, precomputed);
@@ -463,17 +475,36 @@ export async function generateAllContent(userPrompt, researchFiles, requestedVie
   const researchContent = assembleResearchContent(researchFiles);
   const keyStats = extractKeyStats(researchContent);
   const dateContext = getCurrentDateContext();
-  const precomputed = { researchContent, keyStats, dateContext };
+  let precomputed = { researchContent, keyStats, dateContext };
 
+  // Phase 0: Narrative spine + research analysis in parallel
   emit({ type: 'view:started', view: 'research-analysis' });
-  const researchAnalysisPromise = shouldGenerate('research-analysis')
-    ? apiQueue.add(
-        () => generateResearchAnalysis(userPrompt, researchFiles, precomputed), 'ResearchAnalysis'
-      ).then(result => {
+  const phase0Tasks = [
+    { task: () => generateNarrativeSpine(userPrompt, researchFiles, precomputed), name: 'NarrativeSpine' },
+  ];
+  if (shouldGenerate('research-analysis')) {
+    phase0Tasks.push({
+      task: () => generateResearchAnalysis(userPrompt, researchFiles, precomputed).then(result => {
         emit({ type: result.success ? 'view:completed' : 'view:failed', view: 'research-analysis', result });
         return result;
-      })
-    : Promise.resolve(skipped);
+      }),
+      name: 'ResearchAnalysis'
+    });
+  }
+  const phase0Results = await apiQueue.runAll(phase0Tasks);
+  const spineResult = phase0Results[0];
+  const researchAnalysis = phase0Tasks.length > 1 ? phase0Results[1] : skipped;
+
+  // Inject spine and research digest into precomputed for downstream prompts
+  const narrativeSpine = spineResult.success ? spineResult.data : null;
+  const researchDigest = researchAnalysis.success ? buildResearchDigest(researchAnalysis.data) : null;
+  precomputed = {
+    ...precomputed,
+    narrativeSpine,
+    narrativeSpineText: formatNarrativeSpine(narrativeSpine),
+    researchDigest,
+    researchDigestText: formatResearchDigest(researchDigest)
+  };
 
   emit({ type: 'view:started', view: 'roadmap' });
   const phase1Tasks = [];
@@ -525,8 +556,6 @@ export async function generateAllContent(userPrompt, researchFiles, requestedVie
   const phase2Results = await apiQueue.runAll(phase2Tasks);
   const slides = phase2Tasks.find(t => t.name === 'Slides') ? phase2Results[phase2Tasks.findIndex(t => t.name === 'Slides')] : skipped;
   const document = phase2Tasks.find(t => t.name === 'Document') ? phase2Results[phase2Tasks.findIndex(t => t.name === 'Document')] : skipped;
-
-  const researchAnalysis = await researchAnalysisPromise;
 
   const speakerNotes = { success: false, error: 'Speaker notes available on-demand', deferred: true };
 

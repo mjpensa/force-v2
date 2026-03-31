@@ -270,3 +270,30 @@ When setting action deadlines in the executiveSummary:
 - Next quarter: ${dateContext.nextQuarter}
 - Planning horizon: ${dateContext.quarterPlusTwo}`;
 }
+
+export function buildResearchDigest(researchAnalysis) {
+  if (!researchAnalysis) return null;
+  const themes = researchAnalysis.themes?.map(t => ({
+    name: t.name,
+    fitnessScore: t.fitnessScore,
+    canBeSwimlane: t.includeableInGantt,
+    topGap: t.gaps?.[0]
+  }));
+  return {
+    overallScore: researchAnalysis.overallScore,
+    recommendedTimeInterval: researchAnalysis.ganttReadiness?.recommendedTimeInterval,
+    timelineSpan: researchAnalysis.dataCompleteness?.timelineSpan,
+    keyFindings: researchAnalysis.keyFindings?.slice(0, 3),
+    themes
+  };
+}
+
+export function formatResearchDigest(digest) {
+  if (!digest) return '';
+  const themes = digest.themes?.map(t => `${t.name}: ${t.fitnessScore}/10${t.topGap ? ' (gap: ' + t.topGap + ')' : ''}`).join(', ') || '';
+  return `**RESEARCH QUALITY DIGEST:**
+- Overall quality: ${digest.overallScore}/10
+- Recommended time interval: ${digest.recommendedTimeInterval || 'auto'}
+- Key findings: ${digest.keyFindings?.join('; ') || 'none'}
+- Theme quality: ${themes}`;
+}

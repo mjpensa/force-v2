@@ -202,8 +202,12 @@ You MUST respond with *only* a valid JSON object matching the schema.
 export function generateRoadmapPrompt(userPrompt, researchFiles, precomputed = null) {
   const researchContent = precomputed?.researchContent || assembleResearchContent(researchFiles);
 
+  const spineText = precomputed?.narrativeSpineText || '';
+  const digestText = precomputed?.researchDigestText || '';
+
   return `${roadmapPrompt}
 
+${spineText ? spineText + '\n' : ''}${digestText ? digestText + '\n' : ''}
 **USER PROMPT:**
 ${userPrompt}
 

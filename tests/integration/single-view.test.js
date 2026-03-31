@@ -53,6 +53,7 @@ const slidesOutlineFixture = loadFixture('slides-outline');
 const slidesFixture = loadFixture('slides');
 const documentFixture = loadFixture('document');
 const researchAnalysisFixture = loadFixture('research-analysis');
+const narrativeSpineFixture = loadFixture('narrative-spine');
 
 // --- App bootstrap ---
 let app, sessions, request;
@@ -96,7 +97,7 @@ function sendGenerate(viewsParam) {
 // ============================================================
 describe('POST /api/content/generate with ?views= filter', () => {
   it('views=roadmap returns accepted with sessionId', async () => {
-    setupSequence([roadmapFixture]);
+    setupSequence([narrativeSpineFixture, roadmapFixture]);
 
     const res = await sendGenerate('roadmap');
 
@@ -106,7 +107,7 @@ describe('POST /api/content/generate with ?views= filter', () => {
   });
 
   it('views=roadmap,document returns accepted with sessionId', async () => {
-    setupSequence([roadmapFixture, documentFixture, documentFixture]);
+    setupSequence([narrativeSpineFixture, roadmapFixture, documentFixture, documentFixture]);
 
     const res = await sendGenerate('roadmap,document');
 
@@ -123,6 +124,7 @@ describe('POST /api/content/generate with ?views= filter', () => {
 
   it('no views param returns accepted with sessionId', async () => {
     setupSequence([
+      narrativeSpineFixture,
       researchAnalysisFixture,
       roadmapFixture,
       slidesOutlineFixture,
