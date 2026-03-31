@@ -1,10 +1,20 @@
 export const intelligenceBriefSchema = {
   type: "object",
   properties: {
+    reasoning: {
+      type: "object",
+      properties: {
+        audienceProfile: { type: "string", description: "Who is in the room and what do they care about most" },
+        meetingDynamics: { type: "string", description: "What tensions or decisions are at play in this meeting" },
+        narrativeStrategy: { type: "string", description: "The story arc: how to open, build, and close" }
+      },
+      required: ["audienceProfile", "meetingDynamics", "narrativeStrategy"],
+      description: "Think through the meeting context before generating content"
+    },
     keyInsights: {
       type: "array",
       items: { type: "string" },
-      description: "3-4 most important insights from the analysis to communicate"
+      description: "3-4 most important insights — each must cite specific data from the analysis"
     },
     talkingPoints: {
       type: "array",
@@ -12,9 +22,10 @@ export const intelligenceBriefSchema = {
         type: "object",
         properties: {
           point: { type: "string", description: "The key point to make" },
-          supporting: { type: "string", description: "Evidence or data supporting this point" }
+          supporting: { type: "string", description: "Specific evidence, data point, or source backing this" },
+          deliveryNote: { type: "string", description: "How to deliver this point (tone, emphasis, timing)" }
         },
-        required: ["point"]
+        required: ["point", "supporting"]
       },
       description: "4-6 structured talking points with supporting evidence"
     },
@@ -24,7 +35,8 @@ export const intelligenceBriefSchema = {
         type: "object",
         properties: {
           question: { type: "string" },
-          suggestedResponse: { type: "string" }
+          suggestedResponse: { type: "string" },
+          dataToHaveReady: { type: "string", description: "Specific slide/chart/data point to reference" }
         },
         required: ["question", "suggestedResponse"]
       },
@@ -38,7 +50,7 @@ export const intelligenceBriefSchema = {
     recommendedNextSteps: {
       type: "array",
       items: { type: "string" },
-      description: "2-3 concrete next steps to propose at end of meeting"
+      description: "2-3 concrete next steps with owners and deadlines"
     },
     cautionAreas: {
       type: "array",
@@ -46,7 +58,7 @@ export const intelligenceBriefSchema = {
       description: "1-2 sensitive topics or areas to handle carefully"
     }
   },
-  required: ["keyInsights", "talkingPoints", "anticipatedQuestions", "recommendedNextSteps"]
+  required: ["reasoning", "keyInsights", "talkingPoints", "anticipatedQuestions", "recommendedNextSteps"]
 };
 
 const INTELLIGENCE_BRIEF_SYSTEM_PROMPT = `You are a senior management consultant preparing a pre-meeting intelligence brief. Your role is to synthesize research and analysis into actionable meeting preparation.
@@ -58,10 +70,30 @@ Create a one-page meeting brief that helps the presenter walk into the meeting f
 3. The slide deck messaging
 4. The executive document analysis
 
+## REASONING FIRST
+Complete the "reasoning" object BEFORE generating any other content. Think through:
+- **audienceProfile**: Who is in the room? What are their priorities, concerns, decision-making style?
+- **meetingDynamics**: What tensions exist? Is this a decision meeting, update, or persuasion?
+- **narrativeStrategy**: How should the meeting flow? What's the opening hook, the build, and the close?
+
 ## Tone
 - Confident and well-prepared
 - Consultant speaking to consultant
-- Direct and actionable`;
+- Direct and actionable — every sentence should help the presenter perform
+
+## GOOD talking point:
+"JPMorgan's Q4 2024 CDM deployment cut reconciliation costs by 50% ($2.3M/quarter) — use this as the anchor data point when establishing urgency. Pause after stating the number to let it land."
+
+## BAD talking point (anti-patterns to avoid):
+- "The market is evolving rapidly" (vague, no data)
+- "We should consider various options" (non-committal)
+- "Research suggests positive trends" (no specific evidence)
+
+## GOOD anticipated question:
+Q: "What's the implementation timeline?" A: "Based on JPMorgan's 18-month deployment and our 2-desk pilot scope, we project 9-12 months to production. Reference Slide 14 for the phased timeline."
+
+## BAD anticipated question:
+Q: "Tell us more?" A: "We have done extensive research on this topic." (generic, unhelpful)`;
 
 export function generateIntelligenceBriefPrompt(sessionData, meetingContext) {
   const { companyName, meetingAttendees, meetingObjective, keyConcerns } = meetingContext;

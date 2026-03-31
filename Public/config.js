@@ -2,8 +2,8 @@ import { FILE_TYPES, FILE_LIMITS } from './config/shared.js';
 
 export const CONFIG = {
   COLORS: {
-    GRID_BORDER: '#0D0D0D',
-    PRIMARY: '#BA3930'
+    GRID_BORDER: 'var(--color-navy-deep, #0a1628)',
+    PRIMARY: 'var(--color-accent-red, #BA3930)'
   },
   SIZES: {
     LOGO_HEIGHT: 28

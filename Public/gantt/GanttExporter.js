@@ -192,7 +192,7 @@ export class GanttExporter {
 
         const originalText = copyUrlBtn.textContent;
         copyUrlBtn.textContent = '✓ URL Copied!';
-        copyUrlBtn.style.backgroundColor = '#50AF7B';
+        copyUrlBtn.style.backgroundColor = 'var(--color-glass-success, #50AF7B)';
 
         this.showNotification('Chart URL copied to clipboard! Share this link to give others access to this chart.', 'success');
         this.onAnnounce('Chart URL copied to clipboard');
