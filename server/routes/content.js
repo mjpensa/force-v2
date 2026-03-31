@@ -152,10 +152,10 @@ router.post('/generate', generationLimiter, uploadMiddleware.array('researchFile
       status: 'completed',
       sessionId,
       views: {
-        roadmap: results.roadmap.success,
-        slides: results.slides.success,
-        document: results.document.success,
-        researchAnalysis: results.researchAnalysis.success
+        roadmap: results.roadmap?.success || false,
+        slides: results.slides?.success || false,
+        document: results.document?.success || false,
+        researchAnalysis: results.researchAnalysis?.success || false
       }
     });
 
