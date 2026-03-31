@@ -73,8 +73,8 @@ export const CONFIG = {
     TOO_MANY_FILES: ERROR_MESSAGES.TOO_MANY_FILES,
     FIELD_TOO_LARGE: ERROR_MESSAGES.FIELD_TOO_LARGE,
     RATE_LIMIT_EXCEEDED: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED,
-    INVALID_FILE_EXTENSION: (ext) => `Invalid file extension: .${ext}. Only .md, .txt, and .docx files are allowed.`,
-    INVALID_FILE_TYPE: (type) => `Invalid file type: ${type}. Only .md, .txt, and .docx files are allowed.`
+    INVALID_FILE_EXTENSION: (ext) => `Invalid file extension: .${ext}. Only .md, .txt, .docx, and .pdf files are allowed.`,
+    INVALID_FILE_TYPE: (type) => `Invalid file type: ${type}. Only .md, .txt, .docx, and .pdf files are allowed.`
   }
 };
 

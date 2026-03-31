@@ -1,5 +1,8 @@
 import crypto from 'crypto';
 import mammoth from 'mammoth';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const pdf = require('pdf-parse');
 
 class FileCache {
   constructor(maxSizeMB = 50) {
@@ -27,6 +30,9 @@ class FileCache {
     if (mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       const result = await mammoth.extractRawText({ buffer });
       content = result.value;
+    } else if (mimetype === 'application/pdf') {
+      const result = await pdf(buffer);
+      content = result.text;
     } else {
       content = buffer.toString('utf8');
     }
