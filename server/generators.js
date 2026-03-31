@@ -349,6 +349,32 @@ async function generateSlidesOutlineOnly(userPrompt, researchFiles, swimlanes = 
   }
 }
 
+function validateSlideOutput(data) {
+  const issues = [];
+  if (!data?.slides || !Array.isArray(data.slides)) return { valid: false, issues: ['No slides array found'] };
+
+  for (let i = 0; i < data.slides.length; i++) {
+    const slide = data.slides[i];
+    const idx = i + 1;
+    if (slide.tagline && slide.tagline.length > 21) {
+      issues.push({ slideIndex: idx, field: 'tagline', message: `Tagline "${slide.tagline}" exceeds 21 chars (${slide.tagline.length})` });
+    }
+    if (slide.title) {
+      const lines = slide.title.split('\\n');
+      if (lines.length > 4) {
+        issues.push({ slideIndex: idx, field: 'title', message: `Title has ${lines.length} lines (max 4)` });
+      }
+    }
+    for (const field of ['paragraph1', 'paragraph2']) {
+      const text = slide[field];
+      if (text && (text.length < 300 || text.length > 450)) {
+        issues.push({ slideIndex: idx, field, message: `${field} is ${text.length} chars (target 380-410)` });
+      }
+    }
+  }
+  return { valid: issues.length === 0, issues };
+}
+
 async function generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, outline, precomputed = null) {
   try {
     const augmentedSwimlanes = createAugmentedSwimlanes(swimlanes);
@@ -356,7 +382,25 @@ async function generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, o
     const fullPrompt = generateSlidesPrompt(userPrompt, researchFiles, augmentedSwimlanes, outline, precomputed);
     const data = await generateWithGemini(fullPrompt, slidesSchema, 'Slides', SLIDES_CONFIG);
 
-    return { success: true, data };
+    const validation = validateSlideOutput(data);
+    if (!validation.valid && validation.issues.length >= 3) {
+      // Enough issues to warrant a correction pass
+      try {
+        const correctionPrompt = `You previously generated slides JSON but it has these quality issues:\n${validation.issues.map(i => `- Slide ${i.slideIndex} ${i.field}: ${i.message}`).join('\n')}\n\nFix ONLY the flagged issues. Keep all other content identical. Return the complete corrected slides JSON.`;
+        const correctedData = await generateWithGemini(
+          correctionPrompt + '\n\nOriginal output:\n' + JSON.stringify(data),
+          slidesSchema, 'SlidesCritique', SLIDES_CONFIG, { skipCache: true }
+        );
+        const revalidation = validateSlideOutput(correctedData);
+        if (revalidation.issues.length < validation.issues.length) {
+          return { success: true, data: correctedData, validationIssues: revalidation.issues };
+        }
+      } catch (critiqueError) {
+        console.warn('[Slides Critique] Correction failed, using original:', critiqueError.message);
+      }
+    }
+
+    return { success: true, data, validationIssues: validation.issues };
   } catch (error) {
     console.error('[Slides Pass 2] Error:', error.message);
     return { success: false, error: error.message };
