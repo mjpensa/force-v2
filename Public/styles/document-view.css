@@ -1264,3 +1264,16 @@
 .intelligence-brief-modal .hidden {
   display: none !important;
 }
+
+/* Print styles for PDF export */
+@media print {
+  body { background: #fff !important; }
+  .icon-rail, .app-shell > nav, .document-header-menu,
+  .doc-toc-sidebar, .intelligence-brief-modal-overlay { display: none !important; }
+  .document-view { color: #000 !important; background: #fff !important; max-width: 100% !important; padding: 0 !important; }
+  .document-view .doc-section { break-inside: avoid; background: transparent !important; border: none !important; box-shadow: none !important; }
+  .document-view h1, .document-view h2, .document-view h3 { color: #000 !important; }
+  .document-view p, .document-view li { color: #333 !important; }
+  .exec-summary-card { background: #f8f8f8 !important; border: 1px solid #ddd !important; color: #000 !important; }
+  .exec-summary-card * { color: #000 !important; }
+}

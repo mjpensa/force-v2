@@ -702,6 +702,10 @@ export class DocumentView {
     }
   }
 
+  _exportToPdf() {
+    window.print();
+  }
+
   async _downloadResponseBlob(response, defaultFilename) {
     const contentDisposition = response.headers.get('Content-Disposition');
     let filename = defaultFilename;
@@ -728,6 +732,8 @@ export class DocumentView {
       items: [
         { id: 'export-word-btn', icon: '📄', text: 'Export to Word', ariaLabel: 'Export document as Word file',
           onClick: () => this._exportToDocx() },
+        { id: 'export-pdf-btn', icon: '📑', text: 'Save as PDF', ariaLabel: 'Print or save document as PDF',
+          onClick: () => this._exportToPdf() },
         { id: 'intelligence-brief-btn', icon: '🎯', text: 'Pre-Meeting Intelligence Brief', ariaLabel: 'Generate pre-meeting intelligence brief',
           onClick: () => this._showIntelligenceBriefModal() },
       ]
