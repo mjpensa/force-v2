@@ -1,4 +1,4 @@
-import { FILE_TYPES } from './config/shared.js';
+import { FILE_TYPES, FILE_LIMITS } from './config/shared.js';
 
 export const CONFIG = {
   COLORS: {
@@ -21,4 +21,4 @@ Object.freeze(CONFIG.SIZES);
 Object.freeze(CONFIG.EXPORT);
 Object.freeze(CONFIG.EXPORT.ASPECT_RATIO);
 
-export { FILE_TYPES };
+export { FILE_TYPES, FILE_LIMITS };

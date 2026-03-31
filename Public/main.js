@@ -1,5 +1,5 @@
 import { pollUntilReady } from './poll.js';
-import { FILE_TYPES } from './config.js';
+import { FILE_TYPES, FILE_LIMITS } from './config.js';
 const SUPPORTED_FILE_MIMES = FILE_TYPES.MIMES;
 const SUPPORTED_FILE_EXTENSIONS = FILE_TYPES.EXTENSIONS;
 const SUPPORTED_FILES_STRING = SUPPORTED_FILE_EXTENSIONS.join(', ');
@@ -27,6 +27,10 @@ async function processFiles(files) {
         fileListContainer.classList.add('hidden');
         return;
     }
+    if (files.length > FILE_LIMITS.MAX_COUNT) {
+        displayError(`Too many files. Maximum is ${FILE_LIMITS.MAX_COUNT} files per upload.`);
+        return;
+    }
     if (files.length > 100) {
         dropzonePrompt.textContent = '';
         const loadingDiv = document.createElement('div');
@@ -44,14 +48,20 @@ async function processFiles(files) {
     const filesArray = Array.from(files);
     let validFiles = [];
     let invalidFiles = [];
+    const oversizedFiles = [];
     for (const file of filesArray) {
         const isValidMime = SUPPORTED_FILE_MIMES.includes(file.type);
         const isValidExtension = SUPPORTED_FILE_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(`.${ext}`));
-        if (isValidMime || isValidExtension) {
-            validFiles.push(file);
-        } else {
+        if (!isValidMime && !isValidExtension) {
             invalidFiles.push(file.name);
+        } else if (file.size > FILE_LIMITS.MAX_SIZE_BYTES) {
+            oversizedFiles.push(file.name);
+        } else {
+            validFiles.push(file);
         }
+    }
+    if (oversizedFiles.length > 0) {
+        displayError(`${oversizedFiles.length} file(s) exceed the ${FILE_LIMITS.MAX_SIZE_MB}MB limit and were skipped.`);
     }
     if (invalidFiles.length > 0) {
         const warningMsg = `Skipping ${invalidFiles.length} unsupported file(s). Only ${SUPPORTED_FILES_STRING} files will be processed.`;
@@ -243,6 +253,8 @@ async function handleChartGenerate(event) {
     }
     loadingIndicator.style.display = 'flex';
     errorMessage.style.display = 'none';
+    const beforeUnloadHandler = (e) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', beforeUnloadHandler);
     startProgressTimer();
     const response = await fetch('/api/content/generate', {
       method: 'POST',
@@ -302,6 +314,7 @@ async function handleChartGenerate(event) {
     errorMessage.textContent = `Error: ${error.message}`;
     errorMessage.style.display = 'block';
   } finally {
+    window.removeEventListener('beforeunload', beforeUnloadHandler);
     stopProgressTimer();
     generateBtn.disabled = false;
     generateBtn.textContent = originalBtnText;
