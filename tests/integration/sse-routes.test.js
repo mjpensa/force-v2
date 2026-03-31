@@ -84,16 +84,21 @@ describe('GET /api/content/stream/:sessionId', () => {
     expect(events[1].data.message).toMatch(/Session not found/);
   });
 
-  it('sends connected then complete event for a session with all views ready', async () => {
+  it('sends connected then pipeline:completed for a completed session', async () => {
     sessions.set('ready-sess', {
       prompt: 'Test prompt',
       researchFiles: [{ filename: 'test.txt', content: 'data' }],
+      status: 'completed',
       content: {
         roadmap: { success: true, data: loadFixture('roadmap') },
         slides: { success: true, data: loadFixture('slides') },
         document: { success: true, data: loadFixture('document') },
         researchAnalysis: { success: true, data: loadFixture('research-analysis') },
       },
+      progress: [
+        { type: 'view:completed', view: 'roadmap', timestamp: Date.now() },
+        { type: 'view:completed', view: 'slides', timestamp: Date.now() },
+      ],
       createdAt: Date.now(),
       lastAccessed: Date.now(),
     });
@@ -106,27 +111,29 @@ describe('GET /api/content/stream/:sessionId', () => {
     expect(events[0].event).toBe('connected');
     expect(events[0].data.sessionId).toBe('ready-sess');
 
-    const completeEvent = events.find(e => e.event === 'complete');
+    // Should replay progress events then send pipeline:completed
+    const viewEvents = events.filter(e => e.event === 'view:completed');
+    expect(viewEvents.length).toBeGreaterThanOrEqual(2);
+
+    const completeEvent = events.find(e => e.event === 'pipeline:completed');
     expect(completeEvent).toBeDefined();
-    expect(completeEvent.data.success).toBe(true);
-    expect(completeEvent.data.summary).toEqual({
-      roadmap: 'ready',
-      slides: 'ready',
-      document: 'ready',
-      researchAnalysis: 'ready',
-    });
   });
 
-  it('reports failed views in the complete summary', async () => {
+  it('replays progress events for a completed session with failures', async () => {
     sessions.set('partial-sess', {
       prompt: 'Test prompt',
       researchFiles: [{ filename: 'test.txt', content: 'data' }],
+      status: 'completed',
       content: {
         roadmap: { success: true, data: {} },
         slides: { success: false, error: 'Generation failed' },
         document: { success: true, data: {} },
         researchAnalysis: { success: true, data: {} },
       },
+      progress: [
+        { type: 'view:completed', view: 'roadmap', timestamp: Date.now() },
+        { type: 'view:failed', view: 'slides', error: 'Generation failed', timestamp: Date.now() },
+      ],
       createdAt: Date.now(),
       lastAccessed: Date.now(),
     });
@@ -135,23 +142,24 @@ describe('GET /api/content/stream/:sessionId', () => {
       .buffer(true)
       .parse((res, cb) => { let data = ''; res.on('data', c => data += c); res.on('end', () => cb(null, data)); });
 
-    const completeEvent = parseSSEEvents(res.body).find(e => e.event === 'complete');
-    expect(completeEvent).toBeDefined();
-    expect(completeEvent.data.success).toBe(false);
-    expect(completeEvent.data.summary.slides).toBe('failed');
-    expect(completeEvent.data.summary.roadmap).toBe('ready');
+    const events = parseSSEEvents(res.body);
+    const failEvent = events.find(e => e.event === 'view:failed');
+    expect(failEvent).toBeDefined();
+    expect(failEvent.data.view).toBe('slides');
   });
 
-  it('includes timestamp in connected and complete events', async () => {
+  it('includes timestamp in connected event', async () => {
     sessions.set('ts-sess', {
       prompt: 'Test',
       researchFiles: [],
+      status: 'completed',
       content: {
         roadmap: { success: true, data: {} },
         slides: { success: true, data: {} },
         document: { success: true, data: {} },
         researchAnalysis: { success: true, data: {} },
       },
+      progress: [],
       createdAt: Date.now(),
       lastAccessed: Date.now(),
     });
@@ -162,7 +170,5 @@ describe('GET /api/content/stream/:sessionId', () => {
 
     const events = parseSSEEvents(res.body);
     expect(events[0].data.timestamp).toEqual(expect.any(Number));
-    const completeEvent = events.find(e => e.event === 'complete');
-    expect(completeEvent.data.timestamp).toEqual(expect.any(Number));
   });
 });

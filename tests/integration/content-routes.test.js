@@ -110,32 +110,21 @@ describe('POST /api/content/generate', () => {
       .field('prompt', 'Analyze the market research')
       .attach('researchFiles', Buffer.from('research data'), 'research.txt');
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     expect(res.body.sessionId).toBeDefined();
     expect(typeof res.body.sessionId).toBe('string');
-    expect(res.body.status).toBe('completed');
+    expect(res.body.status).toBe('accepted');
   });
 
-  it('response includes views status object', async () => {
-    setupSequence([
-      researchAnalysisFixture,
-      roadmapFixture,
-      slidesOutlineFixture,
-      slidesFixture,
-      documentFixture,
-    ]);
-
+  it('response includes sessionId for async generation', async () => {
     const res = await request
       .post('/api/content/generate')
       .field('prompt', 'Analyze the market research')
       .attach('researchFiles', Buffer.from('research data'), 'research.txt');
 
-    expect(res.status).toBe(200);
-    expect(res.body.views).toBeDefined();
-    expect(typeof res.body.views.roadmap).toBe('boolean');
-    expect(typeof res.body.views.slides).toBe('boolean');
-    expect(typeof res.body.views.document).toBe('boolean');
-    expect(typeof res.body.views.researchAnalysis).toBe('boolean');
+    expect(res.status).toBe(202);
+    expect(res.body.sessionId).toBeDefined();
+    expect(res.body.status).toBe('accepted');
   });
 });
 

@@ -1,4 +1,3 @@
-import { pollUntilReady } from './poll.js';
 import { FILE_TYPES, FILE_LIMITS } from './config.js';
 const SUPPORTED_FILE_MIMES = FILE_TYPES.MIMES;
 const SUPPORTED_FILE_EXTENSIONS = FILE_TYPES.EXTENSIONS;
@@ -280,32 +279,7 @@ async function handleChartGenerate(event) {
     if (!sessionId) {
       throw new Error('Server did not return a session ID');
     }
-    const result = await pollUntilReady(sessionId, 'roadmap', {
-      onTick: (attempt, elapsed) => {
-        const seconds = Math.floor(elapsed / 1000);
-        generateBtn.textContent = `Generating... (${seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`})`;
-      }
-    });
-    const ganttData = result.data;
-    if (!ganttData || typeof ganttData !== 'object') {
-      throw new Error('Invalid chart data structure: Expected object, received ' + typeof ganttData);
-    }
-    if (!ganttData.timeColumns) {
-      throw new Error('Invalid chart data structure: Missing timeColumns field');
-    }
-    if (!Array.isArray(ganttData.timeColumns)) {
-      throw new Error('Invalid chart data structure: timeColumns is not an array (type: ' + typeof ganttData.timeColumns + ')');
-    }
-    if (!ganttData.data) {
-      throw new Error('Invalid chart data structure: Missing data field');
-    }
-    if (!Array.isArray(ganttData.data)) {
-      throw new Error('Invalid chart data structure: data is not an array (type: ' + typeof ganttData.data + ')');
-    }
-    if (ganttData.timeColumns.length === 0 || ganttData.data.length === 0) {
-      throw new Error('The AI was unable to find any tasks or time columns in the provided documents. Please check your files or try a different prompt.');
-    }
-    // Success — navigate to viewer. Stop timer and redirect.
+    // Redirect immediately — viewer handles waiting for views via SSE
     stopProgressTimer();
     loadingIndicator.style.display = 'none';
     window.location.href = `/viewer.html?sessionId=${sessionId}#roadmap`;

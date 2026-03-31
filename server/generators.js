@@ -455,22 +455,27 @@ export async function generateIntelligenceBrief(sessionData, meetingContext) {
 
 // 3-phase pipeline: Phase 0 (Research), Phase 1 (Roadmap + Outline), Phase 2 (Slides + Document)
 // Speaker notes generated on-demand via generateSpeakerNotesAsync()
-export async function generateAllContent(userPrompt, researchFiles, requestedViews = null) {
+export async function generateAllContent(userPrompt, researchFiles, requestedViews = null, onProgress = null) {
   const shouldGenerate = (view) => !requestedViews || requestedViews.includes(view);
   const skipped = { success: false, error: 'Skipped', skipped: true };
+  const emit = (event) => onProgress?.(event);
 
-  // Pre-compute redundant data once for all generators
   const researchContent = assembleResearchContent(researchFiles);
   const keyStats = extractKeyStats(researchContent);
   const dateContext = getCurrentDateContext();
   const precomputed = { researchContent, keyStats, dateContext };
 
+  emit({ type: 'view:started', view: 'research-analysis' });
   const researchAnalysisPromise = shouldGenerate('research-analysis')
     ? apiQueue.add(
         () => generateResearchAnalysis(userPrompt, researchFiles, precomputed), 'ResearchAnalysis'
-      )
+      ).then(result => {
+        emit({ type: result.success ? 'view:completed' : 'view:failed', view: 'research-analysis', result });
+        return result;
+      })
     : Promise.resolve(skipped);
 
+  emit({ type: 'view:started', view: 'roadmap' });
   const phase1Tasks = [];
   if (shouldGenerate('roadmap') || shouldGenerate('slides')) {
     phase1Tasks.push({ task: () => generateRoadmap(userPrompt, researchFiles, precomputed), name: 'Roadmap' });
@@ -483,25 +488,39 @@ export async function generateAllContent(userPrompt, researchFiles, requestedVie
   const roadmap = phase1Tasks.find(t => t.name === 'Roadmap') ? phase1Results[phase1Tasks.findIndex(t => t.name === 'Roadmap')] : skipped;
   const slidesOutline = phase1Tasks.find(t => t.name === 'SlidesOutline') ? phase1Results[phase1Tasks.findIndex(t => t.name === 'SlidesOutline')] : skipped;
 
+  emit({ type: roadmap.success ? 'view:completed' : 'view:failed', view: 'roadmap', result: roadmap });
+
   const swimlanes = roadmap.success ? extractSwimlanesFromRoadmap(roadmap.data) : [];
 
-  // CRITICAL: Reconcile outline with authoritative roadmap swimlanes for correct TOC
   let reconciledOutline = slidesOutline.data;
   if (slidesOutline.success && swimlanes.length > 0) {
     reconciledOutline = reconcileOutlineWithSwimlanes(slidesOutline.data, swimlanes);
   }
 
+  emit({ type: 'view:started', view: 'slides' });
+  emit({ type: 'view:started', view: 'document' });
+
   const phase2Tasks = [];
   if (shouldGenerate('slides')) {
     phase2Tasks.push({
-      task: () => slidesOutline.success
+      task: () => (slidesOutline.success
         ? generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, reconciledOutline, precomputed)
-        : generateSlides(userPrompt, researchFiles, swimlanes, precomputed),
+        : generateSlides(userPrompt, researchFiles, swimlanes, precomputed)
+      ).then(result => {
+        emit({ type: result.success ? 'view:completed' : 'view:failed', view: 'slides', result });
+        return result;
+      }),
       name: 'Slides'
     });
   }
   if (shouldGenerate('document')) {
-    phase2Tasks.push({ task: () => generateDocument(userPrompt, researchFiles, swimlanes, precomputed), name: 'Document' });
+    phase2Tasks.push({
+      task: () => generateDocument(userPrompt, researchFiles, swimlanes, precomputed).then(result => {
+        emit({ type: result.success ? 'view:completed' : 'view:failed', view: 'document', result });
+        return result;
+      }),
+      name: 'Document'
+    });
   }
   const phase2Results = await apiQueue.runAll(phase2Tasks);
   const slides = phase2Tasks.find(t => t.name === 'Slides') ? phase2Results[phase2Tasks.findIndex(t => t.name === 'Slides')] : skipped;

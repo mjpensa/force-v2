@@ -95,48 +95,33 @@ function sendGenerate(viewsParam) {
 // ?views= query parameter
 // ============================================================
 describe('POST /api/content/generate with ?views= filter', () => {
-  it('views=roadmap generates only roadmap (few Gemini calls)', async () => {
+  it('views=roadmap returns accepted with sessionId', async () => {
     setupSequence([roadmapFixture]);
 
     const res = await sendGenerate('roadmap');
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     expect(res.body.sessionId).toBeDefined();
-    // Only roadmap should succeed; others skipped
-    expect(res.body.views.roadmap).toBe(true);
-    expect(res.body.views.slides).toBe(false);
-    expect(res.body.views.document).toBe(false);
-    expect(res.body.views.researchAnalysis).toBe(false);
-    // Should use very few Gemini calls (just 1 for roadmap)
-    expect(callCount).toBeLessThanOrEqual(2);
+    expect(res.body.status).toBe('accepted');
   });
 
-  it('views=roadmap,document generates both', async () => {
+  it('views=roadmap,document returns accepted with sessionId', async () => {
     setupSequence([roadmapFixture, documentFixture, documentFixture]);
 
     const res = await sendGenerate('roadmap,document');
 
-    expect(res.status).toBe(200);
-    expect(res.body.views.roadmap).toBe(true);
-    expect(res.body.views.document).toBe(true);
-    // Slides and research-analysis should be skipped
-    expect(res.body.views.slides).toBe(false);
-    expect(res.body.views.researchAnalysis).toBe(false);
+    expect(res.status).toBe(202);
+    expect(res.body.status).toBe('accepted');
   });
 
-  it('views=invalid generates nothing (all views skipped)', async () => {
+  it('views=invalid returns accepted (generation handles skipping)', async () => {
     const res = await sendGenerate('invalid');
 
-    expect(res.status).toBe(200);
-    expect(res.body.views.roadmap).toBe(false);
-    expect(res.body.views.slides).toBe(false);
-    expect(res.body.views.document).toBe(false);
-    expect(res.body.views.researchAnalysis).toBe(false);
-    // No Gemini calls should be made
-    expect(callCount).toBe(0);
+    expect(res.status).toBe(202);
+    expect(res.body.status).toBe('accepted');
   });
 
-  it('no views param generates all views', async () => {
+  it('no views param returns accepted with sessionId', async () => {
     setupSequence([
       researchAnalysisFixture,
       roadmapFixture,
@@ -147,11 +132,8 @@ describe('POST /api/content/generate with ?views= filter', () => {
 
     const res = await sendGenerate(null);
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     expect(res.body.sessionId).toBeDefined();
-    // All views should be attempted
-    expect(res.body.views).toBeDefined();
-    // At least some Gemini calls should have been made
-    expect(callCount).toBeGreaterThanOrEqual(3);
+    expect(res.body.status).toBe('accepted');
   });
 });

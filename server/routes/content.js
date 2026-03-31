@@ -109,10 +109,19 @@ function formatUserError(rawError, viewType) {
   return `Failed to generate ${viewType}: ${truncated}${rawError.length > 150 ? '...' : ''}`;
 }
 
+export function emitSessionEvent(sessionId, event) {
+  const session = sessions.get(sessionId);
+  if (!session) return;
+  if (!session.progress) session.progress = [];
+  session.progress.push(event);
+  if (session._listeners) {
+    for (const listener of session._listeners) {
+      try { listener(event); } catch (_) {}
+    }
+  }
+}
+
 router.post('/generate', generationLimiter, uploadMiddleware.array('researchFiles'), async (req, res) => {
-  const GENERATE_TIMEOUT_MS = 25 * 60 * 1000;
-  req.setTimeout(GENERATE_TIMEOUT_MS);
-  res.setTimeout(GENERATE_TIMEOUT_MS);
   try {
     const { prompt } = req.body;
     const files = req.files;
@@ -132,37 +141,72 @@ router.post('/generate', generationLimiter, uploadMiddleware.array('researchFile
     const requestedViews = viewsParam
       ? viewsParam.split(',').map(v => v.trim()).filter(v => ['roadmap', 'slides', 'document', 'research-analysis'].includes(v))
       : null;
-    const results = await generateAllContent(prompt, researchFiles, requestedViews);
+
     const sessionId = generateSessionId();
     const now = Date.now();
     sessions.set(sessionId, {
       prompt,
       researchFiles,
+      status: 'generating',
       content: {
-        roadmap: results.roadmap,
-        slides: results.slides,
-        document: results.document,
-        researchAnalysis: results.researchAnalysis
+        roadmap: { status: 'pending' },
+        slides: { status: 'pending' },
+        document: { status: 'pending' },
+        researchAnalysis: { status: 'pending' }
       },
+      progress: [],
+      _listeners: new Set(),
       createdAt: now,
       lastAccessed: now
     });
     enforceSessionLimit();
-    res.json({
-      status: 'completed',
-      sessionId,
-      views: {
-        roadmap: results.roadmap?.success || false,
-        slides: results.slides?.success || false,
-        document: results.document?.success || false,
-        researchAnalysis: results.researchAnalysis?.success || false
-      }
+
+    res.status(202).json({ status: 'accepted', sessionId });
+
+    // Fire-and-forget background generation
+    runGenerationPipeline(sessionId, prompt, researchFiles, requestedViews).catch(err => {
+      console.error(`[Generate] Pipeline error for ${sessionId}:`, err.message);
     });
 
   } catch (error) {
     handleGenerationError(error, res, 'generate content');
   }
 });
+
+async function runGenerationPipeline(sessionId, prompt, researchFiles, requestedViews) {
+  const session = sessions.get(sessionId);
+  if (!session) return;
+
+  const onProgress = (event) => {
+    const ts = { ...event, timestamp: Date.now() };
+    emitSessionEvent(sessionId, ts);
+
+    if (event.type === 'view:completed' && event.result) {
+      const keyMap = { 'roadmap': 'roadmap', 'slides': 'slides', 'document': 'document', 'research-analysis': 'researchAnalysis' };
+      const contentKey = keyMap[event.view];
+      if (contentKey && session.content) {
+        session.content[contentKey] = event.result;
+      }
+    }
+    if (event.type === 'view:failed' && event.view) {
+      const keyMap = { 'roadmap': 'roadmap', 'slides': 'slides', 'document': 'document', 'research-analysis': 'researchAnalysis' };
+      const contentKey = keyMap[event.view];
+      if (contentKey && session.content) {
+        session.content[contentKey] = { success: false, error: event.error };
+      }
+    }
+  };
+
+  try {
+    await generateAllContent(prompt, researchFiles, requestedViews, onProgress);
+  } catch (err) {
+    emitSessionEvent(sessionId, { type: 'pipeline:failed', error: err.message, timestamp: Date.now() });
+  }
+
+  session.status = 'completed';
+  session.lastAccessed = Date.now();
+  emitSessionEvent(sessionId, { type: 'pipeline:completed', timestamp: Date.now() });
+}
 
 // GET /:sessionId/slides/export — MUST be before /:sessionId/:viewType
 router.get('/:sessionId/slides/export', async (req, res) => {

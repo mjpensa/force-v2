@@ -22,11 +22,10 @@ class SSEService {
     this.onError = null;
   }
 
-  start(sessionId, onProgress, onComplete, onError) {
+  start(sessionId, handlers = {}) {
     this.stop(sessionId);
     if (typeof EventSource === 'undefined') {
-      console.warn('[SSE] EventSource not supported, falling back to polling');
-      onError?.('EventSource not supported');
+      handlers.onError?.('EventSource not supported');
       return false;
     }
 
@@ -36,14 +35,29 @@ class SSEService {
 
       eventSource.addEventListener('connected', () => {});
 
-      eventSource.addEventListener('progress', (event) => {
+      eventSource.addEventListener('view:started', (event) => {
         const data = JSON.parse(event.data);
-        onProgress?.(data.content);
+        handlers.onViewStarted?.(data.view);
       });
 
-      eventSource.addEventListener('complete', (event) => {
+      eventSource.addEventListener('view:completed', (event) => {
         const data = JSON.parse(event.data);
-        onComplete?.(data);
+        handlers.onViewCompleted?.(data.view);
+      });
+
+      eventSource.addEventListener('view:failed', (event) => {
+        const data = JSON.parse(event.data);
+        handlers.onViewFailed?.(data.view, data.error);
+      });
+
+      eventSource.addEventListener('pipeline:completed', () => {
+        handlers.onPipelineComplete?.();
+        this.stop(sessionId);
+      });
+
+      eventSource.addEventListener('pipeline:failed', (event) => {
+        const data = JSON.parse(event.data);
+        handlers.onError?.(data.error || 'Pipeline failed');
         this.stop(sessionId);
       });
 
@@ -54,16 +68,14 @@ class SSEService {
             const data = JSON.parse(event.data);
             message = data.message || message;
           }
-        } catch (_) { /* non-JSON error event */ }
-        console.error('[SSE] Server error:', message);
-        onError?.(message);
+        } catch (_) {}
+        handlers.onError?.(message);
         this.stop(sessionId);
       });
 
       eventSource.onerror = (error) => {
-        console.error('[SSE] Connection error:', error);
         if (eventSource.readyState === EventSource.CLOSED) {
-          onError?.('Connection closed');
+          handlers.onError?.('Connection closed');
           this.stop(sessionId);
         }
       };
@@ -451,33 +463,27 @@ class ContentViewer {
     views.forEach(view => this._updateTabStatus(view, 'loading'));
 
     if (this._useSSE) {
-      const sseStarted = this.sseService.start(
-        this.sessionId,
-        (content) => {
-          for (const [viewName, viewStatus] of Object.entries(content)) {
-            const internalViewName = viewName === 'researchAnalysis' ? 'research-analysis' : viewName;
-
-            if (viewStatus.status === 'completed' && viewStatus.ready) {
-              this._updateTabStatus(internalViewName, 'ready');
-              this._fetchAndCacheContent(internalViewName);
-            } else if (viewStatus.status === 'error') {
-              this._updateTabStatus(internalViewName, 'failed');
-            } else if (viewStatus.status === 'generating') {
-              this._updateTabStatus(internalViewName, 'processing');
-            } else {
-              this._updateTabStatus(internalViewName, 'loading');
-            }
+      const sseStarted = this.sseService.start(this.sessionId, {
+        onViewStarted: (view) => {
+          this._updateTabStatus(view, 'processing');
+        },
+        onViewCompleted: (view) => {
+          this._updateTabStatus(view, 'ready');
+          this._fetchAndCacheContent(view);
+          if (view === this.currentView || (!this.currentView && view === 'roadmap')) {
+            this._loadView(view);
           }
         },
-        (data) => {
-          views.forEach(viewName => this._fetchAndCacheContent(viewName));
+        onViewFailed: (view) => {
+          this._updateTabStatus(view, 'failed');
         },
-        (error) => {
+        onPipelineComplete: () => {},
+        onError: (error) => {
           console.warn('[SSE] Error, falling back to polling:', error);
           this._useSSE = false;
           this._startPollingFallback(views);
         }
-      );
+      });
 
       if (!sseStarted) {
         this._useSSE = false;
@@ -491,12 +497,12 @@ class ContentViewer {
   async _fetchAndCacheContent(viewName) {
     if (this.stateManager.state.content[viewName]) return;
     try {
-      const result = await pollUntilReady(this.sessionId, viewName, { maxAttempts: 1 });
+      const result = await pollUntilReady(this.sessionId, viewName, { maxAttempts: 3 });
       const isValid = this._validateViewData(viewName, result.data);
       if (isValid) {
         this.stateManager.setState({ content: { ...this.stateManager.state.content, [viewName]: result.data } });
       }
-    } catch (_) { /* ignore — SSE will retry */ }
+    } catch (_) {}
   }
 
   _startPollingFallback(views) {

@@ -3,7 +3,6 @@ import rateLimit from 'express-rate-limit';
 import { sessions } from './content.js';
 
 const router = express.Router();
-const VIEWS = ['roadmap', 'slides', 'document', 'researchAnalysis'];
 
 const sseLimiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
 
@@ -24,46 +23,51 @@ router.get('/stream/:sessionId', sseLimiter, (req, res) => {
     return;
   }
 
-  // Content is generated atomically before SSE connects, so check immediately
-  if (emitIfComplete(session, res)) return;
-
-  // Fallback: poll for edge cases where client connects mid-generation
-  const interval = setInterval(() => {
-    const current = sessions.get(sessionId);
-    if (!current) {
-      sendEvent(res, 'error', { message: 'Session expired' });
-      cleanup();
-      return;
+  // Replay any events that happened before this client connected
+  if (session.progress?.length > 0) {
+    for (const event of session.progress) {
+      sendEvent(res, event.type, event);
     }
-    if (emitIfComplete(current, res)) cleanup();
-  }, 2000);
+  }
 
-  const cleanup = () => { clearInterval(interval); res.end(); };
+  // If pipeline already completed, send final event and close
+  if (session.status === 'completed') {
+    sendEvent(res, 'pipeline:completed', { timestamp: Date.now() });
+    res.end();
+    return;
+  }
+
+  // Subscribe to future events
+  const listener = (event) => {
+    sendEvent(res, event.type, event);
+    if (event.type === 'pipeline:completed' || event.type === 'pipeline:failed') {
+      cleanup();
+    }
+  };
+
+  if (!session._listeners) session._listeners = new Set();
+  session._listeners.add(listener);
+
+  // Heartbeat every 15s to keep connection alive through proxies
+  const heartbeat = setInterval(() => {
+    try { res.write(': heartbeat\n\n'); } catch (_) { cleanup(); }
+  }, 15000);
+
+  const cleanup = () => {
+    clearInterval(heartbeat);
+    session._listeners?.delete(listener);
+    res.end();
+  };
+
   req.on('close', cleanup);
   req.on('error', cleanup);
 });
-
-function emitIfComplete(session, res) {
-  const allDone = VIEWS.every(v => {
-    const c = session.content[v];
-    return c && (c.success || c.error);
-  });
-  if (!allDone) return false;
-
-  const allSuccess = VIEWS.every(v => session.content[v]?.success);
-  const summary = Object.fromEntries(
-    VIEWS.map(v => [v, session.content[v]?.success ? 'ready' : 'failed'])
-  );
-  sendEvent(res, 'complete', { timestamp: Date.now(), success: allSuccess, summary });
-  res.end();
-  return true;
-}
 
 function sendEvent(res, eventType, data) {
   try {
     res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
   } catch (error) {
-    console.error('[SSE] Error sending event:', error.message);
+    // Client disconnected
   }
 }
 
