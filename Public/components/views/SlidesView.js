@@ -325,6 +325,11 @@ export class SlidesView {
     this.tocContainer = null;
 
     this._notesManager = new SpeakerNotesManager(this);
+    this.isPresentationMode = false;
+    this._handleKeyDown = this._onKeyDown.bind(this);
+    this._handleFullscreenChange = this._onFullscreenChange.bind(this);
+    this._overlayTimeout = null;
+    this._container = null;
   }
 
   _flattenSections(sections) {
@@ -496,10 +501,119 @@ export class SlidesView {
     }
   }
 
+  _onKeyDown(e) {
+    if (e.target.isContentEditable || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+      case ' ':
+      case 'PageDown':
+        e.preventDefault();
+        this.go(1);
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+      case 'PageUp':
+        e.preventDefault();
+        this.go(-1);
+        break;
+      case 'Home':
+        e.preventDefault();
+        this.index = 0;
+        this._update();
+        break;
+      case 'End':
+        e.preventDefault();
+        this.index = this.slides.length - 1;
+        this._update();
+        break;
+      case 'F5':
+        e.preventDefault();
+        this._enterPresentationMode();
+        break;
+      case 'Escape':
+        if (this.isPresentationMode) this._exitPresentationMode();
+        break;
+    }
+  }
+
+  _enterPresentationMode() {
+    if (this.isPresentationMode || !this._container) return;
+    this._container.classList.add('presentation-mode');
+    this.isPresentationMode = true;
+    const el = this._container;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    this._container.focus();
+    this._showPresentationOverlay();
+  }
+
+  _exitPresentationMode() {
+    if (!this.isPresentationMode) return;
+    this._container.classList.remove('presentation-mode');
+    this.isPresentationMode = false;
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (document.webkitFullscreenElement) document.webkitExitFullscreen();
+    this._removePresentationOverlay();
+  }
+
+  _onFullscreenChange() {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      this.isPresentationMode = false;
+      this._container?.classList.remove('presentation-mode');
+      this._removePresentationOverlay();
+    }
+  }
+
+  _showPresentationOverlay() {
+    this._removePresentationOverlay();
+    const overlay = document.createElement('div');
+    overlay.className = 'presentation-overlay';
+    overlay.innerHTML = `
+      <button class="pres-prev" aria-label="Previous slide">\u2190</button>
+      <span class="pres-counter">${this.index + 1} / ${this.slides.length}</span>
+      <button class="pres-next" aria-label="Next slide">\u2192</button>
+      <button class="pres-exit" aria-label="Exit presentation">\u2715</button>
+    `;
+    overlay.querySelector('.pres-prev').addEventListener('click', () => this.go(-1));
+    overlay.querySelector('.pres-next').addEventListener('click', () => this.go(1));
+    overlay.querySelector('.pres-exit').addEventListener('click', () => this._exitPresentationMode());
+    this._container.appendChild(overlay);
+    this._presOverlay = overlay;
+
+    const showOverlay = () => {
+      overlay.style.opacity = '1';
+      clearTimeout(this._overlayTimeout);
+      this._overlayTimeout = setTimeout(() => { overlay.style.opacity = '0'; }, 3000);
+    };
+    this._container.addEventListener('mousemove', showOverlay);
+    this._presMouseHandler = showOverlay;
+    showOverlay();
+  }
+
+  _removePresentationOverlay() {
+    if (this._presOverlay) {
+      this._presOverlay.remove();
+      this._presOverlay = null;
+    }
+    if (this._presMouseHandler) {
+      this._container?.removeEventListener('mousemove', this._presMouseHandler);
+      this._presMouseHandler = null;
+    }
+    clearTimeout(this._overlayTimeout);
+  }
+
   render() {
     const container = document.createElement('div');
     container.className = 'slides-view-container';
+    container.tabIndex = 0;
     container.__view__ = this;
+    this._container = container;
+
+    document.addEventListener('keydown', this._handleKeyDown);
+    document.addEventListener('fullscreenchange', this._handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', this._handleFullscreenChange);
+
     const menu = this._createHeaderMenu();
     container.appendChild(menu);
 
@@ -551,6 +665,8 @@ export class SlidesView {
       triggerLabel: 'Open slides menu',
       minWidth: 220,
       items: [
+        { id: 'presentation-mode-btn', icon: '\ud83d\udcfa', text: 'Presentation Mode (F5)', ariaLabel: 'Enter fullscreen presentation mode',
+          onClick: () => this._enterPresentationMode() },
         { id: 'toggle-notes-btn', icon: '\ud83d\udcdd', text: 'Show Notes', ariaLabel: 'Toggle speaker notes panel',
           onClick: () => this._notesManager.toggle() },
         { id: 'export-ppt-btn', icon: '\ud83d\udcca', text: 'Export to PowerPoint', ariaLabel: 'Export slides as PowerPoint presentation',
@@ -617,7 +733,12 @@ export class SlidesView {
   }
 
   _update() {
-    this.counter.textContent = `${this.index + 1} / ${this.slides.length}`;
+    const label = `${this.index + 1} / ${this.slides.length}`;
+    this.counter.textContent = label;
+    if (this._presOverlay) {
+      const presCounter = this._presOverlay.querySelector('.pres-counter');
+      if (presCounter) presCounter.textContent = label;
+    }
     this.slideEl.innerHTML = '';
     const content = renderSlide(this.slides[this.index], this.index);
     this.slideEl.appendChild(content);
@@ -629,11 +750,16 @@ export class SlidesView {
   }
 
   destroy() {
+    document.removeEventListener('keydown', this._handleKeyDown);
+    document.removeEventListener('fullscreenchange', this._handleFullscreenChange);
+    document.removeEventListener('webkitfullscreenchange', this._handleFullscreenChange);
+    this._removePresentationOverlay();
     if (this._menuCleanup) this._menuCleanup();
     if (this._notesManager?._elapsedInterval) clearInterval(this._notesManager._elapsedInterval);
     this.sectionStartIndices?.clear();
     this.slideIndices?.clear();
     this.sectionSlides?.clear();
     this.tocLinks?.clear();
+    this._container = null;
   }
 }

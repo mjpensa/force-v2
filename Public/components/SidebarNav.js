@@ -106,7 +106,11 @@ export class SidebarNav {
   }
 
   _handleNavClick(view) {
-    if (view === this.activeView) return;
+    if (view === this.activeView) {
+      // Allow re-click to retry failed views
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+      return;
+    }
     this._setActiveView(view);
     window.location.hash = view;
   }

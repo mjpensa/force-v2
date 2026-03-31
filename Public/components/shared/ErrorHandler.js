@@ -74,14 +74,14 @@ export function showErrorNotification(error, options = {}) {
   const notification = document.createElement('div');
   notification.id = 'error-notification';
   notification.setAttribute('role', 'alert');
-  notification.style.cssText = `position:fixed;top:20px;right:20px;max-width:400px;background:white;border-left:4px solid #ef4444;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);padding:1rem;z-index:10000;`;
+  notification.style.cssText = `position:fixed;top:20px;right:20px;max-width:400px;background:rgba(12,35,64,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-left:4px solid #ef4444;border:1px solid rgba(255,255,255,0.1);border-left:4px solid #ef4444;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.4);padding:1rem;z-index:10000;color:white;`;
   const removeNotification = () => notification.remove();
   notification.innerHTML = `
     <h4 style="margin:0 0 0.5rem;color:#ef4444;font-size:1rem;">${title}</h4>
-    <p style="margin:0 0 1rem;color:#6b7280;font-size:0.875rem;">${message}</p>
+    <p style="margin:0 0 1rem;color:rgba(255,255,255,0.7);font-size:0.875rem;">${message}</p>
     <div style="display:flex;gap:0.5rem;">
       ${onRetry ? '<button class="retry-btn" style="background:#3b82f6;color:white;border:none;padding:0.5rem 1rem;border-radius:4px;cursor:pointer;">Retry</button>' : ''}
-      ${dismissible ? '<button class="dismiss-btn" style="background:transparent;color:#6b7280;border:1px solid;padding:0.5rem 1rem;border-radius:4px;cursor:pointer;">Dismiss</button>' : ''}
+      ${dismissible ? '<button class="dismiss-btn" style="background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.2);padding:0.5rem 1rem;border-radius:4px;cursor:pointer;">Dismiss</button>' : ''}
     </div>`;
   const retryBtn = notification.querySelector('.retry-btn');
   const dismissBtn = notification.querySelector('.dismiss-btn');

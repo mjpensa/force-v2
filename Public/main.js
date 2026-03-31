@@ -85,10 +85,10 @@ async function processFiles(files) {
         svg.appendChild(path);
         const title = document.createElement('p');
         title.id = 'dropzone-title';
-        title.className = 'text-2xl md:text-3xl font-medium mt-6';
+        title.className = 'text-[10px] md:text-xs font-medium';
         title.textContent = 'Drop files here or click to browse';
         const subtitle = document.createElement('p');
-        subtitle.className = 'text-lg md:text-xl opacity-60 mt-3';
+        subtitle.className = 'text-[11px] text-glass-muted/90 mt-0.5';
         subtitle.textContent = 'Supports .docx, .md, .txt, .pdf';
         dropzonePrompt.appendChild(svg);
         dropzonePrompt.appendChild(title);
