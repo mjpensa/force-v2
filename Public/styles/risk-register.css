@@ -1,0 +1,280 @@
+.risk-register-view {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  color: var(--color-text, #e0e6ed);
+}
+
+.rr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.rr-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--color-text-bright, #fff);
+  margin: 0;
+}
+
+.risk-appetite {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.appetite-aggressive { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+.appetite-moderate { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+.appetite-conservative { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+
+.rr-section {
+  margin-bottom: 2.5rem;
+}
+
+.rr-section h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-bright, #fff);
+  margin: 0 0 1rem;
+}
+
+.rr-summary {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-text, #e0e6ed);
+}
+
+/* Heat Map */
+.heatmap-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.heatmap-y-label,
+.heatmap-x-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #8892a4);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.heatmap-y-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.heatmap-x-label {
+  text-align: center;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  max-width: 400px;
+}
+
+.heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px;
+  min-height: 50px;
+  font-size: 0.65rem;
+}
+
+.zone-low { background: rgba(34, 197, 94, 0.15); }
+.zone-medium { background: rgba(245, 158, 11, 0.15); }
+.zone-high { background: rgba(249, 115, 22, 0.2); }
+.zone-critical { background: rgba(239, 68, 68, 0.2); }
+
+.heatmap-cell.has-risks {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.risk-dot {
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  font-size: 0.6rem;
+  font-weight: 600;
+  cursor: default;
+}
+
+/* Category Breakdown */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.category-card {
+  background: var(--glass-bg, rgba(15, 23, 42, 0.6));
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+}
+
+.cat-name {
+  font-weight: 600;
+  text-transform: capitalize;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-bright, #fff);
+}
+
+.cat-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+
+.cat-count { color: var(--color-text-muted, #8892a4); }
+.cat-avg { font-weight: 600; }
+
+.cat-top {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #8892a4);
+}
+
+/* Risk Table */
+.risk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.risk-table th,
+.risk-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  vertical-align: top;
+}
+
+.risk-table th {
+  font-weight: 600;
+  color: var(--color-text-bright, #fff);
+  background: rgba(15, 23, 42, 0.8);
+  position: sticky;
+  top: 0;
+  white-space: nowrap;
+}
+
+.risk-id {
+  font-weight: 600;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.risk-title-cell {
+  max-width: 400px;
+}
+
+.risk-title {
+  font-weight: 600;
+  color: var(--color-text-bright, #fff);
+  margin-bottom: 0.25rem;
+}
+
+.risk-desc {
+  font-size: 0.8rem;
+  color: var(--color-text, #e0e6ed);
+  margin-bottom: 0.25rem;
+}
+
+.risk-evidence {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #8892a4);
+  font-style: italic;
+  margin-bottom: 0.25rem;
+}
+
+.risk-mitigations {
+  font-size: 0.75rem;
+}
+
+.risk-mitigations strong {
+  color: var(--color-text-muted, #8892a4);
+}
+
+.risk-mitigations ul {
+  margin: 0.25rem 0 0 1rem;
+  padding: 0;
+}
+
+.risk-mitigations li {
+  margin-bottom: 0.15rem;
+}
+
+.risk-row .score-cell {
+  text-align: center;
+  font-weight: 600;
+}
+
+.score-critical { color: #f87171; }
+.score-high { color: #fb923c; }
+.score-medium { color: #fbbf24; }
+.score-low { color: #4ade80; }
+
+.category-tag {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.status-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-open { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+.status-mitigating { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.status-accepted { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+.status-closed { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+
+/* Insights */
+.insights-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.insights-list li {
+  padding: 0.75rem 1rem;
+  background: var(--glass-bg, rgba(15, 23, 42, 0.6));
+  border-radius: 8px;
+  border-left: 3px solid #f59e0b;
+}
+
+@media (max-width: 768px) {
+  .rr-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .category-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

@@ -21,7 +21,10 @@ const VIEW_TYPE_MAP = {
   'roadmap': 'roadmap',
   'slides': 'slides',
   'document': 'document',
-  'research-analysis': 'researchAnalysis'
+  'research-analysis': 'researchAnalysis',
+  'swot-analysis': 'swotAnalysis',
+  'competitive-analysis': 'competitiveAnalysis',
+  'risk-register': 'riskRegister'
 };
 const VALID_VIEW_TYPES = Object.keys(VIEW_TYPE_MAP);
 
@@ -139,7 +142,7 @@ router.post('/generate', generationLimiter, uploadMiddleware.array('researchFile
     const researchFiles = await processUploadedFiles(files);
     const viewsParam = req.query.views;
     const requestedViews = viewsParam
-      ? viewsParam.split(',').map(v => v.trim()).filter(v => ['roadmap', 'slides', 'document', 'research-analysis'].includes(v))
+      ? viewsParam.split(',').map(v => v.trim()).filter(v => VALID_VIEW_TYPES.includes(v))
       : null;
 
     const sessionId = generateSessionId();
@@ -152,7 +155,10 @@ router.post('/generate', generationLimiter, uploadMiddleware.array('researchFile
         roadmap: { status: 'pending' },
         slides: { status: 'pending' },
         document: { status: 'pending' },
-        researchAnalysis: { status: 'pending' }
+        researchAnalysis: { status: 'pending' },
+        swotAnalysis: { status: 'pending' },
+        competitiveAnalysis: { status: 'pending' },
+        riskRegister: { status: 'pending' }
       },
       progress: [],
       _listeners: new Set(),
@@ -182,14 +188,14 @@ async function runGenerationPipeline(sessionId, prompt, researchFiles, requested
     emitSessionEvent(sessionId, ts);
 
     if (event.type === 'view:completed' && event.result) {
-      const keyMap = { 'roadmap': 'roadmap', 'slides': 'slides', 'document': 'document', 'research-analysis': 'researchAnalysis' };
+      const keyMap = VIEW_TYPE_MAP;
       const contentKey = keyMap[event.view];
       if (contentKey && session.content) {
         session.content[contentKey] = event.result;
       }
     }
     if (event.type === 'view:failed' && event.view) {
-      const keyMap = { 'roadmap': 'roadmap', 'slides': 'slides', 'document': 'document', 'research-analysis': 'researchAnalysis' };
+      const keyMap = VIEW_TYPE_MAP;
       const contentKey = keyMap[event.view];
       if (contentKey && session.content) {
         session.content[contentKey] = { success: false, error: event.error };

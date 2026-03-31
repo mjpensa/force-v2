@@ -6,6 +6,9 @@ import { generateResearchAnalysisPrompt, researchAnalysisSchema } from './prompt
 import { generateIntelligenceBriefPrompt, intelligenceBriefSchema } from './prompts/intelligence-brief.js';
 import { assembleResearchContent, extractKeyStats, getCurrentDateContext, buildResearchDigest, formatResearchDigest } from './prompts/common.js';
 import { generateNarrativeSpinePrompt, narrativeSpineSchema, formatNarrativeSpine } from './prompts/narrative-spine.js';
+import { generateSwotAnalysisPrompt, swotAnalysisSchema } from './prompts/swot-analysis.js';
+import { generateCompetitiveAnalysisPrompt, competitiveAnalysisSchema } from './prompts/competitive-analysis.js';
+import { generateRiskRegisterPrompt, riskRegisterSchema } from './prompts/risk-register.js';
 import { CONFIG } from './config.js';
 import { genAI } from './gemini.js';
 import { diskCache } from './cache/DiskCache.js';
@@ -52,6 +55,9 @@ const SPEAKER_NOTES_CONFIG = createConfig({ temperature: 0.55, topP: 0.88, think
 const SPEAKER_NOTES_OUTLINE_CONFIG = createConfig({ temperature: 0.35, topP: 0.75, thinkingBudget: 8000 });
 const INTELLIGENCE_BRIEF_CONFIG = createConfig({ temperature: 0.5, topP: 0.85, thinkingBudget: 8192 });
 const NARRATIVE_SPINE_CONFIG = createConfig({ temperature: 0.2, topP: 0.7, thinkingBudget: 4096, maxOutputTokens: 2048 });
+const SWOT_CONFIG = createConfig({ temperature: 0.4, topP: 0.8, thinkingBudget: 8192 });
+const COMPETITIVE_ANALYSIS_CONFIG = createConfig({ temperature: 0.4, topP: 0.8, thinkingBudget: 8192 });
+const RISK_REGISTER_CONFIG = createConfig({ temperature: 0.3, topP: 0.75, thinkingBudget: 8192 });
 
 // Shared validation patterns (used across multiple validators)
 const WEAK_OPENERS = /^(this|the|our|in today|as we|it is|there (is|are|has|have))/i;
@@ -475,6 +481,39 @@ async function generateDocument(userPrompt, researchFiles, swimlanes = [], preco
     coherenceIssues: lastCoherenceValidation?.issues || []
   };
 }
+async function generateSwotAnalysis(userPrompt, researchFiles, precomputed = null) {
+  try {
+    const prompt = generateSwotAnalysisPrompt(userPrompt, researchFiles, precomputed);
+    const data = await generateWithGemini(prompt, swotAnalysisSchema, 'SwotAnalysis', SWOT_CONFIG);
+    return { success: true, data };
+  } catch (error) {
+    console.error('[SWOT Analysis] Error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+async function generateCompetitiveAnalysis(userPrompt, researchFiles, precomputed = null) {
+  try {
+    const prompt = generateCompetitiveAnalysisPrompt(userPrompt, researchFiles, precomputed);
+    const data = await generateWithGemini(prompt, competitiveAnalysisSchema, 'CompetitiveAnalysis', COMPETITIVE_ANALYSIS_CONFIG);
+    return { success: true, data };
+  } catch (error) {
+    console.error('[Competitive Analysis] Error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+async function generateRiskRegister(userPrompt, researchFiles, precomputed = null) {
+  try {
+    const prompt = generateRiskRegisterPrompt(userPrompt, researchFiles, precomputed);
+    const data = await generateWithGemini(prompt, riskRegisterSchema, 'RiskRegister', RISK_REGISTER_CONFIG);
+    return { success: true, data };
+  } catch (error) {
+    console.error('[Risk Register] Error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 async function generateNarrativeSpine(userPrompt, researchFiles, precomputed = null) {
   try {
     const prompt = generateNarrativeSpinePrompt(userPrompt, researchFiles, precomputed);
@@ -601,9 +640,59 @@ export async function generateAllContent(userPrompt, researchFiles, requestedVie
   const slides = phase2Tasks.find(t => t.name === 'Slides') ? phase2Results[phase2Tasks.findIndex(t => t.name === 'Slides')] : skipped;
   const document = phase2Tasks.find(t => t.name === 'Document') ? phase2Results[phase2Tasks.findIndex(t => t.name === 'Document')] : skipped;
 
+  // Phase 3: New analysis views (parallel, no dependencies)
+  let swotAnalysis = skipped;
+  let competitiveAnalysis = skipped;
+  let riskRegister = skipped;
+  const phase3Tasks = [];
+  if (shouldGenerate('swot-analysis')) {
+    emit({ type: 'view:started', view: 'swot-analysis' });
+    phase3Tasks.push({
+      task: () => generateSwotAnalysis(userPrompt, researchFiles, precomputed).then(result => {
+        emit({ type: result.success ? 'view:completed' : 'view:failed', view: 'swot-analysis', result });
+        return result;
+      }),
+      name: 'SwotAnalysis'
+    });
+  }
+  if (shouldGenerate('competitive-analysis')) {
+    emit({ type: 'view:started', view: 'competitive-analysis' });
+    phase3Tasks.push({
+      task: () => generateCompetitiveAnalysis(userPrompt, researchFiles, precomputed).then(result => {
+        emit({ type: result.success ? 'view:completed' : 'view:failed', view: 'competitive-analysis', result });
+        return result;
+      }),
+      name: 'CompetitiveAnalysis'
+    });
+  }
+  if (shouldGenerate('risk-register')) {
+    emit({ type: 'view:started', view: 'risk-register' });
+    phase3Tasks.push({
+      task: () => generateRiskRegister(userPrompt, researchFiles, precomputed).then(result => {
+        emit({ type: result.success ? 'view:completed' : 'view:failed', view: 'risk-register', result });
+        return result;
+      }),
+      name: 'RiskRegister'
+    });
+  }
+  if (phase3Tasks.length > 0) {
+    const phase3Results = await apiQueue.runAll(phase3Tasks);
+    const findResult = (name) => {
+      const idx = phase3Tasks.findIndex(t => t.name === name);
+      return idx >= 0 ? phase3Results[idx] : skipped;
+    };
+    swotAnalysis = findResult('SwotAnalysis');
+    competitiveAnalysis = findResult('CompetitiveAnalysis');
+    riskRegister = findResult('RiskRegister');
+  }
+
   const speakerNotes = { success: false, error: 'Speaker notes available on-demand', deferred: true };
 
-  return { roadmap: shouldGenerate('roadmap') ? roadmap : skipped, slides, document, researchAnalysis, speakerNotes };
+  return {
+    roadmap: shouldGenerate('roadmap') ? roadmap : skipped,
+    slides, document, researchAnalysis, speakerNotes,
+    swotAnalysis, competitiveAnalysis, riskRegister
+  };
 }
 
 export async function generateSpeakerNotesAsync(slidesData, researchFiles, userPrompt) {
@@ -634,6 +723,12 @@ export async function regenerateContent(viewType, prompt, researchFiles, existin
         return generateDocument(prompt, researchFiles, swimlanes, precomputed);
       case 'research-analysis':
         return generateResearchAnalysis(prompt, researchFiles, precomputed);
+      case 'swot-analysis':
+        return generateSwotAnalysis(prompt, researchFiles, precomputed);
+      case 'competitive-analysis':
+        return generateCompetitiveAnalysis(prompt, researchFiles, precomputed);
+      case 'risk-register':
+        return generateRiskRegister(prompt, researchFiles, precomputed);
       default:
         throw new Error(`Invalid view type: ${viewType}`);
     }

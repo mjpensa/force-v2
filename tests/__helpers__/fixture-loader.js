@@ -18,6 +18,9 @@ export function loadAllFixtures() {
     document: loadFixture('document'),
     researchAnalysis: loadFixture('research-analysis'),
     narrativeSpine: loadFixture('narrative-spine'),
+    swotAnalysis: loadFixture('swot-analysis'),
+    competitiveAnalysis: loadFixture('competitive-analysis'),
+    riskRegister: loadFixture('risk-register'),
     intelligenceBrief: loadFixture('intelligence-brief'),
     speakerNotes: loadFixture('speaker-notes'),
   };

@@ -183,7 +183,7 @@ class ContentViewer {
     await this._loadView(view);
   }
   _updateBodyViewClass(view) {
-    document.body.classList.remove('view-roadmap', 'view-slides', 'view-document', 'view-research-analysis');
+    document.body.classList.remove('view-roadmap', 'view-slides', 'view-document', 'view-research-analysis', 'view-swot-analysis', 'view-competitive-analysis', 'view-risk-register');
     document.body.classList.add(`view-${view}`);
   }
   _updateActiveTab(view) {
@@ -230,6 +230,9 @@ class ContentViewer {
         slides: () => import('./components/views/SlidesView.js').then(m => m.SlidesView),
         document: () => import('./components/views/DocumentView.js').then(m => m.DocumentView),
         'research-analysis': () => import('./components/views/ResearchAnalysisView.js').then(m => m.ResearchAnalysisView),
+        'swot-analysis': () => import('./components/views/SwotAnalysisView.js').then(m => m.SwotAnalysisView),
+        'competitive-analysis': () => import('./components/views/CompetitiveAnalysisView.js').then(m => m.CompetitiveAnalysisView),
+        'risk-register': () => import('./components/views/RiskRegisterView.js').then(m => m.RiskRegisterView),
       };
       if (viewLoaders[viewName]) {
         const ViewClass = await viewLoaders[viewName]();

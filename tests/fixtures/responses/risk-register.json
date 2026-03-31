@@ -1,0 +1,115 @@
+{
+  "title": "Risk Register: CDM Adoption Program",
+  "summary": "The CDM adoption program faces 10 identified risks, with regulatory non-compliance and competitive displacement presenting the highest combined risk scores. Immediate action on pilot authorization and training investment is required.",
+  "riskAppetite": "moderate",
+  "risks": [
+    {
+      "id": "R-001",
+      "title": "Regulatory Non-Compliance Penalties",
+      "description": "CFTC enforcement actions targeting CDM-related reporting gaps could result in $5-15M penalties",
+      "category": "regulatory",
+      "likelihood": 4,
+      "impact": 5,
+      "riskScore": 20,
+      "status": "open",
+      "owner": "Chief Compliance Officer",
+      "mitigations": [
+        "Accelerate CDM pilot to demonstrate compliance trajectory",
+        "Engage CFTC liaison for guidance on reporting gap remediation",
+        "Implement interim manual reporting for high-risk instruments"
+      ],
+      "evidence": "CFTC enforcement actions up 35% in 2024; CDM-related reporting gaps explicitly targeted in recent guidance",
+      "timeHorizon": "short-term",
+      "relatedRisks": ["R-003", "R-005"]
+    },
+    {
+      "id": "R-002",
+      "title": "Competitive Displacement by Early Adopters",
+      "description": "JPMorgan's 50% cost reduction creates permanent unit cost disadvantage for non-adopters",
+      "category": "strategic",
+      "likelihood": 4,
+      "impact": 4,
+      "riskScore": 16,
+      "status": "open",
+      "owner": "CTO",
+      "mitigations": [
+        "Launch CDM pilot program by Q3 2025 to close adoption gap",
+        "Monitor competitor deployment progress quarterly",
+        "Evaluate SaaS CDM platforms for accelerated deployment"
+      ],
+      "evidence": "JPMorgan Q4 2024 deployment achieved 50% reconciliation cost reduction; Goldman Sachs and Citi targeting Q1 2025",
+      "timeHorizon": "short-term",
+      "relatedRisks": ["R-001"]
+    },
+    {
+      "id": "R-003",
+      "title": "Implementation Cost Overrun",
+      "description": "CDM deployment costs could exceed $4-8M budget if legacy system integration proves more complex than estimated",
+      "category": "financial",
+      "likelihood": 3,
+      "impact": 3,
+      "riskScore": 9,
+      "status": "open",
+      "owner": "VP Engineering",
+      "mitigations": [
+        "Phase deployment across 2 desks to validate cost model before scaling",
+        "Evaluate SaaS CDM platforms to reduce infrastructure costs",
+        "Establish $1M contingency reserve for integration complexity"
+      ],
+      "evidence": "Industry estimates $4-8M for full CDM deployment; complexity varies significantly by legacy architecture",
+      "timeHorizon": "medium-term",
+      "relatedRisks": ["R-004"]
+    },
+    {
+      "id": "R-004",
+      "title": "CDM Talent Shortage",
+      "description": "60% of mid-tier banks report no CDM-trained staff, creating recruitment and retention risk",
+      "category": "operational",
+      "likelihood": 4,
+      "impact": 3,
+      "riskScore": 12,
+      "status": "mitigating",
+      "owner": "VP Operations",
+      "mitigations": [
+        "Launch internal CDM training program for existing operations staff",
+        "Partner with ISDA for certification training materials",
+        "Budget for 2-3 external CDM specialists for initial deployment"
+      ],
+      "evidence": "Federal Reserve survey: 60% of mid-tier banks have no CDM-trained staff as of Q3 2024",
+      "timeHorizon": "short-term",
+      "relatedRisks": ["R-003"]
+    },
+    {
+      "id": "R-005",
+      "title": "Technology Integration Failure",
+      "description": "CDM integration with existing trading and risk systems may fail to meet performance requirements",
+      "category": "technology",
+      "likelihood": 2,
+      "impact": 4,
+      "riskScore": 8,
+      "status": "open",
+      "owner": "CTO",
+      "mitigations": [
+        "Conduct architecture assessment before deployment",
+        "Run load testing in parallel with legacy systems",
+        "Maintain legacy fallback for 6 months post-deployment"
+      ],
+      "evidence": "JPMorgan reported 3-month integration delay due to legacy system compatibility issues",
+      "timeHorizon": "medium-term",
+      "relatedRisks": ["R-003"]
+    }
+  ],
+  "categoryBreakdown": [
+    { "category": "regulatory", "count": 1, "avgScore": 20, "topRisk": "R-001" },
+    { "category": "strategic", "count": 1, "avgScore": 16, "topRisk": "R-002" },
+    { "category": "financial", "count": 1, "avgScore": 9, "topRisk": "R-003" },
+    { "category": "operational", "count": 1, "avgScore": 12, "topRisk": "R-004" },
+    { "category": "technology", "count": 1, "avgScore": 8, "topRisk": "R-005" }
+  ],
+  "keyInsights": [
+    "Regulatory and competitive risks are interdependent — CDM adoption addresses both simultaneously",
+    "The talent gap is the most actionable risk: training programs have 3-6 month lead time",
+    "SaaS CDM platforms significantly reduce both financial and technology integration risks",
+    "The window for second-mover advantage closes in Q3-Q4 2025 as more competitors complete deployment"
+  ]
+}
