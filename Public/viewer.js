@@ -48,9 +48,15 @@ class SSEService {
       });
 
       eventSource.addEventListener('error', (event) => {
-        const data = event.data ? JSON.parse(event.data) : { message: 'Unknown error' };
-        console.error('[SSE] Server error:', data.message);
-        onError?.(data.message);
+        let message = 'Unknown error';
+        try {
+          if (event.data) {
+            const data = JSON.parse(event.data);
+            message = data.message || message;
+          }
+        } catch (_) { /* non-JSON error event */ }
+        console.error('[SSE] Server error:', message);
+        onError?.(message);
         this.stop(sessionId);
       });
 
