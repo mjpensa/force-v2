@@ -396,6 +396,54 @@ router.post('/:sessionId/intelligence-brief/generate', generationLimiter, expres
   }
 });
 
+router.post('/:sessionId/update-slide-field', express.json(), (req, res) => {
+  try {
+    const session = getSessionOrFail(req, res);
+    if (!session) return;
+
+    const { slideIndex, field, value } = req.body;
+    const idx = Number(slideIndex);
+    if (!Number.isInteger(idx) || idx < 0) {
+      return res.status(400).json({ error: 'Invalid slideIndex' });
+    }
+    const validFields = ['tagline', 'title', 'paragraph1', 'paragraph2', 'paragraph3', 'sectionTitle'];
+    if (!validFields.includes(field)) {
+      return res.status(400).json({ error: 'Invalid field' });
+    }
+    if (typeof value !== 'string') {
+      return res.status(400).json({ error: 'Invalid value' });
+    }
+
+    const slidesData = session.content.slides?.data;
+    if (!slidesData?.sections) {
+      return res.status(400).json({ error: 'No slides data found' });
+    }
+
+    // Flatten sections to find the slide at the given index
+    let flatIdx = 0;
+    for (const section of slidesData.sections) {
+      // Account for section title slide (index flatIdx is the section title)
+      if (flatIdx === idx) {
+        // Editing the section title slide
+        if (field === 'sectionTitle') section.sectionTitle = value;
+        return res.json({ success: true });
+      }
+      flatIdx++;
+      for (const slide of (section.slides || [])) {
+        if (flatIdx === idx) {
+          slide[field] = value;
+          return res.json({ success: true });
+        }
+        flatIdx++;
+      }
+    }
+
+    return res.status(400).json({ error: 'Slide not found at given index' });
+  } catch (error) {
+    handleGenerationError(error, res, 'update slide field');
+  }
+});
+
 router.post('/:sessionId/:viewType/regenerate', generationLimiter, async (req, res) => {
   const REGEN_TIMEOUT_MS = 10 * 60 * 1000;
   req.setTimeout(REGEN_TIMEOUT_MS);
@@ -549,4 +597,36 @@ router.post('/update-task-color', express.json(), (req, res) => {
     handleGenerationError(error, res, 'update task color');
   }
 });
+router.post('/update-task-title', express.json(), (req, res) => {
+  try {
+    const { sessionId, newTitle } = req.body;
+
+    const taskIndex = Number(req.body.taskIndex);
+    if (!Number.isInteger(taskIndex) || taskIndex < 0) {
+      return res.status(400).json({ error: 'Invalid taskIndex' });
+    }
+    if (typeof newTitle !== 'string' || newTitle.trim().length === 0) {
+      return res.status(400).json({ error: 'Invalid title' });
+    }
+
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId is required' });
+    }
+
+    req.params.sessionId = sessionId;
+    const session = getSessionOrFail(req, res);
+    if (!session) return;
+
+    const roadmapData = session.content.roadmap?.data;
+    if (!roadmapData || !roadmapData.data || !roadmapData.data[taskIndex]) {
+      return res.status(400).json({ error: 'Task not found in roadmap data' });
+    }
+
+    roadmapData.data[taskIndex].title = newTitle.trim();
+    res.json({ success: true, task: roadmapData.data[taskIndex] });
+  } catch (error) {
+    handleGenerationError(error, res, 'update task title');
+  }
+});
+
 export default router;

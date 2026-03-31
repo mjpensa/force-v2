@@ -153,9 +153,13 @@ function renderTwoColumnSlide(slide, index) {
     overflow: hidden;
   `;
 
-  el.appendChild(_createTagline(slide));
+  const taglineEl = _createTagline(slide);
+  taglineEl.dataset.editable = 'tagline';
+  taglineEl.dataset.maxLength = '21';
+  el.appendChild(taglineEl);
 
   const title = document.createElement('div');
+  title.dataset.editable = 'title';
   title.style.cssText = `
     position: absolute;
     top: 7%;
@@ -197,9 +201,14 @@ function renderTwoColumnSlide(slide, index) {
   } else if (slide.body) {
     paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(normalizeBodyText(sanitizeText(p.trim().replace(/\n/g, ' '))), 410));
   }
-  body.innerHTML = paragraphs.map(p => {
-    return `<p style="margin: 0 0 0.8em 0;">${escapeHtml(p)}</p>`;
-  }).join('');
+  paragraphs.forEach((p, i) => {
+    const pEl = document.createElement('p');
+    pEl.style.cssText = 'margin: 0 0 0.8em 0;';
+    pEl.textContent = p;
+    pEl.dataset.editable = `paragraph${i + 1}`;
+    pEl.dataset.maxLength = '410';
+    body.appendChild(pEl);
+  });
 
   el.appendChild(body);
 
@@ -742,11 +751,101 @@ export class SlidesView {
     this.slideEl.innerHTML = '';
     const content = renderSlide(this.slides[this.index], this.index);
     this.slideEl.appendChild(content);
+    this._setupInlineEditing(content);
     this._updateActiveTocSection();
     this._notesManager.updateSlideIndicator();
     if (this.speakerNotesVisible) {
       this._notesManager.updateContent();
     }
+  }
+
+  _setupInlineEditing(container) {
+    const editables = container.querySelectorAll('[data-editable]');
+    editables.forEach(el => {
+      el.addEventListener('dblclick', (e) => {
+        if (this.isPresentationMode) return;
+        e.stopPropagation();
+        this._startEditing(el);
+      });
+      el.style.cursor = 'text';
+    });
+  }
+
+  _startEditing(el) {
+    if (el.getAttribute('contenteditable') === 'true') return;
+    const field = el.dataset.editable;
+    const maxLen = parseInt(el.dataset.maxLength) || 500;
+    const original = el.textContent;
+
+    el.setAttribute('contenteditable', 'true');
+    el.focus();
+
+    // Select all text
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    // Character counter
+    const counter = document.createElement('div');
+    counter.className = 'slide-char-counter';
+    counter.style.cssText = 'position:absolute;bottom:-18px;right:0;font-size:11px;color:#666;font-family:sans-serif;z-index:10;';
+    const updateCounter = () => {
+      const len = el.textContent.length;
+      counter.textContent = `${len}/${maxLen}`;
+      counter.style.color = len > maxLen ? '#ef4444' : '#666';
+    };
+    el.style.position = 'relative';
+    el.parentElement.style.position = 'relative';
+    el.parentElement.appendChild(counter);
+    updateCounter();
+    el.addEventListener('input', updateCounter);
+
+    const save = () => {
+      el.setAttribute('contenteditable', 'false');
+      el.removeEventListener('input', updateCounter);
+      counter.remove();
+      const newText = el.textContent.trim();
+      if (newText !== original) {
+        // Update in-memory slide data
+        const slide = this.slides[this.index];
+        if (field === 'tagline') slide.tagline = newText;
+        else if (field === 'title') slide.title = newText;
+        else if (field === 'paragraph1') slide.paragraph1 = newText;
+        else if (field === 'paragraph2') slide.paragraph2 = newText;
+
+        this._persistSlideEdit(field, newText);
+      }
+    };
+
+    el.addEventListener('blur', save, { once: true });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        el.removeEventListener('blur', save);
+        el.setAttribute('contenteditable', 'false');
+        el.removeEventListener('input', updateCounter);
+        counter.remove();
+        el.textContent = original;
+      }
+      if (e.key === 'Enter' && field === 'tagline') {
+        e.preventDefault();
+        el.blur();
+      }
+    });
+  }
+
+  _persistSlideEdit(field, value) {
+    if (!this.sessionId) return;
+    // Offset by 2 demo slides at the start
+    const dataIndex = this.index - 2;
+    if (dataIndex < 0) return; // Don't persist edits to demo slides
+    fetch(`/api/content/${this.sessionId}/update-slide-field`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slideIndex: dataIndex, field, value })
+    }).catch(() => {});
   }
 
   destroy() {

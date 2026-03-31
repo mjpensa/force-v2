@@ -81,7 +81,33 @@ export class ResearchAnalysisView {
     scoreLabel.textContent = 'Overall Research Fitness';
     scoreSection.appendChild(scoreLabel);
     header.appendChild(scoreSection);
+
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'analysis-export-btn';
+    exportBtn.textContent = 'Export PNG';
+    exportBtn.title = 'Export as PNG image';
+    exportBtn.style.cssText = 'padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border-glass, rgba(255,255,255,0.08)); background: var(--glass-white-5, rgba(255,255,255,0.03)); color: var(--glass-text-secondary, #94a3b8); cursor: pointer; font-size: 0.8rem; font-weight: 500;';
+    exportBtn.addEventListener('click', () => this._exportPng());
+    header.appendChild(exportBtn);
+
     return header;
+  }
+
+  async _exportPng() {
+    if (typeof html2canvas === 'undefined') return;
+    try {
+      const canvas = await html2canvas(this.container, {
+        backgroundColor: '#0a1628',
+        scale: 2,
+        useCORS: true
+      });
+      const link = document.createElement('a');
+      link.download = 'research-analysis.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error('[Research Analysis Export]', err);
+    }
   }
   _renderSummarySection() {
     const section = this._createSection('summary', 'Executive Summary');

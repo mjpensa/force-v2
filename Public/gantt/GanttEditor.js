@@ -172,7 +172,18 @@ export class GanttEditor {
   makeEditable(labelElement, taskIndex) {
     this._makeInlineEditable(labelElement, (newText) => {
       this.ganttData.data[taskIndex].title = newText;
+      this._persistTitleChange(taskIndex, newText);
     });
+  }
+
+  _persistTitleChange(taskIndex, newTitle) {
+    const sessionId = this.ganttData.sessionId;
+    if (!sessionId) return;
+    fetch('/api/content/update-task-title', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, taskIndex, newTitle })
+    }).catch(() => {});
   }
 
   makeChartTitleEditable() {
