@@ -323,10 +323,27 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     throw new Error(`Failed to generate ${contentType}: ${error.message}`);
   }
 }
+function trimEmptyColumns(data) {
+  if (!data?.timeColumns?.length || !data?.data?.length) return data;
+  const tasks = data.data.filter(d => !d.isSwimlane && d.bar?.startCol != null);
+  if (tasks.length === 0) return data;
+  const minCol = Math.max(1, Math.min(...tasks.map(t => t.bar.startCol)) - 1);
+  const maxCol = Math.min(data.timeColumns.length + 1, Math.max(...tasks.map(t => t.bar.endCol)) + 1);
+  if (minCol <= 1 && maxCol >= data.timeColumns.length + 1) return data;
+  const offset = minCol - 1;
+  const newTimeColumns = data.timeColumns.slice(offset, maxCol - 1);
+  const newData = data.data.map(item => {
+    if (item.isSwimlane || !item.bar || item.bar.startCol == null) return item;
+    return { ...item, bar: { ...item.bar, startCol: item.bar.startCol - offset, endCol: item.bar.endCol - offset } };
+  });
+  return { ...data, timeColumns: newTimeColumns, data: newData };
+}
+
 async function generateRoadmap(userPrompt, researchFiles, precomputed = null) {
   try {
     const prompt = generateRoadmapPrompt(userPrompt, researchFiles, precomputed);
-    const data = await generateWithGemini(prompt, roadmapSchema, 'Roadmap', ROADMAP_CONFIG);
+    const rawData = await generateWithGemini(prompt, roadmapSchema, 'Roadmap', ROADMAP_CONFIG);
+    const data = trimEmptyColumns(rawData);
     return { success: true, data };
   } catch (error) {
     return { success: false, error: error.message };
