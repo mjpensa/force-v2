@@ -280,6 +280,7 @@ async function handleChartGenerate(event) {
       throw new Error('Server did not return a session ID');
     }
     // Redirect immediately — viewer handles waiting for views via SSE
+    window.removeEventListener('beforeunload', beforeUnloadHandler);
     stopProgressTimer();
     loadingIndicator.style.display = 'none';
     window.location.href = `/viewer.html?sessionId=${sessionId}#roadmap`;
