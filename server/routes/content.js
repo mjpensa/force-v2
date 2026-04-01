@@ -499,6 +499,16 @@ router.get('/:sessionId/:viewType', (req, res) => {
         message: `No ${viewType} content available for this session`
       });
     }
+
+    // Still generating — return processing status so viewer shows "generating" UI
+    if (contentResult.status === 'pending' && session.status === 'generating') {
+      res.set('Cache-Control', 'no-store');
+      return res.json({
+        status: 'processing',
+        message: `${viewType} is still being generated. Please wait.`
+      });
+    }
+
     if (contentResult.success && contentResult.data) {
       res.set('Cache-Control', 'private, max-age=300');
       res.set('ETag', `"${sessionId}-${viewType}-${session.lastAccessed}"`);
