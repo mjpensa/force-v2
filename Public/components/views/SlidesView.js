@@ -196,10 +196,10 @@ function renderTwoColumnSlide(slide, index) {
 
   let paragraphs = [];
   if (slide.paragraph1 || slide.paragraph2) {
-    if (slide.paragraph1) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1.trim().replace(/\n/g, ' '))), 410));
-    if (slide.paragraph2) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2.trim().replace(/\n/g, ' '))), 410));
+    if (slide.paragraph1) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1.trim().replace(/\n/g, ' '))), 320));
+    if (slide.paragraph2) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2.trim().replace(/\n/g, ' '))), 320));
   } else if (slide.body) {
-    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(normalizeBodyText(sanitizeText(p.trim().replace(/\n/g, ' '))), 410));
+    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(normalizeBodyText(sanitizeText(p.trim().replace(/\n/g, ' '))), 320));
   }
   paragraphs.forEach((p, i) => {
     const pEl = document.createElement('p');
@@ -261,9 +261,9 @@ function renderThreeColumnSlide(slide, index) {
   `;
 
   const columnTexts = [
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1)), 390),
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2)), 390),
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph3 || '')), 390)
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1)), 280),
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2)), 280),
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph3 || '')), 280)
   ];
 
   columnTexts.forEach(text => {
