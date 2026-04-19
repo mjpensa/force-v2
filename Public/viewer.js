@@ -83,7 +83,7 @@ class SSEService {
       return true;
     } catch (error) {
       console.error('[SSE] Failed to create EventSource:', error);
-      onError?.(error.message);
+      handlers.onError?.(error.message);
       return false;
     }
   }
@@ -462,7 +462,7 @@ class ContentViewer {
     }
   }
   _startBackgroundStatusPolling() {
-    const views = ['roadmap', 'slides', 'document', 'research-analysis'];
+    const views = ['roadmap', 'slides', 'document', 'research-analysis', 'swot-analysis', 'competitive-analysis', 'risk-register'];
     views.forEach(view => this._updateTabStatus(view, 'loading'));
 
     if (this._useSSE) {
@@ -518,6 +518,10 @@ class ContentViewer {
             if (!this.stateManager.state.content[viewName]) {
               this.stateManager.setState({ content: { ...this.stateManager.state.content, [viewName]: result.data } });
             }
+            // Auto-load the view if it's the one currently displayed (or first available)
+            if (viewName === this.currentView || (!this.currentView && viewName === 'roadmap')) {
+              this._loadView(viewName);
+            }
           } else {
             this._updateTabStatus(viewName, 'failed');
           }
@@ -536,7 +540,7 @@ class ContentViewer {
     }
   }
 }
-document.addEventListener('DOMContentLoaded', () => {
-  const viewer = new ContentViewer();
-  viewer.init();
-});
+// Module scripts are deferred — DOM is parsed before this runs, so
+// DOMContentLoaded has already fired. Initialize directly.
+const viewer = new ContentViewer();
+viewer.init();

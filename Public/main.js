@@ -138,19 +138,19 @@ async function processFiles(files) {
     dropzonePrompt.classList.add('hidden');
     fileListContainer.classList.remove('hidden');
 }
-document.addEventListener("DOMContentLoaded", () => {
-  const ganttForm = document.getElementById('gantt-form');
-  const uploadInput = document.getElementById('upload-input');
-  const dropzoneLabel = document.querySelector('.dropzone-glass');
-  if (!ganttForm || !uploadInput || !dropzoneLabel) {
-    console.error('Missing elements:', {
-      ganttForm: !!ganttForm,
-      uploadInput: !!uploadInput,
-      dropzoneLabel: !!dropzoneLabel
-    });
-    alert('Error: Page elements not loaded correctly. Please clear your browser cache (Ctrl+Shift+Delete or Cmd+Shift+Delete) and reload the page.');
-    return;
-  }
+// Module scripts are deferred — the DOM is fully parsed before this runs,
+// so DOMContentLoaded has already fired. Wire handlers directly.
+const ganttForm = document.getElementById('gantt-form');
+const uploadInput = document.getElementById('upload-input');
+const dropzoneLabel = document.querySelector('.dropzone-glass');
+if (!ganttForm || !uploadInput || !dropzoneLabel) {
+  console.error('Missing elements:', {
+    ganttForm: !!ganttForm,
+    uploadInput: !!uploadInput,
+    dropzoneLabel: !!dropzoneLabel
+  });
+  alert('Error: Page elements not loaded correctly. Please clear your browser cache (Ctrl+Shift+Delete or Cmd+Shift+Delete) and reload the page.');
+} else {
   ganttForm.addEventListener('submit', handleChartGenerate);
   uploadInput.addEventListener('change', (e) => {
     processFiles(e.target.files);
@@ -187,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
         dropzoneLabel.classList.add('border-custom-outline');
     }
   });
-});
+}
 async function handleChartGenerate(event) {
   event.preventDefault(); // Stop form from reloading page
   const generateBtn = document.getElementById('generate-btn');

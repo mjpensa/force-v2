@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -59,8 +60,8 @@ app.get('/api/health', (req, res) => {
   });
 });
 app.use('/', analysisRoutes);
+app.use('/api/content', sseContentRoutes); // SSE streaming — must be before contentRoutes so /stream/:sessionId isn't caught by /:sessionId/:viewType
 app.use('/api/content', contentRoutes);
-app.use('/api/content', sseContentRoutes); // SSE streaming for real-time progress
 app.use(handleUploadErrors);
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Promise Rejection:', reason);
