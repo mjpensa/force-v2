@@ -12,6 +12,7 @@ beforeAll(async () => {
   }));
 
   await jest.unstable_mockModule('../../server/cache/DiskCache.js', () => ({
+  hashSchema: () => 'test-schema-hash',
     DiskCache: function () { return { get: async () => null, set: async () => {} }; },
     diskCache: { get: async () => null, set: async () => {} },
   }));

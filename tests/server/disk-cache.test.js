@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals
 import { mkdtemp, rm, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { DiskCache } from '../../server/cache/DiskCache.js';
+import { DiskCache, stableStringify, hashSchema } from '../../server/cache/DiskCache.js';
 
 let tempDir;
 let cache;
@@ -108,5 +108,65 @@ describe('DiskCache', () => {
       expect(files.length).toBe(1);
       expect(files[0]).toMatch(/\.json$/);
     });
+  });
+
+  describe('default TTL', () => {
+    // Regression guard: a 7-day TTL was silently deleting responses that cost API quota
+    // and existed nowhere else (.gemini-cache/ is gitignored). Do not lower this without
+    // a durable archive in place.
+    it('defaults to 90 days', () => {
+      const c = new DiskCache({ cacheDir: tempDir });
+      expect(c.ttlMs).toBe(90 * 24 * 60 * 60 * 1000);
+    });
+  });
+});
+
+describe('stableStringify', () => {
+  it('is independent of key insertion order', () => {
+    expect(stableStringify({ b: 1, a: 2 })).toBe(stableStringify({ a: 2, b: 1 }));
+  });
+
+  it('sorts keys at every nesting level', () => {
+    const x = { outer: { z: 1, a: { n: 2, m: 3 } } };
+    const y = { outer: { a: { m: 3, n: 2 }, z: 1 } };
+    expect(stableStringify(x)).toBe(stableStringify(y));
+  });
+
+  it('preserves array order', () => {
+    expect(stableStringify([1, 2])).not.toBe(stableStringify([2, 1]));
+  });
+
+  it('handles null and primitives', () => {
+    expect(stableStringify(null)).toBe('null');
+    expect(stableStringify(5)).toBe('5');
+    expect(stableStringify('s')).toBe('"s"');
+  });
+});
+
+describe('hashSchema', () => {
+  it('returns null for a missing schema', () => {
+    expect(hashSchema(undefined)).toBeNull();
+    expect(hashSchema(null)).toBeNull();
+  });
+
+  it('is stable across key reordering', () => {
+    const a = { type: 'object', properties: { x: { type: 'string' } }, required: ['x'] };
+    const b = { required: ['x'], properties: { x: { type: 'string' } }, type: 'object' };
+    expect(hashSchema(a)).toBe(hashSchema(b));
+  });
+
+  // This is the whole point: the cache key previously carried only schema.description, and
+  // 8 of the 12 real schemas don't define one — so editing a schema replayed a pre-change
+  // response and the change looked like it had no effect.
+  it('changes when a schema field changes, even with no description', () => {
+    const before = { type: 'object', properties: { x: { type: 'string' } } };
+    const after = { type: 'object', properties: { x: { type: 'number' } } };
+    expect(hashSchema(before)).not.toBe(hashSchema(after));
+  });
+
+  it('changes when a required field is added', () => {
+    const before = { type: 'object', properties: { x: { type: 'string' } } };
+    const after = { type: 'object', properties: { x: { type: 'string' } }, required: ['x'] };
+    expect(hashSchema(before)).not.toBe(hashSchema(after));
   });
 });

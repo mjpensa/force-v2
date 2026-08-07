@@ -11,7 +11,8 @@ import { generateCompetitiveAnalysisPrompt, competitiveAnalysisSchema } from './
 import { generateRiskRegisterPrompt, riskRegisterSchema } from './prompts/risk-register.js';
 import { CONFIG } from './config.js';
 import { genAI } from './gemini.js';
-import { diskCache } from './cache/DiskCache.js';
+import { diskCache, hashSchema } from './cache/DiskCache.js';
+import { archiveResponse } from './cache/archive.js';
 import { modelRotator } from './model-rotation.js';
 const GENERATION_TIMEOUT_MS = 360000; // 6 minutes
 
@@ -266,7 +267,17 @@ function withTimeout(promise, timeoutMs, operationName) {
 }
 async function generateWithGemini(prompt, schema, contentType, configOverrides = {}, options = {}) {
   try {
-    const cacheConfig = { schema: schema?.description, contentType, ...configOverrides };
+    // The full prompt is already part of the cache key (DiskCache._hashKey), so prompt edits
+    // invalidate correctly. Schema and model were not: the key carried only the schema's
+    // top-level `description`, and 8 of the 12 schemas don't define one — so a schema change
+    // silently replayed a pre-change response, and a rotation to a different model reused
+    // the previous model's output. Both produce confident wrong conclusions.
+    const cacheConfig = {
+      schema: hashSchema(schema),
+      model: modelRotator.current(),
+      contentType,
+      ...configOverrides
+    };
     const cached = await diskCache.get(prompt, cacheConfig, options);
     if (cached) return cached;
 
@@ -306,12 +317,15 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     try {
       const data = JSON.parse(text);
       await diskCache.set(prompt, cacheConfig, data);
+      archiveResponse(contentType, prompt, data);
       return data;
     } catch (parseError) {
       try {
         const repairedJsonText = jsonrepair(text);
         const repairedData = JSON.parse(repairedJsonText);
+        console.warn(`[${contentType}] jsonrepair salvaged a malformed response`);
         await diskCache.set(prompt, cacheConfig, repairedData);
+        archiveResponse(contentType, prompt, repairedData);
         return repairedData;
       } catch (repairError) {
         throw parseError;

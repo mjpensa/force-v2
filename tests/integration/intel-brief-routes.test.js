@@ -10,6 +10,7 @@ await jest.unstable_mockModule('@google/generative-ai', () => ({
 }));
 
 await jest.unstable_mockModule('../../server/cache/DiskCache.js', () => ({
+  hashSchema: () => 'test-schema-hash',
   DiskCache: class { constructor() {} async get() { return null; } async set() {} async wrap(p, c, fn) { return fn(); } },
   diskCache: { get: async () => null, set: async () => {}, wrap: async (p, c, fn) => fn() }
 }));

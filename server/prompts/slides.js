@@ -1482,7 +1482,7 @@ For EACH content slide, populate all schema fields. Key quality guidance per sec
 
 ### 4. STORY CONTEXT
 - soWhat MUST be: action-oriented, quantified, urgent, client-specific
-  Example: "Accelerate CDM pilot before Q2, saving \$2.3M annually"
+  Example: "Accelerate CDM pilot before Q2, saving $2.3M annually"
 - callToAction: vary ask intensity by audience warmth (warm=commitment, neutral=follow-up, hostile=address concerns)
 - timeGuidance: condensedVersion = one-sentence version if running late
 

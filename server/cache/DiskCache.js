@@ -6,11 +6,35 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_CACHE_DIR = join(__dirname, '..', '..', '.gemini-cache');
 
+/**
+ * Deterministic JSON stringify — object keys sorted at every level.
+ *
+ * Used to hash generation schemas into the cache key. Plain JSON.stringify preserves
+ * insertion order, so reordering two properties in a schema literal would change the hash
+ * and needlessly discard every cached response for that generator.
+ */
+export function stableStringify(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  const keys = Object.keys(value).sort();
+  return `{${keys.map(k => `${JSON.stringify(k)}:${stableStringify(value[k])}`).join(',')}}`;
+}
+
+/** Stable fingerprint of a generation schema, for use in the cache key. */
+export function hashSchema(schema) {
+  if (!schema) return null;
+  return createHash('sha256').update(stableStringify(schema)).digest('hex').slice(0, 16);
+}
+
 export class DiskCache {
   constructor(options = {}) {
     this.cacheDir = options.cacheDir || DEFAULT_CACHE_DIR;
     this.maxSizeMB = options.maxSizeMB || 200;
-    this.ttlMs = options.ttlMs || 7 * 24 * 60 * 60 * 1000; // 7 days
+    // 90 days. Every cached response is API quota already spent, and on the free tier that
+    // is 20 requests/day/model. A 7-day TTL was silently deleting paid-for responses that
+    // existed nowhere else — 8 of the 17 entries recovered into tests/golden/ were already
+    // past it and would have been unlinked by the next cache read.
+    this.ttlMs = options.ttlMs || 90 * 24 * 60 * 60 * 1000;
     this.enabled = options.enabled ?? (process.env.GEMINI_DISK_CACHE !== 'false');
     this._initialized = false;
   }

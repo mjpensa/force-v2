@@ -27,8 +27,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # test:ci is the coverage-gated run and IS the gate — jest exits non-zero when a
+      # threshold in jest.config.js is not met. `npm test` is deliberately coverage-free
+      # so the local inner loop stays ~17s instead of ~86s.
       - name: Run unit tests
-        run: npm test -- --coverage
+        run: npm run test:ci
+        env:
+          GEMINI_DISK_CACHE: 'false'
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
@@ -73,14 +78,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check for console.logs
-        run: |
-          if grep -r "console\.log" server/ Public/ --exclude-dir=node_modules --exclude-dir=coverage; then
-            echo "❌ Found console.log statements. Please remove them."
-            exit 0  # Don't fail the build, just warn
-          else
-            echo "✅ No console.log statements found"
-          fi
+      - name: Run eslint
+        run: npm run lint
 
   security:
     runs-on: ubuntu-latest
@@ -108,35 +107,6 @@ jobs:
           base: ${{ github.event.repository.default_branch }}
           head: HEAD
 
-  coverage-check:
-    runs-on: ubuntu-latest
-    needs: test
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm run test:ci
-        env:
-          GEMINI_DISK_CACHE: 'false'
-
-      - name: Check coverage thresholds
-        run: |
-          echo "📊 Coverage Report Generated"
-          echo "See artifacts for detailed HTML report"
-          # Note: Jest will fail if thresholds aren't met (configured in jest.config.js)
-          # We're using || true to not fail the build for now
-
   build-check:
     runs-on: ubuntu-latest
 
@@ -153,7 +123,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check for build errors
-        run: |
-          echo "✅ Dependencies installed successfully"
-          echo "✅ No build errors detected"
+      # Runs the same build Railway/nixpacks runs on deploy, so a broken build fails here
+      # instead of at deploy time. Previously this job only echoed a success message.
+      - name: Run production build
+        run: npm run build
