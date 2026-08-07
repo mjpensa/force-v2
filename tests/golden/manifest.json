@@ -32,6 +32,14 @@
     "bytes": 33960
   },
   {
+    "file": "intelligence-brief-1.json",
+    "generator": "intelligence-brief",
+    "sourceHash": null,
+    "capturedAt": "2026-08-07T18:36:32.936Z",
+    "expiredInCache": false,
+    "bytes": 10698
+  },
+  {
     "file": "narrative-spine-1.json",
     "generator": "narrative-spine",
     "sourceHash": "852448d63474b2b818d7acc16493129df0fbc78729da321d3bb793d6a832ae7f",
@@ -118,6 +126,22 @@
     "capturedAt": "2026-04-19T21:39:26.498Z",
     "expiredInCache": true,
     "bytes": 6809
+  },
+  {
+    "file": "speaker-notes-1.json",
+    "generator": "speaker-notes",
+    "sourceHash": null,
+    "capturedAt": "2026-08-07T18:43:40.961Z",
+    "expiredInCache": false,
+    "bytes": 250214
+  },
+  {
+    "file": "speaker-notes-outline-1.json",
+    "generator": "speaker-notes-outline",
+    "sourceHash": null,
+    "capturedAt": "2026-08-07T18:38:10.889Z",
+    "expiredInCache": false,
+    "bytes": 62049
   },
   {
     "file": "swot-analysis-1.json",

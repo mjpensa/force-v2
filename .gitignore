@@ -44,3 +44,18 @@ nul
 
 # Gemini API disk cache
 .gemini-cache/
+# Design exploration and superseded planning docs kept on disk but out of git.
+# These predate the modernization work; ignored so `git status` stays readable and
+# they cannot be swept into a commit by accident.
+mockup-*.html
+mockup-*.png
+v4-iter-*.html
+v4-current.png
+PROPOSAL_STUDIO_V3_PLAN.md
+PROPOSAL_STUDIO_V3_IMPLEMENTATION_STRATEGY.md
+PROPOSAL_STUDIO_V4_SIMPLIFIED.md
+V3_CLAUDE_MANIFEST.md
+ITERATION-PLAN.md
+gemini-scrollback-full.txt
+source-files-brief.txt
+responses/
