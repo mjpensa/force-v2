@@ -18,7 +18,7 @@
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --watch",
     "test:unit": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest tests/server tests/public",
     "test:integration": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest tests/integration",
-    "test:ci": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --coverage --ci --forceExit",
+    "test:ci": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --coverage --ci",
     "lint": "eslint 'Public/**/*.js' 'server/**/*.js' 'server.js' --ignore-pattern 'Public/dist/**'",
     "lint:fix": "eslint 'Public/**/*.js' 'server/**/*.js' 'server.js' --fix --ignore-pattern 'Public/dist/**'",
     "audit:gate": "node scripts/audit-gate.mjs",

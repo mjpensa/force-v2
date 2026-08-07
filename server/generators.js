@@ -562,58 +562,10 @@ async function generateDocument(userPrompt, researchFiles, swimlanes = [], preco
     coherenceIssues: lastCoherenceValidation?.issues || []
   };
 }
-async function generateSwotAnalysis(userPrompt, researchFiles, precomputed = null) {
-  try {
-    const prompt = generateSwotAnalysisPrompt(userPrompt, researchFiles, precomputed);
-    const data = await generateWithGemini(prompt, swotAnalysisSchema, 'SwotAnalysis', SWOT_CONFIG);
-    return { success: true, data };
-  } catch (error) {
-    console.error('[SWOT Analysis] Error:', error.message);
-    return { success: false, error: error.message };
-  }
-}
 
-async function generateCompetitiveAnalysis(userPrompt, researchFiles, precomputed = null) {
-  try {
-    const prompt = generateCompetitiveAnalysisPrompt(userPrompt, researchFiles, precomputed);
-    const data = await generateWithGemini(prompt, competitiveAnalysisSchema, 'CompetitiveAnalysis', COMPETITIVE_ANALYSIS_CONFIG);
-    return { success: true, data };
-  } catch (error) {
-    console.error('[Competitive Analysis] Error:', error.message);
-    return { success: false, error: error.message };
-  }
-}
 
-async function generateRiskRegister(userPrompt, researchFiles, precomputed = null) {
-  try {
-    const prompt = generateRiskRegisterPrompt(userPrompt, researchFiles, precomputed);
-    const data = await generateWithGemini(prompt, riskRegisterSchema, 'RiskRegister', RISK_REGISTER_CONFIG);
-    return { success: true, data };
-  } catch (error) {
-    console.error('[Risk Register] Error:', error.message);
-    return { success: false, error: error.message };
-  }
-}
 
-async function generateNarrativeSpine(userPrompt, researchFiles, precomputed = null) {
-  try {
-    const prompt = generateNarrativeSpinePrompt(userPrompt, researchFiles, precomputed);
-    const data = await generateWithGemini(prompt, narrativeSpineSchema, 'NarrativeSpine', NARRATIVE_SPINE_CONFIG);
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
 
-async function generateResearchAnalysis(userPrompt, researchFiles, precomputed = null) {
-  try {
-    const prompt = generateResearchAnalysisPrompt(userPrompt, researchFiles, precomputed);
-    const data = await generateWithGemini(prompt, researchAnalysisSchema, 'ResearchAnalysis', RESEARCH_ANALYSIS_CONFIG);
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
 
 export async function generateIntelligenceBrief(sessionData, meetingContext) {
   try {
@@ -631,6 +583,44 @@ export async function generateIntelligenceBrief(sessionData, meetingContext) {
 
 // 3-phase pipeline: Phase 0 (Research), Phase 1 (Roadmap + Outline), Phase 2 (Slides + Document)
 // Speaker notes generated on-demand via generateSpeakerNotesAsync()
+/**
+ * Generators whose entire body is "build the prompt, call the model, wrap the result".
+ *
+ * These were five byte-identical functions differing only in prompt builder, schema,
+ * content type and config. Three of them also logged the failure a second time —
+ * generateWithGemini already logs it — while the other two stayed silent, so the same class
+ * of failure produced two, one, or one-plus-a-duplicate log lines depending on which view
+ * hit it. The wrapper log is dropped; generateWithGemini owns it.
+ *
+ * Keeping this table-driven means the Phase 4 prompt rewrite changes one call path rather
+ * than five near-copies that can drift apart.
+ */
+const SIMPLE_GENERATORS = {
+  swotAnalysis:       { promptFn: generateSwotAnalysisPrompt,        schema: swotAnalysisSchema,        contentType: 'SwotAnalysis',        config: SWOT_CONFIG },
+  competitiveAnalysis:{ promptFn: generateCompetitiveAnalysisPrompt, schema: competitiveAnalysisSchema, contentType: 'CompetitiveAnalysis', config: COMPETITIVE_ANALYSIS_CONFIG },
+  riskRegister:       { promptFn: generateRiskRegisterPrompt,        schema: riskRegisterSchema,        contentType: 'RiskRegister',        config: RISK_REGISTER_CONFIG },
+  narrativeSpine:     { promptFn: generateNarrativeSpinePrompt,      schema: narrativeSpineSchema,      contentType: 'NarrativeSpine',      config: NARRATIVE_SPINE_CONFIG },
+  researchAnalysis:   { promptFn: generateResearchAnalysisPrompt,    schema: researchAnalysisSchema,    contentType: 'ResearchAnalysis',    config: RESEARCH_ANALYSIS_CONFIG },
+};
+
+function makeSimpleGenerator({ promptFn, schema, contentType, config }) {
+  return async function (userPrompt, researchFiles, precomputed = null) {
+    try {
+      const prompt = promptFn(userPrompt, researchFiles, precomputed);
+      const data = await generateWithGemini(prompt, schema, contentType, config);
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+}
+
+const generateSwotAnalysis = makeSimpleGenerator(SIMPLE_GENERATORS.swotAnalysis);
+const generateCompetitiveAnalysis = makeSimpleGenerator(SIMPLE_GENERATORS.competitiveAnalysis);
+const generateRiskRegister = makeSimpleGenerator(SIMPLE_GENERATORS.riskRegister);
+const generateNarrativeSpine = makeSimpleGenerator(SIMPLE_GENERATORS.narrativeSpine);
+const generateResearchAnalysis = makeSimpleGenerator(SIMPLE_GENERATORS.researchAnalysis);
+
 export async function generateAllContent(userPrompt, researchFiles, requestedViews = null, onProgress = null) {
   const shouldGenerate = (view) => !requestedViews || requestedViews.includes(view);
   const skipped = { success: false, error: 'Skipped', skipped: true };

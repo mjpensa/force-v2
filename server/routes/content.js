@@ -92,7 +92,9 @@ function enforceSessionLimit() {
   }
 }
 
-setInterval(() => {
+const SESSION_SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+
+export const sessionSweeper = setInterval(() => {
   const now = Date.now();
   for (const [sessionId, session] of sessions) {
     const lastActivity = session.lastAccessed || session.createdAt;
@@ -101,7 +103,19 @@ setInterval(() => {
     }
   }
   enforceSessionLimit();
-}, 5 * 60 * 1000);
+}, SESSION_SWEEP_INTERVAL_MS);
+
+// Do not hold the process open. This timer only prunes an in-memory Map; in production the
+// HTTP server is what keeps Node alive, so unref costs nothing there. Without it, every test
+// importing this module inherited a 5-minute timer and the suite could never exit on its
+// own — which is why every run needed --forceExit, and why a genuine hang would have been
+// indistinguishable from this one.
+sessionSweeper.unref?.();
+
+/** Stop the sweeper — for graceful shutdown and for tests that assert on exit behavior. */
+export function stopSessionSweeper() {
+  clearInterval(sessionSweeper);
+}
 
 function generateSessionId() {
   return crypto.randomUUID();
