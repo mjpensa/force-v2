@@ -103,7 +103,16 @@ function shutdown(signal) {
   }, SHUTDOWN_GRACE_MS);
   forceExit.unref();
 
+  // Reap idle keep-alive sockets repeatedly, not once. A connection that finishes its
+  // request *after* shutdown begins becomes idle a moment later, and a single reap at the
+  // top would leave it to sit out the 5s keep-alive timeout — measured at 6.7s to close a
+  // drain that should take under a second. In-flight requests are untouched by this.
+  server.closeIdleConnections?.();
+  const reapIdle = setInterval(() => server.closeIdleConnections?.(), 200);
+  reapIdle.unref();
+
   server.close((err) => {
+    clearInterval(reapIdle);
     if (err) {
       console.error('Error while closing HTTP server:', err.message);
       process.exit(1);
@@ -111,7 +120,6 @@ function shutdown(signal) {
     console.log('HTTP server closed cleanly');
     process.exit(0);
   });
-  server.closeIdleConnections?.();
 }
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
