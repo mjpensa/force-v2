@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, unlink, readdir, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,7 +29,11 @@ export function hashSchema(schema) {
 export class DiskCache {
   constructor(options = {}) {
     this.cacheDir = options.cacheDir || DEFAULT_CACHE_DIR;
+    // Enforced by _pruneToMaxSize() after every write. Before that this field was assigned
+    // here and read nowhere, so the cache had no size bound at all — and raising the TTL
+    // from 7 to 90 days below extended the window over which it grows by 13x.
     this.maxSizeMB = options.maxSizeMB || 200;
+    this.maxSizeBytes = this.maxSizeMB * 1024 * 1024;
     // 90 days. Every cached response is API quota already spent, and on the free tier that
     // is 20 requests/day/model. A 7-day TTL was silently deleting paid-for responses that
     // existed nowhere else — 8 of the 17 entries recovered into tests/golden/ were already
@@ -75,8 +79,43 @@ export class DiskCache {
       const hash = this._hashKey(prompt, config);
       const entry = { timestamp: Date.now(), prompt: String(prompt).slice(0, 50), data };
       await writeFile(join(this.cacheDir, `${hash}.json`), JSON.stringify(entry));
+      await this._pruneToMaxSize();
     } catch {
       // Silent fail — cache is best-effort
+    }
+  }
+
+  /**
+   * Drop oldest entries until the cache fits under maxSizeBytes.
+   *
+   * Eviction is logged rather than silent: every entry here is API quota already spent, and
+   * on the free tier that is 20 requests/day. If this starts firing, the right response is
+   * to raise the cap or archive with GEMINI_ARCHIVE=1 — not to let it quietly churn.
+   */
+  async _pruneToMaxSize() {
+    const names = (await readdir(this.cacheDir)).filter(n => n.endsWith('.json'));
+    const entries = [];
+    let total = 0;
+    for (const name of names) {
+      const path = join(this.cacheDir, name);
+      try {
+        const s = await stat(path);
+        entries.push({ path, name, size: s.size, mtimeMs: s.mtimeMs });
+        total += s.size;
+      } catch {
+        // raced with another writer; skip
+      }
+    }
+    if (total <= this.maxSizeBytes) return;
+
+    entries.sort((a, b) => a.mtimeMs - b.mtimeMs); // oldest first
+    for (const e of entries) {
+      if (total <= this.maxSizeBytes) break;
+      await unlink(e.path).catch(() => {});
+      total -= e.size;
+      console.warn(
+        `[DiskCache] Evicted ${e.name} (${(e.size / 1024).toFixed(0)} KB) — over ${this.maxSizeMB} MB cap. This was spent quota.`
+      );
     }
   }
 
