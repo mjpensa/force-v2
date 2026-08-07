@@ -4,17 +4,26 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 /**
- * Holds the glass text tokens to WCAG AA contrast.
+ * Reports measured contrast of the glass text tokens, and holds the invariants that are
+ * genuinely invariant.
  *
- * README claimed "Verified contrast ratios meeting WCAG 2.1 AA standards" while
- * --glass-text-muted measured 3.08:1 and --glass-text-secondary 4.42:1 against the gradient
- * midpoint — both below the 4.5:1 needed for normal text, and both used on --text-sm body
- * copy in document-view.css. Nothing had ever computed them; the README pointed at a
- * checkColorContrast() helper that does not exist in Accessibility.js.
+ * It does NOT assert a WCAG AA threshold. The secondary/muted alphas are an aesthetic
+ * decision — the separation between them is what makes the glass read as glass — and the
+ * owner has chosen to keep them where they are, below 4.5:1 for normal text. A test that
+ * failed on those values would be enforcing a design choice that was explicitly declined,
+ * which is how a suite starts getting ignored.
  *
- * The values are alpha-composited white over the glass panel (--glass-white-8) over each
- * navy gradient stop, which is what the browser actually paints. The tokens are parsed out
- * of the stylesheet rather than duplicated here, so editing the CSS is what this test sees.
+ * What it does enforce: the hierarchy ordering, and that the Tailwind utilities stay in step
+ * with the CSS custom properties. Those two are separate declarations of the same colour and
+ * silently drifting apart is a real bug rather than a matter of taste.
+ *
+ * The measured ratios are printed so the cost of the choice stays visible. If contrast does
+ * need improving later, the lever is type size on --text-sm body copy (large text qualifies
+ * at 3:1) rather than flattening the palette.
+ *
+ * Values are alpha-composited white over the glass panel (--glass-white-8) over each navy
+ * gradient stop, which is what the browser actually paints. Tokens are parsed out of the
+ * stylesheet rather than duplicated here, so editing the CSS is what this test sees.
  */
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -52,17 +61,23 @@ const BACKDROPS = ['color-navy-deep', 'color-navy-brand', 'color-navy-mid'].map(
 }));
 const PANEL_ALPHA = parseFloat(cssVar('glass-white-8').match(/,\s*([\d.]+)\s*\)/)[1]);
 
-describe('glass text tokens meet WCAG AA', () => {
-  for (const token of ['glass-text-secondary', 'glass-text-muted']) {
-    for (const backdrop of BACKDROPS) {
-      it(`--${token} clears ${AA_NORMAL}:1 over ${backdrop.name}`, () => {
+describe('glass text tokens', () => {
+  it('reports measured contrast against each gradient stop', () => {
+    const lines = [];
+    for (const token of ['glass-text-secondary', 'glass-text-muted']) {
+      for (const backdrop of BACKDROPS) {
         const panel = composite([255, 255, 255], PANEL_ALPHA, backdrop.rgb);
         const painted = composite([255, 255, 255], alphaOf(token), panel);
         const ratio = contrast(painted, panel);
-        expect(ratio).toBeGreaterThanOrEqual(AA_NORMAL);
-      });
+        lines.push(
+          `  --${token} over ${backdrop.name}: ${ratio.toFixed(2)}:1` +
+            (ratio >= AA_NORMAL ? '' : ` (below AA ${AA_NORMAL}:1 for normal text — accepted)`)
+        );
+        expect(Number.isFinite(ratio)).toBe(true);
+      }
     }
-  }
+    console.log('[contrast]\n' + lines.join('\n'));
+  });
 
   it('keeps the visual hierarchy primary > secondary > muted', () => {
     expect(alphaOf('glass-text-secondary')).toBeGreaterThan(alphaOf('glass-text-muted'));

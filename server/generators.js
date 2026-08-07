@@ -1,4 +1,3 @@
-import { jsonrepair } from 'jsonrepair';
 import { generateRoadmapPrompt, roadmapSchema } from './prompts/roadmap.js';
 import { generateSlidesPrompt, generateSlidesOutlinePrompt, generateSpeakerNotesPrompt, generateSpeakerNotesOutlinePrompt, slidesSchema, slidesOutlineSchema, speakerNotesSchema, speakerNotesOutlineSchema } from './prompts/slides.js';
 import { generateDocumentPrompt, documentSchema } from './prompts/document.js';
@@ -9,8 +8,7 @@ import { generateNarrativeSpinePrompt, narrativeSpineSchema, formatNarrativeSpin
 import { generateSwotAnalysisPrompt, swotAnalysisSchema } from './prompts/swot-analysis.js';
 import { generateCompetitiveAnalysisPrompt, competitiveAnalysisSchema } from './prompts/competitive-analysis.js';
 import { generateRiskRegisterPrompt, riskRegisterSchema } from './prompts/risk-register.js';
-import { CONFIG } from './config.js';
-import { genAI } from './gemini.js';
+import { callModelForJson } from './gemini.js';
 import { diskCache, hashSchema } from './cache/DiskCache.js';
 import { archiveResponse } from './cache/archive.js';
 import { validateOrWarn } from './schema-guard.js';
@@ -256,17 +254,6 @@ function validateReasoningCoherence(reasoning, executiveSummary) {
   return { coherent: issues.length === 0, issues };
 }
 
-function withTimeout(promise, timeoutMs, operationName) {
-  let timeoutId;
-  const timeoutPromise = new Promise((_, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(new Error(`${operationName} timed out after ${timeoutMs / 1000} seconds`));
-    }, timeoutMs);
-  });
-  return Promise.race([promise, timeoutPromise]).finally(() => {
-    clearTimeout(timeoutId);
-  });
-}
 async function generateWithGemini(prompt, schema, contentType, configOverrides = {}, options = {}) {
   try {
     // The full prompt is already part of the cache key (DiskCache._hashKey), so prompt edits
@@ -305,36 +292,22 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     if (maxOutputTokens !== undefined) generationConfig.maxOutputTokens = maxOutputTokens;
     if (frequencyPenalty !== undefined) generationConfig.frequencyPenalty = frequencyPenalty;
     if (presencePenalty !== undefined) generationConfig.presencePenalty = presencePenalty;
-    const model = genAI.getGenerativeModel({
-      model: modelRotator.current(),
-      generationConfig
+    // Goes through the shared client, which is what gives the content pipeline retry with
+    // backoff. It previously had none: a transient 503 killed the call outright, and on a
+    // 20-request/day free tier every lost call is 5% of the budget. Quota exhaustion is
+    // still never retried — see isQuotaExhausted in gemini.js.
+    const data = await callModelForJson(prompt, {
+      generationConfig,
+      timeoutMs: GENERATION_TIMEOUT_MS,
+      label: contentType,
+      onRetry: (attempt, err) =>
+        console.warn(`[${contentType}] attempt ${attempt} failed, retrying: ${err.message}`),
     });
-    const result = await withTimeout(
-      model.generateContent(prompt),
-      GENERATION_TIMEOUT_MS,
-      `${contentType} generation`
-    );
-    const response = result.response;
-    const text = response.text();
-    try {
-      const data = JSON.parse(text);
-      validateOrWarn(data, schema, contentType);
-      await diskCache.set(prompt, cacheConfig, data);
-      archiveResponse(contentType, prompt, data);
-      return data;
-    } catch (parseError) {
-      try {
-        const repairedJsonText = jsonrepair(text);
-        const repairedData = JSON.parse(repairedJsonText);
-        console.warn(`[${contentType}] jsonrepair salvaged a malformed response`);
-        validateOrWarn(repairedData, schema, contentType);
-        await diskCache.set(prompt, cacheConfig, repairedData);
-        archiveResponse(contentType, prompt, repairedData);
-        return repairedData;
-      } catch (repairError) {
-        throw parseError;
-      }
-    }
+
+    validateOrWarn(data, schema, contentType);
+    await diskCache.set(prompt, cacheConfig, data);
+    archiveResponse(contentType, prompt, data);
+    return data;
   } catch (error) {
     console.error(`[${contentType}] Generation failed:`, error.message);
     try { modelRotator.handleError(error); } catch { /* rotation failed or non-rate-limit error */ }

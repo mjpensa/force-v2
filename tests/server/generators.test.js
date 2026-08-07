@@ -92,20 +92,37 @@ describe('generateAllContent', () => {
   });
 
   it('handles individual view failure gracefully (one fails, others succeed)', async () => {
-    let callIndex = 0;
-    const fixtures = [
-      narrativeSpineFixture,
-      researchAnalysisFixture,
-      roadmapFixture,
-      slidesOutlineFixture,
-      slidesFixture,
-      documentFixture,
+    // Dispatches on the prompt rather than call index. Index dispatch broke once the content
+    // pipeline gained retry: failing "call 5" let the retry fall through to call 6's fixture,
+    // so the slides view came back successful carrying the document's data. Matching on the
+    // prompt makes the failure persistent for that view, which is what the test means — a
+    // view that genuinely cannot generate must not take the others down with it.
+    // Markers must be unique within the first 200 chars. narrative-spine and swot-analysis
+    // share the same "senior strategy analyst" opening, so both are matched on the clause
+    // that follows it.
+    const BY_PROMPT = [
+      ['presentation slides organized into SECTIONS', null], // null => always fails
+      ['NARRATIVE OUTLINE', slidesOutlineFixture],
+      ['extract the narrative spine', narrativeSpineFixture],
+      ['comprehensive SWOT analysis', { strengths: [], weaknesses: [], opportunities: [], threats: [] }],
+      ['expert research analyst', researchAnalysisFixture],
+      ['expert project management analyst', roadmapFixture],
+      ['senior strategy consultant', documentFixture],
+      ['competitive intelligence analyst', { competitors: [] }],
+      ['risk management specialist', { risks: [] }],
     ];
-    generateContentMock = jest.fn().mockImplementation(async () => {
-      callIndex++;
-      // Fail the 5th call (slides from outline — after spine, research-analysis, roadmap, slides-outline)
-      if (callIndex === 5) throw new Error('Slides generation failed');
-      return { response: { text: () => JSON.stringify(fixtures[callIndex - 1]) } };
+
+    generateContentMock = jest.fn().mockImplementation(async (payload) => {
+      const text = typeof payload === 'string' ? payload : JSON.stringify(payload);
+      // Match the opening role line only. The slides prompt embeds the outline it was built
+      // from, so a whole-body search finds "NARRATIVE OUTLINE" inside it and misroutes to
+      // the outline fixture.
+      const head = text.slice(0, 200);
+      const match = BY_PROMPT.find(([marker]) => head.includes(marker));
+      if (!match) throw new Error(`Test mock: unrecognized prompt: ${head.slice(0, 80)}`);
+      const [, fixture] = match;
+      if (fixture === null) throw new Error('Slides generation failed');
+      return { response: { text: () => JSON.stringify(fixture) } };
     });
 
     const result = await generators.generateAllContent(samplePrompt, sampleResearchFiles);
