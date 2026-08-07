@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateSlideOutput, countSlides, correctionPreservesContent } from '../../server/generators.js';
-import { SLIDE_LIMITS } from '../../server/constants/slide-limits.js';
+import { SLIDE_LIMITS } from '../../Public/shared/slide-limits.js';
 
 const GOLDEN_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'golden');
 const golden = name => JSON.parse(readFileSync(join(GOLDEN_DIR, `${name}.json`), 'utf8')).data;
@@ -107,5 +107,37 @@ describe('correctionPreservesContent', () => {
   it('rejects malformed correction output', () => {
     expect(correctionPreservesContent(before, null)).toBe(false);
     expect(correctionPreservesContent(before, { sections: 'nope' })).toBe(false);
+  });
+});
+
+describe('SLIDE_LIMITS as the single source', () => {
+  // The rule the constants module encodes: never truncate text the validator accepts.
+  // If a render limit drops below PARAGRAPH_MAX, content is discarded with no signal
+  // anywhere — which is what produced the 205/280/320/390/410/450 spread this replaced.
+  it('render limits are not tighter than what the validator accepts', () => {
+    expect(SLIDE_LIMITS.RENDER_TWO_COLUMN).toBeGreaterThanOrEqual(SLIDE_LIMITS.PARAGRAPH_MAX);
+    expect(SLIDE_LIMITS.RENDER_THREE_COLUMN).toBeGreaterThanOrEqual(SLIDE_LIMITS.PARAGRAPH_MAX);
+  });
+
+  it('the prompt target sits inside the accepted band', () => {
+    expect(SLIDE_LIMITS.PARAGRAPH_TARGET_MIN).toBeGreaterThanOrEqual(SLIDE_LIMITS.PARAGRAPH_MIN);
+    expect(SLIDE_LIMITS.PARAGRAPH_TARGET_MAX).toBeLessThanOrEqual(SLIDE_LIMITS.PARAGRAPH_MAX);
+  });
+
+  it('nothing in the golden decks would now be truncated by the renderer', () => {
+    // Every paragraph the validator passes should survive rendering intact.
+    for (const name of ['slides-1', 'slides-2']) {
+      const data = golden(name);
+      for (const section of data.sections ?? []) {
+        for (const s of section.slides ?? []) {
+          for (const f of ['paragraph1', 'paragraph2', 'paragraph3']) {
+            const text = s[f];
+            if (text && text.length <= SLIDE_LIMITS.PARAGRAPH_MAX) {
+              expect(text.length).toBeLessThanOrEqual(SLIDE_LIMITS.RENDER_TWO_COLUMN);
+            }
+          }
+        }
+      }
+    }
   });
 });

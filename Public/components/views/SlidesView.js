@@ -1,6 +1,7 @@
 import { toSentenceCase, sanitizeText, normalizeBodyText, truncateToSentence } from '../../shared/text-utils.js';
 import { createDropdownMenu, escapeHtml } from '../../utils/dom.js';
 import { flattenSlideDeck } from '../../shared/flatten-slides.js';
+import { SLIDE_LIMITS } from '../../shared/slide-limits.js';
 import { SpeakerNotesManager } from './SpeakerNotesManager.js';
 
 /** Append BIP logo, page-number footer, and optional corner graphic to a slide element. */
@@ -156,7 +157,7 @@ function renderTwoColumnSlide(slide, index) {
 
   const taglineEl = _createTagline(slide);
   taglineEl.dataset.editable = 'tagline';
-  taglineEl.dataset.maxLength = '21';
+  taglineEl.dataset.maxLength = String(SLIDE_LIMITS.TAGLINE_MAX);
   el.appendChild(taglineEl);
 
   const title = document.createElement('div');
@@ -197,17 +198,17 @@ function renderTwoColumnSlide(slide, index) {
 
   let paragraphs = [];
   if (slide.paragraph1 || slide.paragraph2) {
-    if (slide.paragraph1) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1.trim().replace(/\n/g, ' '))), 320));
-    if (slide.paragraph2) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2.trim().replace(/\n/g, ' '))), 320));
+    if (slide.paragraph1) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1.trim().replace(/\n/g, ' '))), SLIDE_LIMITS.RENDER_TWO_COLUMN));
+    if (slide.paragraph2) paragraphs.push(truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2.trim().replace(/\n/g, ' '))), SLIDE_LIMITS.RENDER_TWO_COLUMN));
   } else if (slide.body) {
-    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(normalizeBodyText(sanitizeText(p.trim().replace(/\n/g, ' '))), 320));
+    paragraphs = slide.body.split(/\n\n+/).filter(p => p.trim()).slice(0, 2).map(p => truncateToSentence(normalizeBodyText(sanitizeText(p.trim().replace(/\n/g, ' '))), SLIDE_LIMITS.RENDER_TWO_COLUMN));
   }
   paragraphs.forEach((p, i) => {
     const pEl = document.createElement('p');
     pEl.style.cssText = 'margin: 0 0 0.8em 0;';
     pEl.textContent = p;
     pEl.dataset.editable = `paragraph${i + 1}`;
-    pEl.dataset.maxLength = '410';
+    pEl.dataset.maxLength = String(SLIDE_LIMITS.PARAGRAPH_MAX);
     body.appendChild(pEl);
   });
 
@@ -262,9 +263,9 @@ function renderThreeColumnSlide(slide, index) {
   `;
 
   const columnTexts = [
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1)), 280),
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2)), 280),
-    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph3 || '')), 280)
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph1)), SLIDE_LIMITS.RENDER_THREE_COLUMN),
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph2)), SLIDE_LIMITS.RENDER_THREE_COLUMN),
+    truncateToSentence(normalizeBodyText(sanitizeText(slide.paragraph3 || '')), SLIDE_LIMITS.RENDER_THREE_COLUMN)
   ];
 
   columnTexts.forEach(text => {

@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { normalizeBodyText, truncateToSentence, formatTitle, formatSectionTitle, formatBody } from '../../Public/shared/text-utils.js';
 import { flattenSlideDeck } from '../../Public/shared/flatten-slides.js';
+import { SLIDE_LIMITS } from '../../Public/shared/slide-limits.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -477,7 +478,9 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
     valign: 'top',
     lineSpacingMultiple: 0.85
   });
-  const bodyText = formatBody(data.paragraph1, data.paragraph2, 410);
+  // formatBody splits the budget across the two paragraphs, so pass twice the
+  // per-paragraph limit to give each one the full RENDER_TWO_COLUMN allowance.
+  const bodyText = formatBody(data.paragraph1, data.paragraph2, SLIDE_LIMITS.RENDER_TWO_COLUMN * 2);
   if (bodyText) {
     slide.addText(bodyText, {
       x: L.body.x, y: L.body.y, w: L.body.w, h: L.body.h,
@@ -521,9 +524,9 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   const gapWidth = L.columnGap;
   const columnWidth = (totalWidth - (2 * gapWidth)) / 3;
   const columnTexts = [
-    truncateToSentence(normalizeBodyText(data.paragraph1), 390),
-    truncateToSentence(normalizeBodyText(data.paragraph2), 390),
-    truncateToSentence(normalizeBodyText(data.paragraph3 || data.paragraph1), 390)
+    truncateToSentence(normalizeBodyText(data.paragraph1), SLIDE_LIMITS.RENDER_THREE_COLUMN),
+    truncateToSentence(normalizeBodyText(data.paragraph2), SLIDE_LIMITS.RENDER_THREE_COLUMN),
+    truncateToSentence(normalizeBodyText(data.paragraph3 || ''), SLIDE_LIMITS.RENDER_THREE_COLUMN)
   ];
 
   columnTexts.forEach((text, index) => {

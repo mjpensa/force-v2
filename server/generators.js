@@ -14,7 +14,7 @@ import { genAI } from './gemini.js';
 import { diskCache, hashSchema } from './cache/DiskCache.js';
 import { archiveResponse } from './cache/archive.js';
 import { validateOrWarn } from './schema-guard.js';
-import { SLIDE_LIMITS } from './constants/slide-limits.js';
+import { SLIDE_LIMITS } from '../Public/shared/slide-limits.js';
 import { modelRotator } from './model-rotation.js';
 const GENERATION_TIMEOUT_MS = 360000; // 6 minutes
 
