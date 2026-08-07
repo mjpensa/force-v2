@@ -110,6 +110,64 @@ describe('DiskCache', () => {
     });
   });
 
+  describe('size cap', () => {
+    // maxSizeMB was assigned in the constructor and read nowhere, so the cache had no size
+    // bound at all — and raising the TTL from 7 to 90 days extended the window over which it
+    // grows by 13x. Eviction deletes spent API quota, so it needs to be exercised, not
+    // assumed.
+    const bigValue = size => ({ blob: 'x'.repeat(size) });
+
+    async function fillPast(cache, entryBytes, count) {
+      for (let i = 0; i < count; i++) {
+        await cache.set(`prompt-${i}`, { m: 1 }, bigValue(entryBytes));
+        // mtime has 1s granularity on some filesystems; nudge ordering deterministically.
+        await new Promise(r => setTimeout(r, 2));
+      }
+    }
+
+    it('does not evict while under the cap', async () => {
+      const c = new DiskCache({ cacheDir: tempDir, ttlMs: 60000, enabled: true, maxSizeMB: 10 });
+      await fillPast(c, 1000, DiskCache.PRUNE_INTERVAL + 2);
+      await c._pruneToMaxSize();
+      const files = await readdir(tempDir);
+      expect(files.length).toBe(DiskCache.PRUNE_INTERVAL + 2);
+    });
+
+    it('evicts oldest-first until it fits under the cap', async () => {
+      // 1 MB cap, ~200KB per entry -> only a few survive.
+      const c = new DiskCache({ cacheDir: tempDir, ttlMs: 60000, enabled: true, maxSizeMB: 1 });
+      await fillPast(c, 200 * 1024, 10);
+      await c._pruneToMaxSize();
+
+      const files = await readdir(tempDir);
+      expect(files.length).toBeLessThan(10);
+      expect(files.length).toBeGreaterThan(0);
+
+      // The most recently written entry must survive — evicting it would mean discarding the
+      // response we just paid for.
+      const newest = await c.get('prompt-9', { m: 1 });
+      expect(newest).not.toBeNull();
+    });
+
+    it('only runs the full scan every PRUNE_INTERVAL writes', async () => {
+      const c = new DiskCache({ cacheDir: tempDir, ttlMs: 60000, enabled: true, maxSizeMB: 1 });
+      let scans = 0;
+      c._pruneToMaxSize = async () => { scans += 1; };
+
+      for (let i = 0; i < DiskCache.PRUNE_INTERVAL - 1; i++) {
+        await c.set(`p${i}`, { m: 1 }, { v: i });
+      }
+      expect(scans).toBe(0);
+
+      await c.set('one-more', { m: 1 }, { v: 'x' });
+      expect(scans).toBe(1);
+    });
+
+    it('exposes maxSizeBytes derived from maxSizeMB', () => {
+      expect(new DiskCache({ cacheDir: tempDir, maxSizeMB: 7 }).maxSizeBytes).toBe(7 * 1024 * 1024);
+    });
+  });
+
   describe('default TTL', () => {
     // Regression guard: a 7-day TTL was silently deleting responses that cost API quota
     // and existed nowhere else (.gemini-cache/ is gitignored). Do not lower this without

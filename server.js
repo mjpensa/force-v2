@@ -75,17 +75,49 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server gracefully');
-  process.exit(0);
-});
+// Railway restarts the process on every deploy. Generation is fire-and-forget after a 202
+// (routes/content.js), sessions live only in this process's memory, and a full pipeline is
+// 10-12 sequential model calls — so an abrupt exit drops in-flight work whose quota is
+// already spent and leaves the client polling a session that will never complete.
+//
+// This drains connections rather than severing them. It does NOT persist in-flight
+// generations; surviving a restart mid-pipeline needs durable session state, which is a
+// larger change than this.
+const SHUTDOWN_GRACE_MS = 10000;
+let server = null;
+let shuttingDown = false;
 
-process.on('SIGINT', () => {
-  console.log('\nSIGINT signal received: shutting down gracefully');
-  process.exit(0);
-});
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`${signal} received: draining connections (up to ${SHUTDOWN_GRACE_MS / 1000}s)`);
+
+  if (!server) {
+    process.exit(0);
+  }
+
+  // Don't let a slow or hung connection hold the process open forever.
+  const forceExit = setTimeout(() => {
+    console.error(`Drain did not finish within ${SHUTDOWN_GRACE_MS / 1000}s; exiting anyway`);
+    process.exit(1);
+  }, SHUTDOWN_GRACE_MS);
+  forceExit.unref();
+
+  server.close((err) => {
+    if (err) {
+      console.error('Error while closing HTTP server:', err.message);
+      process.exit(1);
+    }
+    console.log('HTTP server closed cleanly');
+    process.exit(0);
+  });
+  server.closeIdleConnections?.();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 serverStartTime = new Date().toISOString();
-app.listen(port, () => {
+server = app.listen(port, () => {
   console.log('Proposal Studio Server');
   console.log(`Server running at http://localhost:${port}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);

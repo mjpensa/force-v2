@@ -27,6 +27,9 @@ export function hashSchema(schema) {
 }
 
 export class DiskCache {
+  /** Writes between full size checks. See _maybePrune. */
+  static PRUNE_INTERVAL = 25;
+
   constructor(options = {}) {
     this.cacheDir = options.cacheDir || DEFAULT_CACHE_DIR;
     // Enforced by _pruneToMaxSize() after every write. Before that this field was assigned
@@ -79,14 +82,38 @@ export class DiskCache {
       const hash = this._hashKey(prompt, config);
       const entry = { timestamp: Date.now(), prompt: String(prompt).slice(0, 50), data };
       await writeFile(join(this.cacheDir, `${hash}.json`), JSON.stringify(entry));
-      await this._pruneToMaxSize();
+      await this._maybePrune();
     } catch {
       // Silent fail — cache is best-effort
     }
   }
 
   /**
+   * Amortize the size check.
+   *
+   * _pruneToMaxSize scans the whole cache directory (readdir + one stat per entry). At the
+   * 200 MB cap with ~15 KB responses that is on the order of 13,000 stat calls, and running
+   * it on every set() would put that in the write path of every generation — on a 2-core
+   * host, during a pipeline already issuing concurrent API calls.
+   *
+   * Checking every PRUNE_INTERVAL writes bounds the cost. Overshooting the cap by a handful
+   * of entries between checks is harmless; the cap exists to stop unbounded growth over
+   * months, not to hold a byte-exact ceiling.
+   */
+  async _maybePrune() {
+    this._writesSincePrune = (this._writesSincePrune ?? 0) + 1;
+    if (this._writesSincePrune < DiskCache.PRUNE_INTERVAL) return;
+    this._writesSincePrune = 0;
+    await this._pruneToMaxSize();
+  }
+
+  /**
    * Drop oldest entries until the cache fits under maxSizeBytes.
+   *
+   * Ordered by mtime, so this is "oldest written" rather than true LRU — get() does not
+   * touch mtime, so a frequently-read entry can still be evicted. Accepted deliberately:
+   * making reads write mtime would put an extra syscall in the read path to buy a better
+   * eviction order for a cache that should rarely reach its cap at all.
    *
    * Eviction is logged rather than silent: every entry here is API quota already spent, and
    * on the free tier that is 20 requests/day. If this starts firing, the right response is
