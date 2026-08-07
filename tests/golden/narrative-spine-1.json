@@ -1,0 +1,13 @@
+{
+  "generator": "narrative-spine",
+  "capturedAt": 1786118911565,
+  "promptPrefix": "You are a senior strategy analyst. Analyze the res",
+  "data": {
+    "coreThesis": "The rapid convergence of frontier AI model capabilities and agentic deployment necessitates immediate, strategic integration to avoid critical competitive disadvantage.",
+    "keyClaims": [
+      {
+        "claim": "Frontier AI model performance is rapidly converging across multiple labs, leading to increased accessibility and downward pressure on API pricing."
+      }
+    ]
+  }
+}

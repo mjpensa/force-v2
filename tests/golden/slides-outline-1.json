@@ -1,0 +1,140 @@
+{
+  "generator": "slides-outline",
+  "capturedAt": 1786118961554,
+  "promptPrefix": "You are creating a NARRATIVE OUTLINE for a present",
+  "data": {
+    "reasoning": {
+      "overallNarrativeArc": "Rapid convergence of frontier AI models and agentic deployment creates intense competitive pressure -> market shifts, new risks, and strategic imperative deepen the stakes -> immediate, strategic integration is required to avoid critical competitive disadvantage and leverage opportunities.",
+      "primaryFramework": "COMPETITIVE_DYNAMICS",
+      "keyEvidenceChains": [
+        {
+          "evidence": "February 2026 is being called the most intense month of AI model competition ever, with Claude Opus 4.6 (Feb 5), Claude Sonnet 4.6 (Feb 17), GPT-5.3-Codex (Feb 5), and Gemini 3.1 Pro (Feb 19) all released within ~2 weeks.",
+          "insight": "The pace of innovation and direct competition among leading AI labs has reached an unprecedented level, leading to rapid capability convergence and market saturation.",
+          "implication": "Companies must rapidly evaluate and integrate the latest models, as the competitive edge from a single model is fleeting."
+        },
+        {
+          "evidence": "Claude Cowork plugins for Slack, Figma, Asana — rattled software stocks (Thomson Reuters -16%, LegalZoom -20%) and ChatGPT Agent replaced Operator as unified agentic system.",
+          "insight": "Agentic AI capabilities are moving beyond chatbots into direct enterprise workflow integration, posing a significant disruption to existing software ecosystems and creating new efficiency paradigms.",
+          "implication": "Businesses must develop strategies for adopting agentic AI to automate tasks, enhance productivity, and avoid being disrupted by more agile competitors."
+        },
+        {
+          "evidence": "Nvidia Vera Rubin unveiled — 10x perf/watt over Blackwell, shipping H2 2026. Nvidia posted $68.1B quarterly revenue and AMD-Meta 6-gigawatt compute deal — estimated $60-100B over 5 years.",
+          "insight": "The underlying hardware and infrastructure race is intensifying, indicating massive long-term investment and a sustained push for AI advancement, but also creating potential supply chain and cost pressures.",
+          "implication": "Strategic planning for AI adoption must include considerations for compute access, cost optimization, and potential hardware dependencies."
+        },
+        {
+          "evidence": "Anthropic $30B Series G at a $380B valuation (led by GIC and Coatue) and OpenAI pursuing a funding round that could exceed $100B (Nvidia in for up to $30B).",
+          "insight": "Investor confidence in the AI sector remains exceptionally high, driving massive valuations and fueling aggressive R&D, which will further accelerate competitive dynamics.",
+          "implication": "Companies need to align their AI strategy with these market trends, potentially seeking partnerships or acquisitions, or risk being outpaced by well-funded competitors."
+        }
+      ],
+      "crossSectionConnections": [
+        "The urgent competitive landscape and strategic imperative established in the Overview -> creates the need for a synthesized action plan in the Conclusion."
+      ]
+    },
+    "sections": [
+      {
+        "swimlane": "Overview",
+        "narrativeArc": "Current situation creates urgency → key themes preview → sets up deep dive",
+        "slides": [
+          {
+            "tagline": "MARKET INFLECTION",
+            "keyDataPoint": "February 2026 is being called the most intense month of AI model competition ever.",
+            "analyticalLens": "COMPETITIVE_DYNAMICS",
+            "connectsTo": "This unprecedented competitive intensity → is driven by → rapid model releases across major labs."
+          },
+          {
+            "tagline": "MODEL CONVERGENCE",
+            "keyDataPoint": "Claude Opus 4.6 (Feb 5), Claude Sonnet 4.6 (Feb 17), GPT-5.3-Codex (Feb 5), Gemini 3.1 Pro (Feb 19) all released within ~2 weeks.",
+            "analyticalLens": "COMPETITIVE_DYNAMICS",
+            "connectsTo": "The rapid release cycle and converging capabilities → are forcing a shift from model performance to → agentic deployment and integration."
+          },
+          {
+            "tagline": "AGENTIC SHIFT",
+            "keyDataPoint": "ChatGPT Agent replaced Operator as unified agentic system; Claude Cowork plugins for Slack, Figma, Asana.",
+            "analyticalLens": "SECOND_ORDER_EFFECTS",
+            "connectsTo": "This shift to agentic systems → has immediate and significant impacts on → existing software ecosystems and market valuations."
+          },
+          {
+            "tagline": "MARKET DISRUPTION",
+            "keyDataPoint": "Thomson Reuters -16%, LegalZoom -20% after Claude Cowork plugins announcement.",
+            "analyticalLens": "COMPETITIVE_DYNAMICS",
+            "connectsTo": "The demonstrated market disruption from agentic AI → underscores the urgency for → strategic integration to avoid competitive disadvantage."
+          },
+          {
+            "tagline": "STRATEGIC IMPERATIVE",
+            "keyDataPoint": "Frontier performance is converging across 5+ labs simultaneously. Focus shifting to agentic deployment, enterprise integration, practical tooling.",
+            "analyticalLens": "TEMPORAL_ARBITRAGE",
+            "connectsTo": "The imperative to integrate agentic AI → is further complicated by → the massive investment and hardware race underpinning the industry."
+          },
+          {
+            "tagline": "COMPUTE RACE",
+            "keyDataPoint": "Nvidia Vera Rubin unveiled (10x perf/watt over Blackwell, shipping H2 2026); AMD-Meta 6-gigawatt compute deal ($60-100B over 5 years).",
+            "analyticalLens": "SECOND_ORDER_EFFECTS",
+            "connectsTo": "The escalating compute race → highlights the need for a clear strategy to navigate → the complex, rapidly evolving AI landscape."
+          },
+          {
+            "tagline": "NAVIGATING COMPLEXITY",
+            "keyDataPoint": "OpenAI pursuing a funding round > $100B; Anthropic $30B Series G at $380B valuation.",
+            "analyticalLens": "RISK_ASYMMETRY",
+            "connectsTo": "The complex, high-stakes AI landscape → creates tension for → the actionable path forward presented in the Conclusion."
+          }
+        ]
+      },
+      {
+        "swimlane": "Conclusion",
+        "narrativeArc": "Evidence synthesis → strategic implications → actionable path forward",
+        "slides": [
+          {
+            "tagline": "3 CONVERGING FORCES",
+            "keyDataPoint": "February 2026: most intense month of AI model competition ever; Claude Cowork plugins rattled software stocks; Nvidia Vera Rubin unveiled.",
+            "analyticalLens": "CAUSAL_CHAIN",
+            "connectsTo": "These converging forces of model competition, agentic disruption, and infrastructure buildout → collectively imply → a critical window for strategic action."
+          },
+          {
+            "tagline": "CRITICAL WINDOW",
+            "keyDataPoint": "API prices expected to drop further as 7+ frontier models compete; Nvidia Vera Rubin shipping H2 2026.",
+            "analyticalLens": "TEMPORAL_ARBITRAGE",
+            "connectsTo": "This critical window for action → necessitates a clear understanding of → the strategic implications for our business."
+          },
+          {
+            "tagline": "STRATEGIC IMPLICATIONS",
+            "keyDataPoint": "94.3% on GPQA Diamond (Gemini 3.1 Pro); 77.1% on ARC-AGI-2 (Gemini 3.1 Pro).",
+            "analyticalLens": "COMPETITIVE_DYNAMICS",
+            "connectsTo": "The profound strategic implications → demand a proactive approach to → integrating agentic AI capabilities."
+          },
+          {
+            "tagline": "INTEGRATION PATH",
+            "keyDataPoint": "ChatGPT hit 900M weekly active users; Llama passed 1 billion downloads.",
+            "analyticalLens": "SECOND_ORDER_EFFECTS",
+            "connectsTo": "A clear integration path for agentic AI → must address potential risks and → ensure robust security measures."
+          },
+          {
+            "tagline": "RISK MITIGATION",
+            "keyDataPoint": "Hacker used Claude to orchestrate attacks, stealing 195M taxpayer records; Gemini and Google Maps share API keys, Gemini keys can access private files.",
+            "analyticalLens": "RISK_ASYMMETRY",
+            "connectsTo": "Mitigating these significant AI-related risks → requires a commitment to → specific, actionable recommendations."
+          },
+          {
+            "tagline": "ACTIONABLE RECOMMENDATIONS",
+            "keyDataPoint": "Q3 2026 (current quarter) and Q4 2026 (next quarter) for immediate action; Planning horizon Q1 2027.",
+            "analyticalLens": "TEMPORAL_ARBITRAGE",
+            "connectsTo": "These actionable recommendations → lead to a clear → call to action for immediate next steps."
+          },
+          {
+            "tagline": "CALL TO ACTION",
+            "keyDataPoint": "Thomson Reuters -16%, LegalZoom -20% (cost of inaction demonstrated by market reaction).",
+            "analyticalLens": "RISK_ASYMMETRY",
+            "connectsTo": "The urgent call to action → emphasizes the need for → immediate decision-making to capitalize on the AI opportunity."
+          },
+          {
+            "tagline": "DECISION POINT",
+            "keyDataPoint": "Nvidia posted $68.1B quarterly revenue, indicating massive market growth; $30B Series G at $380B valuation for Anthropic.",
+            "analyticalLens": "COMPETITIVE_DYNAMICS",
+            "connectsTo": "This critical decision point → concludes the presentation by reinforcing → the overall narrative of strategic urgency."
+          }
+        ]
+      }
+    ]
+  }
+}

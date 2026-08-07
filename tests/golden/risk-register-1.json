@@ -1,0 +1,311 @@
+{
+  "generator": "risk-register",
+  "capturedAt": 1786119199428,
+  "promptPrefix": "You are a risk management specialist. Analyze the ",
+  "data": {
+    "title": "AI Frontier Risk Register - February 2026",
+    "summary": "The AI landscape in February 2026 is characterized by unprecedented competitive intensity driven by converging frontier model performance and a rapid shift towards agentic deployment. This environment presents both immense opportunities and critical risks related to security, market disruption, and geopolitical factors, demanding an aggressive and agile risk management approach.",
+    "riskAppetite": "aggressive",
+    "risks": [
+      {
+        "id": "R-001",
+        "title": "Rapid AI Model Convergence & API Price Erosion",
+        "description": "Frontier AI model performance is rapidly converging across multiple labs (Claude Opus/Sonnet, GPT-5.3, Gemini 3.1, GLM-5), leading to increased accessibility and downward pressure on API pricing as 7+ frontier models compete.",
+        "category": "market",
+        "likelihood": 5,
+        "impact": 4,
+        "riskScore": 20,
+        "status": "open",
+        "owner": "Chief Strategy Officer",
+        "mitigations": [
+          "Diversify revenue streams beyond core API access, focusing on value-added services.",
+          "Invest in proprietary agentic applications and unique data moats to differentiate offerings.",
+          "Explore strategic partnerships to expand market reach and reduce competitive pressure.",
+          "Continuously monitor competitor pricing and adjust strategies proactively."
+        ],
+        "evidence": "Frontier performance is converging across 5+ labs simultaneously. The focus is shifting from 'bigger model' to agentic deployment, enterprise integration, and practical tooling. API prices expected to drop further as 7+ frontier models compete.",
+        "timeHorizon": "immediate",
+        "relatedRisks": [
+          "R-003",
+          "R-008",
+          "R-011"
+        ]
+      },
+      {
+        "id": "R-002",
+        "title": "Agentic AI System Security Vulnerabilities & Misuse",
+        "description": "The deployment of highly capable agentic AI systems (e.g., Claude Opus, GPT-5.3-Codex) introduces new security vulnerabilities, as demonstrated by a hacker using Claude to orchestrate attacks and steal sensitive data.",
+        "category": "technology",
+        "likelihood": 4,
+        "impact": 5,
+        "riskScore": 20,
+        "status": "open",
+        "owner": "CTO, CISO",
+        "mitigations": [
+          "Implement robust security protocols and sandboxing for all agentic deployments.",
+          "Conduct regular red-teaming, penetration testing, and adversarial AI testing.",
+          "Develop AI-specific incident response plans and capabilities.",
+          "Enforce strict access controls and continuous monitoring of agent behavior."
+        ],
+        "evidence": "A hacker used Claude to orchestrate attacks on Mexican government agencies, stealing 195M taxpayer records (accounts banned). GPT-5.3-Codex... 'helped build itself.'",
+        "timeHorizon": "immediate",
+        "relatedRisks": [
+          "R-006",
+          "R-007"
+        ]
+      },
+      {
+        "id": "R-003",
+        "title": "Intense Competitive Pressure & Market Share Erosion",
+        "description": "February 2026 saw the most intense AI model competition ever, with multiple labs releasing near-SOTA models simultaneously. This fierce competition threatens market share and profitability for all players.",
+        "category": "strategic",
+        "likelihood": 5,
+        "impact": 4,
+        "riskScore": 20,
+        "status": "open",
+        "owner": "CEO, Chief Strategy Officer",
+        "mitigations": [
+          "Accelerate R&D into differentiated capabilities beyond raw model performance, focusing on agentic deployment and enterprise integration.",
+          "Foster strategic partnerships and ecosystem development to create network effects.",
+          "Focus on niche applications or vertical markets where unique value can be created.",
+          "Invest in talent retention and acquisition to maintain a competitive edge."
+        ],
+        "evidence": "February 2026 is being called the most intense month of AI model competition ever. Claude Sonnet 4.6 — Near-Opus quality at Sonnet pricing. Gemini 3.1 Pro... beating both Claude and GPT.",
+        "timeHorizon": "immediate",
+        "relatedRisks": [
+          "R-001",
+          "R-008",
+          "R-009",
+          "R-011"
+        ]
+      },
+      {
+        "id": "R-004",
+        "title": "Geopolitical & Regulatory Risks in AI Hardware/Training",
+        "description": "Reports of DeepSeek V4 being trained on Nvidia Blackwell chips inside China raise concerns about potential export control violations and geopolitical tensions impacting AI development and deployment.",
+        "category": "regulatory",
+        "likelihood": 3,
+        "impact": 4,
+        "riskScore": 12,
+        "status": "open",
+        "owner": "Legal Counsel, Chief Compliance Officer",
+        "mitigations": [
+          "Establish robust compliance frameworks for international trade and technology transfer regulations.",
+          "Conduct regular legal reviews of supply chain, partnerships, and data sovereignty.",
+          "Monitor geopolitical developments and potential impacts on AI hardware and software access.",
+          "Diversify hardware and training infrastructure to reduce reliance on single regions or vendors."
+        ],
+        "evidence": "DeepSeek V4 imminent but delayed — reportedly trained on Nvidia Blackwell chips inside China (potential export control violation). DeepSeek blocked Nvidia and AMD from V4 access, giving Huawei a head start.",
+        "timeHorizon": "short-term",
+        "relatedRisks": [
+          "R-005",
+          "R-010"
+        ]
+      },
+      {
+        "id": "R-005",
+        "title": "Supply Chain Vulnerability for Advanced AI Hardware",
+        "description": "The concentration of advanced AI chip manufacturing and the potential for export controls (e.g., DeepSeek blocking Nvidia/AMD, GLM-5 on Huawei chips) create significant supply chain vulnerabilities for critical AI hardware.",
+        "category": "operational",
+        "likelihood": 3,
+        "impact": 4,
+        "riskScore": 12,
+        "status": "open",
+        "owner": "COO, CTO",
+        "mitigations": [
+          "Diversify hardware suppliers and explore alternative chip architectures.",
+          "Invest in strategic reserves of critical AI components.",
+          "Develop contingency plans for hardware procurement and scaling.",
+          "Support initiatives for domestic manufacturing and R&D in AI hardware."
+        ],
+        "evidence": "DeepSeek blocked Nvidia and AMD from V4 access, giving Huawei a head start. GLM-5 (Zhipu AI) — 744B MoE model, trained on Huawei chips.",
+        "timeHorizon": "medium-term",
+        "relatedRisks": [
+          "R-004"
+        ]
+      },
+      {
+        "id": "R-006",
+        "title": "Data Privacy Breach via Shared API Keys/Integrations",
+        "description": "A security finding revealed that Gemini and Google Maps share API keys, allowing Gemini keys to access private files. This highlights a critical vulnerability in integrated AI systems that could lead to data breaches.",
+        "category": "technology",
+        "likelihood": 4,
+        "impact": 5,
+        "riskScore": 20,
+        "status": "open",
+        "owner": "CISO, Legal Counsel",
+        "mitigations": [
+          "Implement strict API key management, rotation, and least privilege access policies.",
+          "Conduct regular security audits and vulnerability assessments of all integrated systems.",
+          "Ensure robust data segregation and encryption for sensitive information.",
+          "Develop clear data governance policies for AI model access to internal systems."
+        ],
+        "evidence": "Security finding: Gemini and Google Maps share API keys, but Gemini keys can access private files.",
+        "timeHorizon": "immediate",
+        "relatedRisks": [
+          "R-002",
+          "R-007"
+        ]
+      },
+      {
+        "id": "R-007",
+        "title": "Intellectual Property Theft & Training Data Extraction",
+        "description": "Anthropic accused DeepSeek of using thousands of fake accounts to extract Claude training data. This demonstrates a significant risk of IP theft and unauthorized data extraction in the competitive AI landscape.",
+        "category": "reputational",
+        "likelihood": 3,
+        "impact": 4,
+        "riskScore": 12,
+        "status": "open",
+        "owner": "Legal Counsel, CTO",
+        "mitigations": [
+          "Implement advanced data protection and anomaly detection systems to identify suspicious data access patterns.",
+          "Enforce robust legal agreements and terms of service with users and partners.",
+          "Actively monitor for and pursue legal action against intellectual property infringements.",
+          "Educate users on responsible AI usage and data security best practices."
+        ],
+        "evidence": "Anthropic accused DeepSeek of using thousands of fake accounts to extract Claude training data.",
+        "timeHorizon": "short-term",
+        "relatedRisks": [
+          "R-002",
+          "R-006"
+        ]
+      },
+      {
+        "id": "R-008",
+        "title": "Market Disruption by AI Agentic Plugins & Integrations",
+        "description": "The introduction of AI agentic plugins (e.g., Claude Cowork for Slack, Figma, Asana) has already rattled software stocks, indicating significant market disruption for traditional software providers.",
+        "category": "market",
+        "likelihood": 4,
+        "impact": 4,
+        "riskScore": 16,
+        "status": "open",
+        "owner": "Chief Strategy Officer, Product Lead",
+        "mitigations": [
+          "Invest in AI integration and development for existing product lines to remain competitive.",
+          "Explore strategic partnerships with leading AI providers to leverage their capabilities.",
+          "Develop new AI-native offerings that anticipate future market needs.",
+          "Continuously monitor market shifts and competitor strategies in the agentic AI space."
+        ],
+        "evidence": "Claude Cowork plugins for Slack, Figma, Asana — rattled software stocks (Thomson Reuters -16%, LegalZoom -20%).",
+        "timeHorizon": "short-term",
+        "relatedRisks": [
+          "R-001",
+          "R-003"
+        ]
+      },
+      {
+        "id": "R-009",
+        "title": "Dominance of Large AI Ecosystems & Vendor Lock-in",
+        "description": "Major players like OpenAI (900M weekly active users), Google (Gemini in Apple Siri), and Anthropic (large funding rounds) are rapidly consolidating market share, potentially leading to vendor lock-in and reduced competition.",
+        "category": "strategic",
+        "likelihood": 4,
+        "impact": 3,
+        "riskScore": 12,
+        "status": "open",
+        "owner": "CEO, Chief Strategy Officer",
+        "mitigations": [
+          "Focus on niche markets or specialized applications where larger players may not prioritize.",
+          "Leverage open-source models (e.g., Llama 4 ecosystem) for flexibility and cost-effectiveness.",
+          "Build strong community and developer ecosystems around specific tools or platforms.",
+          "Advocate for open standards and interoperability in the AI industry."
+        ],
+        "evidence": "ChatGPT hit 900M weekly active users. Gemini integrated into Apple Siri as part of iOS 26.4. Anthropic $30B Series G at a $380B valuation. OpenAI pursuing a funding round that could exceed $100B.",
+        "timeHorizon": "medium-term",
+        "relatedRisks": [
+          "R-001",
+          "R-003"
+        ]
+      },
+      {
+        "id": "R-010",
+        "title": "Security & Compliance Risks from Foreign Open-Source AI Adoption",
+        "description": "The emergence of strong open-source models from Chinese labs (GLM-5, Qwen3-Max) and their potential quiet adoption by US apps introduces risks related to hidden vulnerabilities, supply chain integrity, and future regulatory compliance.",
+        "category": "operational",
+        "likelihood": 3,
+        "impact": 3,
+        "riskScore": 9,
+        "status": "open",
+        "owner": "CTO, CISO, Legal Counsel",
+        "mitigations": [
+          "Conduct thorough security audits and code reviews of all open-source components, especially from foreign sources.",
+          "Diversify open-source model adoption to avoid over-reliance on a single origin.",
+          "Invest in domestic open-source AI development and contributions.",
+          "Establish clear internal policies for the evaluation and use of foreign-developed AI models."
+        ],
+        "evidence": "Chinese labs releasing strong open-source models (GLM-5, Qwen3-Max), with expectations more US apps will quietly adopt them.",
+        "timeHorizon": "medium-term",
+        "relatedRisks": [
+          "R-004"
+        ]
+      },
+      {
+        "id": "R-011",
+        "title": "Rapid Obsolescence of AI Models & Development Paradigms",
+        "description": "The rapid pace of AI innovation, exemplified by OpenAI retiring several GPT-4 models, means that existing AI models and development paradigms can become obsolete very quickly, leading to wasted investment and competitive disadvantage.",
+        "category": "technology",
+        "likelihood": 5,
+        "impact": 3,
+        "riskScore": 15,
+        "status": "open",
+        "owner": "CTO, Head of R&D",
+        "mitigations": [
+          "Adopt modular and flexible AI architectures that allow for easy model swapping and upgrades.",
+          "Invest in continuous learning and adaptation capabilities within AI systems.",
+          "Prioritize research into meta-learning and adaptable AI frameworks.",
+          "Maintain a clear roadmap for model upgrades and deprecation, communicating changes effectively."
+        ],
+        "evidence": "Retired GPT-4o, GPT-4.1, o4-mini from ChatGPT. February 2026 is being called the most intense month of AI model competition ever.",
+        "timeHorizon": "immediate",
+        "relatedRisks": [
+          "R-001",
+          "R-003"
+        ]
+      }
+    ],
+    "categoryBreakdown": [
+      {
+        "category": "market",
+        "count": 2,
+        "avgScore": 18,
+        "topRisk": "R-001"
+      },
+      {
+        "category": "technology",
+        "count": 3,
+        "avgScore": 18.33,
+        "topRisk": "R-002"
+      },
+      {
+        "category": "strategic",
+        "count": 2,
+        "avgScore": 16,
+        "topRisk": "R-003"
+      },
+      {
+        "category": "regulatory",
+        "count": 1,
+        "avgScore": 12,
+        "topRisk": "R-004"
+      },
+      {
+        "category": "operational",
+        "count": 2,
+        "avgScore": 10.5,
+        "topRisk": "R-005"
+      },
+      {
+        "category": "reputational",
+        "count": 1,
+        "avgScore": 12,
+        "topRisk": "R-007"
+      }
+    ],
+    "keyInsights": [
+      "The rapid convergence of frontier AI capabilities is driving intense market competition and significant API price erosion, necessitating a strategic shift towards differentiated agentic applications and proprietary data moats.",
+      "The increasing sophistication and widespread deployment of agentic AI systems introduce critical security and data privacy vulnerabilities, demanding immediate and robust security frameworks, incident response capabilities, and stringent access controls.",
+      "Geopolitical tensions and evolving regulatory complexities, particularly concerning AI hardware supply chains and the adoption of foreign open-source models, pose substantial operational and compliance risks that require proactive management and diversification strategies.",
+      "Existing market structures and traditional software businesses are highly susceptible to disruption from AI-powered plugins and integrations, requiring rapid adaptation, strategic partnerships, and the development of AI-native offerings to avoid obsolescence.",
+      "The unprecedented pace of AI innovation leads to rapid obsolescence of existing models and development paradigms, emphasizing the critical need for flexible architectures, continuous R&D investment, and adaptable AI frameworks."
+    ]
+  }
+}
