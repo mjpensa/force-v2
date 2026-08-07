@@ -1,5 +1,6 @@
 import { toSentenceCase, sanitizeText, normalizeBodyText, truncateToSentence } from '../../shared/text-utils.js';
 import { createDropdownMenu, escapeHtml } from '../../utils/dom.js';
+import { flattenSlideDeck } from '../../shared/flatten-slides.js';
 import { SpeakerNotesManager } from './SpeakerNotesManager.js';
 
 /** Append BIP logo, page-number footer, and optional corner graphic to a slide element. */
@@ -286,28 +287,11 @@ function renderThreeColumnSlide(slide, index) {
   return el;
 }
 
-const DEMO_SLIDE_TWO_COL = {
-  layout: 'twoColumn',
-  tagline: 'LOREM IPSUM',
-  title: 'Lorem\nipsum sit\namet sit\nlorem',
-  paragraph1: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur excepteur sint occaecat.',
-  paragraph2: 'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit sed quia consequuntur magni dolores eos ratione voluptatem.'
-};
-
-const DEMO_SLIDE_THREE_COL = {
-  layout: 'threeColumn',
-  tagline: 'LOREM IPSUM',
-  title: 'Lorem\nipsum sit\namet sit\nlorem',
-  paragraph1: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad',
-  paragraph2: 'minim veniam, quis nostrud exercitation Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitationLorem ipsum dolor sit amet, consectetur adipiscing',
-  paragraph3: 'elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitationLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor'
-};
-
 export class SlidesView {
   constructor(data, sessionId = null) {
     this.sessionId = sessionId;
 
-    this.slides = [DEMO_SLIDE_TWO_COL, DEMO_SLIDE_THREE_COL];
+    this.slides = [];
 
     this.sections = data?.sections || [];
 
@@ -342,44 +326,13 @@ export class SlidesView {
   }
 
   _flattenSections(sections) {
-    const flatSlides = [];
-    let currentIndex = 2;
-
-    for (const section of sections) {
-      const sectionId = section.swimlane.toLowerCase().replace(/\s+/g, '-');
-      this.sectionStartIndices.set(sectionId, currentIndex);
-      this.sectionSlides.set(sectionId, []);
-      flatSlides.push({
-        layout: 'sectionTitle',
-        swimlane: section.swimlane,
-        sectionTitle: section.sectionTitle || section.swimlane,
-        _sectionId: sectionId
-      });
-      currentIndex++;
-      if (section.slides?.length) {
-        section.slides.forEach((slide, slideIdx) => {
-          const slideId = `${sectionId}-slide-${slideIdx}`;
-          const subTopic = slide.subTopic || slide.tagline || `Slide ${slideIdx + 1}`;
-
-          this.slideIndices.set(slideId, currentIndex);
-          this.sectionSlides.get(sectionId).push({
-            slideId,
-            subTopic,
-            index: currentIndex
-          });
-
-          flatSlides.push({
-            ...slide,
-            _sectionId: sectionId,
-            _slideId: slideId,
-            _subTopic: subTopic
-          });
-          currentIndex++;
-        });
-      }
-    }
-
-    return flatSlides;
+    // Delegates to the shared implementation so the viewer, the PPTX exporter and the
+    // inline-edit route all agree on what index N means.
+    const { slides, sectionStartIndices, sectionSlides, slideIndices } = flattenSlideDeck(sections);
+    this.sectionStartIndices = sectionStartIndices;
+    this.sectionSlides = sectionSlides;
+    this.slideIndices = slideIndices;
+    return slides;
   }
 
   _renderTableOfContents() {
@@ -393,22 +346,6 @@ export class SlidesView {
 
     const tocList = document.createElement('ul');
     tocList.className = 'toc-list';
-
-    const demoLi = document.createElement('li');
-    const demoLink = document.createElement('a');
-    demoLink.className = 'toc-link';
-    demoLink.href = '#demo';
-    demoLink.textContent = 'Templates';
-    demoLink.setAttribute('data-section-id', 'demo');
-
-    demoLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      this._goToSection('demo');
-    });
-
-    this.tocLinks.set('demo', demoLink);
-    demoLi.appendChild(demoLink);
-    tocList.appendChild(demoLi);
 
     this.sections.forEach(section => {
       const sectionId = section.swimlane.toLowerCase().replace(/\s+/g, '-');
@@ -838,13 +775,12 @@ export class SlidesView {
 
   _persistSlideEdit(field, value) {
     if (!this.sessionId) return;
-    // Offset by 2 demo slides at the start
-    const dataIndex = this.index - 2;
-    if (dataIndex < 0) return; // Don't persist edits to demo slides
+    // No offset: the demo slides that made the viewer's index differ from the server's are
+    // gone, so this.index is the same index the server resolves.
     fetch(`/api/content/${this.sessionId}/update-slide-field`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slideIndex: dataIndex, field, value })
+      body: JSON.stringify({ slideIndex: this.index, field, value })
     }).catch(() => {});
   }
 

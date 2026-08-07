@@ -6,6 +6,7 @@ import { uploadMiddleware } from '../middleware.js';
 import { generatePptx } from '../templates/ppt-export-service-v2.js';
 import { generateDocx, generateIntelligenceBriefDocx } from '../templates/docx-export-service.js';
 import { fileCache } from '../cache/FileCache.js';
+import { resolveSlideAt } from '../../Public/shared/flatten-slides.js';
 
 const router = express.Router();
 
@@ -426,26 +427,18 @@ router.post('/:sessionId/update-slide-field', express.json(), (req, res) => {
       return res.status(400).json({ error: 'No slides data found' });
     }
 
-    // Flatten sections to find the slide at the given index
-    let flatIdx = 0;
-    for (const section of slidesData.sections) {
-      // Account for section title slide (index flatIdx is the section title)
-      if (flatIdx === idx) {
-        // Editing the section title slide
-        if (field === 'sectionTitle') section.sectionTitle = value;
-        return res.json({ success: true });
-      }
-      flatIdx++;
-      for (const slide of (section.slides || [])) {
-        if (flatIdx === idx) {
-          slide[field] = value;
-          return res.json({ success: true });
-        }
-        flatIdx++;
-      }
+    // Resolved through the same shared walk the viewer and exporter use, so index N here is
+    // the slide the user was actually looking at.
+    const target = resolveSlideAt(slidesData.sections, idx);
+    if (!target) {
+      return res.status(400).json({ error: 'Slide not found at given index' });
     }
-
-    return res.status(400).json({ error: 'Slide not found at given index' });
+    if (target.kind === 'sectionTitle') {
+      if (field === 'sectionTitle') target.section.sectionTitle = value;
+      return res.json({ success: true });
+    }
+    target.slide[field] = value;
+    return res.json({ success: true });
   } catch (error) {
     handleGenerationError(error, res, 'update slide field');
   }

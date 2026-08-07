@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { normalizeBodyText, truncateToSentence, formatTitle, formatSectionTitle, formatBody } from '../../Public/shared/text-utils.js';
+import { flattenSlideDeck } from '../../Public/shared/flatten-slides.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -541,23 +542,7 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   _addSpeakerNotes(slide, speakerNotes);
 }
 
-function flattenSections(sections) {
-  const flatSlides = [];
 
-  for (const section of sections) {
-    if (!section.swimlane) continue;
-    flatSlides.push({
-      layout: 'sectionTitle',
-      swimlane: section.swimlane,
-      sectionTitle: section.sectionTitle || section.swimlane
-    });
-    if (section.slides && Array.isArray(section.slides) && section.slides.length > 0) {
-      flatSlides.push(...section.slides);
-    }
-  }
-
-  return flatSlides;
-}
 
 // Generate PowerPoint presentation from slides data
 export async function generatePptx(slidesData, options = {}) {
@@ -580,7 +565,7 @@ export async function generatePptx(slidesData, options = {}) {
   pptx.layout = 'CUSTOM_16_9';
   let slidesArray = [];
   if (slidesData.sections && Array.isArray(slidesData.sections) && slidesData.sections.length > 0) {
-    slidesArray = flattenSections(slidesData.sections);
+    slidesArray = flattenSlideDeck(slidesData.sections).slides;
   }
   const speakerNotesData = slidesData.speakerNotes?.slides || [];
   const hasSpeakerNotes = speakerNotesData.length > 0;
