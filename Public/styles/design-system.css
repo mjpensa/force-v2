@@ -22,9 +22,21 @@
   --glass-white-20: rgba(255, 255, 255, 0.20);
   --glass-white-25: rgba(255, 255, 255, 0.25);
   --glass-white-30: rgba(255, 255, 255, 0.30);
+  /*
+   * Alphas are contrast-derived, not chosen by eye. Composited over the glass panel
+   * (--glass-white-8) on each navy gradient stop below, white text needs alpha >= 0.561 to
+   * clear WCAG AA's 4.5:1 for normal text; the worst case is --color-navy-mid, the middle of
+   * the gradient and so the centre of the screen.
+   *
+   * The previous 0.55 / 0.40 measured 4.42:1 and 3.08:1 against that panel — secondary
+   * failed on the gradient midpoint, muted failed everywhere, and both are used on
+   * --text-sm body copy (document-view.css). These give 6.20:1 and 5.14:1.
+   *
+   * Mirrored in tailwind.config.js textColor for the text-glass-* utilities. Change both.
+   */
   --glass-text-primary: #FFFFFF;
-  --glass-text-secondary: rgba(255, 255, 255, 0.55);
-  --glass-text-muted: rgba(255, 255, 255, 0.40);
+  --glass-text-secondary: rgba(255, 255, 255, 0.72);
+  --glass-text-muted: rgba(255, 255, 255, 0.62);
   --blur-sm: 8px;
   --blur-md: 12px;
   --blur-lg: 16px;

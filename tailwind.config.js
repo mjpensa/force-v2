@@ -64,9 +64,13 @@ export default {
 
       // Glassmorphic Text Colors (for text-glass-* utilities)
       textColor: {
+        // Alphas are contrast-derived, not chosen by eye. Composited over the glass panel
+        // (white 0.08) on the darkest and lightest navy gradient stops, white text needs
+        // alpha >= 0.561 to clear WCAG AA's 4.5:1 for normal text. 0.55 and 0.40 measured
+        // 4.42:1 and 3.08:1 — both failing. Keep these in step with design-system.css.
         'glass-primary': 'rgba(255, 255, 255, 1)',
-        'glass-secondary': 'rgba(255, 255, 255, 0.55)',
-        'glass-muted': 'rgba(255, 255, 255, 0.4)',
+        'glass-secondary': 'rgba(255, 255, 255, 0.72)',
+        'glass-muted': 'rgba(255, 255, 255, 0.62)',
       },
 
       // Glassmorphic Background Colors (for bg-glass-* utilities)

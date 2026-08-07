@@ -18,13 +18,22 @@ A comprehensive three-screen research platform that transforms research document
 - 🎯 **Web Vitals**: LCP, FID, and CLS monitoring
 - ⏱️ **Optimized Bundle**: Minimal initial load with deferred non-critical resources
 
-#### Accessibility (WCAG 2.1 AA Compliant)
-- ♿ **Keyboard Navigation**: Full keyboard support with arrow keys (←→) and number keys (1, 2, 3)
-- 🔊 **Screen Reader Support**: ARIA labels and live regions throughout
-- 🎯 **Focus Management**: Proper focus trap in modals and dialogs
-- 📋 **Skip Links**: Quick navigation to main content
-- 🎨 **Color Contrast**: Verified contrast ratios meeting WCAG 2.1 AA standards
+#### Accessibility
+
+No blanket WCAG 2.1 AA conformance claim is made here — the app has never been audited
+against the full criteria set. What is implemented and verified:
+
+- ♿ **Keyboard Navigation**: Arrow keys (←→) and number keys (1, 2, 3) move between views
 - ⌨️ **Keyboard Shortcuts**: Press `?` for help
+- 🔊 **Screen Reader Support**: An `aria-live` region announces view changes
+- 📋 **Skip Links**: Skip-to-main-content link, revealed on focus
+- 🎯 **Focus Management**: Modals carry `role="dialog"` / `aria-modal` and trap Tab focus
+- 🎨 **Color Contrast**: The glass text tokens are held to AA's 4.5:1 for normal text by
+  `tests/public/contrast.test.js`, which composites them over each navy gradient stop.
+  Worst case is `--glass-text-muted` at 5.14:1.
+
+Everything else — form labelling, reduced-motion, the Gantt drag/resize handlers, colour as
+the sole carrier of meaning in the heat map and status pills — is unaudited.
 
 #### Error Handling
 - 🔄 **Automatic Retry**: Exponential backoff for failed API calls
@@ -136,7 +145,7 @@ Response:
 **Phase 6 Utilities:**
 - LazyLoader.js - Lazy loading with Intersection Observer
 - Performance.js - Performance monitoring and optimization
-- Accessibility.js - WCAG 2.1 AA compliance utilities
+- Accessibility.js - skip link, aria-live announcements, and the modal focus trap
 - ErrorHandler.js - Comprehensive error handling
 
 ### Project Structure
@@ -224,12 +233,14 @@ Console output will show:
    ```
 
 3. **Color Contrast Testing**
-   ```javascript
-   import { checkColorContrast } from './Public/components/shared/Accessibility.js';
-
-   const result = checkColorContrast('#000000', '#ffffff');
-   console.log(result.aaNormal); // true
+   ```bash
+   npx jest tests/public/contrast.test.js
    ```
+   Parses the glass text tokens out of `design-system.css`, composites them over each navy
+   gradient stop the way the browser paints them, and fails below 4.5:1. It also asserts the
+   `tailwind.config.js` `text-glass-*` utilities still match the CSS custom properties —
+   they are two independent declarations of the same colour, and fixing only one leaves half
+   the UI failing.
 
 ## Testing
 
@@ -421,12 +432,11 @@ MIT License - see LICENSE file for details
 - ✅ Optimized bundle size
 - ✅ Debounce and throttle utilities
 
-**Accessibility:**
-- ✅ WCAG 2.1 AA compliance
-- ✅ Comprehensive keyboard navigation
-- ✅ Screen reader support
-- ✅ Color contrast verification
-- ✅ Focus management
+**Accessibility:** (see the Accessibility section above for what is and isn't audited)
+- ✅ Keyboard navigation between views
+- ✅ `aria-live` announcements for view changes
+- ✅ Color contrast verified by test for the glass text tokens
+- ✅ Focus trap in modals
 
 **Error Handling:**
 - ✅ Automatic retry with exponential backoff
