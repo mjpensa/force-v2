@@ -1,4 +1,3 @@
-import { jsonrepair } from 'jsonrepair';
 import { generateRoadmapPrompt, roadmapSchema } from './prompts/roadmap.js';
 import { generateSlidesPrompt, generateSlidesOutlinePrompt, generateSpeakerNotesPrompt, generateSpeakerNotesOutlinePrompt, slidesSchema, slidesOutlineSchema, speakerNotesSchema, speakerNotesOutlineSchema } from './prompts/slides.js';
 import { generateDocumentPrompt, documentSchema } from './prompts/document.js';
@@ -9,9 +8,11 @@ import { generateNarrativeSpinePrompt, narrativeSpineSchema, formatNarrativeSpin
 import { generateSwotAnalysisPrompt, swotAnalysisSchema } from './prompts/swot-analysis.js';
 import { generateCompetitiveAnalysisPrompt, competitiveAnalysisSchema } from './prompts/competitive-analysis.js';
 import { generateRiskRegisterPrompt, riskRegisterSchema } from './prompts/risk-register.js';
-import { CONFIG } from './config.js';
-import { genAI } from './gemini.js';
-import { diskCache } from './cache/DiskCache.js';
+import { callModelForJson } from './gemini.js';
+import { diskCache, hashSchema } from './cache/DiskCache.js';
+import { archiveResponse } from './cache/archive.js';
+import { validateOrWarn } from './schema-guard.js';
+import { SLIDE_LIMITS } from '../Public/shared/slide-limits.js';
 import { modelRotator } from './model-rotation.js';
 const GENERATION_TIMEOUT_MS = 360000; // 6 minutes
 
@@ -253,20 +254,19 @@ function validateReasoningCoherence(reasoning, executiveSummary) {
   return { coherent: issues.length === 0, issues };
 }
 
-function withTimeout(promise, timeoutMs, operationName) {
-  let timeoutId;
-  const timeoutPromise = new Promise((_, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(new Error(`${operationName} timed out after ${timeoutMs / 1000} seconds`));
-    }, timeoutMs);
-  });
-  return Promise.race([promise, timeoutPromise]).finally(() => {
-    clearTimeout(timeoutId);
-  });
-}
 async function generateWithGemini(prompt, schema, contentType, configOverrides = {}, options = {}) {
   try {
-    const cacheConfig = { schema: schema?.description, contentType, ...configOverrides };
+    // The full prompt is already part of the cache key (DiskCache._hashKey), so prompt edits
+    // invalidate correctly. Schema and model were not: the key carried only the schema's
+    // top-level `description`, and 8 of the 12 schemas don't define one — so a schema change
+    // silently replayed a pre-change response, and a rotation to a different model reused
+    // the previous model's output. Both produce confident wrong conclusions.
+    const cacheConfig = {
+      schema: hashSchema(schema),
+      model: modelRotator.current(),
+      contentType,
+      ...configOverrides
+    };
     const cached = await diskCache.get(prompt, cacheConfig, options);
     if (cached) return cached;
 
@@ -292,31 +292,22 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     if (maxOutputTokens !== undefined) generationConfig.maxOutputTokens = maxOutputTokens;
     if (frequencyPenalty !== undefined) generationConfig.frequencyPenalty = frequencyPenalty;
     if (presencePenalty !== undefined) generationConfig.presencePenalty = presencePenalty;
-    const model = genAI.getGenerativeModel({
-      model: modelRotator.current(),
-      generationConfig
+    // Goes through the shared client, which is what gives the content pipeline retry with
+    // backoff. It previously had none: a transient 503 killed the call outright, and on a
+    // 20-request/day free tier every lost call is 5% of the budget. Quota exhaustion is
+    // still never retried — see isQuotaExhausted in gemini.js.
+    const data = await callModelForJson(prompt, {
+      generationConfig,
+      timeoutMs: GENERATION_TIMEOUT_MS,
+      label: contentType,
+      onRetry: (attempt, err) =>
+        console.warn(`[${contentType}] attempt ${attempt} failed, retrying: ${err.message}`),
     });
-    const result = await withTimeout(
-      model.generateContent(prompt),
-      GENERATION_TIMEOUT_MS,
-      `${contentType} generation`
-    );
-    const response = result.response;
-    const text = response.text();
-    try {
-      const data = JSON.parse(text);
-      await diskCache.set(prompt, cacheConfig, data);
-      return data;
-    } catch (parseError) {
-      try {
-        const repairedJsonText = jsonrepair(text);
-        const repairedData = JSON.parse(repairedJsonText);
-        await diskCache.set(prompt, cacheConfig, repairedData);
-        return repairedData;
-      } catch (repairError) {
-        throw parseError;
-      }
-    }
+
+    validateOrWarn(data, schema, contentType);
+    await diskCache.set(prompt, cacheConfig, data);
+    archiveResponse(contentType, prompt, data);
+    return data;
   } catch (error) {
     console.error(`[${contentType}] Generation failed:`, error.message);
     try { modelRotator.handleError(error); } catch { /* rotation failed or non-rate-limit error */ }
@@ -372,30 +363,87 @@ async function generateSlidesOutlineOnly(userPrompt, researchFiles, swimlanes = 
   }
 }
 
+/**
+ * Editorial quality check on generated slides.
+ *
+ * Previously read `data.slides`, which slidesSchema has never produced — the shape is
+ * `{title, sections[].slides}`. Against real output (the golden captures hold decks of 50
+ * and 27 slides) it returned exactly one issue, "No slides array found", every time. The
+ * correction pass below requires `issues.length >= 3`, so the self-critique had never run
+ * in production. The line-count check compounded it by splitting on the two-character
+ * sequence backslash-n rather than a newline, so it could not fire against parsed JSON.
+ *
+ * slideIndex is numbered continuously across sections, because the correction prompt
+ * refers to slides by number and per-section numbering would make "Slide 3" ambiguous.
+ */
 function validateSlideOutput(data) {
   const issues = [];
-  if (!data?.slides || !Array.isArray(data.slides)) return { valid: false, issues: ['No slides array found'] };
+  if (!Array.isArray(data?.sections)) {
+    return { valid: false, issues: [{ slideIndex: 0, field: 'sections', message: 'No sections array found' }] };
+  }
 
-  for (let i = 0; i < data.slides.length; i++) {
-    const slide = data.slides[i];
-    const idx = i + 1;
-    if (slide.tagline && slide.tagline.length > 21) {
-      issues.push({ slideIndex: idx, field: 'tagline', message: `Tagline "${slide.tagline}" exceeds 21 chars (${slide.tagline.length})` });
-    }
-    if (slide.title) {
-      const lines = slide.title.split('\\n');
-      if (lines.length > 4) {
-        issues.push({ slideIndex: idx, field: 'title', message: `Title has ${lines.length} lines (max 4)` });
+  let idx = 0;
+  for (const section of data.sections) {
+    for (const slide of section?.slides ?? []) {
+      idx += 1;
+      if (slide.tagline && slide.tagline.length > SLIDE_LIMITS.TAGLINE_MAX) {
+        issues.push({
+          slideIndex: idx,
+          field: 'tagline',
+          message: `Tagline "${slide.tagline}" exceeds ${SLIDE_LIMITS.TAGLINE_MAX} chars (${slide.tagline.length})`,
+        });
       }
-    }
-    for (const field of ['paragraph1', 'paragraph2']) {
-      const text = slide[field];
-      if (text && (text.length < 300 || text.length > 450)) {
-        issues.push({ slideIndex: idx, field, message: `${field} is ${text.length} chars (target 380-410)` });
+      if (slide.title) {
+        const lines = String(slide.title).split('\n');
+        if (lines.length > SLIDE_LIMITS.TITLE_MAX_LINES) {
+          issues.push({
+            slideIndex: idx,
+            field: 'title',
+            message: `Title has ${lines.length} lines (max ${SLIDE_LIMITS.TITLE_MAX_LINES})`,
+          });
+        }
+      }
+      for (const field of ['paragraph1', 'paragraph2', 'paragraph3']) {
+        const text = slide[field];
+        if (text && (text.length < SLIDE_LIMITS.PARAGRAPH_MIN || text.length > SLIDE_LIMITS.PARAGRAPH_MAX)) {
+          issues.push({
+            slideIndex: idx,
+            field,
+            message: `${field} is ${text.length} chars (target ${SLIDE_LIMITS.PARAGRAPH_TARGET_MIN}-${SLIDE_LIMITS.PARAGRAPH_TARGET_MAX})`,
+          });
+        }
       }
     }
   }
   return { valid: issues.length === 0, issues };
+}
+
+/** Total slides across all sections — used to prove a correction pass didn't drop content. */
+function countSlides(data) {
+  return (data?.sections ?? []).reduce((n, s) => n + (s?.slides?.length ?? 0), 0);
+}
+
+/**
+ * A correction must not silently shrink the deck.
+ *
+ * The original accept condition was only "fewer issues than before", which a response that
+ * dropped half the slides satisfies trivially — fewer slides, fewer violations.
+ */
+function correctionPreservesContent(before, after) {
+  if (!Array.isArray(after?.sections)) return false;
+  if (after.sections.length !== (before.sections?.length ?? 0)) return false;
+  if (countSlides(after) !== countSlides(before)) return false;
+
+  const beforeSlides = (before.sections ?? []).flatMap(s => s?.slides ?? []);
+  const afterSlides = after.sections.flatMap(s => s?.slides ?? []);
+  return afterSlides.every((slide, i) => {
+    const original = beforeSlides[i];
+    if (!original) return false;
+    // A field that had content must still have content; rewording is fine, emptying is not.
+    return ['tagline', 'title', 'paragraph1', 'paragraph2'].every(
+      f => !original[f] || Boolean(slide[f])
+    );
+  });
 }
 
 async function generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, outline, precomputed = null) {
@@ -406,8 +454,18 @@ async function generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, o
     const data = await generateWithGemini(fullPrompt, slidesSchema, 'Slides', SLIDES_CONFIG);
 
     const validation = validateSlideOutput(data);
-    if (!validation.valid && validation.issues.length >= 3) {
-      // Enough issues to warrant a correction pass
+    if (validation.issues.length) {
+      console.log(`[Slides] ${validation.issues.length} quality issue(s) in generated deck`);
+    }
+
+    // Off by default. Now that validateSlideOutput actually reports issues, this pass would
+    // fire on most decks — and each firing is a second Gemini call with skipCache, which on
+    // a 20-request/day free tier is a material budget change that should be a deliberate
+    // decision rather than a side effect of fixing the validator. Enable with
+    // SLIDES_CRITIQUE=1 once the Phase 2 compliance report shows how often it would trigger
+    // and how much it actually improves.
+    const critiqueEnabled = process.env.SLIDES_CRITIQUE === '1';
+    if (critiqueEnabled && !validation.valid && validation.issues.length >= 3) {
       try {
         const correctionPrompt = `You previously generated slides JSON but it has these quality issues:\n${validation.issues.map(i => `- Slide ${i.slideIndex} ${i.field}: ${i.message}`).join('\n')}\n\nFix ONLY the flagged issues. Keep all other content identical. Return the complete corrected slides JSON.`;
         const correctedData = await generateWithGemini(
@@ -415,9 +473,15 @@ async function generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, o
           slidesSchema, 'SlidesCritique', SLIDES_CONFIG, { skipCache: true }
         );
         const revalidation = validateSlideOutput(correctedData);
-        if (revalidation.issues.length < validation.issues.length) {
+        // Fewer issues alone is not enough: a response that dropped half the deck scores
+        // better by that measure. Require the content to survive too.
+        if (
+          revalidation.issues.length < validation.issues.length &&
+          correctionPreservesContent(data, correctedData)
+        ) {
           return { success: true, data: correctedData, validationIssues: revalidation.issues };
         }
+        console.warn('[Slides Critique] Correction rejected: content not preserved or no improvement');
       } catch (critiqueError) {
         console.warn('[Slides Critique] Correction failed, using original:', critiqueError.message);
       }
@@ -498,58 +562,10 @@ async function generateDocument(userPrompt, researchFiles, swimlanes = [], preco
     coherenceIssues: lastCoherenceValidation?.issues || []
   };
 }
-async function generateSwotAnalysis(userPrompt, researchFiles, precomputed = null) {
-  try {
-    const prompt = generateSwotAnalysisPrompt(userPrompt, researchFiles, precomputed);
-    const data = await generateWithGemini(prompt, swotAnalysisSchema, 'SwotAnalysis', SWOT_CONFIG);
-    return { success: true, data };
-  } catch (error) {
-    console.error('[SWOT Analysis] Error:', error.message);
-    return { success: false, error: error.message };
-  }
-}
 
-async function generateCompetitiveAnalysis(userPrompt, researchFiles, precomputed = null) {
-  try {
-    const prompt = generateCompetitiveAnalysisPrompt(userPrompt, researchFiles, precomputed);
-    const data = await generateWithGemini(prompt, competitiveAnalysisSchema, 'CompetitiveAnalysis', COMPETITIVE_ANALYSIS_CONFIG);
-    return { success: true, data };
-  } catch (error) {
-    console.error('[Competitive Analysis] Error:', error.message);
-    return { success: false, error: error.message };
-  }
-}
 
-async function generateRiskRegister(userPrompt, researchFiles, precomputed = null) {
-  try {
-    const prompt = generateRiskRegisterPrompt(userPrompt, researchFiles, precomputed);
-    const data = await generateWithGemini(prompt, riskRegisterSchema, 'RiskRegister', RISK_REGISTER_CONFIG);
-    return { success: true, data };
-  } catch (error) {
-    console.error('[Risk Register] Error:', error.message);
-    return { success: false, error: error.message };
-  }
-}
 
-async function generateNarrativeSpine(userPrompt, researchFiles, precomputed = null) {
-  try {
-    const prompt = generateNarrativeSpinePrompt(userPrompt, researchFiles, precomputed);
-    const data = await generateWithGemini(prompt, narrativeSpineSchema, 'NarrativeSpine', NARRATIVE_SPINE_CONFIG);
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
 
-async function generateResearchAnalysis(userPrompt, researchFiles, precomputed = null) {
-  try {
-    const prompt = generateResearchAnalysisPrompt(userPrompt, researchFiles, precomputed);
-    const data = await generateWithGemini(prompt, researchAnalysisSchema, 'ResearchAnalysis', RESEARCH_ANALYSIS_CONFIG);
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
 
 export async function generateIntelligenceBrief(sessionData, meetingContext) {
   try {
@@ -567,6 +583,44 @@ export async function generateIntelligenceBrief(sessionData, meetingContext) {
 
 // 3-phase pipeline: Phase 0 (Research), Phase 1 (Roadmap + Outline), Phase 2 (Slides + Document)
 // Speaker notes generated on-demand via generateSpeakerNotesAsync()
+/**
+ * Generators whose entire body is "build the prompt, call the model, wrap the result".
+ *
+ * These were five byte-identical functions differing only in prompt builder, schema,
+ * content type and config. Three of them also logged the failure a second time —
+ * generateWithGemini already logs it — while the other two stayed silent, so the same class
+ * of failure produced two, one, or one-plus-a-duplicate log lines depending on which view
+ * hit it. The wrapper log is dropped; generateWithGemini owns it.
+ *
+ * Keeping this table-driven means the Phase 4 prompt rewrite changes one call path rather
+ * than five near-copies that can drift apart.
+ */
+const SIMPLE_GENERATORS = {
+  swotAnalysis:       { promptFn: generateSwotAnalysisPrompt,        schema: swotAnalysisSchema,        contentType: 'SwotAnalysis',        config: SWOT_CONFIG },
+  competitiveAnalysis:{ promptFn: generateCompetitiveAnalysisPrompt, schema: competitiveAnalysisSchema, contentType: 'CompetitiveAnalysis', config: COMPETITIVE_ANALYSIS_CONFIG },
+  riskRegister:       { promptFn: generateRiskRegisterPrompt,        schema: riskRegisterSchema,        contentType: 'RiskRegister',        config: RISK_REGISTER_CONFIG },
+  narrativeSpine:     { promptFn: generateNarrativeSpinePrompt,      schema: narrativeSpineSchema,      contentType: 'NarrativeSpine',      config: NARRATIVE_SPINE_CONFIG },
+  researchAnalysis:   { promptFn: generateResearchAnalysisPrompt,    schema: researchAnalysisSchema,    contentType: 'ResearchAnalysis',    config: RESEARCH_ANALYSIS_CONFIG },
+};
+
+function makeSimpleGenerator({ promptFn, schema, contentType, config }) {
+  return async function (userPrompt, researchFiles, precomputed = null) {
+    try {
+      const prompt = promptFn(userPrompt, researchFiles, precomputed);
+      const data = await generateWithGemini(prompt, schema, contentType, config);
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+}
+
+const generateSwotAnalysis = makeSimpleGenerator(SIMPLE_GENERATORS.swotAnalysis);
+const generateCompetitiveAnalysis = makeSimpleGenerator(SIMPLE_GENERATORS.competitiveAnalysis);
+const generateRiskRegister = makeSimpleGenerator(SIMPLE_GENERATORS.riskRegister);
+const generateNarrativeSpine = makeSimpleGenerator(SIMPLE_GENERATORS.narrativeSpine);
+const generateResearchAnalysis = makeSimpleGenerator(SIMPLE_GENERATORS.researchAnalysis);
+
 export async function generateAllContent(userPrompt, researchFiles, requestedViews = null, onProgress = null) {
   const shouldGenerate = (view) => !requestedViews || requestedViews.includes(view);
   const skipped = { success: false, error: 'Skipped', skipped: true };
@@ -754,4 +808,5 @@ export async function regenerateContent(viewType, prompt, researchFiles, existin
 }
 
 export { validateExecutiveSummary, validateReasoningCoherence, checkWeakOpener,
-         reconcileOutlineWithSwimlanes, extractSwimlanesFromRoadmap, APIQueue };
+         reconcileOutlineWithSwimlanes, extractSwimlanesFromRoadmap, APIQueue,
+         validateSlideOutput, countSlides, correctionPreservesContent };

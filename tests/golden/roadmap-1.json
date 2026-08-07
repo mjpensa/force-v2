@@ -1,0 +1,410 @@
+{
+  "generator": "roadmap",
+  "capturedAt": 1786118951596,
+  "promptPrefix": "You are an expert project management analyst. Your",
+  "data": {
+    "title": "AI Model Competition & Development Timeline",
+    "timeColumns": [
+      "Feb 2026",
+      "Mar 2026",
+      "Apr 2026",
+      "May 2026",
+      "Jun 2026",
+      "Jul 2026",
+      "Aug 2026",
+      "Sep 2026",
+      "Oct 2026",
+      "Nov 2026",
+      "Dec 2026"
+    ],
+    "data": [
+      {
+        "title": "Hardware & Infrastructure",
+        "isSwimlane": true,
+        "entity": "Hardware & Infrastructure",
+        "taskType": "task"
+      },
+      {
+        "title": "AMD-Meta 6-gigawatt compute deal",
+        "isSwimlane": false,
+        "entity": "Hardware & Infrastructure",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 12,
+          "color": "priority-red"
+        }
+      },
+      {
+        "title": "Meta's GPU fleet exceeds 1.5 million units",
+        "isSwimlane": false,
+        "entity": "Hardware & Infrastructure",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "priority-red"
+        }
+      },
+      {
+        "title": "Nvidia Vera Rubin unveiled",
+        "isSwimlane": false,
+        "entity": "Hardware & Infrastructure",
+        "taskType": "milestone",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "priority-red"
+        }
+      },
+      {
+        "title": "Nvidia Vera Rubin shipping",
+        "isSwimlane": false,
+        "entity": "Hardware & Infrastructure",
+        "taskType": "milestone",
+        "bar": {
+          "startCol": 7,
+          "endCol": 12,
+          "color": "priority-red"
+        }
+      },
+      {
+        "title": "Nvidia posts $68.1B quarterly revenue",
+        "isSwimlane": false,
+        "entity": "Hardware & Infrastructure",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "priority-red"
+        }
+      },
+      {
+        "title": "Model Releases",
+        "isSwimlane": true,
+        "entity": "Model Releases",
+        "taskType": "task"
+      },
+      {
+        "title": "Claude Opus 4.6 Release",
+        "isSwimlane": false,
+        "entity": "Model Releases",
+        "taskType": "milestone",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "medium-red"
+        }
+      },
+      {
+        "title": "Claude Sonnet 4.6 Release",
+        "isSwimlane": false,
+        "entity": "Model Releases",
+        "taskType": "milestone",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "medium-red"
+        }
+      },
+      {
+        "title": "Gemini 3.1 Pro Release",
+        "isSwimlane": false,
+        "entity": "Model Releases",
+        "taskType": "milestone",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "medium-red"
+        }
+      },
+      {
+        "title": "GLM-5 Release",
+        "isSwimlane": false,
+        "entity": "Model Releases",
+        "taskType": "milestone",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "medium-red"
+        }
+      },
+      {
+        "title": "GPT-5.3-Codex Release",
+        "isSwimlane": false,
+        "entity": "Model Releases",
+        "taskType": "milestone",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "medium-red"
+        }
+      },
+      {
+        "title": "Open Source",
+        "isSwimlane": true,
+        "entity": "Open Source",
+        "taskType": "task"
+      },
+      {
+        "title": "Llama 4 Behemoth in research preview",
+        "isSwimlane": false,
+        "entity": "Open Source",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 12,
+          "color": "mid-grey"
+        }
+      },
+      {
+        "title": "Llama 4 Maverick available",
+        "isSwimlane": false,
+        "entity": "Open Source",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 12,
+          "color": "mid-grey"
+        }
+      },
+      {
+        "title": "Llama 4 Scout available",
+        "isSwimlane": false,
+        "entity": "Open Source",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 12,
+          "color": "mid-grey"
+        }
+      },
+      {
+        "title": "Llama passes 1 billion downloads",
+        "isSwimlane": false,
+        "entity": "Open Source",
+        "taskType": "milestone",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "mid-grey"
+        }
+      },
+      {
+        "title": "Anthropic",
+        "isSwimlane": true,
+        "entity": "Anthropic",
+        "taskType": "task"
+      },
+      {
+        "title": "$30B Series G Funding Round",
+        "isSwimlane": false,
+        "entity": "Anthropic",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 12,
+          "color": "light-grey"
+        }
+      },
+      {
+        "title": "Accused DeepSeek of data extraction",
+        "isSwimlane": false,
+        "entity": "Anthropic",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "light-grey"
+        }
+      },
+      {
+        "title": "Claude Code plugins, remote control, worktree mode, security scanning",
+        "isSwimlane": false,
+        "entity": "Anthropic",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "light-grey"
+        }
+      },
+      {
+        "title": "Claude Cowork plugins for Slack, Figma, Asana",
+        "isSwimlane": false,
+        "entity": "Anthropic",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "light-grey"
+        }
+      },
+      {
+        "title": "Hacker used Claude to orchestrate attacks",
+        "isSwimlane": false,
+        "entity": "Anthropic",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "light-grey"
+        }
+      },
+      {
+        "title": "DeepSeek",
+        "isSwimlane": true,
+        "entity": "DeepSeek",
+        "taskType": "task"
+      },
+      {
+        "title": "Blocked Nvidia and AMD from V4 access",
+        "isSwimlane": false,
+        "entity": "DeepSeek",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "white"
+        }
+      },
+      {
+        "title": "V4 imminent but delayed",
+        "isSwimlane": false,
+        "entity": "DeepSeek",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 12,
+          "color": "white"
+        }
+      },
+      {
+        "title": "Google",
+        "isSwimlane": true,
+        "entity": "Google",
+        "taskType": "task"
+      },
+      {
+        "title": "Gemini and Google Maps share API keys security finding",
+        "isSwimlane": false,
+        "entity": "Google",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "dark-blue"
+        }
+      },
+      {
+        "title": "Gemini integrated into Apple Siri (iOS 26.4 beta)",
+        "isSwimlane": false,
+        "entity": "Google",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "dark-blue"
+        }
+      },
+      {
+        "title": "Restructured pricing: Google AI Pro and Ultra",
+        "isSwimlane": false,
+        "entity": "Google",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "dark-blue"
+        }
+      },
+      {
+        "title": "OpenAI",
+        "isSwimlane": true,
+        "entity": "OpenAI",
+        "taskType": "task"
+      },
+      {
+        "title": "ChatGPT Agent replaced Operator",
+        "isSwimlane": false,
+        "entity": "OpenAI",
+        "taskType": "milestone",
+        "bar": {
+          "startCol": 1,
+          "endCol": 12,
+          "color": "priority-red"
+        }
+      },
+      {
+        "title": "ChatGPT hits 900M weekly active users",
+        "isSwimlane": false,
+        "entity": "OpenAI",
+        "taskType": "milestone",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "priority-red"
+        }
+      },
+      {
+        "title": "Pursuing funding round exceeding $100B",
+        "isSwimlane": false,
+        "entity": "OpenAI",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 12,
+          "color": "priority-red"
+        }
+      },
+      {
+        "title": "Retired GPT-4o, GPT-4.1, o4-mini from ChatGPT",
+        "isSwimlane": false,
+        "entity": "OpenAI",
+        "taskType": "milestone",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "priority-red"
+        }
+      },
+      {
+        "title": "xAI's trade-secrets lawsuit dismissed",
+        "isSwimlane": false,
+        "entity": "OpenAI",
+        "taskType": "decision",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "priority-red"
+        }
+      }
+    ],
+    "legend": [
+      {
+        "color": "priority-red",
+        "label": "Infrastructure & Funding"
+      },
+      {
+        "color": "medium-red",
+        "label": "Model Releases"
+      },
+      {
+        "color": "mid-grey",
+        "label": "Open Source Development"
+      },
+      {
+        "color": "light-grey",
+        "label": "Anthropic Operations"
+      },
+      {
+        "color": "white",
+        "label": "DeepSeek Development"
+      },
+      {
+        "color": "dark-blue",
+        "label": "Google AI Initiatives"
+      }
+    ]
+  }
+}

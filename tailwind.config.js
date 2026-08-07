@@ -64,9 +64,11 @@ export default {
 
       // Glassmorphic Text Colors (for text-glass-* utilities)
       textColor: {
+        // Aesthetic choice, kept in step with design-system.css. These sit below WCAG AA
+        // for normal text by owner decision — see the note there before changing them.
         'glass-primary': 'rgba(255, 255, 255, 1)',
         'glass-secondary': 'rgba(255, 255, 255, 0.55)',
-        'glass-muted': 'rgba(255, 255, 255, 0.4)',
+        'glass-muted': 'rgba(255, 255, 255, 0.40)',
       },
 
       // Glassmorphic Background Colors (for bg-glass-* utilities)

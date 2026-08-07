@@ -22,6 +22,18 @@
   --glass-white-20: rgba(255, 255, 255, 0.20);
   --glass-white-25: rgba(255, 255, 255, 0.25);
   --glass-white-30: rgba(255, 255, 255, 0.30);
+  /*
+   * Alphas are an aesthetic choice, not a contrast calculation. Composited over the glass
+   * panel these measure ~4.42:1 (secondary) and ~3.08:1 (muted), below WCAG AA's 4.5:1 for
+   * normal text — a deliberate owner decision to keep the glass hierarchy intact.
+   *
+   * Do not raise these to chase a ratio: the secondary/muted separation is the design. If
+   * contrast needs improving, do it where the text is actually small (bump the type size on
+   * --text-sm body copy, which qualifies for the 3:1 large-text threshold) rather than by
+   * flattening the palette.
+   *
+   * Mirrored in tailwind.config.js textColor for the text-glass-* utilities. Change both.
+   */
   --glass-text-primary: #FFFFFF;
   --glass-text-secondary: rgba(255, 255, 255, 0.55);
   --glass-text-muted: rgba(255, 255, 255, 0.40);

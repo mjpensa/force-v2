@@ -1,0 +1,14 @@
+{
+  "generator": "narrative-spine",
+  "capturedAt": 1776634725959,
+  "promptPrefix": "You are a senior strategy analyst. Analyze the res",
+  "data": {
+    "coreThesis": "Leaders facing a militarily superior adversary must prioritize ideological unity, strategic international alliances, and adaptable military organization to achieve independence.",
+    "keyClaims": [
+      {
+        "claim": "Ideological unity and popular support among colonists were essential for sustaining the protracted insurgency against a superior power.",
+        "": null
+      }
+    ]
+  }
+}

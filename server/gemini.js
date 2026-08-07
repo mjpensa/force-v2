@@ -3,26 +3,54 @@ import { CONFIG } from './config.js';
 import { jsonrepair } from 'jsonrepair';
 import { modelRotator } from './model-rotation.js';
 
+/**
+ * The single Gemini call path.
+ *
+ * There used to be two. This module had retry, markdown-fence stripping and jsonrepair;
+ * generators.js had jsonrepair only, no retry, its own timeout mechanism, and its own
+ * getGenerativeModel call site. The two disagreed about what counts as a rate limit, so the
+ * content pipeline — the expensive one, the one that issues 10-12 calls per run — was the
+ * half without retry.
+ *
+ * That is not theoretical. Capturing speaker-notes on 2026-08-07 lost a call to a transient
+ * 503 after the outline pass had already succeeded: one wasted request out of a 20-per-day
+ * free-tier budget, which a single retry would have saved.
+ */
+
 export const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
-function isRateLimitError(error) {
-  return error.message && (error.message.includes('429') || error.message.includes('RESOURCE_EXHAUSTED'));
+/**
+ * Retryable rate limiting — the per-minute kind. Worth backing off and trying again.
+ */
+export function isRateLimited(error) {
+  const msg = error?.message ?? '';
+  return msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED');
 }
 
-async function retryWithBackoff(operation, retryCount = CONFIG.API.RETRY_COUNT, onRetry = null) {
+/**
+ * Terminal quota exhaustion — the per-day kind. Retrying cannot help and each attempt is
+ * itself billed against the budget, so this must never be retried.
+ *
+ * Kept separate from isRateLimited on purpose: a bare 429 is usually a burst limit and
+ * should back off, while a 429 naming quota means the day is over. Collapsing the two
+ * either burns quota on doomed retries or gives up on recoverable bursts.
+ */
+export function isQuotaExhausted(error) {
+  const msg = error?.message ?? '';
+  return msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED');
+}
+
+export async function retryWithBackoff(operation, retryCount = CONFIG.API.RETRY_COUNT, onRetry = null) {
   let lastError = null;
   for (let attempt = 0; attempt < retryCount; attempt++) {
     try {
       return await operation();
     } catch (error) {
       lastError = error;
-      const isRateLimit = isRateLimitError(error);
-      if (isRateLimit && (error.message.includes('quota') || error.message.includes('RESOURCE_EXHAUSTED'))) {
-        throw error;
-      }
+      if (isQuotaExhausted(error)) throw error;
       if (attempt >= retryCount - 1) throw error;
       if (onRetry) onRetry(attempt + 1, error);
-      const delayMs = isRateLimit
+      const delayMs = isRateLimited(error)
         ? CONFIG.API.RETRY_BASE_DELAY_MS * Math.pow(2, attempt + 1)
         : CONFIG.API.RETRY_BASE_DELAY_MS * (attempt + 1);
       await new Promise(resolve => setTimeout(resolve, delayMs));
@@ -31,38 +59,74 @@ async function retryWithBackoff(operation, retryCount = CONFIG.API.RETRY_COUNT, 
   throw lastError || new Error('All retry attempts failed.');
 }
 
-async function _callGemini(payload) {
+/**
+ * One request to the model. `generationConfig` carries responseSchema for the structured
+ * generators; the free-text callers omit it.
+ *
+ * The timeout is passed as an SDK request option rather than raced with a Promise, so the
+ * underlying HTTP request is actually abandoned instead of left running while the race
+ * result is discarded.
+ */
+async function callOnce(payload, { generationConfig, timeoutMs = CONFIG.API.TIMEOUT_MS } = {}) {
+  const modelId = modelRotator.current();
   const model = genAI.getGenerativeModel(
-    { model: modelRotator.current() },
-    { timeout: CONFIG.API.TIMEOUT_MS, apiVersion: 'v1beta' }
+    generationConfig ? { model: modelId, generationConfig } : { model: modelId },
+    { timeout: timeoutMs, apiVersion: 'v1beta' }
   );
   const result = await model.generateContent(payload);
   return result.response.text();
 }
 
-export async function callGeminiForJson(payload, retryCount = CONFIG.API.RETRY_COUNT, onRetry = null) {
-  return retryWithBackoff(async () => {
-    const text = await _callGemini(payload);
-    let jsonText = text.trim();
-    if (jsonText.startsWith('```json')) {
-      jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    } else if (jsonText.startsWith('```')) {
-      jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '');
-    }
+/**
+ * Parse a model response as JSON.
+ *
+ * Fence stripping and jsonrepair both stay. jsonrepair is NOT dead code despite
+ * responseMimeType/responseSchema being set — it was observed salvaging a malformed
+ * gemini-2.5-flash speaker-notes response on 2026-08-07, the first real generation after
+ * logging was added to this path.
+ */
+export function parseModelJson(text, label = 'response') {
+  let jsonText = String(text).trim();
+  if (jsonText.startsWith('```json')) {
+    jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+  } else if (jsonText.startsWith('```')) {
+    jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+  }
+  try {
+    return JSON.parse(jsonText);
+  } catch (parseError) {
     try {
-      return JSON.parse(jsonText);
-    } catch (parseError) {
-      try {
-        return JSON.parse(jsonrepair(jsonText));
-      } catch (_) {
-        throw parseError;
-      }
+      const repaired = JSON.parse(jsonrepair(jsonText));
+      console.warn(`[${label}] jsonrepair salvaged a malformed response`);
+      return repaired;
+    } catch {
+      throw parseError; // the original parse error is the useful one
     }
-  }, retryCount, onRetry);
+  }
+}
+
+/**
+ * Structured call: retries, honors a schema, and returns parsed JSON.
+ * Used by the content generators.
+ */
+export async function callModelForJson(payload, {
+  generationConfig,
+  timeoutMs,
+  retryCount = CONFIG.API.RETRY_COUNT,
+  onRetry = null,
+  label = 'response',
+} = {}) {
+  return retryWithBackoff(
+    async () => parseModelJson(await callOnce(payload, { generationConfig, timeoutMs }), label),
+    retryCount,
+    onRetry
+  );
+}
+
+export async function callGeminiForJson(payload, retryCount = CONFIG.API.RETRY_COUNT, onRetry = null) {
+  return callModelForJson(payload, { retryCount, onRetry });
 }
 
 export async function callGeminiForText(payload, retryCount = CONFIG.API.RETRY_COUNT) {
-  return retryWithBackoff(async () => {
-    return await _callGemini(payload);
-  }, retryCount);
+  return retryWithBackoff(async () => callOnce(payload), retryCount);
 }

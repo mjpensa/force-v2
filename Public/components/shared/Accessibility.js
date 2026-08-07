@@ -50,9 +50,16 @@ export function initAccessibility(options = {}) {
     });
   }
   if (config.focusManagement) {
+    // Modals are appended to document.body as a backdrop overlay whose *child* carries
+    // role="dialog" — checking only the added node itself missed every one of them, so the
+    // trap never ran. Check the node and its descendants.
+    const DIALOG_SELECTOR = '[role="dialog"],[role="alertdialog"]';
     new MutationObserver((mutations) => {
       mutations.forEach((m) => m.addedNodes.forEach((node) => {
-        if (node.nodeType === 1 && (node.getAttribute('role') === 'dialog' || node.getAttribute('role') === 'alertdialog')) trapFocus(node);
+        if (node.nodeType !== 1) return;
+        if (node.matches?.(DIALOG_SELECTOR)) { trapFocus(node); return; }
+        const nested = node.querySelector?.(DIALOG_SELECTOR);
+        if (nested) trapFocus(nested);
       }));
     }).observe(document.body, { childList: true, subtree: true });
   }

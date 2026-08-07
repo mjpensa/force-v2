@@ -749,9 +749,12 @@ export class DocumentView {
     overlay.className = 'intelligence-brief-modal-overlay';
     const modal = document.createElement('div');
     modal.className = 'intelligence-brief-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'intel-brief-modal-title');
     modal.innerHTML = `
       <div class="modal-header">
-        <h2>Pre-Meeting Intelligence Brief</h2>
+        <h2 id="intel-brief-modal-title">Pre-Meeting Intelligence Brief</h2>
         <button class="modal-close" aria-label="Close">&times;</button>
       </div>
       <div class="modal-body">

@@ -6,6 +6,7 @@ import { uploadMiddleware } from '../middleware.js';
 import { generatePptx } from '../templates/ppt-export-service-v2.js';
 import { generateDocx, generateIntelligenceBriefDocx } from '../templates/docx-export-service.js';
 import { fileCache } from '../cache/FileCache.js';
+import { resolveSlideAt } from '../../Public/shared/flatten-slides.js';
 
 const router = express.Router();
 
@@ -91,7 +92,9 @@ function enforceSessionLimit() {
   }
 }
 
-setInterval(() => {
+const SESSION_SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+
+export const sessionSweeper = setInterval(() => {
   const now = Date.now();
   for (const [sessionId, session] of sessions) {
     const lastActivity = session.lastAccessed || session.createdAt;
@@ -100,7 +103,19 @@ setInterval(() => {
     }
   }
   enforceSessionLimit();
-}, 5 * 60 * 1000);
+}, SESSION_SWEEP_INTERVAL_MS);
+
+// Do not hold the process open. This timer only prunes an in-memory Map; in production the
+// HTTP server is what keeps Node alive, so unref costs nothing there. Without it, every test
+// importing this module inherited a 5-minute timer and the suite could never exit on its
+// own — which is why every run needed --forceExit, and why a genuine hang would have been
+// indistinguishable from this one.
+sessionSweeper.unref?.();
+
+/** Stop the sweeper — for graceful shutdown and for tests that assert on exit behavior. */
+export function stopSessionSweeper() {
+  clearInterval(sessionSweeper);
+}
 
 function generateSessionId() {
   return crypto.randomUUID();
@@ -179,7 +194,7 @@ router.post('/generate', generationLimiter, uploadMiddleware.array('researchFile
   }
 });
 
-async function runGenerationPipeline(sessionId, prompt, researchFiles, requestedViews) {
+export async function runGenerationPipeline(sessionId, prompt, researchFiles, requestedViews) {
   const session = sessions.get(sessionId);
   if (!session) return;
 
@@ -188,17 +203,24 @@ async function runGenerationPipeline(sessionId, prompt, researchFiles, requested
     emitSessionEvent(sessionId, ts);
 
     if (event.type === 'view:completed' && event.result) {
-      const keyMap = VIEW_TYPE_MAP;
-      const contentKey = keyMap[event.view];
+      const contentKey = VIEW_TYPE_MAP[event.view];
       if (contentKey && session.content) {
         session.content[contentKey] = event.result;
       }
     }
     if (event.type === 'view:failed' && event.view) {
-      const keyMap = VIEW_TYPE_MAP;
-      const contentKey = keyMap[event.view];
+      const contentKey = VIEW_TYPE_MAP[event.view];
       if (contentKey && session.content) {
-        session.content[contentKey] = { success: false, error: event.error };
+        // generators.js emits the failure payload as `result` ({success, error}), not as a
+        // top-level `error`. Reading event.error here stored undefined for every failed
+        // view, so formatUserError always fell through to its generic message and the real
+        // Gemini error — quota exhausted, timeout, malformed response — never reached the
+        // user or the SSE stream. Debugging a burned call with "Please try again" is a
+        // direct quota tax on a 20-request/day tier.
+        session.content[contentKey] = {
+          success: false,
+          error: event.result?.error ?? event.error ?? 'Generation failed with no error detail',
+        };
       }
     }
   };
@@ -419,26 +441,18 @@ router.post('/:sessionId/update-slide-field', express.json(), (req, res) => {
       return res.status(400).json({ error: 'No slides data found' });
     }
 
-    // Flatten sections to find the slide at the given index
-    let flatIdx = 0;
-    for (const section of slidesData.sections) {
-      // Account for section title slide (index flatIdx is the section title)
-      if (flatIdx === idx) {
-        // Editing the section title slide
-        if (field === 'sectionTitle') section.sectionTitle = value;
-        return res.json({ success: true });
-      }
-      flatIdx++;
-      for (const slide of (section.slides || [])) {
-        if (flatIdx === idx) {
-          slide[field] = value;
-          return res.json({ success: true });
-        }
-        flatIdx++;
-      }
+    // Resolved through the same shared walk the viewer and exporter use, so index N here is
+    // the slide the user was actually looking at.
+    const target = resolveSlideAt(slidesData.sections, idx);
+    if (!target) {
+      return res.status(400).json({ error: 'Slide not found at given index' });
     }
-
-    return res.status(400).json({ error: 'Slide not found at given index' });
+    if (target.kind === 'sectionTitle') {
+      if (field === 'sectionTitle') target.section.sectionTitle = value;
+      return res.json({ success: true });
+    }
+    target.slide[field] = value;
+    return res.json({ success: true });
   } catch (error) {
     handleGenerationError(error, res, 'update slide field');
   }

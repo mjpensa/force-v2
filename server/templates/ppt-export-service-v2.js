@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { normalizeBodyText, truncateToSentence, formatTitle, formatSectionTitle, formatBody } from '../../Public/shared/text-utils.js';
+import { flattenSlideDeck } from '../../Public/shared/flatten-slides.js';
+import { SLIDE_LIMITS } from '../../Public/shared/slide-limits.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -263,18 +265,7 @@ function formatSpeakerNotesForPptx(notes, maxLength = 3000) {
       headroom: 100,
       extract: () => notes.narrative?.keyPhrase ? `"${notes.narrative.keyPhrase}"` : null
     },
-    // 2. STAKEHOLDER ANGLES
-    {
-      label: 'STAKEHOLDER ANGLES:',
-      headroom: 250,
-      extract: () => {
-        if (!notes.stakeholderAngles) return null;
-        return formatFields(notes.stakeholderAngles, [
-          ['cfo', 'CFO'], ['cto', 'CTO'], ['ceo', 'CEO'], ['operations', 'OPS']
-        ]);
-      }
-    },
-    // 3. TRANSITIONS
+    // 2. TRANSITIONS
     {
       label: 'TRANSITIONS:',
       extract: () => {
@@ -303,40 +294,7 @@ function formatSpeakerNotesForPptx(notes, maxLength = 3000) {
         }).join('\n\n');
       }
     },
-    // 5. CALL-TO-ACTION VARIANTS
-    {
-      label: 'CALL-TO-ACTION:',
-      headroom: 200,
-      extract: () => {
-        if (!notes.storyContext?.callToAction) return null;
-        const cta = notes.storyContext.callToAction;
-        return formatFields(cta, [
-          ['warmAudience', 'WARM', v => v.ask],
-          ['neutralAudience', 'NEUTRAL', v => v.ask],
-          ['hostileAudience', 'HOSTILE', v => v.ask]
-        ]);
-      }
-    },
-    // 6. WHY THIS MATTERS
-    {
-      label: 'WHY THIS MATTERS:',
-      priority: 'high',
-      headroom: 150,
-      extract: () => notes.storyContext?.soWhat || null
-    },
-    // 7. TIME GUIDANCE
-    {
-      label: 'TIME:',
-      headroom: 100,
-      extract: () => {
-        if (!notes.storyContext?.timeGuidance) return null;
-        return formatFields(notes.storyContext.timeGuidance, [
-          ['suggestedDuration', 'Duration'],
-          ['condensedVersion', 'Short version', v => `"${v}"`]
-        ]);
-      }
-    },
-    // 8. SOURCES
+    // 5. SOURCES
     {
       label: 'SOURCES:',
       headroom: 200,
@@ -346,18 +304,6 @@ function formatSpeakerNotesForPptx(notes, maxLength = 3000) {
           const claim = src.claim?.length > 80 ? src.claim.substring(0, 80) + '...' : src.claim;
           return `\u2022 ${src.source}: "${claim}"`;
         }).join('\n');
-      }
-    },
-    // 9. CREDIBILITY ANCHORS
-    {
-      label: 'CREDIBILITY ANCHORS:',
-      headroom: 150,
-      extract: () => {
-        if (!notes.credibilityAnchors?.length) return null;
-        return notes.credibilityAnchors.slice(0, 2).map(anchor => {
-          const typeLabel = (anchor.type || 'research').toUpperCase().replace(/_/g, ' ');
-          return `[${typeLabel}] ${anchor.dropPhrase}\n  \u2192 ${anchor.statement}`;
-        }).join('\n\n');
       }
     }
   ];
@@ -476,7 +422,9 @@ function addTwoColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
     valign: 'top',
     lineSpacingMultiple: 0.85
   });
-  const bodyText = formatBody(data.paragraph1, data.paragraph2, 410);
+  // formatBody splits the budget across the two paragraphs, so pass twice the
+  // per-paragraph limit to give each one the full RENDER_TWO_COLUMN allowance.
+  const bodyText = formatBody(data.paragraph1, data.paragraph2, SLIDE_LIMITS.RENDER_TWO_COLUMN * 2);
   if (bodyText) {
     slide.addText(bodyText, {
       x: L.body.x, y: L.body.y, w: L.body.w, h: L.body.h,
@@ -520,9 +468,9 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   const gapWidth = L.columnGap;
   const columnWidth = (totalWidth - (2 * gapWidth)) / 3;
   const columnTexts = [
-    truncateToSentence(normalizeBodyText(data.paragraph1), 390),
-    truncateToSentence(normalizeBodyText(data.paragraph2), 390),
-    truncateToSentence(normalizeBodyText(data.paragraph3 || data.paragraph1), 390)
+    truncateToSentence(normalizeBodyText(data.paragraph1), SLIDE_LIMITS.RENDER_THREE_COLUMN),
+    truncateToSentence(normalizeBodyText(data.paragraph2), SLIDE_LIMITS.RENDER_THREE_COLUMN),
+    truncateToSentence(normalizeBodyText(data.paragraph3 || ''), SLIDE_LIMITS.RENDER_THREE_COLUMN)
   ];
 
   columnTexts.forEach((text, index) => {
@@ -541,23 +489,7 @@ function addThreeColumnSlide(pptx, data, slideNumber, speakerNotes = null) {
   _addSpeakerNotes(slide, speakerNotes);
 }
 
-function flattenSections(sections) {
-  const flatSlides = [];
 
-  for (const section of sections) {
-    if (!section.swimlane) continue;
-    flatSlides.push({
-      layout: 'sectionTitle',
-      swimlane: section.swimlane,
-      sectionTitle: section.sectionTitle || section.swimlane
-    });
-    if (section.slides && Array.isArray(section.slides) && section.slides.length > 0) {
-      flatSlides.push(...section.slides);
-    }
-  }
-
-  return flatSlides;
-}
 
 // Generate PowerPoint presentation from slides data
 export async function generatePptx(slidesData, options = {}) {
@@ -580,7 +512,7 @@ export async function generatePptx(slidesData, options = {}) {
   pptx.layout = 'CUSTOM_16_9';
   let slidesArray = [];
   if (slidesData.sections && Array.isArray(slidesData.sections) && slidesData.sections.length > 0) {
-    slidesArray = flattenSections(slidesData.sections);
+    slidesArray = flattenSlideDeck(slidesData.sections).slides;
   }
   const speakerNotesData = slidesData.speakerNotes?.slides || [];
   const hasSpeakerNotes = speakerNotesData.length > 0;

@@ -217,6 +217,10 @@ async function handleChartGenerate(event) {
       progressInterval = null;
     }
   };
+  // Declared outside the try because the finally block below removes this listener:
+  // `finally` is a separate block scope, so a const declared inside `try` is not visible
+  // there and the removeEventListener call throws before the button can be re-enabled.
+  const beforeUnloadHandler = (e) => { e.preventDefault(); };
   try {
     const promptInput = document.getElementById('prompt-input');
     const uploadInput = document.getElementById('upload-input');
@@ -252,7 +256,6 @@ async function handleChartGenerate(event) {
     }
     loadingIndicator.style.display = 'flex';
     errorMessage.style.display = 'none';
-    const beforeUnloadHandler = (e) => { e.preventDefault(); };
     window.addEventListener('beforeunload', beforeUnloadHandler);
     startProgressTimer();
     const response = await fetch('/api/content/generate', {

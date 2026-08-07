@@ -1,0 +1,259 @@
+{
+  "generator": "roadmap",
+  "capturedAt": 1776634753196,
+  "promptPrefix": "You are an expert project management analyst. Your",
+  "data": {
+    "title": "American Revolution Overview (1764-1783)",
+    "timeColumns": [
+      "1764",
+      "1765",
+      "1766",
+      "1767",
+      "1768",
+      "1769",
+      "1770",
+      "1771",
+      "1772",
+      "1773",
+      "1774",
+      "1775",
+      "1776",
+      "1777",
+      "1778",
+      "1779",
+      "1780",
+      "1781",
+      "1782",
+      "1783"
+    ],
+    "data": [
+      {
+        "title": "British Actions & Legislation",
+        "isSwimlane": true,
+        "entity": "British Actions & Legislation",
+        "taskType": "task"
+      },
+      {
+        "title": "Sugar Act",
+        "isSwimlane": false,
+        "entity": "British Actions & Legislation",
+        "taskType": "task",
+        "bar": {
+          "startCol": 1,
+          "endCol": 2,
+          "color": "priority-red"
+        }
+      },
+      {
+        "title": "Stamp Act",
+        "isSwimlane": false,
+        "entity": "British Actions & Legislation",
+        "taskType": "task",
+        "bar": {
+          "startCol": 2,
+          "endCol": 3,
+          "color": "priority-red"
+        }
+      },
+      {
+        "title": "Intolerable Acts",
+        "isSwimlane": false,
+        "entity": "British Actions & Legislation",
+        "taskType": "task",
+        "bar": {
+          "startCol": 11,
+          "endCol": 12,
+          "color": "priority-red"
+        }
+      },
+      {
+        "title": "British Surrender at Yorktown",
+        "isSwimlane": false,
+        "entity": "British Actions & Legislation",
+        "taskType": "milestone",
+        "bar": {
+          "startCol": 18,
+          "endCol": 19,
+          "color": "medium-red"
+        }
+      },
+      {
+        "title": "Colonial & American Forces",
+        "isSwimlane": true,
+        "entity": "Colonial & American Forces",
+        "taskType": "task"
+      },
+      {
+        "title": "American Revolution Insurrection",
+        "isSwimlane": false,
+        "entity": "Colonial & American Forces",
+        "taskType": "task",
+        "bar": {
+          "startCol": 12,
+          "endCol": 21,
+          "color": "mid-grey"
+        }
+      },
+      {
+        "title": "Battles of Lexington and Concord",
+        "isSwimlane": false,
+        "entity": "Colonial & American Forces",
+        "taskType": "task",
+        "bar": {
+          "startCol": 12,
+          "endCol": 13,
+          "color": "light-grey"
+        }
+      },
+      {
+        "title": "Battle of Bunker Hill",
+        "isSwimlane": false,
+        "entity": "Colonial & American Forces",
+        "taskType": "task",
+        "bar": {
+          "startCol": 12,
+          "endCol": 13,
+          "color": "light-grey"
+        }
+      },
+      {
+        "title": "Initial Phase: Civil War",
+        "isSwimlane": false,
+        "entity": "Colonial & American Forces",
+        "taskType": "task",
+        "bar": {
+          "startCol": 12,
+          "endCol": 16,
+          "color": "mid-grey"
+        }
+      },
+      {
+        "title": "Battle of Brandywine",
+        "isSwimlane": false,
+        "entity": "Colonial & American Forces",
+        "taskType": "task",
+        "bar": {
+          "startCol": 14,
+          "endCol": 15,
+          "color": "light-grey"
+        }
+      },
+      {
+        "title": "Battles of Saratoga",
+        "isSwimlane": false,
+        "entity": "Colonial & American Forces",
+        "taskType": "task",
+        "bar": {
+          "startCol": 14,
+          "endCol": 15,
+          "color": "light-grey"
+        }
+      },
+      {
+        "title": "Battle of Bemis Heights",
+        "isSwimlane": false,
+        "entity": "Colonial & American Forces",
+        "taskType": "task",
+        "bar": {
+          "startCol": 14,
+          "endCol": 15,
+          "color": "light-grey"
+        }
+      },
+      {
+        "title": "International War Phase",
+        "isSwimlane": false,
+        "entity": "Colonial & American Forces",
+        "taskType": "task",
+        "bar": {
+          "startCol": 15,
+          "endCol": 21,
+          "color": "mid-grey"
+        }
+      },
+      {
+        "title": "Battle of the Chesapeake",
+        "isSwimlane": false,
+        "entity": "Colonial & American Forces",
+        "taskType": "task",
+        "bar": {
+          "startCol": 18,
+          "endCol": 19,
+          "color": "light-grey"
+        }
+      },
+      {
+        "title": "Peace Treaty",
+        "isSwimlane": false,
+        "entity": "Colonial & American Forces",
+        "taskType": "milestone",
+        "bar": {
+          "startCol": 20,
+          "endCol": 21,
+          "color": "medium-red"
+        }
+      },
+      {
+        "title": "International Allies",
+        "isSwimlane": true,
+        "entity": "International Allies",
+        "taskType": "task"
+      },
+      {
+        "title": "France joined colonies",
+        "isSwimlane": false,
+        "entity": "International Allies",
+        "taskType": "task",
+        "bar": {
+          "startCol": 15,
+          "endCol": 16,
+          "color": "white"
+        }
+      },
+      {
+        "title": "Netherlands provided recognition and financial support",
+        "isSwimlane": false,
+        "entity": "International Allies",
+        "taskType": "task",
+        "bar": {
+          "startCol": 15,
+          "endCol": 21,
+          "color": "white"
+        }
+      },
+      {
+        "title": "Spain joined colonies",
+        "isSwimlane": false,
+        "entity": "International Allies",
+        "taskType": "task",
+        "bar": {
+          "startCol": 16,
+          "endCol": 17,
+          "color": "white"
+        }
+      }
+    ],
+    "legend": [
+      {
+        "color": "priority-red",
+        "label": "Legislation & Grievances"
+      },
+      {
+        "color": "medium-red",
+        "label": "Conclusion & Peace"
+      },
+      {
+        "color": "mid-grey",
+        "label": "Phases of Conflict"
+      },
+      {
+        "color": "light-grey",
+        "label": "Key Battles"
+      },
+      {
+        "color": "white",
+        "label": "International Support"
+      }
+    ]
+  }
+}

@@ -63,6 +63,9 @@ export default [
         // Drag and drop API
         DataTransfer: 'readonly',
         DragEvent: 'readonly',
+        // Server-sent events (Public/viewer.js) and hash routing (Public/components/SidebarNav.js)
+        EventSource: 'readonly',
+        HashChangeEvent: 'readonly',
         // External libraries loaded via CDN
         DOMPurify: 'readonly',
         html2canvas: 'readonly',

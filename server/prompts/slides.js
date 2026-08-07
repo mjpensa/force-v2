@@ -495,198 +495,6 @@ export const speakerNotesSchema = {
             },
             description: "Citations for key claims on this slide"
           },
-          storyContext: {
-            type: "object",
-            properties: {
-              narrativePosition: {
-                type: "string",
-                enum: NARRATIVE_POSITIONS,
-                description: "Where this slide sits in the narrative arc"
-              },
-              precededBy: {
-                type: "string",
-                description: "What the audience just learned from the previous slide"
-              },
-              followedBy: {
-                type: "string",
-                description: "What comes next and why this slide sets it up"
-              },
-              soWhat: {
-                type: "string",
-                description: "Why this slide matters to the client - the key takeaway"
-              },
-              callToAction: {
-                type: "object",
-                description: "Different closes based on audience receptivity",
-                properties: {
-                  warmAudience: {
-                    type: "object",
-                    properties: {
-                      ask: { type: "string", description: "Direct ask for commitment" },
-                      timeline: { type: "string", description: "Specific next step timing" }
-                    }
-                  },
-                  neutralAudience: {
-                    type: "object",
-                    properties: {
-                      ask: { type: "string", description: "Softer ask - follow-up materials" },
-                      nextStep: { type: "string", description: "Lower-commitment next action" }
-                    }
-                  },
-                  hostileAudience: {
-                    type: "object",
-                    properties: {
-                      ask: { type: "string", description: "Address concerns directly" },
-                      fallback: { type: "string", description: "Minimum viable next step" }
-                    }
-                  }
-                }
-              },
-              timeGuidance: {
-                type: "object",
-                description: "Time management for this slide",
-                properties: {
-                  suggestedDuration: { type: "string", description: "How long to spend: '2-3 minutes'" },
-                  canCondense: { type: "boolean", description: "True if slide can be shortened if running late" },
-                  condensedVersion: { type: "string", description: "One-sentence version if short on time" },
-                  mustInclude: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Non-negotiable points even if condensing"
-                  }
-                }
-              }
-            },
-            required: ["narrativePosition", "soWhat"]
-          },
-          generationTransparency: {
-            type: "object",
-            properties: {
-              primarySources: {
-                type: "array",
-                items: { type: "string" },
-                description: "List of source documents that informed this slide's content"
-              },
-              derivationMethod: {
-                type: "string",
-                enum: ["extracted", "paraphrased", "synthesized", "inferred"],
-                description: "Primary method used to derive slide content from sources"
-              },
-              assumptions: {
-                type: "array",
-                items: { type: "string" },
-                description: "Any assumptions made during content generation"
-              },
-              dataLineage: {
-                type: "string",
-                description: "Brief trace from source material to slide content"
-              }
-            },
-            required: ["primarySources", "derivationMethod", "dataLineage"]
-          },
-          credibilityAnchors: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                type: {
-                  type: "string",
-                  enum: ["case_study", "analyst_quote", "regulatory", "peer_company", "research"],
-                  description: "Type of credibility anchor"
-                },
-                statement: {
-                  type: "string",
-                  description: "The credibility-building statement"
-                },
-                dropPhrase: {
-                  type: "string",
-                  description: "Natural way to introduce: 'As Gartner noted...'"
-                },
-                fullCitation: {
-                  type: "string",
-                  description: "Full citation for follow-up questions"
-                }
-              },
-              required: ["type", "statement", "dropPhrase", "fullCitation"]
-            },
-            description: "Third-party validation points for skeptical audiences"
-          },
-          riskMitigation: {
-            type: "object",
-            description: "De-risking language for risk-averse audiences",
-            properties: {
-              implementationRisk: {
-                type: "object",
-                properties: {
-                  concern: { type: "string", description: "The implementation concern" },
-                  response: { type: "string", description: "De-risk with pilot scope, phased approach" },
-                  proofPoint: { type: "string", description: "Evidence of successful implementation" }
-                },
-                nullable: true
-              },
-              reputationalRisk: {
-                type: "object",
-                properties: {
-                  concern: { type: "string", description: "Public failure fear" },
-                  response: { type: "string", description: "Internal pilot framing, controlled rollout" }
-                },
-                nullable: true
-              },
-              careerRisk: {
-                type: "object",
-                properties: {
-                  concern: { type: "string", description: "Sponsor's personal exposure" },
-                  response: { type: "string", description: "Checkpoints, off-ramps, board-ready narratives" }
-                },
-                nullable: true
-              }
-            }
-          },
-
-          // 8. STAKEHOLDER-SPECIFIC MESSAGING (Enhancement #1)
-          stakeholderAngles: {
-            type: "object",
-            description: "Tailored messaging for different decision-makers in the room",
-            properties: {
-              cfo: {
-                type: "string",
-                description: "ROI/cost framing: quantify savings, payback period, budget impact"
-              },
-              cto: {
-                type: "string",
-                description: "Technical feasibility: integration complexity, stack compatibility, security"
-              },
-              ceo: {
-                type: "string",
-                description: "Strategic positioning: competitive advantage, market timing, board narrative"
-              },
-              operations: {
-                type: "string",
-                description: "Implementation risk: timeline, resource requirements, change management"
-              }
-            }
-          },
-          audienceSignals: {
-            type: "object",
-            description: "How to read the room and adapt in real-time",
-            properties: {
-              losingThem: {
-                type: "object",
-                properties: {
-                  signs: { type: "array", items: { type: "string" }, description: "Observable signals of disengagement" },
-                  pivotStrategy: { type: "string", description: "What to do when you notice these signs" },
-                  emergencyBridge: { type: "string", description: "Quick escape to skip ahead: 'Let me cut to the bottom line...'" }
-                }
-              },
-              winningThem: {
-                type: "object",
-                properties: {
-                  signs: { type: "array", items: { type: "string" }, description: "Signals of engagement and buy-in" },
-                  accelerationOption: { type: "string", description: "How to capitalize: ask for commitment, go deeper" }
-                }
-              }
-            }
-          },
           quickReference: {
             type: "object",
             description: "Condensed view for quick glance during presentation",
@@ -698,7 +506,10 @@ export const speakerNotesSchema = {
             }
           }
         },
-        required: ["slideIndex", "sectionName", "slideTagline", "narrative", "anticipatedQuestions", "sourceAttribution", "storyContext", "generationTransparency"]
+        // quickReference is deliberately NOT required: the model omitted it on 1 of 24 notes
+        // in the golden capture, so requiring it would add allowlist debt on the day it
+        // landed. The prompt asks for it prominently instead.
+        required: ["slideIndex", "sectionName", "slideTagline", "narrative", "anticipatedQuestions", "sourceAttribution"]
       }
     }
   },
@@ -1480,28 +1291,11 @@ For EACH content slide, populate all schema fields. Key quality guidance per sec
 - CRITICAL: Extract REAL publication names from research ("McKinsey 2024 Report", "Gartner MQ Q3 2024"), NEVER cite uploaded filenames
 - For inference-level confidence, flag assumptions explicitly
 
-### 4. STORY CONTEXT
-- soWhat MUST be: action-oriented, quantified, urgent, client-specific
-  Example: "Accelerate CDM pilot before Q2, saving \$2.3M annually"
-- callToAction: vary ask intensity by audience warmth (warm=commitment, neutral=follow-up, hostile=address concerns)
-- timeGuidance: condensedVersion = one-sentence version if running late
+### 4. QUICK REFERENCE
+- keyNumber: the ONE figure to land from this slide; keyAsk: the ONE thing you want them to do
+- Both must be quotable from memory. If a presenter reads nothing else, they read this.
 
-### 5-6. TRANSPARENCY & CREDIBILITY
-- Data lineage: trace claim -> source -> page/section
-- Credibility anchors: prioritize analyst firms > peer results > regulatory bodies > academic
-
-### 7. RISK MITIGATION
-- Address implementation, reputational, and career risk only when relevant to slide content
-- De-risk with: pilot scope, phased approach, checkpoints, off-ramps
-
-### 8. STAKEHOLDER ANGLES
-- cfo: ROI/savings with specific numbers; cto: integration/security feasibility
-- ceo: competitive positioning/board narrative; operations: timeline/resource/change mgmt
-
-### 9-10. AUDIENCE SIGNALS & QUICK REFERENCE
-- Schema fields are self-descriptive; focus on making quickReference memorable and quotable
-
-### 11. BRIDGE PHRASES (TOP-LEVEL reasoning.bridgePhrases, NOT per-slide)
+### 5. BRIDGE PHRASES (TOP-LEVEL reasoning.bridgePhrases, NOT per-slide)
 Pre-written escape phrases for: dontKnowAnswer, hostileInterruption, goingOffTopic, technicalDive, losingTheRoom (2-3 phrases each)
 
 ## QUALITY STANDARDS

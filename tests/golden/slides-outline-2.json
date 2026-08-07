@@ -1,0 +1,122 @@
+{
+  "generator": "slides-outline",
+  "capturedAt": 1776634766498,
+  "promptPrefix": "You are creating a NARRATIVE OUTLINE for a present",
+  "data": {
+    "reasoning": {
+      "overallNarrativeArc": "British imposition of control and denial of rights sparks colonial insurgency -> Numerically inferior American forces leverage ideological unity and international alliances against a superior British military -> Achieves independence through strategic adaptation and a decisive peace treaty.",
+      "primaryFramework": "COMPETITIVE_DYNAMICS",
+      "keyEvidenceChains": [
+        {
+          "evidence": "Britain imposed unpopular legislation and taxes: Sugar Act (1764), Stamp Act (1765), Intolerable Acts (1774). Colonists saw themselves as English subjects denied fundamental rights. The phrase 'Taxation without representation is tyranny' captured their central complaint.",
+          "insight": "British overreach fostered a shared ideological grievance, unifying disparate colonies against a common oppressor despite internal loyalist factions.",
+          "implication": "Sustaining popular support and ideological cohesion is paramount for an insurgency against a superior power."
+        },
+        {
+          "evidence": "Continental Army: 231,771 total soldiers, Militias: 164,087 total soldiers, Active forces rarely exceeded 20,000. British forces: Professional standing army of approximately 42,000 troops, plus 30,000 German mercenaries.",
+          "insight": "The American forces were significantly outnumbered and less professional than the British, necessitating strategic flexibility and reliance on militias despite their limitations.",
+          "implication": "An underdog must compensate for numerical and professional inferiority through adaptable military organization and unconventional tactics."
+        },
+        {
+          "evidence": "The conflict expanded when France (1778) and Spain (1779) joined the colonies against Britain. The French navy played a key role in bringing about British surrender at Yorktown (1781).",
+          "insight": "External alliances, particularly naval support, were decisive in neutralizing the superior British military and securing victory.",
+          "implication": "Cultivating strategic international partnerships can be a critical force multiplier for an underdog in a protracted conflict."
+        },
+        {
+          "evidence": "The American Revolution was 'an insurrection carried out by 13 of Great Britain's North American colonies' between 1775 and 1783. The war officially concluded with a peace treaty on September 3, 1783, establishing American independence.",
+          "insight": "The conflict was a long, drawn-out struggle (8 years) that required sustained effort and eventual diplomatic resolution.",
+          "implication": "Achieving independence against a global power requires a long-term strategy encompassing both military perseverance and diplomatic engagement."
+        }
+      ],
+      "crossSectionConnections": [
+        "Overview's framing of the core challenge (underdog vs. superior power) → creates tension for → Conclusion's synthesis of how that challenge was overcome."
+      ]
+    },
+    "sections": [
+      {
+        "swimlane": "Overview",
+        "narrativeArc": "British imperial control creates colonial tension → key factors for independence previewed → establishes the urgency of strategic adaptation.",
+        "slides": [
+          {
+            "tagline": "IMPERIAL TENSION",
+            "keyDataPoint": "British rule over 13 North American colonies (1775-1783)",
+            "analyticalLens": "CAUSAL_CHAIN",
+            "connectsTo": "British assertion of control → directly led to → colonial grievances detailed next"
+          },
+          {
+            "tagline": "GRIEVANCE UNIFICATION",
+            "keyDataPoint": "Sugar Act (1764), Stamp Act (1765), Intolerable Acts (1774) imposed by Britain",
+            "analyticalLens": "CAUSAL_CHAIN",
+            "connectsTo": "Unpopular legislation and 'Taxation without representation' → fueled → the initial phase of conflict as a civil war"
+          },
+          {
+            "tagline": "CIVIL STRIFE",
+            "keyDataPoint": "Initial Phase: Civil War (1775-1778) with one-third of colonists as loyalists",
+            "analyticalLens": "COMPETITIVE_DYNAMICS",
+            "connectsTo": "Internal conflict and loyalist support for the crown → highlighted the need for → external support to balance the scales"
+          },
+          {
+            "tagline": "GLOBAL STAKES",
+            "keyDataPoint": "International War (1778-1783) with France (1778) and Spain (1779) joining colonies",
+            "analyticalLens": "SECOND_ORDER_EFFECTS",
+            "connectsTo": "Expansion to an international war → underscored → the significant military disparity faced by the Americans"
+          },
+          {
+            "tagline": "FORCE DISPARITY",
+            "keyDataPoint": "British: 42,000 professional troops + 30,000 German mercenaries vs. American: rarely exceeded 20,000 active forces",
+            "analyticalLens": "COMPETITIVE_DYNAMICS",
+            "connectsTo": "Overwhelming British military superiority → necessitated → a multi-faceted strategy for independence, which is the focus of this presentation"
+          },
+          {
+            "tagline": "INDEPENDENCE IMPERATIVE",
+            "keyDataPoint": "American Revolution (1775-1783) concluded with Peace Treaty on September 3, 1783",
+            "analyticalLens": "TEMPORAL_ARBITRAGE",
+            "connectsTo": "Overview's framing of the core challenge (underdog vs. superior power) → creates tension for → Conclusion's synthesis of how that challenge was overcome."
+          }
+        ]
+      },
+      {
+        "swimlane": "Conclusion",
+        "narrativeArc": "Synthesizing unity, alliances, and adaptation → reveals the strategic blueprint for underdog victory → recommends applying these lessons for future challenges.",
+        "slides": [
+          {
+            "tagline": "UNITY TRIUMPHS",
+            "keyDataPoint": "Colonial unity against Sugar Act (1764), Stamp Act (1765), Intolerable Acts (1774)",
+            "analyticalLens": "CAUSAL_CHAIN",
+            "connectsTo": "Ideological unity as a foundational strength → enabled → the sustained resistance required to attract international allies"
+          },
+          {
+            "tagline": "ALLIANCE LEVERAGE",
+            "keyDataPoint": "France (1778) and Spain (1779) joining the conflict; French navy decisive at Yorktown (1781)",
+            "analyticalLens": "COMPETITIVE_DYNAMICS",
+            "connectsTo": "Critical role of international alliances → directly offset → the significant military disadvantage faced by American forces"
+          },
+          {
+            "tagline": "ADAPTIVE STRATEGY",
+            "keyDataPoint": "Continental Army (231,771) and militias (164,087) operating with active forces rarely exceeded 20,000",
+            "analyticalLens": "RISK_ASYMMETRY",
+            "connectsTo": "Resourceful adaptation of military organization → allowed → for a protracted conflict that eventually led to British surrender"
+          },
+          {
+            "tagline": "YORKTOWN TURNING",
+            "keyDataPoint": "British Surrender at Yorktown (1781) effectively ending major combat operations",
+            "analyticalLens": "CAUSAL_CHAIN",
+            "connectsTo": "Decisive military victory → paved the way for → the diplomatic resolution of the conflict"
+          },
+          {
+            "tagline": "INDEPENDENCE SECURED",
+            "keyDataPoint": "Peace Treaty on September 3, 1783, establishing American independence",
+            "analyticalLens": "TEMPORAL_ARBITRAGE",
+            "connectsTo": "Successful conclusion of the war and treaty → provides a blueprint for → future strategic challenges requiring similar principles"
+          },
+          {
+            "tagline": "LESSONS FORWARD",
+            "keyDataPoint": "8-year conflict (1775-1783) resulting in independence",
+            "analyticalLens": "SECOND_ORDER_EFFECTS",
+            "connectsTo": "Strategic principles of unity, alliances, and adaptation → demand → immediate consideration for current organizational challenges."
+          }
+        ]
+      }
+    ]
+  }
+}

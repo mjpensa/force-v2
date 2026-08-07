@@ -74,6 +74,13 @@ export class GanttExporter {
     const originalOverflowX = this.chartContainer.style.overflowX;
     const originalOverflowY = this.chartContainer.style.overflowY;
 
+    // html2canvas is a CDN global. If the CDN is blocked or its SRI check fails it is
+    // undefined, and the bare call below throws — so the restore must be in a finally,
+    // or the chart is left expanded with overflow:visible until the next re-render.
+    if (typeof html2canvas === 'undefined') {
+      throw new Error('html2canvas failed to load; image export is unavailable.');
+    }
+
     this.chartContainer.scrollTop = 0;
     this.chartContainer.scrollLeft = 0;
     this.chartContainer.style.maxHeight = 'none';
@@ -81,24 +88,27 @@ export class GanttExporter {
     this.chartContainer.style.overflowX = 'visible';
     this.chartContainer.style.overflowY = 'visible';
 
-    await new Promise(resolve => requestAnimationFrame(resolve));
-    const fullWidth = this.chartContainer.scrollWidth;
-    const fullHeight = this.chartContainer.scrollHeight;
+    let sourceCanvas;
+    try {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      const fullWidth = this.chartContainer.scrollWidth;
+      const fullHeight = this.chartContainer.scrollHeight;
 
-    const sourceCanvas = await html2canvas(this.chartContainer, {
-      useCORS: true, logging: false, scale: CONFIG.EXPORT.SCALE,
-      allowTaint: false, backgroundColor: CONFIG.EXPORT.BACKGROUND_COLOR,
-      width: fullWidth, height: fullHeight,
-      windowWidth: fullWidth, windowHeight: fullHeight,
-      x: 0, y: 0, scrollX: 0, scrollY: 0
-    });
-
-    this.chartContainer.style.maxHeight = originalMaxHeight;
-    this.chartContainer.style.overflow = originalOverflow;
-    this.chartContainer.style.overflowX = originalOverflowX;
-    this.chartContainer.style.overflowY = originalOverflowY;
-    this.chartContainer.scrollTop = originalScrollTop;
-    this.chartContainer.scrollLeft = originalScrollLeft;
+      sourceCanvas = await html2canvas(this.chartContainer, {
+        useCORS: true, logging: false, scale: CONFIG.EXPORT.SCALE,
+        allowTaint: false, backgroundColor: CONFIG.EXPORT.BACKGROUND_COLOR,
+        width: fullWidth, height: fullHeight,
+        windowWidth: fullWidth, windowHeight: fullHeight,
+        x: 0, y: 0, scrollX: 0, scrollY: 0
+      });
+    } finally {
+      this.chartContainer.style.maxHeight = originalMaxHeight;
+      this.chartContainer.style.overflow = originalOverflow;
+      this.chartContainer.style.overflowX = originalOverflowX;
+      this.chartContainer.style.overflowY = originalOverflowY;
+      this.chartContainer.scrollTop = originalScrollTop;
+      this.chartContainer.scrollLeft = originalScrollLeft;
+    }
 
     return this._createAspectRatioCanvas(sourceCanvas);
   }

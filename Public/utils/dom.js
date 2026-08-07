@@ -38,6 +38,12 @@ export function createModal(config = {}) {
 
   const modalContent = document.createElement('div');
   modalContent.className = 'modal-content';
+  // initAccessibility's MutationObserver traps focus in nodes carrying these roles. Nothing
+  // in the app set them, so the trap had never fired for any modal despite the README
+  // claiming "proper focus trap in modals and dialogs".
+  modalContent.setAttribute('role', 'dialog');
+  modalContent.setAttribute('aria-modal', 'true');
+  modalContent.setAttribute('aria-labelledby', `${id}-title`);
 
   const actionsHtml = actions.map(action =>
     `<button class="${action.className || 'modal-action-btn'}" id="${action.id}" title="${action.title || ''}">${action.label}</button>`
@@ -47,7 +53,7 @@ export function createModal(config = {}) {
 
   modalContent.innerHTML = `
     <div class="modal-header">
-      <h3 class="modal-title">${title}</h3>
+      <h3 class="modal-title" id="${id}-title">${title}</h3>
       <div class="modal-actions">
         ${actionsHtml}
         <button class="modal-close" id="${id}-close-btn">&times;</button>

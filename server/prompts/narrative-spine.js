@@ -69,14 +69,51 @@ ${researchContent}
 Respond with ONLY the JSON object.`;
 }
 
+/**
+ * Render the narrative spine for injection into every downstream prompt.
+ *
+ * Every field here is optional at runtime despite narrativeSpineSchema marking them
+ * required. Captured production responses omit `evidence`, `stake`, `tensionPair`,
+ * `analyticalFramework`, and `recommendedAction` — both captures, four months apart, and
+ * confirmed by tests/server/golden-conformance.test.js. Gemini's responseSchema does not
+ * enforce `required`.
+ *
+ * Before this guard, the template interpolated those absent fields directly and emitted the
+ * literal string "undefined" six times per run — including
+ * `Central tension: "undefined" vs "undefined"` — under a header telling the model the text
+ * was AUTHORITATIVE and to align all content to it. Every slide, document, SWOT and risk
+ * register generated since has been steered by that.
+ *
+ * A missing field now drops its line entirely: partial guidance is useful, guidance that
+ * says "undefined" is worse than silence. Restoring the fields themselves is a prompt fix,
+ * scheduled for Phase 4.
+ */
 export function formatNarrativeSpine(spine) {
   if (!spine) return '';
-  const claims = spine.keyClaims?.map((c, i) => `${i + 1}. ${c.claim} [Evidence: ${c.evidence}] [Stake: ${c.stake}]`).join('\n') || '';
-  return `**NARRATIVE SPINE (AUTHORITATIVE — align all content to this):**
-Core thesis: "${spine.coreThesis}"
-Key claims:
-${claims}
-Central tension: "${spine.tensionPair?.force1}" vs "${spine.tensionPair?.force2}"
-Analytical framework: ${spine.analyticalFramework}
-Recommended action: "${spine.recommendedAction}"`;
+
+  const lines = ['**NARRATIVE SPINE (AUTHORITATIVE — align all content to this):**'];
+
+  if (spine.coreThesis) lines.push(`Core thesis: "${spine.coreThesis}"`);
+
+  const claims = (spine.keyClaims ?? [])
+    .filter(c => c?.claim)
+    .map((c, i) => {
+      const parts = [`${i + 1}. ${c.claim}`];
+      if (c.evidence) parts.push(`[Evidence: ${c.evidence}]`);
+      if (c.stake) parts.push(`[Stake: ${c.stake}]`);
+      return parts.join(' ');
+    });
+  if (claims.length) lines.push('Key claims:', ...claims);
+
+  if (spine.tensionPair?.force1 && spine.tensionPair?.force2) {
+    lines.push(`Central tension: "${spine.tensionPair.force1}" vs "${spine.tensionPair.force2}"`);
+  }
+  if (spine.analyticalFramework) lines.push(`Analytical framework: ${spine.analyticalFramework}`);
+  if (spine.recommendedAction) lines.push(`Recommended action: "${spine.recommendedAction}"`);
+
+  // Only the header survived — nothing to align to, so send nothing rather than an empty
+  // directive that still consumes prompt budget and implies guidance that isn't there.
+  if (lines.length === 1) return '';
+
+  return lines.join('\n');
 }

@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Dynamic Gantt chart generator",
   "main": "server.js",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "scripts": {
     "start": "node server.js",
@@ -10,13 +13,15 @@
     "build:js": "node scripts/build-js.mjs",
     "build": "npm run build:css && npm run build:js",
     "dev:css": "tailwindcss -i ./Public/styles/tailwind-source.css -o ./Public/styles/tailwind.css --watch",
-    "test": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --coverage",
+    "test": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --coverage",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --watch",
     "test:unit": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest tests/server tests/public",
     "test:integration": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest tests/integration",
-    "test:ci": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --coverage --ci --forceExit",
+    "test:ci": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --coverage --ci",
     "lint": "eslint 'Public/**/*.js' 'server/**/*.js' 'server.js' --ignore-pattern 'Public/dist/**'",
     "lint:fix": "eslint 'Public/**/*.js' 'server/**/*.js' 'server.js' --fix --ignore-pattern 'Public/dist/**'",
+    "audit:gate": "node scripts/audit-gate.mjs",
     "analyze:deps": "npx depcheck",
     "analyze:dead-code": "npx knip",
     "analyze:deps-graph": "npx madge Public/main.js --image reports/main-deps.svg && npx madge Public/viewer.js --image reports/viewer-deps.svg && npx madge server.js --image reports/server-deps.svg",
@@ -24,6 +29,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "ajv": "^8.20.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "docx": "^9.5.1",
@@ -45,6 +51,7 @@
     "eslint": "^9.39.1",
     "eslint-plugin-unused-imports": "^4.3.0",
     "jest": "^30.2.0",
+    "jszip": "^3.10.1",
     "postcss": "^8.5.4",
     "supertest": "^7.2.2",
     "tailwindcss": "^3.4.17"

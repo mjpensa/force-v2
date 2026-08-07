@@ -1,0 +1,162 @@
+[
+  {
+    "file": "competitive-analysis-1.json",
+    "generator": "competitive-analysis",
+    "sourceHash": "a3c0fdccf0fb9627881fd3fcb67229aa833f01b42de7b6440ccdfd19e6e68b3c",
+    "capturedAt": "2026-04-19T21:41:05.311Z",
+    "expiredInCache": true,
+    "bytes": 8933
+  },
+  {
+    "file": "competitive-analysis-2.json",
+    "generator": "competitive-analysis",
+    "sourceHash": "b9710c352a00967334b10d5bf11fd932a8b0f427f97e3d71bb6f5a29cf78308c",
+    "capturedAt": "2026-08-07T16:12:10.738Z",
+    "expiredInCache": false,
+    "bytes": 13812
+  },
+  {
+    "file": "document-1.json",
+    "generator": "document",
+    "sourceHash": "4e70f80cc17850ab6914d24d8f3edcbbe4dba198d0f82e13ed1567456b6d1d35",
+    "capturedAt": "2026-04-19T21:40:42.788Z",
+    "expiredInCache": true,
+    "bytes": 17085
+  },
+  {
+    "file": "document-2.json",
+    "generator": "document",
+    "sourceHash": "f7d8cb3f8851753cea0ac21de43008cd21d4a703af826f8e10462dc2a04eee22",
+    "capturedAt": "2026-08-07T16:11:30.372Z",
+    "expiredInCache": false,
+    "bytes": 33960
+  },
+  {
+    "file": "intelligence-brief-1.json",
+    "generator": "intelligence-brief",
+    "sourceHash": null,
+    "capturedAt": "2026-08-07T18:36:32.936Z",
+    "expiredInCache": false,
+    "bytes": 10698
+  },
+  {
+    "file": "narrative-spine-1.json",
+    "generator": "narrative-spine",
+    "sourceHash": "852448d63474b2b818d7acc16493129df0fbc78729da321d3bb793d6a832ae7f",
+    "capturedAt": "2026-08-07T16:08:31.565Z",
+    "expiredInCache": false,
+    "bytes": 358
+  },
+  {
+    "file": "narrative-spine-2.json",
+    "generator": "narrative-spine",
+    "sourceHash": "b4e710f841d924b423cbd2986b6a23b13d80ea01da2646e09c210bab709b9a0f",
+    "capturedAt": "2026-04-19T21:38:45.959Z",
+    "expiredInCache": true,
+    "bytes": 364
+  },
+  {
+    "file": "research-analysis-1.json",
+    "generator": "research-analysis",
+    "sourceHash": "2d5616e07cb386637bd48d0fec7ac4d65ee707874d8c0c7aad7a745d55396e47",
+    "capturedAt": "2026-08-07T16:08:59.711Z",
+    "expiredInCache": false,
+    "bytes": 12830
+  },
+  {
+    "file": "research-analysis-2.json",
+    "generator": "research-analysis",
+    "sourceHash": "f55fbe6e8702da8bc5e8c668fdf3ebe490a21104a152185a24f4de6626fb4773",
+    "capturedAt": "2026-04-19T21:39:02.024Z",
+    "expiredInCache": true,
+    "bytes": 10688
+  },
+  {
+    "file": "risk-register-1.json",
+    "generator": "risk-register",
+    "sourceHash": "ee49e5c64284891eb31161c19077e24c9bffbfc6aa5cc5ce3b1d0f701cfc8866",
+    "capturedAt": "2026-08-07T16:13:19.428Z",
+    "expiredInCache": false,
+    "bytes": 13336
+  },
+  {
+    "file": "roadmap-1.json",
+    "generator": "roadmap",
+    "sourceHash": "34ea68efcb7db1a6a2472fb4a6a1cf66b95ea2c8fa419391793dc34d21851660",
+    "capturedAt": "2026-08-07T16:09:11.596Z",
+    "expiredInCache": false,
+    "bytes": 5864
+  },
+  {
+    "file": "roadmap-2.json",
+    "generator": "roadmap",
+    "sourceHash": "392ee38fd712e8c5bac417dcb3b47a0ac010d432a7d7785a70150db9b9437f9a",
+    "capturedAt": "2026-04-19T21:39:13.196Z",
+    "expiredInCache": true,
+    "bytes": 3624
+  },
+  {
+    "file": "slides-1.json",
+    "generator": "slides",
+    "sourceHash": "626783e50c61ba8031f2309a2a6d05a32b6e1b9cddd8d91970715f89ce7a8b2c",
+    "capturedAt": "2026-08-07T16:11:10.685Z",
+    "expiredInCache": false,
+    "bytes": 61500
+  },
+  {
+    "file": "slides-2.json",
+    "generator": "slides",
+    "sourceHash": "d6e17ea88e8e81ba38b1f0cd16c7baf9977e5bca536650b4234b7e8997a95063",
+    "capturedAt": "2026-04-19T21:40:29.171Z",
+    "expiredInCache": true,
+    "bytes": 35977
+  },
+  {
+    "file": "slides-outline-1.json",
+    "generator": "slides-outline",
+    "sourceHash": "a97baec176352bb3760b3cdb93af9046f7330ae8f80ffc86df29f803328fe975",
+    "capturedAt": "2026-08-07T16:09:21.554Z",
+    "expiredInCache": false,
+    "bytes": 8060
+  },
+  {
+    "file": "slides-outline-2.json",
+    "generator": "slides-outline",
+    "sourceHash": "fa82ddc72c8303790557f1129c6ebf310d06b6b29f8e16a7a4668bbdbbc54c63",
+    "capturedAt": "2026-04-19T21:39:26.498Z",
+    "expiredInCache": true,
+    "bytes": 6809
+  },
+  {
+    "file": "speaker-notes-1.json",
+    "generator": "speaker-notes",
+    "sourceHash": null,
+    "capturedAt": "2026-08-07T18:43:40.961Z",
+    "expiredInCache": false,
+    "bytes": 250214
+  },
+  {
+    "file": "speaker-notes-outline-1.json",
+    "generator": "speaker-notes-outline",
+    "sourceHash": null,
+    "capturedAt": "2026-08-07T18:38:10.889Z",
+    "expiredInCache": false,
+    "bytes": 62049
+  },
+  {
+    "file": "swot-analysis-1.json",
+    "generator": "swot-analysis",
+    "sourceHash": "23efdcb7e396c3d434af1495403a152f550b7cd6fe9e46f14895c9c262751d8e",
+    "capturedAt": "2026-04-19T21:41:08.488Z",
+    "expiredInCache": true,
+    "bytes": 8102
+  },
+  {
+    "file": "swot-analysis-2.json",
+    "generator": "swot-analysis",
+    "sourceHash": "694f6d5955ed112c8541c4783ddb065c3c568944ed37dd9943277312ef1cca8a",
+    "capturedAt": "2026-08-07T16:12:01.650Z",
+    "expiredInCache": false,
+    "bytes": 10761
+  }
+]
