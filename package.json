@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Dynamic Gantt chart generator",
   "main": "server.js",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "scripts": {
     "start": "node server.js",

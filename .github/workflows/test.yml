@@ -11,8 +11,15 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      # Don't cancel the rest of the matrix on the first failure — a cancelled leg hides
+      # its own failures, which is how the Node 18 incompatibility below stayed invisible.
+      fail-fast: false
       matrix:
-        node-version: [18.x, 20.x]
+        # Node 20 only. nixpacks deploys on nodejs_20, and the app cannot run on Node 18 at
+        # all: FileCache.js requires pdf-parse at module load, which references the DOMMatrix
+        # global that Node 18 does not provide, so importing the content routes throws
+        # ReferenceError. Node 18 also reached end-of-life in April 2025.
+        node-version: [20.x]
 
     steps:
       - name: Checkout code
