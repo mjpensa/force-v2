@@ -21,6 +21,7 @@
     "test:ci": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --coverage --ci --forceExit",
     "lint": "eslint 'Public/**/*.js' 'server/**/*.js' 'server.js' --ignore-pattern 'Public/dist/**'",
     "lint:fix": "eslint 'Public/**/*.js' 'server/**/*.js' 'server.js' --fix --ignore-pattern 'Public/dist/**'",
+    "audit:gate": "node scripts/audit-gate.mjs",
     "analyze:deps": "npx depcheck",
     "analyze:dead-code": "npx knip",
     "analyze:deps-graph": "npx madge Public/main.js --image reports/main-deps.svg && npx madge Public/viewer.js --image reports/viewer-deps.svg && npx madge server.js --image reports/server-deps.svg",
