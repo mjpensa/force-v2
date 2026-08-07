@@ -13,6 +13,7 @@ import { CONFIG } from './config.js';
 import { genAI } from './gemini.js';
 import { diskCache, hashSchema } from './cache/DiskCache.js';
 import { archiveResponse } from './cache/archive.js';
+import { validateOrWarn } from './schema-guard.js';
 import { modelRotator } from './model-rotation.js';
 const GENERATION_TIMEOUT_MS = 360000; // 6 minutes
 
@@ -316,6 +317,7 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
     const text = response.text();
     try {
       const data = JSON.parse(text);
+      validateOrWarn(data, schema, contentType);
       await diskCache.set(prompt, cacheConfig, data);
       archiveResponse(contentType, prompt, data);
       return data;
@@ -324,6 +326,7 @@ async function generateWithGemini(prompt, schema, contentType, configOverrides =
         const repairedJsonText = jsonrepair(text);
         const repairedData = JSON.parse(repairedJsonText);
         console.warn(`[${contentType}] jsonrepair salvaged a malformed response`);
+        validateOrWarn(repairedData, schema, contentType);
         await diskCache.set(prompt, cacheConfig, repairedData);
         archiveResponse(contentType, prompt, repairedData);
         return repairedData;
