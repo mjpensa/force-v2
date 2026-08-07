@@ -35,14 +35,15 @@ const KNOWN_NONCONFORMING = {
     '/keyClaims/* missing:evidence',
     '/keyClaims/* missing:stake',
   ],
-  // speakerNotesSchema is 344 lines and the model fills a fraction of it. Every consumer of
-  // these fields renders nothing or "undefined". Revisit when slides/speaker-notes prompts
-  // are rewritten in Phase 5.
+  // The schema asked for 13 fields per slide-note; six of them were cut because the volume
+  // was unusable (286 KB and ~193 minutes of speech for a 24-slide deck), which is why the
+  // storyContext and generationTransparency entries that used to sit here are gone.
+  //
+  // What remains is a genuinely partial final note in the capture: slide 23 stops after
+  // narrative. Revisit when the speaker-notes prompt is rewritten in Phase 5.
   'speaker-notes': [
     '/slides/* missing:anticipatedQuestions',
-    '/slides/* missing:generationTransparency',
     '/slides/* missing:sourceAttribution',
-    '/slides/* missing:storyContext',
     '/slides/*/narrative missing:keyPhrase',
   ],
 };

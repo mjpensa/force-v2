@@ -265,18 +265,7 @@ function formatSpeakerNotesForPptx(notes, maxLength = 3000) {
       headroom: 100,
       extract: () => notes.narrative?.keyPhrase ? `"${notes.narrative.keyPhrase}"` : null
     },
-    // 2. STAKEHOLDER ANGLES
-    {
-      label: 'STAKEHOLDER ANGLES:',
-      headroom: 250,
-      extract: () => {
-        if (!notes.stakeholderAngles) return null;
-        return formatFields(notes.stakeholderAngles, [
-          ['cfo', 'CFO'], ['cto', 'CTO'], ['ceo', 'CEO'], ['operations', 'OPS']
-        ]);
-      }
-    },
-    // 3. TRANSITIONS
+    // 2. TRANSITIONS
     {
       label: 'TRANSITIONS:',
       extract: () => {
@@ -305,40 +294,7 @@ function formatSpeakerNotesForPptx(notes, maxLength = 3000) {
         }).join('\n\n');
       }
     },
-    // 5. CALL-TO-ACTION VARIANTS
-    {
-      label: 'CALL-TO-ACTION:',
-      headroom: 200,
-      extract: () => {
-        if (!notes.storyContext?.callToAction) return null;
-        const cta = notes.storyContext.callToAction;
-        return formatFields(cta, [
-          ['warmAudience', 'WARM', v => v.ask],
-          ['neutralAudience', 'NEUTRAL', v => v.ask],
-          ['hostileAudience', 'HOSTILE', v => v.ask]
-        ]);
-      }
-    },
-    // 6. WHY THIS MATTERS
-    {
-      label: 'WHY THIS MATTERS:',
-      priority: 'high',
-      headroom: 150,
-      extract: () => notes.storyContext?.soWhat || null
-    },
-    // 7. TIME GUIDANCE
-    {
-      label: 'TIME:',
-      headroom: 100,
-      extract: () => {
-        if (!notes.storyContext?.timeGuidance) return null;
-        return formatFields(notes.storyContext.timeGuidance, [
-          ['suggestedDuration', 'Duration'],
-          ['condensedVersion', 'Short version', v => `"${v}"`]
-        ]);
-      }
-    },
-    // 8. SOURCES
+    // 5. SOURCES
     {
       label: 'SOURCES:',
       headroom: 200,
@@ -348,18 +304,6 @@ function formatSpeakerNotesForPptx(notes, maxLength = 3000) {
           const claim = src.claim?.length > 80 ? src.claim.substring(0, 80) + '...' : src.claim;
           return `\u2022 ${src.source}: "${claim}"`;
         }).join('\n');
-      }
-    },
-    // 9. CREDIBILITY ANCHORS
-    {
-      label: 'CREDIBILITY ANCHORS:',
-      headroom: 150,
-      extract: () => {
-        if (!notes.credibilityAnchors?.length) return null;
-        return notes.credibilityAnchors.slice(0, 2).map(anchor => {
-          const typeLabel = (anchor.type || 'research').toUpperCase().replace(/_/g, ' ');
-          return `[${typeLabel}] ${anchor.dropPhrase}\n  \u2192 ${anchor.statement}`;
-        }).join('\n\n');
       }
     }
   ];

@@ -490,28 +490,6 @@ export class SpeakerNotesManager {
       `));
     }
 
-    if (notes.stakeholderAngles) {
-      const angles = notes.stakeholderAngles;
-      const STAKEHOLDERS = [
-        { key: 'cfo', icon: '\ud83d\udcb0', label: 'CFO' },
-        { key: 'cto', icon: '\u2699\ufe0f', label: 'CTO' },
-        { key: 'ceo', icon: '\ud83c\udfaf', label: 'CEO' },
-        { key: 'operations', icon: '\ud83d\udd27', label: 'Ops' },
-      ];
-      const STAKEHOLDER_ROLES = { cfo: 'cfo', cto: 'cto', ceo: 'ceo', operations: 'ops' };
-      sections.push(_wrapSection('\ud83d\udc65', 'Stakeholder Angles', `
-          <div class="stakeholder-tabs">
-            ${STAKEHOLDERS.filter(s => angles[s.key]).map(s => `
-              <div class="stakeholder-tab" data-role="${STAKEHOLDER_ROLES[s.key]}">
-                <span class="stakeholder-icon">${s.icon}</span>
-                <span class="stakeholder-label">${s.label}</span>
-                <p class="stakeholder-angle">${escapeHtml(angles[s.key])}</p>
-              </div>
-            `).join('')}
-          </div>
-      `));
-    }
-
     if (notes.anticipatedQuestions?.length) {
       sections.push(_wrapSection('\u2753', 'Anticipated Questions', `
           ${notes.anticipatedQuestions.map(qa => `
@@ -542,46 +520,6 @@ export class SpeakerNotesManager {
       `));
     }
 
-    if (notes.storyContext) {
-      sections.push(_wrapSection('\ud83d\udcd6', 'Story Context', `
-          <p class="narrative-position"><strong>Position:</strong> ${escapeHtml(notes.storyContext.narrativePosition?.replace(/_/g, ' '))}</p>
-          ${notes.storyContext.precededBy ? `<p><strong>Preceded by:</strong> ${escapeHtml(notes.storyContext.precededBy)}</p>` : ''}
-          ${notes.storyContext.followedBy ? `<p><strong>Followed by:</strong> ${escapeHtml(notes.storyContext.followedBy)}</p>` : ''}
-          ${notes.storyContext.soWhat ? `<p class="so-what"><strong>So What:</strong> ${escapeHtml(notes.storyContext.soWhat)}</p>` : ''}
-          ${notes.storyContext.timeGuidance ? `
-            <div class="time-guidance">
-              <span class="time-badge">\u23f1\ufe0f ${notes.storyContext.timeGuidance.suggestedDuration || '2-3 min'}</span>
-              ${notes.storyContext.timeGuidance.canCondense ? '<span class="condensable-badge">Can condense</span>' : ''}
-              ${notes.storyContext.timeGuidance.condensedVersion ? `
-                <p class="condensed-version"><strong>Short version:</strong> "${escapeHtml(notes.storyContext.timeGuidance.condensedVersion)}"</p>
-              ` : ''}
-              ${notes.storyContext.timeGuidance.mustInclude?.length ? `
-                <p class="must-include"><strong>Must include:</strong> ${notes.storyContext.timeGuidance.mustInclude.map(s => escapeHtml(s)).join(' \u2022 ')}</p>
-              ` : ''}
-            </div>
-          ` : ''}
-          ${notes.storyContext.callToAction ? `
-            <div class="cta-variants">
-              <h5>Call-to-Action Options:</h5>
-              ${[
-                { key: 'warmAudience', css: 'cta-warm', icon: '\ud83d\udfe2', label: 'Warm', extraKey: 'timeline', extraCss: 'cta-timeline', extraWrap: v => v },
-                { key: 'neutralAudience', css: 'cta-neutral', icon: '\ud83d\udfe1', label: 'Neutral', extraKey: 'nextStep', extraCss: 'cta-next-step', extraWrap: v => v },
-                { key: 'hostileAudience', css: 'cta-hostile', icon: '\ud83d\udd34', label: 'Hostile', extraKey: 'fallback', extraCss: 'cta-fallback', extraWrap: v => `<em>Fallback: ${v}</em>` },
-              ].filter(c => notes.storyContext.callToAction[c.key]).map(c => {
-                const aud = notes.storyContext.callToAction[c.key];
-                return `
-                <div class="cta-option ${c.css}">
-                  <span class="cta-label">${c.icon} ${c.label}</span>
-                  <p>${escapeHtml(aud.ask)}</p>
-                  ${aud[c.extraKey] ? `<p class="${c.extraCss}">${c.extraWrap(escapeHtml(aud[c.extraKey]))}</p>` : ''}
-                </div>
-              `;
-              }).join('')}
-            </div>
-          ` : ''}
-      `));
-    }
-
     if (notes.sourceAttribution?.length) {
       sections.push(_wrapSection('\ud83d\udcda', 'Sources', `
           ${notes.sourceAttribution.map(src => `
@@ -592,74 +530,6 @@ export class SpeakerNotesManager {
             </div>
           `).join('')}
       `));
-    }
-
-    if (notes.generationTransparency) {
-      sections.push(_wrapSection('\ud83d\udd0d', 'Content Derivation', `
-            <p><strong>Sources:</strong> ${notes.generationTransparency.primarySources?.map(s => escapeHtml(s)).join(', ') || 'N/A'}</p>
-            <p><strong>Method:</strong> ${notes.generationTransparency.derivationMethod || 'N/A'}</p>
-            ${notes.generationTransparency.dataLineage ? `<p><strong>Lineage:</strong> ${escapeHtml(notes.generationTransparency.dataLineage)}</p>` : ''}
-            ${notes.generationTransparency.assumptions?.length ? `
-              <p><strong>Assumptions:</strong></p>
-              <ul class="assumptions-list">
-                ${notes.generationTransparency.assumptions.map(a => `<li>${escapeHtml(a)}</li>`).join('')}
-              </ul>
-            ` : ''}
-      `, { collapsible: true }));
-    }
-
-    if (notes.credibilityAnchors?.length) {
-      sections.push(_wrapSection('\ud83c\udfc6', 'Credibility Anchors', `
-          ${notes.credibilityAnchors.map(anchor => `
-            <div class="credibility-item credibility-${anchor.type || 'research'}">
-              <span class="credibility-type">${escapeHtml((anchor.type || 'research').replace(/_/g, ' '))}</span>
-              <p class="credibility-statement">${escapeHtml(anchor.statement)}</p>
-              <p class="drop-phrase"><strong>Say:</strong> "${escapeHtml(anchor.dropPhrase)}"</p>
-              <p class="full-citation"><em>${escapeHtml(anchor.fullCitation)}</em></p>
-            </div>
-          `).join('')}
-      `));
-    }
-
-    if (notes.riskMitigation) {
-      const rm = notes.riskMitigation;
-      const RISKS = [
-        { key: 'implementationRisk', label: 'Implementation Risk' },
-        { key: 'reputationalRisk', label: 'Reputational Risk' },
-        { key: 'careerRisk', label: 'Career Risk' },
-      ];
-      const riskBlocks = RISKS.filter(r => rm[r.key]).map(r => `
-                <div class="risk-block">
-                  <h5>${r.label}</h5>
-                  <p class="risk-concern"><em>"${escapeHtml(rm[r.key].concern)}"</em></p>
-                  <p class="risk-response">${escapeHtml(rm[r.key].response)}</p>
-                  ${rm[r.key].proofPoint ? `<p class="risk-proof">Proof: ${escapeHtml(rm[r.key].proofPoint)}</p>` : ''}
-                </div>
-              `).join('');
-      if (riskBlocks) {
-        sections.push(_wrapSection('\ud83d\udee1\ufe0f', 'Risk Mitigation', riskBlocks, { collapsible: true }));
-      }
-    }
-
-    if (notes.audienceSignals) {
-      const signals = notes.audienceSignals;
-      sections.push(_wrapSection('\ud83c\udf21\ufe0f', 'Room Temperature', `
-            ${signals.losingThem ? `
-              <div class="signal-block signal-losing">
-                <h5>\u26a0\ufe0f Losing Them</h5>
-                <p><strong>Watch for:</strong> ${signals.losingThem.signs?.map(s => escapeHtml(s)).join(', ') || 'N/A'}</p>
-                <p><strong>Pivot:</strong> ${escapeHtml(signals.losingThem.pivotStrategy)}</p>
-                ${signals.losingThem.emergencyBridge ? `<p class="emergency-bridge"><strong>Emergency exit:</strong> "${escapeHtml(signals.losingThem.emergencyBridge)}"</p>` : ''}
-              </div>
-            ` : ''}
-            ${signals.winningThem ? `
-              <div class="signal-block signal-winning">
-                <h5>\u2705 Winning Them</h5>
-                <p><strong>Look for:</strong> ${signals.winningThem.signs?.map(s => escapeHtml(s)).join(', ') || 'N/A'}</p>
-                <p><strong>Accelerate:</strong> ${escapeHtml(signals.winningThem.accelerationOption)}</p>
-              </div>
-            ` : ''}
-      `, { collapsible: true }));
     }
 
     if (notes.quickReference) {
