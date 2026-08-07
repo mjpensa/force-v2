@@ -179,7 +179,7 @@ router.post('/generate', generationLimiter, uploadMiddleware.array('researchFile
   }
 });
 
-async function runGenerationPipeline(sessionId, prompt, researchFiles, requestedViews) {
+export async function runGenerationPipeline(sessionId, prompt, researchFiles, requestedViews) {
   const session = sessions.get(sessionId);
   if (!session) return;
 
@@ -188,17 +188,24 @@ async function runGenerationPipeline(sessionId, prompt, researchFiles, requested
     emitSessionEvent(sessionId, ts);
 
     if (event.type === 'view:completed' && event.result) {
-      const keyMap = VIEW_TYPE_MAP;
-      const contentKey = keyMap[event.view];
+      const contentKey = VIEW_TYPE_MAP[event.view];
       if (contentKey && session.content) {
         session.content[contentKey] = event.result;
       }
     }
     if (event.type === 'view:failed' && event.view) {
-      const keyMap = VIEW_TYPE_MAP;
-      const contentKey = keyMap[event.view];
+      const contentKey = VIEW_TYPE_MAP[event.view];
       if (contentKey && session.content) {
-        session.content[contentKey] = { success: false, error: event.error };
+        // generators.js emits the failure payload as `result` ({success, error}), not as a
+        // top-level `error`. Reading event.error here stored undefined for every failed
+        // view, so formatUserError always fell through to its generic message and the real
+        // Gemini error — quota exhausted, timeout, malformed response — never reached the
+        // user or the SSE stream. Debugging a burned call with "Please try again" is a
+        // direct quota tax on a 20-request/day tier.
+        session.content[contentKey] = {
+          success: false,
+          error: event.result?.error ?? event.error ?? 'Generation failed with no error detail',
+        };
       }
     }
   };

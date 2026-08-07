@@ -14,6 +14,7 @@ import { genAI } from './gemini.js';
 import { diskCache, hashSchema } from './cache/DiskCache.js';
 import { archiveResponse } from './cache/archive.js';
 import { validateOrWarn } from './schema-guard.js';
+import { SLIDE_LIMITS } from './constants/slide-limits.js';
 import { modelRotator } from './model-rotation.js';
 const GENERATION_TIMEOUT_MS = 360000; // 6 minutes
 
@@ -389,30 +390,87 @@ async function generateSlidesOutlineOnly(userPrompt, researchFiles, swimlanes = 
   }
 }
 
+/**
+ * Editorial quality check on generated slides.
+ *
+ * Previously read `data.slides`, which slidesSchema has never produced — the shape is
+ * `{title, sections[].slides}`. Against real output (the golden captures hold decks of 50
+ * and 27 slides) it returned exactly one issue, "No slides array found", every time. The
+ * correction pass below requires `issues.length >= 3`, so the self-critique had never run
+ * in production. The line-count check compounded it by splitting on the two-character
+ * sequence backslash-n rather than a newline, so it could not fire against parsed JSON.
+ *
+ * slideIndex is numbered continuously across sections, because the correction prompt
+ * refers to slides by number and per-section numbering would make "Slide 3" ambiguous.
+ */
 function validateSlideOutput(data) {
   const issues = [];
-  if (!data?.slides || !Array.isArray(data.slides)) return { valid: false, issues: ['No slides array found'] };
+  if (!Array.isArray(data?.sections)) {
+    return { valid: false, issues: [{ slideIndex: 0, field: 'sections', message: 'No sections array found' }] };
+  }
 
-  for (let i = 0; i < data.slides.length; i++) {
-    const slide = data.slides[i];
-    const idx = i + 1;
-    if (slide.tagline && slide.tagline.length > 21) {
-      issues.push({ slideIndex: idx, field: 'tagline', message: `Tagline "${slide.tagline}" exceeds 21 chars (${slide.tagline.length})` });
-    }
-    if (slide.title) {
-      const lines = slide.title.split('\\n');
-      if (lines.length > 4) {
-        issues.push({ slideIndex: idx, field: 'title', message: `Title has ${lines.length} lines (max 4)` });
+  let idx = 0;
+  for (const section of data.sections) {
+    for (const slide of section?.slides ?? []) {
+      idx += 1;
+      if (slide.tagline && slide.tagline.length > SLIDE_LIMITS.TAGLINE_MAX) {
+        issues.push({
+          slideIndex: idx,
+          field: 'tagline',
+          message: `Tagline "${slide.tagline}" exceeds ${SLIDE_LIMITS.TAGLINE_MAX} chars (${slide.tagline.length})`,
+        });
       }
-    }
-    for (const field of ['paragraph1', 'paragraph2']) {
-      const text = slide[field];
-      if (text && (text.length < 300 || text.length > 450)) {
-        issues.push({ slideIndex: idx, field, message: `${field} is ${text.length} chars (target 380-410)` });
+      if (slide.title) {
+        const lines = String(slide.title).split('\n');
+        if (lines.length > SLIDE_LIMITS.TITLE_MAX_LINES) {
+          issues.push({
+            slideIndex: idx,
+            field: 'title',
+            message: `Title has ${lines.length} lines (max ${SLIDE_LIMITS.TITLE_MAX_LINES})`,
+          });
+        }
+      }
+      for (const field of ['paragraph1', 'paragraph2', 'paragraph3']) {
+        const text = slide[field];
+        if (text && (text.length < SLIDE_LIMITS.PARAGRAPH_MIN || text.length > SLIDE_LIMITS.PARAGRAPH_MAX)) {
+          issues.push({
+            slideIndex: idx,
+            field,
+            message: `${field} is ${text.length} chars (target ${SLIDE_LIMITS.PARAGRAPH_TARGET_MIN}-${SLIDE_LIMITS.PARAGRAPH_TARGET_MAX})`,
+          });
+        }
       }
     }
   }
   return { valid: issues.length === 0, issues };
+}
+
+/** Total slides across all sections — used to prove a correction pass didn't drop content. */
+function countSlides(data) {
+  return (data?.sections ?? []).reduce((n, s) => n + (s?.slides?.length ?? 0), 0);
+}
+
+/**
+ * A correction must not silently shrink the deck.
+ *
+ * The original accept condition was only "fewer issues than before", which a response that
+ * dropped half the slides satisfies trivially — fewer slides, fewer violations.
+ */
+function correctionPreservesContent(before, after) {
+  if (!Array.isArray(after?.sections)) return false;
+  if (after.sections.length !== (before.sections?.length ?? 0)) return false;
+  if (countSlides(after) !== countSlides(before)) return false;
+
+  const beforeSlides = (before.sections ?? []).flatMap(s => s?.slides ?? []);
+  const afterSlides = after.sections.flatMap(s => s?.slides ?? []);
+  return afterSlides.every((slide, i) => {
+    const original = beforeSlides[i];
+    if (!original) return false;
+    // A field that had content must still have content; rewording is fine, emptying is not.
+    return ['tagline', 'title', 'paragraph1', 'paragraph2'].every(
+      f => !original[f] || Boolean(slide[f])
+    );
+  });
 }
 
 async function generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, outline, precomputed = null) {
@@ -423,8 +481,18 @@ async function generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, o
     const data = await generateWithGemini(fullPrompt, slidesSchema, 'Slides', SLIDES_CONFIG);
 
     const validation = validateSlideOutput(data);
-    if (!validation.valid && validation.issues.length >= 3) {
-      // Enough issues to warrant a correction pass
+    if (validation.issues.length) {
+      console.log(`[Slides] ${validation.issues.length} quality issue(s) in generated deck`);
+    }
+
+    // Off by default. Now that validateSlideOutput actually reports issues, this pass would
+    // fire on most decks — and each firing is a second Gemini call with skipCache, which on
+    // a 20-request/day free tier is a material budget change that should be a deliberate
+    // decision rather than a side effect of fixing the validator. Enable with
+    // SLIDES_CRITIQUE=1 once the Phase 2 compliance report shows how often it would trigger
+    // and how much it actually improves.
+    const critiqueEnabled = process.env.SLIDES_CRITIQUE === '1';
+    if (critiqueEnabled && !validation.valid && validation.issues.length >= 3) {
       try {
         const correctionPrompt = `You previously generated slides JSON but it has these quality issues:\n${validation.issues.map(i => `- Slide ${i.slideIndex} ${i.field}: ${i.message}`).join('\n')}\n\nFix ONLY the flagged issues. Keep all other content identical. Return the complete corrected slides JSON.`;
         const correctedData = await generateWithGemini(
@@ -432,9 +500,15 @@ async function generateSlidesFromOutline(userPrompt, researchFiles, swimlanes, o
           slidesSchema, 'SlidesCritique', SLIDES_CONFIG, { skipCache: true }
         );
         const revalidation = validateSlideOutput(correctedData);
-        if (revalidation.issues.length < validation.issues.length) {
+        // Fewer issues alone is not enough: a response that dropped half the deck scores
+        // better by that measure. Require the content to survive too.
+        if (
+          revalidation.issues.length < validation.issues.length &&
+          correctionPreservesContent(data, correctedData)
+        ) {
           return { success: true, data: correctedData, validationIssues: revalidation.issues };
         }
+        console.warn('[Slides Critique] Correction rejected: content not preserved or no improvement');
       } catch (critiqueError) {
         console.warn('[Slides Critique] Correction failed, using original:', critiqueError.message);
       }
@@ -771,4 +845,5 @@ export async function regenerateContent(viewType, prompt, researchFiles, existin
 }
 
 export { validateExecutiveSummary, validateReasoningCoherence, checkWeakOpener,
-         reconcileOutlineWithSwimlanes, extractSwimlanesFromRoadmap, APIQueue };
+         reconcileOutlineWithSwimlanes, extractSwimlanesFromRoadmap, APIQueue,
+         validateSlideOutput, countSlides, correctionPreservesContent };
