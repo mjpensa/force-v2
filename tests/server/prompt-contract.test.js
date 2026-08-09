@@ -218,3 +218,45 @@ describe('prompt stability as a cache key', () => {
     }
   });
 });
+
+describe('deck size stays inside the downstream budget', () => {
+  /**
+   * The prompt used to assert "minimum 5 slides per section" alongside "aim for 15-30 slides
+   * total". Those cannot both hold past six sections: nine swimlanes puts the floor at 45,
+   * above the stated maximum. The model followed the per-section rule and produced 50 content
+   * slides against a cap of 30.
+   *
+   * That overrun is what truncated speaker notes. Notes cost ~1212 output tokens per slide,
+   * so 50 slides needs ~68K against a 65,536 ceiling — the run produced notes for 24 of 50
+   * slides and lost the rest with no signal. Deck size is a budget constraint, not a
+   * preference.
+   */
+  const swimlanesOf = n => Array.from({ length: n }, (_, i) => ({ name: `S${i}`, entity: 'E', taskCount: 2 }));
+
+  it.each([3, 5, 6, 9, 12])('states a per-section target that multiplies out within the cap (%i sections)', n => {
+    const prompt = generateSlidesPrompt(userPrompt, researchFiles, swimlanesOf(n), { sections: [] }, precomputed);
+    const m = prompt.match(/Target (\d+) content slides in total,\s*which is about (\d+) per section/);
+    expect(m).not.toBeNull();
+
+    const [, total, perSection] = m.map(Number);
+    expect(total).toBe(SLIDE_LIMITS.DECK_MAX_SLIDES);
+    // The instruction must be self-consistent: per-section x sections cannot blow the total.
+    // Allowing a small floor for very many sections, it must never imply the old 45-vs-30.
+    expect(perSection * n).toBeLessThanOrEqual(SLIDE_LIMITS.DECK_MAX_SLIDES + n);
+  });
+
+  it('never states a per-section minimum that contradicts the total', () => {
+    const prompt = generateSlidesPrompt(userPrompt, researchFiles, swimlanesOf(9), { sections: [] }, precomputed);
+    expect(prompt).not.toMatch(/Minimum 5 slides per section/i);
+    expect(prompt).not.toMatch(/5-10 slides per section/);
+  });
+
+  it('the cap leaves speaker notes inside the model output ceiling', () => {
+    // ~1212 output tokens per slide measured from speaker-notes-1.json under the 7-field
+    // schema, against a 65,536 ceiling less a 6,000 thinking budget.
+    const TOKENS_PER_SLIDE = 1212;
+    const CEILING = 65536;
+    const THINKING = 6000;
+    expect(SLIDE_LIMITS.DECK_MAX_SLIDES * TOKENS_PER_SLIDE).toBeLessThan(CEILING - THINKING);
+  });
+});

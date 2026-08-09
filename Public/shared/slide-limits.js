@@ -55,6 +55,19 @@ export const SLIDE_LIMITS = Object.freeze({
   PARAGRAPH_TARGET_MAX: 410,
 
   /**
+   * Maximum content slides in a deck.
+   *
+   * Not a style preference — it is what keeps the downstream speaker-notes generation inside
+   * the model's output ceiling. Notes cost roughly 1,212 output tokens per slide under the
+   * current 7-field schema, so with a 6,000-token thinking budget against a 65,536 ceiling
+   * about 42 slides fit. 30 leaves real headroom and matches what the slides prompt has
+   * always claimed to target.
+   *
+   * A 50-slide deck is what produced notes for only 24 of its slides, silently.
+   */
+  DECK_MAX_SLIDES: 30,
+
+  /**
    * Render-time truncation. Equal to PARAGRAPH_MAX by the rule above — these exist as named
    * constants so a call site reads as "render limit" rather than a bare number, and so a
    * future divergence has to be deliberate.

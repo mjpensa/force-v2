@@ -1,5 +1,6 @@
 import { getCurrentDateContext, assembleResearchContent, getAcronymRules, extractKeyStats, getSourceExtractionRules, formatDateContext, NARRATIVE_POSITIONS } from './common.js';
 import { SLIDE_LIMITS } from '../../Public/shared/slide-limits.js';
+const DECK_MAX_SLIDES = SLIDE_LIMITS.DECK_MAX_SLIDES;
 
 // The one place the prompt states a length. Sourced from SLIDE_LIMITS so the number the
 // model is given cannot drift from the number validateSlideOutput enforces — the drift that
@@ -788,7 +789,21 @@ FIXED SECTION CONTENT REQUIREMENTS:
 Follow outline structure for Overview (first section: context, themes, data anchor, bridge - no deep dives) and Conclusion (last section: synthesis of cross-section connections, strategic implications, actionable recommendations with timelines, call to action with urgency). Each fixed section: 4-8 slides.
 `;
 
-  // Build section-specific instructions if swimlanes are provided
+  // Per-section count is derived, not stated as a fixed floor.
+  //
+  // The prompt used to assert "minimum 5 slides per section" alongside "aim for 15-30 slides
+  // total". Those are arithmetically incompatible past six sections: nine swimlanes puts the
+  // floor at 45, above the stated maximum. The model obeyed the per-section rule and blew the
+  // total — slides-1.json is 9 sections and 50 content slides against a stated cap of 30.
+  //
+  // It is not a cosmetic overrun. Speaker notes cost ~1212 output tokens per slide, so a
+  // 50-slide deck needs ~68K against a 65,536 ceiling: the notes generation truncated and
+  // silently produced notes for 24 of 50 slides. Keeping the deck inside its stated size is
+  // what keeps the downstream generator inside its budget.
+  const perSectionTarget = swimlanes.length > 0
+    ? Math.max(3, Math.floor(DECK_MAX_SLIDES / swimlanes.length))
+    : 5;
+
   const sectionInstructions = swimlanes.length > 0
     ? `
 SECTION STRUCTURE (CRITICAL - FOLLOW EXACTLY):
@@ -805,11 +820,12 @@ FOR EACH SECTION:
 2. "sectionTitle": Create a compelling 2-4 word title (max 30 characters) for the section title slide (can be more engaging than the swimlane name)
 3. "slides": Generate content slides summarizing research findings for this topic
 
-SLIDES PER SECTION (EXPANDED COVERAGE - CRITICAL):
-- Generate 5-10 slides per section for comprehensive topic coverage
-- Each slide MUST focus on a DISTINCT sub-topic within the section
-- Minimum 5 slides per section with substantial research content
-- Maximum 10 slides to maintain focus and avoid repetition
+SLIDES PER SECTION:
+- This deck has ${swimlanes.length} sections. Target ${DECK_MAX_SLIDES} content slides in total,
+  which is about ${perSectionTarget} per section.
+- Each slide MUST focus on a DISTINCT sub-topic within the section.
+- A section with little research behind it should have fewer slides, not padded ones.
+- Never exceed ${DECK_MAX_SLIDES} content slides across the whole deck.
 
 NARRATIVE PROGRESSION WITHIN EACH SECTION (REQUIRED):
 Every section must follow this three-phase arc for coherent storytelling:
@@ -859,13 +875,13 @@ CONTENT FOCUS:
     : `
 SLIDE GENERATION:
 Generate a logical sequence of slides covering the key topics from the research.
-Aim for 15-30 slides total, organized by theme (5-10 slides per section).
+Aim for at most ${DECK_MAX_SLIDES} content slides in total, organized by theme.
 
 Create sections based on major themes you identify in the research.
 Each section should have:
 - "swimlane": A topic name you identify from the research
 - "sectionTitle": A compelling 2-4 word title (max 30 characters) for that topic
-- "slides": 5-10 content slides per section, each with a distinct sub-topic
+- "slides": content slides for that topic, each with a distinct sub-topic
 
 SUB-TOPIC FIELD (REQUIRED FOR EVERY SLIDE):
 - The "subTopic" field identifies the specific focus of each slide
