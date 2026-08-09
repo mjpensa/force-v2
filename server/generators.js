@@ -600,15 +600,20 @@ const SIMPLE_GENERATORS = {
   competitiveAnalysis:{ promptFn: generateCompetitiveAnalysisPrompt, schema: competitiveAnalysisSchema, contentType: 'CompetitiveAnalysis', config: COMPETITIVE_ANALYSIS_CONFIG },
   riskRegister:       { promptFn: generateRiskRegisterPrompt,        schema: riskRegisterSchema,        contentType: 'RiskRegister',        config: RISK_REGISTER_CONFIG },
   narrativeSpine:     { promptFn: generateNarrativeSpinePrompt,      schema: narrativeSpineSchema,      contentType: 'NarrativeSpine',      config: NARRATIVE_SPINE_CONFIG },
-  researchAnalysis:   { promptFn: generateResearchAnalysisPrompt,    schema: researchAnalysisSchema,    contentType: 'ResearchAnalysis',    config: RESEARCH_ANALYSIS_CONFIG },
+  // decorate: generatedAt is stamped here rather than asked of the model. The prompt used to
+  // carry an ISO timestamp for the model to echo back, which made every rendering of the
+  // prompt byte-unique — and the prompt is the disk-cache key, so research-analysis could
+  // never hit cache. Three identical requests produced three distinct keys.
+  researchAnalysis:   { promptFn: generateResearchAnalysisPrompt,    schema: researchAnalysisSchema,    contentType: 'ResearchAnalysis',    config: RESEARCH_ANALYSIS_CONFIG,
+                        decorate: data => ({ ...data, generatedAt: new Date().toISOString() }) },
 };
 
-function makeSimpleGenerator({ promptFn, schema, contentType, config }) {
+function makeSimpleGenerator({ promptFn, schema, contentType, config, decorate }) {
   return async function (userPrompt, researchFiles, precomputed = null) {
     try {
       const prompt = promptFn(userPrompt, researchFiles, precomputed);
       const data = await generateWithGemini(prompt, schema, contentType, config);
-      return { success: true, data };
+      return { success: true, data: decorate ? decorate(data) : data };
     } catch (error) {
       return { success: false, error: error.message };
     }

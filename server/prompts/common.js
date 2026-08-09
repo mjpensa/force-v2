@@ -8,8 +8,15 @@
  * Used by document and slides generators for deadline framing.
  * @returns {{ fullDate: string, month: string, year: number, currentQuarter: string, nextQuarter: string, quarterPlusTwo: string, endOfYear: string, nextYear: number }}
  */
-export function getCurrentDateContext() {
-  const now = new Date();
+/**
+ * Date context injected into prompts.
+ *
+ * `now` is a parameter so prompts can be rendered deterministically. Prompt contract tests
+ * snapshot the assembled prompt string, and with a hard-wired `new Date()` those snapshots
+ * go red at midnight — and again at every quarter boundary, when currentQuarter and
+ * nextQuarter roll over. Every production caller omits the argument.
+ */
+export function getCurrentDateContext(now = new Date()) {
   const year = now.getFullYear();
   const month = now.getMonth() + 1; // 0-indexed
   const quarter = Math.ceil(month / 3);

@@ -84,6 +84,11 @@ export const researchAnalysisSchema = {
       type: "string",
       description: "Title for the research analysis report"
     },
+    // Stamped by the server after parsing, not produced by the model — see
+    // SIMPLE_GENERATORS.researchAnalysis in generators.js. It is kept in the schema because
+    // ResearchAnalysisView renders it, but it is deliberately not in `required`: the model
+    // no longer sees a timestamp, because embedding one made every prompt byte-unique and
+    // the prompt is the disk-cache key.
     generatedAt: {
       type: "string",
       description: "ISO timestamp of when analysis was generated"
@@ -143,7 +148,6 @@ export const researchAnalysisSchema = {
   },
   required: [
     "title",
-    "generatedAt",
     "overallScore",
     "overallRating",
     "summary",
@@ -239,8 +243,6 @@ Calculate the overall score as a weighted average:
 export function generateResearchAnalysisPrompt(userPrompt, researchFiles, precomputed = null) {
   const researchContent = precomputed?.researchContent || assembleResearchContent(researchFiles);
 
-  const timestamp = new Date().toISOString();
-
   return `${researchAnalysisPrompt}
 
 **USER REQUEST:**
@@ -249,11 +251,8 @@ ${userPrompt}
 **RESEARCH CONTENT TO ANALYZE:**
 ${researchContent}
 
-**GENERATION TIMESTAMP:**
-${timestamp}
-
 Analyze this research thoroughly and provide a comprehensive quality assessment focused on its fitness for Gantt chart creation. Identify all themes, assess data quality for each, and provide specific, actionable recommendations.
 
-Use ONLY the provided research content. Be specific, count accurately, and set generatedAt to the timestamp above. Respond with ONLY the JSON object.`;
+Use ONLY the provided research content. Be specific and count accurately.`;
 }
 
