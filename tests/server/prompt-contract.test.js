@@ -77,9 +77,23 @@ describe('prompt builders: no template rot', () => {
     expect(() => build()).not.toThrow();
   });
 
-  it('slides survives a null outline and empty swimlanes', () => {
-    const prompt = generateSlidesPrompt(userPrompt, researchFiles, [], null, precomputed);
-    expect(prompt).not.toMatch(/\$\{|\[object Object\]|\bNaN\b/);
+  // The degraded-input paths get their own coverage because that is where this class of
+  // defect actually lives: a field the happy path always populates, interpolated unguarded.
+  // An earlier version of this test omitted /\bundefined\b/ here, and a real leak went
+  // through the gap — generateSlidesPrompt emitted
+  //   The outline specifies "undefined" as the dominant analytical lens
+  // whenever an outline arrived without reasoning.primaryFramework.
+  it.each([
+    ['null outline', () => generateSlidesPrompt(userPrompt, researchFiles, [], null, precomputed)],
+    ['outline with no reasoning', () => generateSlidesPrompt(userPrompt, researchFiles, [{ name: 'D', entity: 'E', taskCount: 1 }], { sections: [] }, precomputed)],
+    ['outline with empty reasoning', () => generateSlidesPrompt(userPrompt, researchFiles, [], { reasoning: {}, sections: [] }, precomputed)],
+    ['no precomputed at all', () => generateSlidesPrompt(userPrompt, researchFiles, [{ name: 'D', entity: 'E', taskCount: 1 }], { sections: [] }, null)],
+  ])('slides emits no rot for %s', (_label, build) => {
+    const prompt = build();
+    expect(prompt).not.toMatch(/\$\{/);
+    expect(prompt).not.toMatch(/\bundefined\b/);
+    expect(prompt).not.toMatch(/\[object Object\]/);
+    expect(prompt).not.toMatch(/\bNaN\b/);
   });
 
   // A user can upload files that all fail extraction, leaving an empty array by the time the

@@ -21,9 +21,7 @@ Produced with zero API calls. Re-run after any prompt change and compare.
   - /keyClaims/* missing:stake
 - **speaker-notes-1.json** (speaker-notes)
   - /slides/* missing:anticipatedQuestions
-  - /slides/* missing:generationTransparency
   - /slides/* missing:sourceAttribution
-  - /slides/* missing:storyContext
   - /slides/*/narrative missing:keyPhrase
 
 Gemini does not enforce `required`. Any consumer reading these fields gets undefined.

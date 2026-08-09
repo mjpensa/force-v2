@@ -76,7 +76,6 @@ export const competitiveAnalysisSchema = {
 
 const competitiveAnalysisPrompt = `You are a competitive intelligence analyst. Analyze the research to produce a structured competitive landscape analysis.
 
-You MUST respond with ONLY a valid JSON object matching the schema.
 
 RULES:
 1. Identify ALL competitors/entities mentioned in the research (minimum 3, maximum 8)
@@ -100,7 +99,5 @@ ${spineText ? spineText + '\n' : ''}**USER PROMPT:**
 ${userPrompt}
 
 **RESEARCH CONTENT:**
-${researchContent}
-
-Respond with ONLY the JSON object.`;
+${researchContent}`;
 }

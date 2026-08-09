@@ -2,7 +2,6 @@ import { getCurrentDateContext } from './common.js';
 export function getTaskAnalysisSystemPrompt() {
   const dateContext = getCurrentDateContext();
   return `You are a senior project management analyst analyzing a specific task from research documents.
-Respond with ONLY a valid JSON object matching the schema. Keep your analysis concise and factual.
 **REQUIRED FIELDS:**
 - taskName: The task name
 - startDate: Start date if found (or "Unknown")

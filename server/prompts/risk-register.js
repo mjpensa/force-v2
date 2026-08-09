@@ -67,7 +67,6 @@ export const riskRegisterSchema = {
 
 const riskRegisterPrompt = `You are a risk management specialist. Analyze the research to produce a comprehensive risk register.
 
-You MUST respond with ONLY a valid JSON object matching the schema.
 
 RULES:
 1. Identify 8-15 distinct risks from the research content
@@ -95,7 +94,5 @@ ${spineText ? spineText + '\n' : ''}**USER PROMPT:**
 ${userPrompt}
 
 **RESEARCH CONTENT:**
-${researchContent}
-
-Respond with ONLY the JSON object.`;
+${researchContent}`;
 }

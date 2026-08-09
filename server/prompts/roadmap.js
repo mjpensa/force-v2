@@ -51,7 +51,6 @@ export const roadmapSchema = {
 
 const roadmapPrompt = `You are an expert project management analyst. Your job is to analyze a user's prompt and research files to build a complete Gantt chart data object.
 
-You MUST respond with *only* a valid JSON object matching the schema.
 
 **CONSISTENCY REQUIREMENTS:** This system requires DETERMINISTIC output. Given the same inputs, you MUST produce the same output every time. Follow the rules below EXACTLY without deviation.
 
@@ -179,7 +178,6 @@ You MUST respond with *only* a valid JSON object matching the schema.
     - **"task"** - Default for all other tasks
     - **Priority:** If a task matches both "decision" and "milestone" keywords, classify as "decision"
     - **IMPORTANT:** Executive View will only show tasks where taskType is "milestone" or "decision"
-8.  **SANITIZATION:** All string values MUST be valid JSON strings. You MUST properly escape any characters that would break JSON, such as double quotes (\\") and newlines (\\\\n), within the string value itself.
 9.  **COMPREHENSIVENESS (CRITICAL - EXTRACT EVERYTHING - THIS IS THE MOST IMPORTANT RULE):** You MUST extract ALL events from the research. Scan the research files exhaustively and include:
     - **Tasks:** Any work item, activity, implementation, development, testing, or operational task
     - **Milestones:** Any deliverable, phase completion, launch, go-live, release, or achievement
@@ -212,7 +210,5 @@ ${spineText ? spineText + '\n' : ''}${digestText ? digestText + '\n' : ''}
 ${userPrompt}
 
 **RESEARCH CONTENT:**
-${researchContent}
-
-Respond with ONLY the JSON object.`;
+${researchContent}`;
 }

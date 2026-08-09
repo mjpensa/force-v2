@@ -228,7 +228,6 @@ STRUCTURE & OUTPUT FORMAT (Mechanics):
 - Each section: insight-driven heading, key takeaway, supporting evidence, 2-4 focused paragraphs
 - keyInsight: Single sentence with the most important point from that section
 - supportingEvidence: 2-4 citations per section linking claims to research quotes
-- Output valid JSON matching the documentSchema. Start with { and end with }
 
 ANALYSIS OVERVIEW - COMPREHENSIVE STRATEGIC SYNTHESIS:
 

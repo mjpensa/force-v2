@@ -51,9 +51,7 @@ RULES:
 - keyClaims: 3-5 specific claims with concrete evidence and quantified stakes. These are the pillars.
 - tensionPair: The central conflict that creates urgency (e.g., "competitive pressure" vs "resource constraints").
 - recommendedAction: Format as "[Role] [verb] [object] by [date]". Be specific.
-- analyticalFramework: Choose the best lens for this research. Options: SECOND_ORDER_EFFECTS, CONTRARIAN, COMPETITIVE_DYNAMICS, TEMPORAL_ARBITRAGE, RISK_ASYMMETRY.
-
-Respond with ONLY a valid JSON object matching the schema.`;
+- analyticalFramework: Choose the best lens for this research. Options: SECOND_ORDER_EFFECTS, CONTRARIAN, COMPETITIVE_DYNAMICS, TEMPORAL_ARBITRAGE, RISK_ASYMMETRY.`;
 
 export function generateNarrativeSpinePrompt(userPrompt, researchFiles, precomputed = null) {
   const researchContent = precomputed?.researchContent || assembleResearchContent(researchFiles);
@@ -64,9 +62,7 @@ export function generateNarrativeSpinePrompt(userPrompt, researchFiles, precompu
 ${userPrompt}
 
 **RESEARCH CONTENT:**
-${researchContent}
-
-Respond with ONLY the JSON object.`;
+${researchContent}`;
 }
 
 /**

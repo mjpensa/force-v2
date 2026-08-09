@@ -79,7 +79,6 @@ export const swotAnalysisSchema = {
 
 const swotPrompt = `You are a senior strategy analyst. Analyze the research to produce a comprehensive SWOT analysis.
 
-You MUST respond with ONLY a valid JSON object matching the schema.
 
 RULES:
 1. Extract 4-8 items per quadrant (Strengths, Weaknesses, Opportunities, Threats)
@@ -105,7 +104,5 @@ ${spineText ? spineText + '\n' : ''}**USER PROMPT:**
 ${userPrompt}
 
 **RESEARCH CONTENT:**
-${researchContent}
-
-Respond with ONLY the JSON object.`;
+${researchContent}`;
 }

@@ -1,4 +1,10 @@
 import { getCurrentDateContext, assembleResearchContent, getAcronymRules, extractKeyStats, getSourceExtractionRules, formatDateContext, NARRATIVE_POSITIONS } from './common.js';
+import { SLIDE_LIMITS } from '../../Public/shared/slide-limits.js';
+
+// The one place the prompt states a length. Sourced from SLIDE_LIMITS so the number the
+// model is given cannot drift from the number validateSlideOutput enforces — the drift that
+// produced a 205/280/320/390/410/450 spread across six files.
+const PARA_RANGE = `${SLIDE_LIMITS.PARAGRAPH_TARGET_MIN}-${SLIDE_LIMITS.PARAGRAPH_TARGET_MAX}`;
 
 /**
  * Formats extracted stats, sources, and contextual evidence for prompt injection.
@@ -198,7 +204,7 @@ const contentSlideSchema = {
     },
     tagline: {
       type: "string",
-      description: "2-word uppercase tagline, max 21 characters (e.g. 'MARGIN EROSION')"
+      description: `2-word uppercase tagline, max ${SLIDE_LIMITS.TAGLINE_MAX} characters (e.g. 'MARGIN EROSION')`
     },
     title: {
       type: "string",
@@ -206,15 +212,15 @@ const contentSlideSchema = {
     },
     paragraph1: {
       type: "string",
-      description: "First paragraph. 380-410 chars for twoColumn, 370-390 chars for threeColumn."
+      description: `First paragraph. ${SLIDE_LIMITS.PARAGRAPH_TARGET_MIN}-${SLIDE_LIMITS.PARAGRAPH_TARGET_MAX} characters.`
     },
     paragraph2: {
       type: "string",
-      description: "Second paragraph. 380-410 chars for twoColumn, 370-390 chars for threeColumn."
+      description: `Second paragraph. ${SLIDE_LIMITS.PARAGRAPH_TARGET_MIN}-${SLIDE_LIMITS.PARAGRAPH_TARGET_MAX} characters.`
     },
     paragraph3: {
       type: "string",
-      description: "Third paragraph (threeColumn only). 370-390 characters."
+      description: `Third paragraph (threeColumn only). ${SLIDE_LIMITS.PARAGRAPH_TARGET_MIN}-${SLIDE_LIMITS.PARAGRAPH_TARGET_MAX} characters.`
     },
     subTopic: {
       type: "string",
@@ -725,7 +731,6 @@ USER REQUEST: "${userPrompt}"
 RESEARCH CONTENT:
 ${researchContent}
 
-OUTPUT: Valid JSON matching the outline schema. Start with { and end with }
 `;
 }
 /**
@@ -884,11 +889,11 @@ OUTLINE FIELD REFERENCE (use these to verify compliance):
 - Primary framework: ${outline.reasoning?.primaryFramework || 'See outline'}
 - Evidence chains to include: ${outline.reasoning?.keyEvidenceChains?.length || 0}
 
-PRIMARY FRAMEWORK ENFORCEMENT:
+${primaryFramework ? `PRIMARY FRAMEWORK ENFORCEMENT:
 The outline specifies "${primaryFramework}" as the dominant analytical lens.
 - EVERY analytical slide MUST use this framework's signature patterns
 - At least 50% of slides must explicitly signal this framework
-- Use phrases from: ${getFrameworkSignalPhrases(primaryFramework)}
+- Use phrases from: ${getFrameworkSignalPhrases(primaryFramework)}` : ''}
 
 KEY EVIDENCE CHAINS (MUST APPEAR IN SLIDES):
 ${keyEvidenceChains.map((c, i) =>
@@ -966,12 +971,12 @@ TWO LAYOUT OPTIONS - You MUST explicitly specify layout for EVERY content slide:
 LAYOUT 1: "twoColumn" - Use for focused topics, executive summaries, key findings
 - MUST include: layout: "twoColumn"
 - Fields: layout, tagline, title, paragraph1, paragraph2
-- paragraph1 and paragraph2: EXACTLY 380-410 characters each
+- paragraph1 and paragraph2: ${PARA_RANGE} characters each
 
 LAYOUT 2: "threeColumn" - Use for comparisons, multiple related points, detailed breakdowns
 - MUST include: layout: "threeColumn"
 - Fields: layout, tagline, title, paragraph1, paragraph2, paragraph3
-- paragraph1, paragraph2, paragraph3: EXACTLY 370-390 characters each
+- paragraph1, paragraph2, paragraph3: ${PARA_RANGE} characters each
 
 LAYOUT SELECTION RULES (CRITICAL - MUST VARY LAYOUTS):
 - You MUST use BOTH layouts throughout the presentation for visual variety
@@ -987,17 +992,12 @@ Applies to: title, sectionTitle, tagline, paragraph1, paragraph2, paragraph3
 
 ${getAcronymRules()}
 
-TAGLINE: 2-word uppercase label, MAX 21 characters. Example: "MARGIN EROSION"
+TAGLINE: 2-word uppercase label, max ${SLIDE_LIMITS.TAGLINE_MAX} characters. Example: "MARGIN EROSION"
 
-TITLE RULES (CRITICAL - HARD LIMIT: 3 OR 4 LINES ONLY):
-!!! STOP AND COUNT: Every title MUST have EXACTLY 2 or 3 \\n separators. NO EXCEPTIONS !!!
-!!! ACRONYM REMINDER: Preserve exact acronym casing in titles - "FpML" NOT "Fpml", "SaaS" NOT "Saas" !!!
-- MANDATORY: Count \\n separators BEFORE writing each title. 2 = 3 lines, 3 = 4 lines. NEVER 4+ separators.
-- 5+ LINES = REJECTED. 6+ LINES = REJECTED. 7+ LINES = REJECTED. The slide WILL break.
-- If your concept has 5+ words, you MUST combine words onto shared lines
-- REWRITE titles that are too long - use shorter synonyms, remove unnecessary words
-- twoColumn layout: Each line MAX 10 characters - use SHORT words only (5-8 chars ideal)!
-- threeColumn layout: Each line MAX 18 characters
+TITLE RULES:
+- 3 or 4 lines, separated by \\n. Preserve acronym casing: "FpML" not "Fpml", "SaaS" not "Saas".
+- If a concept needs more lines, combine words or choose shorter synonyms.
+- twoColumn: each line up to 10 characters. threeColumn: up to 18.
 
 !!! CRITICAL: WORD LENGTH LIMIT - MAX 9 CHARACTERS PER WORD IN TITLES !!!
 The title column is VERY NARROW. Words over 9 characters WILL break mid-word and look terrible.
@@ -1047,8 +1047,6 @@ OTHER TITLE RULES:
 PARAGRAPH REQUIREMENTS (CRITICAL):
 - Each paragraph must be a complete thought ending with a period
 - Count characters carefully before finalizing each paragraph
-- twoColumn paragraphs: 380-410 characters each
-- threeColumn paragraphs: 370-390 characters each
 
 ANALYTICAL RIGOR (CRITICAL):
 - Each paragraph MUST contain at least ONE specific data point from research
@@ -1131,7 +1129,6 @@ OUTLINE FIDELITY CHECKLIST (verify before generating):
 5. SECTION ARC: Each section follows its narrativeArc (Context → Analysis → Implications).
 ` : ''}
 OUTPUT FORMAT (CRITICAL):
-- Output ONLY valid JSON - no markdown code fences, no explanatory text before or after
 - The response must start with { and end with }
 
 JSON STRUCTURE:
@@ -1147,12 +1144,6 @@ Content slide format (layout and subTopic are REQUIRED for all slides):
 
 REMEMBER: Use BOTH layouts - aim for ~40-50% threeColumn slides for visual variety.
 
-FINAL VALIDATION (DO THIS BEFORE OUTPUTTING - MANDATORY):
-1. For EVERY title field in your output, COUNT the \\n characters
-2. If count > 3, that title has 5+ lines and WILL BREAK the slide - REWRITE IT NOW
-3. Rewrite strategy: combine short words, use synonyms, drop unnecessary words
-4. VERIFY: Every title must have exactly 2 or 3 \\n separators (3 or 4 lines)
-5. Double-check twoColumn titles: each line must be ≤10 characters
 `;
 }
 
@@ -1327,8 +1318,7 @@ Transform the outline reasoning into the speakerNotesSchema reasoning format:
 - keyEvidenceChains: Transform evidence/insight/question/response to evidence/insight/anticipatedQuestion/preparedResponse
 - sourceInventory: Copy from outline
 - anticipatedPushback: Copy from outline
-` : ''}
-Start with { and end with }`;
+` : ''}`;
 }
 
 /**
@@ -1419,7 +1409,5 @@ For each content slide, provide a lightweight outline:
 Return valid JSON matching the speakerNotesOutlineSchema.
 - Complete the 'reasoning' object FIRST
 - Then provide 'slideOutlines' for each content slide
-- Skip section title slides
-
-Start with { and end with }`;
+- Skip section title slides`;
 }
