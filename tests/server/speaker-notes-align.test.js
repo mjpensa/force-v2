@@ -7,6 +7,7 @@ import { flattenSlideDeck } from '../../Public/shared/flatten-slides.js';
 import { alignSpeakerNotes } from '../../Public/shared/speaker-notes-align.js';
 import { generatePptx } from '../../server/templates/ppt-export-service-v2.js';
 import { generateSpeakerNotesPrompt } from '../../server/prompts/slides.js';
+import { SpeakerNotesManager } from '../../Public/components/views/SpeakerNotesManager.js';
 import { loadResearchFiles } from '../__helpers__/fixture-loader.js';
 
 /**
@@ -182,6 +183,53 @@ describe('PPTX export carries speaker notes', () => {
 
     expect(texts.filter(t => t.length > 3)).toHaveLength(expected);
   }, 60000);
+});
+
+describe('the viewer resolves notes through the same binding', () => {
+  // Drives the real SpeakerNotesManager against a bare view object, the same technique
+  // flatten-parity.test.js uses: no DOM, no class construction ceremony, real production
+  // method. Only the lookup is exercised — _renderNotesHTML needs document.createElement.
+  const slides = flattenSlideDeck(golden('slides-1').sections).slides;
+  const managerFor = notes => {
+    const view = { speakerNotes: notes, slides, index: 0 };
+    return { view, mgr: new SpeakerNotesManager(view) };
+  };
+
+  it('gives every section title slide no notes, and never throws', () => {
+    const { view, mgr } = managerFor(golden('speaker-notes-2'));
+    let titles = 0;
+    slides.forEach((slide, i) => {
+      view.index = i;
+      const notes = mgr._getNotesForCurrentSlide();
+      if (slide.layout === 'sectionTitle') { titles++; expect(notes).toBeNull(); }
+    });
+    expect(titles).toBe(golden('slides-1').sections.length);
+  });
+
+  it('resolves the same notes the exporter would, slide for slide', () => {
+    const noteData = golden('speaker-notes-2');
+    const { view, mgr } = managerFor(noteData);
+    const exporterBinding = alignSpeakerNotes(noteData.slides, slides).byIndex;
+
+    let matched = 0;
+    slides.forEach((_slide, i) => {
+      view.index = i;
+      expect(mgr._getNotesForCurrentSlide()).toBe(exporterBinding.get(i) ?? null);
+      if (exporterBinding.has(i)) matched++;
+    });
+    expect(matched).toBe(noteData.slides.length);
+  });
+
+  it('reuses one alignment instead of recomputing per slide', () => {
+    const { view, mgr } = managerFor(golden('speaker-notes-2'));
+    const first = mgr._alignment();
+    view.index = 12;
+    expect(mgr._alignment()).toBe(first);
+
+    // ...but recomputes when the notes payload is replaced, as regeneration does.
+    view.speakerNotes = golden('speaker-notes-1');
+    expect(mgr._alignment()).not.toBe(first);
+  });
 });
 
 describe('the speaker notes prompt hands the model the indices it must copy', () => {

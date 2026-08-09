@@ -62,6 +62,11 @@ app.get('/api/health', (req, res) => {
 app.use('/', analysisRoutes);
 app.use('/api/content', sseContentRoutes); // SSE streaming — must be before contentRoutes so /stream/:sessionId isn't caught by /:sessionId/:viewType
 app.use('/api/content', contentRoutes);
+// Offline session seeding for local review. Never mounted in production.
+if (process.env.NODE_ENV !== 'production') {
+  const { default: devRoutes } = await import('./server/routes/dev.js');
+  app.use('/api/dev', devRoutes);
+}
 app.use(handleUploadErrors);
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Promise Rejection:', reason);
