@@ -1,4 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getCurrentDateContext } from '../../server/prompts/common.js';
 import { generateRoadmapPrompt } from '../../server/prompts/roadmap.js';
 import { generateSlidesPrompt, generateSlidesOutlinePrompt } from '../../server/prompts/slides.js';
@@ -259,4 +262,37 @@ describe('deck size stays inside the downstream budget', () => {
     const THINKING = 6000;
     expect(SLIDE_LIMITS.DECK_MAX_SLIDES * TOKENS_PER_SLIDE).toBeLessThan(CEILING - THINKING);
   });
+});
+
+describe('prompt examples demonstrate the rule they state', () => {
+  /**
+   * The slides prompt stated a 380-410 character paragraph target six times, and none of its
+   * three worked examples sat inside it: the "GOOD paragraph example" was 318 characters and
+   * the two under "COMPLETE SLIDE EXAMPLES (STUDY THESE)" were 418 and 436.
+   *
+   * Observed output medians were 440 and 464 — tracking the examples, not the number. That is
+   * the mechanical reason restating the rule six times never moved compliance off 93% and 99%
+   * violation: the demonstration contradicted the instruction, and demonstrations win.
+   */
+  const SOURCE = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'server', 'prompts', 'slides.js'),
+    'utf8'
+  );
+
+  // The example paragraphs the prompt teaches from: long quoted prose, not schema or code.
+  const examples = [...SOURCE.matchAll(/"((?:[^"\\]|\\.){250,})"/g)]
+    .map(m => m[1])
+    .filter(t => !t.includes('${') && !t.includes('\n') && /[.!?]\s/.test(t));
+
+  it('finds the paragraph examples', () => {
+    expect(examples.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(examples.map((t, i) => [i, t]))(
+    'example %i sits inside the stated paragraph target',
+    (_i, text) => {
+      expect(text.length).toBeGreaterThanOrEqual(SLIDE_LIMITS.PARAGRAPH_TARGET_MIN);
+      expect(text.length).toBeLessThanOrEqual(SLIDE_LIMITS.PARAGRAPH_TARGET_MAX);
+    }
+  );
 });

@@ -1,11 +1,11 @@
 # Phase 2 Compliance Report
 
-Baseline measured over 21 captured responses in tests/golden/.
+Baseline measured over 23 captured responses in tests/golden/.
 Produced with zero API calls. Re-run after any prompt change and compare.
 
 ## Schema conformance
 
-18 of 21 captures satisfy the schema the app declared.
+20 of 23 captures satisfy the schema the app declared.
 
 - **narrative-spine-1.json** (narrative-spine)
   - / missing:analyticalFramework

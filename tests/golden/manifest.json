@@ -144,12 +144,28 @@
     "bytes": 250214
   },
   {
+    "file": "speaker-notes-2.json",
+    "generator": "speaker-notes",
+    "sourceHash": null,
+    "capturedAt": "2026-08-09T16:50:00.789Z",
+    "expiredInCache": false,
+    "bytes": 106171
+  },
+  {
     "file": "speaker-notes-outline-1.json",
     "generator": "speaker-notes-outline",
     "sourceHash": null,
     "capturedAt": "2026-08-07T18:38:10.889Z",
     "expiredInCache": false,
     "bytes": 62049
+  },
+  {
+    "file": "speaker-notes-outline-2.json",
+    "generator": "speaker-notes-outline",
+    "sourceHash": null,
+    "capturedAt": "2026-08-09T16:48:20.957Z",
+    "expiredInCache": false,
+    "bytes": 36392
   },
   {
     "file": "swot-analysis-1.json",

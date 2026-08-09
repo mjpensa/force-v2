@@ -1086,7 +1086,7 @@ EXAMPLE - POOR PARAGRAPH (no chain, isolated facts):
 Problems: No source attribution, facts don't connect, no insight or implication
 
 EXAMPLE - GOOD PARAGRAPH (complete chain):
-"JPMorgan's Q4 2024 deployment of CDM cut reconciliation costs 50%, according to their Annual Investor Report. This early-mover advantage compounds quarterly as manual-process competitors fall further behind on unit economics. Organizations delaying past Q2 2025 face a widening cost gap estimated at 8-12% per quarter."
+"JPMorgan's Q4 2024 deployment of CDM cut reconciliation costs 50%, according to their Annual Investor Report. That early-mover advantage compounds quarterly as manual-process competitors fall further behind on unit economics and steadily lose pricing room. Organizations delaying past Q2 2025 face a widening cost gap estimated at 8-12% per quarter, which is difficult to recover."
 Why it works: Sourced evidence → clear insight about competitive dynamics → actionable implication with timeline
 
 ${getSourceExtractionRules('full')}
@@ -1122,8 +1122,8 @@ EXAMPLE - GOOD SLIDE (do this):
 {
   tagline: "MARGIN COMPRESSION",
   title: "CDM cuts\\ncosts 50%\\nfor rivals",
-  paragraph1: "JPMorgan's Q4 2024 CDM deployment slashed reconciliation costs by 50%, according to their Annual Investor Report. This competitive gap compounds as early adopters lock in operational efficiency while manual-process firms hemorrhage $2.3M quarterly on redundant reconciliation workflows. Each quarter of delay widens the unit cost disadvantage by an estimated 8-12%, creating urgency for accelerated adoption timelines.",
-  paragraph2: "The Federal Reserve's Economic Data reveals 60% of mid-tier banks haven't initiated CDM pilots, exposing a market where fast followers still capture second-mover advantage. Goldman Sachs and Citi both announced Q1 2025 deployment targets, signaling industry consensus on CDM's strategic necessity. Organizations without active CDM roadmaps by Q2 2025 risk permanent cost structure disadvantage against digitally-transformed competitors."
+  paragraph1: "JPMorgan's Q4 2024 CDM deployment slashed reconciliation costs by 50%, according to their Annual Investor Report. That gap compounds as early adopters lock in operational efficiency while manual-process firms hemorrhage $2.3M quarterly on redundant reconciliation workflows. Each quarter of delay widens the unit cost disadvantage by an estimated 8-12%, making the adoption timeline urgent.",
+  paragraph2: "Federal Reserve Economic Data shows 60% of mid-tier banks have not initiated CDM pilots, exposing a market where fast followers can still capture second-mover advantage. Goldman Sachs and Citi have both announced Q1 2025 deployment targets, signaling broad industry consensus on CDM's strategic necessity. Firms without an active roadmap by Q2 2025 risk a permanent cost disadvantage."
 }
 WHY IT WORKS: Insight-driven tagline, sourced data points, complete evidence-insight-implication chains, specific numbers, power verbs ("slashed", "hemorrhage", "exposing"), forward momentum
 
