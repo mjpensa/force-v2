@@ -205,8 +205,6 @@
   /* Backgrounds */
   --sn-bg-card: rgba(255, 255, 255, 0.08);
   --sn-bg-subtle: rgba(255, 255, 255, 0.06);
-  --sn-bg-interactive: rgba(255, 255, 255, 0.08);
-  --sn-bg-interactive-hover: rgba(255, 255, 255, 0.12);
   /* Borders */
   --sn-border-light: rgba(255, 255, 255, 0.1);
   --sn-border-item: rgba(255, 255, 255, 0.08);
@@ -221,87 +219,97 @@
   /* Source items */
   --sn-source-border: rgba(255, 255, 255, 0.1);
   /* Error / warning states */
-  --sn-error-bg: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
-  --sn-error-border: rgba(239, 68, 68, 0.4);
-  --sn-error-title: #fca5a5;
-  --sn-warning-bg: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(249, 115, 22, 0.1) 100%);
-  --sn-warning-border: rgba(249, 115, 22, 0.4);
-  --sn-warning-title: #fdba74;
+  --sn-error-bg: rgba(218, 41, 28, 0.16);
+  --sn-error-border: rgba(218, 41, 28, 0.45);
+  --sn-error-title: #ffb3ab;
+  --sn-warning-bg: rgba(255, 255, 255, 0.07);
+  --sn-warning-border: rgba(255, 255, 255, 0.22);
+  --sn-warning-title: var(--sn-text-secondary);
   /* Elapsed timer */
-  --sn-elapsed-color: #60a5fa;
+  --sn-elapsed-color: var(--sn-text-secondary);
   /* Reasoning section */
-  --sn-reasoning-bg: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.1) 100%);
-  --sn-reasoning-border: rgba(139, 92, 246, 0.3);
-  --sn-reasoning-title: #c4b5fd;
-  --sn-reasoning-intro-border: rgba(139, 92, 246, 0.2);
+  --sn-reasoning-bg: rgba(255, 255, 255, 0.05);
+  --sn-reasoning-border: rgba(255, 255, 255, 0.14);
+  --sn-reasoning-title: var(--sn-text-faded);
+  --sn-reasoning-intro-border: rgba(255, 255, 255, 0.12);
   /* Evidence chain */
   --sn-evidence-bg: rgba(255, 255, 255, 0.08);
-  --sn-evidence-border: #818cf8;
-  --sn-chain-number-color: #a5b4fc;
+  --sn-evidence-border: rgba(255, 255, 255, 0.3);
+  --sn-chain-number-color: var(--sn-text-faded);
   /* Source inventory */
   --sn-source-inv-bg: rgba(255, 255, 255, 0.08);
   /* Pushback items */
-  --sn-pushback-bg: rgba(239, 68, 68, 0.15);
-  --sn-pushback-border: #f87171;
-  --sn-pushback-badge-bg: rgba(239, 68, 68, 0.25);
-  --sn-pushback-badge-color: #fca5a5;
+  --sn-pushback-bg: rgba(218, 41, 28, 0.14);
+  --sn-pushback-border: var(--sn-accent);
+  --sn-pushback-badge-bg: rgba(218, 41, 28, 0.28);
+  --sn-pushback-badge-color: #ffb3ab;
+  /* ---- Accents ----
+     This panel carried 29 distinct hex colours and 12 non-neutral rgb triplets, almost
+     all of them stock general-purpose UI swatches — #f87171, #fb923c, #22c55e, #c4b5fd,
+     #818cf8, #86efac, #a78bfa, #fbbf24, #3b82f6, #8b5cf6. Against a two-colour brand
+     (navy, one red) that reads as a highlighter accident, because none of the hues meant
+     anything: green, blue, violet and amber were assigned to KEY NUMBER, KEY PHRASE,
+     PROOF POINT and ASK FOR with no logic connecting hue to content.
+
+     Structure is carried by white-alpha on navy. Two accents only, both already in the
+     design system, each with one job. Where a field is genuinely ordinal it gets a
+     single-hue ramp rather than traffic lights — a ramp shows rank, four unrelated hues
+     only show difference. */
+  --sn-accent: var(--color-accent-red);              /* the one thing that matters most */
+  --sn-positive: var(--color-glass-success);         /* the one genuinely good thing */
+
+  /* Severity of an objection — ordinal, so red deepens with the trouble it means. */
+  --sn-sev-1-bg: rgba(255, 255, 255, 0.10);
+  --sn-sev-1-color: rgba(255, 255, 255, 0.75);
+  --sn-sev-2-bg: rgba(218, 41, 28, 0.14);
+  --sn-sev-2-color: rgba(255, 175, 168, 0.95);
+  --sn-sev-3-bg: rgba(218, 41, 28, 0.26);
+  --sn-sev-3-color: #ffb3ab;
+  --sn-sev-4-bg: rgba(218, 41, 28, 0.55);
+  --sn-sev-4-color: #fff;
+
+  /* Distance from source — metadata, not alarm, so it stays neutral and just fades. */
+  --sn-conf-1-color: rgba(255, 255, 255, 0.92);
+  --sn-conf-2-color: rgba(255, 255, 255, 0.75);
+  --sn-conf-3-color: rgba(255, 255, 255, 0.6);
+  --sn-conf-4-color: rgba(255, 175, 168, 0.9);       /* inference: the one to check */
+  --sn-conf-bg: rgba(255, 255, 255, 0.1);
+
   /* Quick reference */
-  --sn-quick-ref-bg: linear-gradient(135deg, rgba(218, 41, 28, 0.15) 0%, rgba(218, 41, 28, 0.08) 100%);
-  --sn-quick-ref-border: rgba(218, 41, 28, 0.3);
-  /* Cheat sheet */
-  --sn-cheat-number-bg: rgba(34, 197, 94, 0.2);
-  --sn-cheat-number-color: #86efac;
-  --sn-cheat-phrase-bg: rgba(59, 130, 246, 0.2);
-  --sn-cheat-phrase-color: #93c5fd;
-  --sn-cheat-proof-bg: rgba(168, 85, 247, 0.2);
-  --sn-cheat-proof-color: #c4b5fd;
-  --sn-cheat-ask-bg: rgba(218, 41, 28, 0.2);
-  --sn-cheat-ask-color: #fca5a5;
-  /* Credibility */
-  --sn-credibility-bg: rgba(255, 255, 255, 0.08);
-  --sn-credibility-border: #a78bfa;
-  --sn-credibility-type-bg: rgba(139, 92, 246, 0.25);
-  --sn-credibility-type-color: #c4b5fd;
+  /* Neutral wrapper: the block tinted itself red and then put a red card inside it,
+     so the accent competed with itself and the whole panel read pink. */
+  --sn-quick-ref-bg: rgba(255, 255, 255, 0.04);
+  --sn-quick-ref-border: rgba(255, 255, 255, 0.12);
+  /* Cheat sheet — one neutral card treatment; only the ask carries the accent */
+  --sn-cheat-bg: rgba(255, 255, 255, 0.07);
+  --sn-cheat-color: var(--sn-text-primary);
+  --sn-cheat-ask-bg: rgba(218, 41, 28, 0.18);
+  --sn-cheat-ask-color: #ffb3ab;
   /* Risk */
   --sn-risk-bg: rgba(255, 255, 255, 0.08);
-  --sn-risk-border: #fbbf24;
-  --sn-risk-proof-bg: rgba(34, 197, 94, 0.15);
-  --sn-risk-proof-color: #86efac;
-  /* Signals */
-  --sn-signal-losing-bg: rgba(249, 115, 22, 0.15);
-  --sn-signal-losing-border: #fb923c;
-  --sn-signal-winning-bg: rgba(34, 197, 94, 0.15);
-  --sn-signal-winning-border: #4ade80;
+  --sn-risk-border: rgba(255, 255, 255, 0.25);
+  --sn-risk-proof-bg: rgba(255, 255, 255, 0.06);
+  --sn-risk-proof-color: var(--sn-text-secondary);
   /* Emergency bridge */
-  --sn-emergency-bg: rgba(239, 68, 68, 0.2);
+  --sn-emergency-bg: rgba(218, 41, 28, 0.2);
   --sn-emergency-color: rgba(255, 255, 255, 0.9);
   /* Competitor */
   --sn-competitor-bg: rgba(255, 255, 255, 0.08);
-  --sn-competitor-border: #818cf8;
+  --sn-competitor-border: rgba(255, 255, 255, 0.3);
   /* Bridge phrase */
-  --sn-bridge-bg: rgba(99, 102, 241, 0.2);
-  --sn-bridge-color: #a5b4fc;
+  --sn-bridge-bg: rgba(255, 255, 255, 0.1);
+  --sn-bridge-color: var(--sn-text-secondary);
   /* Internal team / do-nothing */
   --sn-internal-bg: rgba(255, 255, 255, 0.06);
-  --sn-do-nothing-bg: rgba(239, 68, 68, 0.15);
-  --sn-do-nothing-border: #f87171;
-  /* CTA variants */
-  --sn-cta-warm-bg: rgba(34, 197, 94, 0.15);
-  --sn-cta-neutral-bg: rgba(234, 179, 8, 0.15);
-  --sn-cta-hostile-bg: rgba(239, 68, 68, 0.15);
-  /* Time guidance */
-  --sn-time-bg: rgba(255, 255, 255, 0.06);
-  --sn-time-badge-bg: rgba(59, 130, 246, 0.25);
-  --sn-time-badge-color: #93c5fd;
-  --sn-condensable-bg: rgba(34, 197, 94, 0.25);
-  --sn-condensable-color: #86efac;
+  --sn-do-nothing-bg: rgba(218, 41, 28, 0.15);
+  --sn-do-nothing-border: var(--sn-accent);
   /* Phrase categories */
   --sn-phrase-bg: rgba(255, 255, 255, 0.08);
-  --sn-phrase-border: #818cf8;
-  --sn-phrase-hostile-bg: rgba(249, 115, 22, 0.15);
-  --sn-phrase-hostile-border: #fb923c;
-  --sn-phrase-warning-bg: rgba(239, 68, 68, 0.15);
-  --sn-phrase-warning-border: #f87171;
+  --sn-phrase-border: rgba(255, 255, 255, 0.25);
+  --sn-phrase-hostile-bg: rgba(218, 41, 28, 0.12);
+  --sn-phrase-hostile-border: rgba(218, 41, 28, 0.6);
+  --sn-phrase-warning-bg: rgba(255, 255, 255, 0.06);
+  --sn-phrase-warning-border: rgba(255, 255, 255, 0.4);
 }
 
 /* Collapsible header button */
@@ -324,7 +332,7 @@
 
 .speaker-notes-header.speaker-notes-toggle:focus {
   outline: none;
-  background: rgba(80, 175, 123, 0.1);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .speaker-notes-header-left {
@@ -399,7 +407,7 @@
 .notes-progress-fill {
   height: 100%;
   width: 30%;
-  background: linear-gradient(90deg, #DA291C, #ff6b5b, #DA291C);
+  background: linear-gradient(90deg, var(--sn-accent), #ff6b5b, var(--sn-accent));
   background-size: 200% 100%;
   border-radius: 2px;
   animation: notes-progress-shimmer 1.5s ease-in-out infinite;
@@ -458,7 +466,6 @@
 .speaker-notes-panel.expanded .speaker-notes-header.speaker-notes-toggle {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
-
 
 /* Notes Sections */
 .notes-section {
@@ -537,7 +544,8 @@
 .pushback-type {
   display: inline-block;
   padding: 3px 8px;
-  background: var(--sn-pushback-type-bg);
+  background: none;
+  border: 1px solid var(--sn-pushback-type-bg);
   border-radius: 4px;
   font-size: var(--sn-label);
   font-weight: 500;
@@ -598,23 +606,23 @@
 }
 
 .confidence-direct_extraction {
-  background: var(--sn-condensable-bg);
-  color: var(--sn-condensable-color);
+  background: var(--sn-conf-bg);
+  color: var(--sn-conf-1-color);
 }
 
 .confidence-paraphrase {
-  background: var(--sn-time-badge-bg);
-  color: var(--sn-time-badge-color);
+  background: var(--sn-conf-bg);
+  color: var(--sn-conf-2-color);
 }
 
 .confidence-synthesis {
-  background: rgba(168, 85, 247, 0.15);
-  color: #a78bfa;
+  background: var(--sn-conf-bg);
+  color: var(--sn-conf-3-color);
 }
 
 .confidence-inference {
-  background: rgba(249, 115, 22, 0.15);
-  color: #fb923c;
+  background: var(--sn-conf-bg);
+  color: var(--sn-conf-4-color);
 }
 
 /* Collapsible sections */
@@ -871,61 +879,18 @@
 }
 
 .confidence-badge.confidence-high {
-  background: rgba(34, 197, 94, 0.15);
-  color: #16a34a;
+  background: var(--sn-conf-bg);
+  color: var(--sn-conf-1-color);
 }
 
 .confidence-badge.confidence-medium {
-  background: rgba(234, 179, 8, 0.15);
-  color: #ca8a04;
+  background: var(--sn-conf-bg);
+  color: var(--sn-conf-2-color);
 }
 
 .confidence-badge.confidence-low {
-  background: rgba(239, 68, 68, 0.15);
-  color: #dc2626;
-}
-
-/* ============================================================================
-   SALES ENHANCEMENTS - New Components for Speaker Notes
-   ============================================================================ */
-
-/* =========================
-   #1 Stakeholder Angles
-   ========================= */
-.stakeholder-tabs {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-.stakeholder-tab {
-  padding: 10px 12px;
-  background: var(--sn-bg-card);
-  border-radius: 6px;
-  border-left: 3px solid transparent;
-}
-
-.stakeholder-tab[data-role="cfo"] { border-left-color: #22c55e; }
-.stakeholder-tab[data-role="cto"] { border-left-color: #3b82f6; }
-.stakeholder-tab[data-role="ceo"] { border-left-color: #8b5cf6; }
-.stakeholder-tab[data-role="ops"] { border-left-color: #f59e0b; }
-
-.stakeholder-icon {
-  font-size: 16px;
-  margin-right: 6px;
-}
-
-.stakeholder-label {
-  font-weight: 600;
-  font-size: 12px;
-  color: var(--sn-text-primary);
-}
-
-.stakeholder-angle {
-  margin: 6px 0 0 0;
-  font-size: 12px;
-  color: var(--sn-text-secondary);
-  line-height: 1.4;
+  background: var(--sn-conf-bg);
+  color: var(--sn-conf-4-color);
 }
 
 /* =========================
@@ -948,14 +913,14 @@
   letter-spacing: 0.06em;
 }
 
-.severity-probing { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
-.severity-skeptical { background: rgba(234, 179, 8, 0.15); color: #fbbf24; }
-.severity-hostile { background: rgba(249, 115, 22, 0.15); color: #fb923c; }
-.severity-deal_breaker { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.severity-probing { background: var(--sn-sev-1-bg); color: var(--sn-sev-1-color); }
+.severity-skeptical { background: var(--sn-sev-2-bg); color: var(--sn-sev-2-color); }
+.severity-hostile { background: var(--sn-sev-3-bg); color: var(--sn-sev-3-color); }
+.severity-deal_breaker { background: var(--sn-sev-4-bg); color: var(--sn-sev-4-color); }
 
 .qa-severity-deal_breaker {
-  border-left: 3px solid #dc2626;
-  background: rgba(239, 68, 68, 0.05);
+  border-left: 3px solid var(--sn-accent);
+  background: rgba(218, 41, 28, 0.07);
 }
 
 /* These three are the follow-up answers — what you say when the first response did
@@ -977,8 +942,8 @@
 }
 
 .bridge-to-strength {
-  background: rgba(34, 197, 94, 0.08);
-  border-left-color: #22c55e;
+  background: rgba(80, 175, 123, 0.10);
+  border-left-color: var(--sn-positive);
 }
 
 /* =========================
@@ -1048,16 +1013,6 @@
   margin-bottom: 0;
 }
 
-.signal-losing {
-  background: var(--sn-signal-losing-bg);
-  border-left: 3px solid var(--sn-signal-losing-border);
-}
-
-.signal-winning {
-  background: var(--sn-signal-winning-bg);
-  border-left: 3px solid var(--sn-signal-winning-border);
-}
-
 .signal-block h5 {
   margin: 0 0 8px 0;
   font-size: 12px;
@@ -1113,23 +1068,28 @@
   opacity: 0.7;
 }
 
+/* Green, blue and violet were assigned to KEY NUMBER, KEY PHRASE and PROOF POINT with
+   nothing connecting the hue to the content — three saturated cards competing for the
+   eye and none of them meaning anything by being that colour. One neutral card, with
+   the label doing the identifying. Only ASK FOR keeps an accent, because it is the one
+   card that asks the audience to do something. */
 .cheat-number {
-  background: var(--sn-cheat-number-bg);
-  color: var(--sn-cheat-number-color);
+  background: var(--sn-cheat-bg);
+  color: var(--sn-cheat-color);
   font-size: var(--sn-lead);
   font-weight: 600;
 }
 
 .cheat-phrase {
-  background: var(--sn-cheat-phrase-bg);
-  color: var(--sn-cheat-phrase-color);
+  background: var(--sn-cheat-bg);
+  color: var(--sn-cheat-color);
   font-size: var(--sn-body);
   font-style: italic;
 }
 
 .cheat-proof {
-  background: var(--sn-cheat-proof-bg);
-  color: var(--sn-cheat-proof-color);
+  background: var(--sn-cheat-bg);
+  color: var(--sn-cheat-color);
   font-size: var(--sn-body);
 }
 
@@ -1138,46 +1098,6 @@
   color: var(--sn-cheat-ask-color);
   font-size: var(--sn-body);
   font-weight: 500;
-}
-
-/* =========================
-   #6 Credibility Anchors
-   ========================= */
-.credibility-item {
-  background: var(--sn-credibility-bg);
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 10px;
-  border-left: 3px solid var(--sn-credibility-border);
-}
-
-.credibility-item:last-child {
-  margin-bottom: 0;
-}
-
-.credibility-type {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: var(--sn-credibility-type-bg);
-  color: var(--sn-credibility-type-color);
-  margin-bottom: 8px;
-}
-
-.credibility-case_study { border-left-color: #22c55e; }
-.credibility-analyst_quote { border-left-color: #3b82f6; }
-.credibility-regulatory { border-left-color: #ef4444; }
-.credibility-peer_company { border-left-color: #f59e0b; }
-.credibility-research { border-left-color: #8b5cf6; }
-
-.credibility-statement {
-  margin: 0 0 8px 0;
-  font-size: 13px;
-  color: var(--sn-text-primary);
 }
 
 .drop-phrase {
@@ -1235,22 +1155,6 @@
   color: var(--sn-risk-proof-color);
 }
 
-/* =========================
-   #8 CTA Variants
-   ========================= */
-.cta-variants {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--sn-border-section);
-}
-
-.cta-variants h5 {
-  margin: 0 0 10px 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--sn-text-primary);
-}
-
 .cta-option {
   padding: 10px 12px;
   border-radius: 6px;
@@ -1274,58 +1178,12 @@
   color: var(--sn-text-secondary);
 }
 
-.cta-warm {
-  background: var(--sn-cta-warm-bg);
-  border-left: 3px solid #22c55e;
-}
-
-.cta-neutral {
-  background: var(--sn-cta-neutral-bg);
-  border-left: 3px solid #eab308;
-}
-
-.cta-hostile {
-  background: var(--sn-cta-hostile-bg);
-  border-left: 3px solid #ef4444;
-}
-
 .cta-timeline,
 .cta-next-step,
 .cta-fallback {
   margin-top: 6px !important;
   font-size: 11px !important;
   color: var(--sn-text-faded) !important;
-}
-
-/* =========================
-   #9 Time Guidance
-   ========================= */
-.time-guidance {
-  margin-top: 12px;
-  padding: 10px 12px;
-  background: var(--sn-time-bg);
-  border-radius: 6px;
-}
-
-.time-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  background: rgba(59, 130, 246, 0.15);
-  color: #1d4ed8;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  margin-right: 8px;
-}
-
-.condensable-badge {
-  display: inline-block;
-  padding: 3px 8px;
-  background: rgba(34, 197, 94, 0.15);
-  color: #166534;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 500;
 }
 
 .condensed-version {
@@ -1391,11 +1249,6 @@
   .cheat-sheet,
   .bridge-phrases-grid {
     grid-template-columns: 1fr;
-  }
-
-  .cta-variants {
-    padding-top: 8px;
-    margin-top: 8px;
   }
 }
 
@@ -1499,7 +1352,6 @@
   padding-top: 14px;
   border-top: 1px solid var(--sn-border-section);
 }
-
 
 /* ========== PRESENTATION MODE ========== */
 
