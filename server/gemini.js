@@ -40,6 +40,22 @@ export function isQuotaExhausted(error) {
   return msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED');
 }
 
+/**
+ * Thrown when the model stopped because it ran out of output budget. Its own class so the
+ * retry loop can refuse to retry it — see retryWithBackoff.
+ */
+export class TruncatedResponseError extends Error {
+  constructor(label, finishReason) {
+    super(
+      `${label}: response truncated by the model (finishReason: ${finishReason}). ` +
+      `The output hit its token ceiling, so the JSON is incomplete. Raise maxOutputTokens, ` +
+      `lower thinkingBudget, or reduce what the schema asks for — retrying will not help.`
+    );
+    this.name = 'TruncatedResponseError';
+    this.finishReason = finishReason;
+  }
+}
+
 export async function retryWithBackoff(operation, retryCount = CONFIG.API.RETRY_COUNT, onRetry = null) {
   let lastError = null;
   for (let attempt = 0; attempt < retryCount; attempt++) {
@@ -48,6 +64,9 @@ export async function retryWithBackoff(operation, retryCount = CONFIG.API.RETRY_
     } catch (error) {
       lastError = error;
       if (isQuotaExhausted(error)) throw error;
+      // Same reasoning as quota: the next attempt hits the same ceiling, and each one is
+      // billed. Surface it instead of spending the budget three times over.
+      if (error instanceof TruncatedResponseError) throw error;
       if (attempt >= retryCount - 1) throw error;
       if (onRetry) onRetry(attempt + 1, error);
       const delayMs = isRateLimited(error)
@@ -67,13 +86,25 @@ export async function retryWithBackoff(operation, retryCount = CONFIG.API.RETRY_
  * underlying HTTP request is actually abandoned instead of left running while the race
  * result is discarded.
  */
-async function callOnce(payload, { generationConfig, timeoutMs = CONFIG.API.TIMEOUT_MS } = {}) {
+
+async function callOnce(payload, { generationConfig, timeoutMs = CONFIG.API.TIMEOUT_MS, label = 'response' } = {}) {
   const modelId = modelRotator.current();
   const model = genAI.getGenerativeModel(
     generationConfig ? { model: modelId, generationConfig } : { model: modelId },
     { timeout: timeoutMs, apiVersion: 'v1beta' }
   );
   const result = await model.generateContent(payload);
+
+  // Gemini reports truncation on every response and this was never read. Combined with
+  // jsonrepair closing the braces afterwards, a truncated response parsed clean and looked
+  // like a complete one: narrative-spine silently lost 3 of 5 required fields for months,
+  // and a 24-slide speaker-notes run lost the last slide's notes entirely. Failing here
+  // makes the ceiling visible instead of quietly delivering a partial deliverable.
+  const finishReason = result.response?.candidates?.[0]?.finishReason;
+  if (finishReason === 'MAX_TOKENS') {
+    throw new TruncatedResponseError(label, finishReason);
+  }
+
   return result.response.text();
 }
 
@@ -117,7 +148,7 @@ export async function callModelForJson(payload, {
   label = 'response',
 } = {}) {
   return retryWithBackoff(
-    async () => parseModelJson(await callOnce(payload, { generationConfig, timeoutMs }), label),
+    async () => parseModelJson(await callOnce(payload, { generationConfig, timeoutMs, label }), label),
     retryCount,
     onRetry
   );

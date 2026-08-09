@@ -40,3 +40,46 @@ describe('generation configs', () => {
     expect(GENERATION_CONFIGS.NARRATIVE_SPINE_CONFIG.maxOutputTokens).toBeUndefined();
   });
 });
+
+describe('truncation detection', () => {
+  /**
+   * Gemini sets finishReason: MAX_TOKENS on every response it cut short, and the code read
+   * it nowhere. jsonrepair then closed the braces, so a truncated response parsed cleanly
+   * and was indistinguishable from a complete one.
+   *
+   * Two real deliverables were silently damaged by that combination: narrative-spine lost
+   * 3 of 5 required fields on every run, and a 24-slide speaker-notes generation lost the
+   * final slide's notes — slides 0-22 carry all 13 fields, slide 23 carries 4.
+   */
+  it('is not retried, because the ceiling will be hit again', async () => {
+    const { retryWithBackoff, TruncatedResponseError } = await import('../../server/gemini.js');
+    let attempts = 0;
+    const op = async () => {
+      attempts += 1;
+      throw new TruncatedResponseError('Slides', 'MAX_TOKENS');
+    };
+    await expect(retryWithBackoff(op, 3)).rejects.toThrow(TruncatedResponseError);
+    expect(attempts).toBe(1);
+  });
+
+  it('says what to change, since the caller cannot fix it by retrying', async () => {
+    const { TruncatedResponseError } = await import('../../server/gemini.js');
+    const err = new TruncatedResponseError('SpeakerNotes', 'MAX_TOKENS');
+    expect(err.message).toContain('SpeakerNotes');
+    expect(err.message).toContain('maxOutputTokens');
+    expect(err.message).toContain('thinkingBudget');
+    expect(err.finishReason).toBe('MAX_TOKENS');
+  });
+
+  it('still retries ordinary transient failures', async () => {
+    const { retryWithBackoff } = await import('../../server/gemini.js');
+    let attempts = 0;
+    const op = async () => {
+      attempts += 1;
+      if (attempts < 2) throw new Error('503 Service Unavailable');
+      return 'ok';
+    };
+    await expect(retryWithBackoff(op, 3)).resolves.toBe('ok');
+    expect(attempts).toBe(2);
+  });
+});
