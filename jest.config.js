@@ -35,12 +35,14 @@ export default {
   // Every number is set just under its measured actual so CI is honest from day one and
   // can only ratchet upward. Raise on merge when actual exceeds threshold by >=3.
   coverageThreshold: {
-    // server remainder — actual 53.6 / 43.9 / 50.9 / 54.9
+    // server remainder — actual 68.5 / 59.3 / 67.2 / 69.4
+    // Jumped ~15 points when ppt-export-service-v2.js went from stubbed-everywhere to
+    // actually executed (0% -> 90%); it was nearly half the untested server mass.
     global: {
-      statements: 51,
-      branches: 41,
-      functions: 48,
-      lines: 52,
+      statements: 67,
+      branches: 57,
+      functions: 65,
+      lines: 68,
     },
     // the Phase 3 refactor target — held high so consolidation cannot quietly lose coverage
     './server/generators.js': {
@@ -58,10 +60,10 @@ export default {
     // Browser tree — floor only, so it can move in one direction. Raised as the Phase 2
     // characterization tests land, not by writing jsdom tests to satisfy a number.
     './Public/': {
-      statements: 2,
-      branches: 2,
-      functions: 2,
-      lines: 2,
+      statements: 4,
+      branches: 5,
+      functions: 4,
+      lines: 4,
     },
   },
 
@@ -83,7 +85,13 @@ export default {
 
   // Module name mapper for ES6
   moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1'
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+    // pptxgenjs' exports map sends `import` to dist/pptxgen.es.js, an ESM file in a package
+    // without "type": "module" — jest parses it as CJS and dies. Pointing at the CJS build
+    // is what lets the REAL exporter run in a test. Until this existed, every suite stubbed
+    // generatePptx out, so the exporter had zero coverage and shipped decks whose speaker
+    // notes were entirely empty for months.
+    '^pptxgenjs$': '<rootDir>/node_modules/pptxgenjs/dist/pptxgen.cjs.js',
   },
 
   // Verbose output

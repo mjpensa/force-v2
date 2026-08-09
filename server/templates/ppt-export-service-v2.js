@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { normalizeBodyText, truncateToSentence, formatTitle, formatSectionTitle, formatBody } from '../../Public/shared/text-utils.js';
 import { flattenSlideDeck } from '../../Public/shared/flatten-slides.js';
+import { alignSpeakerNotes } from '../../Public/shared/speaker-notes-align.js';
 import { SLIDE_LIMITS } from '../../Public/shared/slide-limits.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -514,47 +515,17 @@ export async function generatePptx(slidesData, options = {}) {
   if (slidesData.sections && Array.isArray(slidesData.sections) && slidesData.sections.length > 0) {
     slidesArray = flattenSlideDeck(slidesData.sections).slides;
   }
-  const speakerNotesData = slidesData.speakerNotes?.slides || [];
-  const hasSpeakerNotes = speakerNotesData.length > 0;
-  // Helper to find speaker notes for a slide (three-tier matching strategy)
-  const findSpeakerNotes = (slideData, sectionName) => {
-    if (!hasSpeakerNotes || slideData.layout === 'sectionTitle') return null;
+  // Notes bind to slides by position, through the same module the viewer uses, so an export
+  // and the on-screen panel cannot disagree. The three tagline-matching strategies that used
+  // to live here matched 0 of 50 slides on both golden captures — every deck exported with
+  // empty notesSlide parts.
+  const notes = alignSpeakerNotes(slidesData.speakerNotes?.slides, slidesArray).byIndex;
 
-    const tagline = (slideData.tagline || '').toLowerCase().trim();
-    const section = (sectionName || '').toLowerCase().trim();
-
-    // Strategy 1: Exact match on both section and tagline
-    const exactMatch = speakerNotesData.find(note =>
-      note.slideTagline?.toLowerCase().trim() === tagline &&
-      note.sectionName?.toLowerCase().trim() === section
-    );
-    if (exactMatch) return exactMatch;
-
-    // Strategy 2: Section contains match + exact tagline
-    const partialMatch = speakerNotesData.find(note =>
-      note.slideTagline?.toLowerCase().trim() === tagline &&
-      (note.sectionName?.toLowerCase().includes(section) ||
-       section.includes(note.sectionName?.toLowerCase() || ''))
-    );
-    if (partialMatch) return partialMatch;
-
-    // Strategy 3: Tagline-only (single match only to avoid ambiguity)
-    const taglineMatches = speakerNotesData.filter(note =>
-      note.slideTagline?.toLowerCase().trim() === tagline
-    );
-    if (taglineMatches.length === 1) return taglineMatches[0];
-
-    return null;
-  };
-  let currentSectionName = '';
   for (let i = 0; i < slidesArray.length; i++) {
     const slideData = slidesArray[i];
     const slideNumber = i + 1;
     const layout = slideData.layout || 'twoColumn';
-    if (layout === 'sectionTitle') {
-      currentSectionName = slideData.swimlane || '';
-    }
-    const speakerNotes = findSpeakerNotes(slideData, currentSectionName);
+    const speakerNotes = notes.get(i) ?? null;
 
     if (layout === 'sectionTitle') {
       addSectionTitleSlide(pptx, slideData, slideNumber);

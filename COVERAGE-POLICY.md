@@ -30,12 +30,20 @@ Jest subtracts path-keyed files from the `global` pool, so `global` in `jest.con
 the **server remainder** (`server/**` minus `utils.js` and `generators.js`), not the whole
 tree.
 
-| Group | Threshold (stmt/branch/func/line) | Actual at time of writing |
+| Group | Threshold (stmt/branch/func/line) | Actual at last ratchet |
 |---|---|---|
-| `global` (server remainder) | 51 / 41 / 48 / 52 | 53.2 / 44.2 / 50.0 / 54.3 |
+| `global` (server remainder) | 67 / 57 / 65 / 68 | 68.5 / 59.3 / 67.2 / 69.4 |
 | `./server/generators.js` | 87 / 75 / 95 / 88 | 89.2 / 77.5 / 97.4 / 89.9 |
 | `./server/utils.js` | 100 / 100 / 100 / 100 | 100 |
-| `./Public/` | 2 / 2 / 2 / 2 | 2.9 / 2.8 / 2.9 / 2.7 |
+| `./Public/` | 4 / 5 / 4 / 4 | 4.7 / 5.3 / 4.9 / 4.3 |
+
+The server remainder jumped ~15 points in one commit when `ppt-export-service-v2.js` went
+from 0% to 90%. It was not undertested by accident: **every suite stubbed `generatePptx` out**,
+because `pptxgenjs` resolves its `import` condition to an ESM file inside a package without
+`"type": "module"`, which Jest cannot parse. A `moduleNameMapper` entry pointing at the CJS
+build was all it took to run the real exporter — which immediately showed that exported decks
+contained zero speaker notes. A mock that is easier than the real thing hides exactly the
+defects the test exists to find.
 
 Every number sits just under its measured actual. CI went green on the first commit with
 **zero new tests written for the purpose** — the point was to get an honest gate in place

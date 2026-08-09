@@ -1,14 +1,5 @@
 import { escapeHtml } from '../../utils/dom.js';
-
-const MATCH_TYPES = {
-  partial_section: { css: 'notes-match-partial', title: 'Matched via partial section name', label: 'Partial match' },
-  tagline_only:    { css: 'notes-match-fallback', title: 'Matched by tagline only - verify correct slide', label: 'Fallback match' },
-  index_disambiguated:    { css: 'notes-match-partial', title: 'Resolved duplicate taglines using slide index', label: 'Index matched' },
-  position_disambiguated: { css: 'notes-match-fallback', title: 'Matched by position - low confidence', label: 'Position guess' },
-  fuzzy_tagline:   { css: 'notes-match-partial', title: 'Matched via similar tagline text', label: 'Fuzzy match' },
-  fuzzy_section:   { css: 'notes-match-partial', title: 'Matched via similar tagline and section', label: 'Fuzzy + section' },
-  section_index_fallback: null // handled dynamically (needs matchInfo interpolation)
-};
+import { alignSpeakerNotes } from '../../shared/speaker-notes-align.js';
 
 function _placeholderHTML(type, title, hint, extra = '') {
   return `
@@ -255,29 +246,15 @@ export class SpeakerNotesManager {
       return;
     }
 
-    const { notes, matchInfo } = this._getNotesForCurrentSlide();
+    const notes = this._getNotesForCurrentSlide();
 
     if (!notes) {
-      let errorMessage = 'No speaker notes found for this slide.';
-      let hintMessage = 'Notes may not have been generated for this specific slide.';
-
-      if (matchInfo.reason === 'duplicate_taglines') {
-        errorMessage = `Multiple slides share the tagline "${matchInfo.tagline}".`;
-        hintMessage = `Found ${matchInfo.duplicateCount} slides with this tagline across different sections. Unable to determine which notes apply.`;
-      } else if (matchInfo.reason === 'no_tagline_match') {
-        errorMessage = `No notes match tagline "${matchInfo.tagline}".`;
-        hintMessage = 'The slide tagline may have changed after notes were generated.';
-      }
-
+      const { bound, contentSlides } = this._alignment();
       contentEl.innerHTML = _placeholderHTML('warning',
-        errorMessage,
-        hintMessage,
-        matchInfo.reason === 'duplicate_taglines' ? `
-          <details class="notes-debug">
-            <summary>Sections with this tagline</summary>
-            <ul>${matchInfo.duplicateSections.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
-          </details>
-        ` : ''
+        'No speaker notes for this slide.',
+        bound < contentSlides
+          ? `Notes were generated for ${bound} of ${contentSlides} content slides. Regenerate to cover the rest.`
+          : 'Notes may not have been generated for this specific slide.'
       );
       return;
     }
@@ -285,15 +262,8 @@ export class SpeakerNotesManager {
     try {
       const reasoningHTML = this._renderReasoningSection();
       const slideNotesHTML = this._renderNotesHTML(notes);
-      let matchIndicator = '';
-      const matchDef = MATCH_TYPES[matchInfo.matchType];
-      if (matchDef) {
-        matchIndicator = `<div class="notes-match-indicator ${matchDef.css}" title="${matchDef.title}">${matchDef.label}</div>`;
-      } else if (matchInfo.matchType === 'section_index_fallback') {
-        matchIndicator = `<div class="notes-match-indicator notes-match-fallback" title="Matched by position in section - verify correct notes (expected: ${matchInfo.tagline}, got: ${matchInfo.matchedTagline})">Index fallback</div>`;
-      }
 
-      contentEl.innerHTML = matchIndicator + reasoningHTML + slideNotesHTML;
+      contentEl.innerHTML = reasoningHTML + slideNotesHTML;
       this._attachCollapsibleToggleHandlers(contentEl);
     } catch (renderError) {
       console.error('[SpeakerNotes] Failed to render notes:', renderError);
@@ -319,147 +289,26 @@ export class SpeakerNotesManager {
     });
   }
 
+  /**
+   * Bind the whole notes payload to the deck once, then reuse it while both are unchanged.
+   * Recomputed when either object identity changes \u2014 regenerating notes replaces the payload.
+   */
+  _alignment() {
+    const notes = this.speakerNotes?.slides;
+    const slides = this.slides;
+    if (this._alignCache?.notes === notes && this._alignCache?.slides === slides) {
+      return this._alignCache.result;
+    }
+    const result = alignSpeakerNotes(notes, slides);
+    this._alignCache = { notes, slides, result };
+    return result;
+  }
+
+  /** The notes for the slide on screen, or null when the deck outran the notes. */
   _getNotesForCurrentSlide() {
-    const noMatch = (reason, extra = {}) => ({
-      notes: null,
-      matchInfo: { matchType: 'none', reason, ...extra }
-    });
-
-    if (!this.speakerNotes?.slides) {
-      return noMatch('no_data');
-    }
-
     const currentSlide = this.slides[this.index];
-    if (!currentSlide || currentSlide.layout === 'sectionTitle') {
-      return noMatch('section_title');
-    }
-
-    const sectionName = currentSlide._sectionId?.replace(/-/g, ' ') || '';
-    const slideTagline = (currentSlide.tagline || '').toLowerCase().trim();
-    const slideIndex = currentSlide._slideId ? parseInt(currentSlide._slideId.split('-').pop(), 10) : -1;
-
-    if (!slideTagline) {
-      return noMatch('no_tagline');
-    }
-
-    // Strategy 1: Exact match on both section and tagline
-    const exactMatch = this.speakerNotes.slides.find(note =>
-      note.slideTagline?.toLowerCase().trim() === slideTagline &&
-      note.sectionName?.toLowerCase().trim() === sectionName.toLowerCase().trim()
-    );
-    if (exactMatch) {
-      return { notes: exactMatch, matchInfo: { matchType: 'exact', tagline: slideTagline } };
-    }
-
-    // Strategy 2: Section contains match + exact tagline
-    const partialSectionMatch = this.speakerNotes.slides.find(note =>
-      note.slideTagline?.toLowerCase().trim() === slideTagline &&
-      (note.sectionName?.toLowerCase().includes(sectionName.toLowerCase()) ||
-       sectionName.toLowerCase().includes(note.sectionName?.toLowerCase() || ''))
-    );
-    if (partialSectionMatch) {
-      return { notes: partialSectionMatch, matchInfo: { matchType: 'partial_section', tagline: slideTagline } };
-    }
-
-    // Strategy 3: Tagline-only matches
-    const taglineOnlyMatches = this.speakerNotes.slides.filter(note =>
-      note.slideTagline?.toLowerCase().trim() === slideTagline
-    );
-
-    if (taglineOnlyMatches.length === 1) {
-      console.warn(`[SpeakerNotes] Using tagline-only match for "${slideTagline}" - section mismatch`);
-      return { notes: taglineOnlyMatches[0], matchInfo: { matchType: 'tagline_only', tagline: slideTagline } };
-    }
-
-    if (taglineOnlyMatches.length > 1) {
-      const indexMatch = taglineOnlyMatches.find(note => note.slideIndex === slideIndex);
-      if (indexMatch) {
-        console.warn(`[SpeakerNotes] Resolved duplicate tagline "${slideTagline}" using slideIndex ${slideIndex}`);
-        return { notes: indexMatch, matchInfo: { matchType: 'index_disambiguated', tagline: slideTagline } };
-      }
-
-      const slidesInSection = this.slides.filter(s =>
-        s._sectionId === currentSlide._sectionId &&
-        (s.tagline || '').toLowerCase().trim() === slideTagline
-      );
-      const positionInSection = slidesInSection.findIndex(s => s === currentSlide);
-
-      if (positionInSection >= 0 && positionInSection < taglineOnlyMatches.length) {
-        const positionalMatch = taglineOnlyMatches[positionInSection];
-        console.warn(`[SpeakerNotes] Resolved duplicate tagline "${slideTagline}" using position ${positionInSection}`);
-        return {
-          notes: positionalMatch,
-          matchInfo: {
-            matchType: 'position_disambiguated',
-            tagline: slideTagline,
-            confidence: 'low'
-          }
-        };
-      }
-
-      const duplicateSections = [...new Set(taglineOnlyMatches.map(n => n.sectionName || 'Unknown'))];
-      console.warn(`[SpeakerNotes] Ambiguous match: ${taglineOnlyMatches.length} notes with tagline "${slideTagline}" in sections: ${duplicateSections.join(', ')}`);
-      return noMatch('duplicate_taglines', {
-        tagline: slideTagline,
-        duplicateCount: taglineOnlyMatches.length,
-        duplicateSections
-      });
-    }
-
-    // Strategy 4: Partial/fuzzy tagline matching
-    const fuzzyTaglineMatches = this.speakerNotes.slides.filter(note => {
-      const noteTagline = (note.slideTagline || '').toLowerCase().trim();
-      if (!noteTagline) return false;
-      return slideTagline.includes(noteTagline) || noteTagline.includes(slideTagline);
-    });
-
-    if (fuzzyTaglineMatches.length === 1) {
-      console.warn(`[SpeakerNotes] Using fuzzy tagline match for "${slideTagline}" \u2192 "${fuzzyTaglineMatches[0].slideTagline}"`);
-      return { notes: fuzzyTaglineMatches[0], matchInfo: { matchType: 'fuzzy_tagline', tagline: slideTagline } };
-    }
-
-    if (fuzzyTaglineMatches.length > 1) {
-      const fuzzyWithSection = fuzzyTaglineMatches.find(note =>
-        note.sectionName?.toLowerCase().includes(sectionName.toLowerCase()) ||
-        sectionName.toLowerCase().includes(note.sectionName?.toLowerCase() || '')
-      );
-      if (fuzzyWithSection) {
-        console.warn(`[SpeakerNotes] Resolved fuzzy tagline "${slideTagline}" using section match`);
-        return { notes: fuzzyWithSection, matchInfo: { matchType: 'fuzzy_section', tagline: slideTagline } };
-      }
-    }
-
-    // Strategy 5: Slide index within section as last resort
-    let contentSlideIndex = 0;
-    for (let i = 0; i < this.slides.length && i < this.index; i++) {
-      const s = this.slides[i];
-      if (s._sectionId === currentSlide._sectionId && s.layout !== 'sectionTitle') {
-        contentSlideIndex++;
-      }
-    }
-    const sectionNotes = this.speakerNotes.slides.filter(note =>
-      note.sectionName?.toLowerCase().includes(sectionName.toLowerCase()) ||
-      sectionName.toLowerCase().includes(note.sectionName?.toLowerCase() || '')
-    );
-
-    if (sectionNotes.length > 0) {
-      const sortedSectionNotes = [...sectionNotes].sort((a, b) => (a.slideIndex || 0) - (b.slideIndex || 0));
-      if (contentSlideIndex < sortedSectionNotes.length) {
-        const indexMatch = sortedSectionNotes[contentSlideIndex];
-        console.warn(`[SpeakerNotes] Using section index fallback for "${slideTagline}" \u2192 matched to "${indexMatch.slideTagline}" at position ${contentSlideIndex}`);
-        return {
-          notes: indexMatch,
-          matchInfo: {
-            matchType: 'section_index_fallback',
-            tagline: slideTagline,
-            matchedTagline: indexMatch.slideTagline,
-            confidence: 'low'
-          }
-        };
-      }
-    }
-
-    return noMatch('no_tagline_match', { tagline: slideTagline });
+    if (!currentSlide || currentSlide.layout === 'sectionTitle') return null;
+    return this._alignment().byIndex.get(this.index) ?? null;
   }
 
   _renderNotesHTML(notes) {

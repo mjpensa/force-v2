@@ -56,11 +56,18 @@ export function flattenSlideDeck(sections) {
     sectionStartIndices.set(sectionId, slides.length);
     sectionSlides.set(sectionId, []);
 
+    // The section's human label, carried on every slide in it. Consumers used to recover it
+    // by un-slugging _sectionId, which does not round-trip: "Hardware & Infrastructure"
+    // slugs to "hardware--infrastructure" and un-slugs to "hardware  infrastructure", so
+    // every comparison against the model's own section string failed. Carry the original.
+    const sectionLabel = section.swimlane || section.sectionTitle || '';
+
     slides.push({
       layout: 'sectionTitle',
-      swimlane: section.swimlane || section.sectionTitle || '',
+      swimlane: sectionLabel,
       sectionTitle: section.sectionTitle || section.swimlane || '',
       _sectionId: sectionId,
+      _sectionLabel: sectionLabel,
     });
 
     (section.slides ?? []).forEach((slide, slideIdx) => {
@@ -71,7 +78,13 @@ export function flattenSlideDeck(sections) {
       slideIndices.set(slideId, index);
       sectionSlides.get(sectionId).push({ slideId, subTopic, index });
 
-      slides.push({ ...slide, _sectionId: sectionId, _slideId: slideId, _subTopic: subTopic });
+      slides.push({
+        ...slide,
+        _sectionId: sectionId,
+        _sectionLabel: sectionLabel,
+        _slideId: slideId,
+        _subTopic: subTopic,
+      });
     });
   });
 

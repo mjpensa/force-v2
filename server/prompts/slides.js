@@ -1,5 +1,6 @@
 import { getCurrentDateContext, assembleResearchContent, getAcronymRules, extractKeyStats, getSourceExtractionRules, formatDateContext, NARRATIVE_POSITIONS } from './common.js';
 import { SLIDE_LIMITS } from '../../Public/shared/slide-limits.js';
+import { flattenSlideDeck } from '../../Public/shared/flatten-slides.js';
 const DECK_MAX_SLIDES = SLIDE_LIMITS.DECK_MAX_SLIDES;
 
 // The one place the prompt states a length. Sourced from SLIDE_LIMITS so the number the
@@ -36,21 +37,26 @@ ${evidenceLine}`;
 
 /**
  * Formats the slides reference summary used in speaker notes prompts.
+ *
+ * Numbering comes from flattenSlideDeck, so the `[slide N]` token the model is asked to copy
+ * is by construction the same index the viewer and the PPTX exporter address a slide by.
+ * The previous format numbered slides 1..n within each section and asked for "position
+ * within its section (0-based)" — two conventions, neither unique across a deck. One capture
+ * came back with 27 notes carrying 3 distinct slideIndex values.
+ *
  * @param {object} slidesData - Generated slides data with sections
  * @param {number} contentPreviewLength - How many characters of paragraph1 to include
  * @returns {string}
  */
 function formatSlidesReference(slidesData, contentPreviewLength) {
-  return slidesData.sections.map((section, sectionIdx) => {
-    const sectionSlides = section.slides.map((slide, slideIdx) => {
-      return `    Slide ${slideIdx + 1}: "${slide.tagline}" - ${slide.subTopic || 'No subtopic'}
+  return flattenSlideDeck(slidesData.sections).slides.map((slide, index) => {
+    if (slide.layout === 'sectionTitle') {
+      return `\n  Section: "${slide._sectionLabel}"`;
+    }
+    return `    [slide ${index}] "${slide.tagline}" - ${slide.subTopic || 'No subtopic'}
       Title: ${slide.title?.replace(/\n/g, ' | ')}
       Key content: ${(slide.paragraph1 || '').substring(0, contentPreviewLength)}...`;
-    }).join('\n');
-
-    return `  Section ${sectionIdx + 1}: "${section.swimlane}"
-${sectionSlides}`;
-  }).join('\n\n');
+  }).join('\n').trim();
 }
 
 /**
@@ -396,7 +402,7 @@ export const speakerNotesSchema = {
         properties: {
           slideIndex: {
             type: "number",
-            description: "Index of the slide these notes apply to (0-based within section)"
+            description: "The number inside [slide N] for the slide these notes annotate. Copy it exactly; do not renumber."
           },
           sectionName: {
             type: "string",
@@ -550,7 +556,10 @@ export const speakerNotesOutlineSchema = {
       items: {
         type: "object",
         properties: {
-          slideIndex: { type: "number" },
+          slideIndex: {
+            type: "number",
+            description: "The number inside [slide N]. Copy it exactly; do not renumber."
+          },
           sectionName: { type: "string" },
           slideTagline: { type: "string" },
           narrativePosition: {
@@ -1324,8 +1333,10 @@ ${researchContent}
 ## OUTPUT FORMAT
 Return valid JSON matching the speakerNotesSchema. Generate notes for every content slide in order.
 - Skip section title slides (they don't need presenter notes)
-- Match slideIndex to the slide's position within its section (0-based)
-- Include sectionName and slideTagline for reference
+- slideIndex: copy the number from that slide's [slide N] marker exactly. The numbers are NOT
+  consecutive — section titles consume numbers and receive no notes. Do not renumber them.
+- sectionName: copy the section heading verbatim
+- slideTagline: copy the quoted tagline only, not the subtopic that follows the dash
 ${outline ? `
 IMPORTANT: Include the 'reasoning' block at the top level of your output.
 Transform the outline reasoning into the speakerNotesSchema reasoning format:
@@ -1412,8 +1423,8 @@ ${researchContent}
 ## SLIDE OUTLINE REQUIREMENTS (AFTER REASONING)
 
 For each content slide, provide a lightweight outline:
-- slideIndex: Position within section (0-based)
-- sectionName: Section name
+- slideIndex: copy the number from that slide's [slide N] marker exactly (they are not consecutive)
+- sectionName: Section name, copied verbatim
 - slideTagline: The slide's tagline
 - narrativePosition: Where it sits in the arc (${NARRATIVE_POSITIONS.join(", ")})
 - keyTalkingPoint: The ONE most important point (will be expanded in Pass 2)
