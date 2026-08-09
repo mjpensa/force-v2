@@ -55,10 +55,28 @@ const SLIDES_OUTLINE_CONFIG = createConfig({ temperature: 0.35, topP: 0.75, thin
 const SPEAKER_NOTES_CONFIG = createConfig({ temperature: 0.55, topP: 0.88, thinkingBudget: 6000 });
 const SPEAKER_NOTES_OUTLINE_CONFIG = createConfig({ temperature: 0.35, topP: 0.75, thinkingBudget: 8000 });
 const INTELLIGENCE_BRIEF_CONFIG = createConfig({ temperature: 0.5, topP: 0.85, thinkingBudget: 8192 });
-const NARRATIVE_SPINE_CONFIG = createConfig({ temperature: 0.2, topP: 0.7, thinkingBudget: 4096, maxOutputTokens: 2048 });
+// maxOutputTokens deliberately unset. It was 2048 against a thinkingBudget of 4096, and on
+// Gemini 2.5 thinking tokens count against the output cap — so the model could never finish
+// the object. The response was truncated mid-JSON, jsonrepair closed the braces, and the
+// result parsed as valid while missing tensionPair, recommendedAction, analyticalFramework
+// and 4 of 5 keyClaims. Both golden captures show it: fields stop in exact schema order, and
+// narrative-spine-2 carries an empty-string key with value "null" — jsonrepair completing a
+// document cut mid-key.
+//
+// That truncated spine is injected into every downstream prompt as AUTHORITATIVE, which is
+// why formatNarrativeSpine was rendering "undefined" six times per run.
+const NARRATIVE_SPINE_CONFIG = createConfig({ temperature: 0.2, topP: 0.7, thinkingBudget: 4096 });
 const SWOT_CONFIG = createConfig({ temperature: 0.4, topP: 0.8, thinkingBudget: 8192 });
 const COMPETITIVE_ANALYSIS_CONFIG = createConfig({ temperature: 0.4, topP: 0.8, thinkingBudget: 8192 });
 const RISK_REGISTER_CONFIG = createConfig({ temperature: 0.3, topP: 0.75, thinkingBudget: 8192 });
+
+/** Every generation config, exported so the thinking-vs-output invariant can be tested. */
+export const GENERATION_CONFIGS = Object.freeze({
+  DOCUMENT_CONFIG, ROADMAP_CONFIG, RESEARCH_ANALYSIS_CONFIG, SLIDES_CONFIG,
+  SLIDES_OUTLINE_CONFIG, SPEAKER_NOTES_CONFIG, SPEAKER_NOTES_OUTLINE_CONFIG,
+  INTELLIGENCE_BRIEF_CONFIG, NARRATIVE_SPINE_CONFIG, SWOT_CONFIG,
+  COMPETITIVE_ANALYSIS_CONFIG, RISK_REGISTER_CONFIG,
+});
 
 // Shared validation patterns (used across multiple validators)
 const WEAK_OPENERS = /^(this|the|our|in today|as we|it is|there (is|are|has|have))/i;

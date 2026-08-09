@@ -24,10 +24,15 @@ const ajv = new Ajv({ allErrors: true, strict: false });
  * stale debt behind. Adding an entry should require a deliberate decision.
  */
 const KNOWN_NONCONFORMING = {
-  // Every downstream prompt embeds formatNarrativeSpine's output under the header
-  // "NARRATIVE SPINE (AUTHORITATIVE — align all content to this)". With these five fields
-  // absent the formatter interpolates the literal string "undefined" six times.
-  // Scheduled: guard the formatter now (Phase 2), fix the prompt in Phase 4.
+  // FIXED — these entries now apply only to the two pre-fix captures, kept as the historical
+  // record the Phase 2 compliance baseline cites.
+  //
+  // The cause was never the prompt. NARRATIVE_SPINE_CONFIG set thinkingBudget 4096 against
+  // maxOutputTokens 2048, and thinking counts against the output cap, so the model was cut
+  // off mid-object; jsonrepair closed the JSON and it parsed clean. Removing the cap took a
+  // live spine from 2 of 5 required fields and 1 claim to 5 of 5 with 3 claims carrying
+  // evidence and stakes — see narrative-spine-3.json, which conforms fully and needs no
+  // entry here. Guarded by tests/server/generation-config.test.js.
   'narrative-spine': [
     '/ missing:analyticalFramework',
     '/ missing:recommendedAction',

@@ -56,6 +56,14 @@
     "bytes": 364
   },
   {
+    "file": "narrative-spine-3.json",
+    "generator": "narrative-spine",
+    "sourceHash": null,
+    "capturedAt": "2026-08-09T08:11:18.640Z",
+    "expiredInCache": false,
+    "bytes": 1883
+  },
+  {
     "file": "research-analysis-1.json",
     "generator": "research-analysis",
     "sourceHash": "2d5616e07cb386637bd48d0fec7ac4d65ee707874d8c0c7aad7a745d55396e47",

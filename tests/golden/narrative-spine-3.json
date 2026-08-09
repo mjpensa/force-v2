@@ -1,0 +1,31 @@
+{
+  "generator": "narrative-spine",
+  "capturedAt": "2026-08-09T08:11:18.638Z",
+  "promptPrefix": "You are a senior strategy analyst. Analyze the resear",
+  "data": {
+    "coreThesis": "To capture a $50M Year 1 market opportunity and address critical enterprise pain points, we must accelerate the Q1 2025 SaaS product launch to outmaneuver slow-innovating incumbents.",
+    "keyClaims": [
+      {
+        "claim": "Significant market demand exists for a solution addressing enterprise workflow inefficiencies and data integration challenges.",
+        "evidence": "68% of surveyed companies report spending 10+ hours/week on manual data entry; 72% struggle with connecting disparate systems.",
+        "stake": "Missing out on a $50M SOM in Year 1 and allowing competitors to capture this unmet need, risking future market share."
+      },
+      {
+        "claim": "Incumbent competitors are vulnerable due to slow innovation and limited enterprise features, creating a window for disruption.",
+        "evidence": "CompetitorA - Weaknesses: High pricing, slow innovation; CompetitorB - Weaknesses: Limited enterprise features.",
+        "stake": "Delaying the launch risks our ability to capture market share from CompetitorA (45%) and CompetitorB (30%), potentially forfeiting a significant portion of the $2.5B TAM."
+      },
+      {
+        "claim": "The mid-market enterprise segment is underserved and ready to adopt a solution that offers scalability and cost predictability.",
+        "evidence": "55% outgrew their current solution within 2 years; 61% exceeded their software budget due to hidden fees.",
+        "stake": "Failing to launch by Q1 2025 means forfeiting the opportunity to secure 50 paying customers and $250K ARR in the first quarter, directly impacting our ability to achieve the $50M SOM target."
+      }
+    ],
+    "tensionPair": {
+      "force1": "Seizing a validated $50M Year 1 market opportunity by Q1 2025",
+      "force2": "Risk of aggressive competitive response and potential technical delays"
+    },
+    "recommendedAction": "Product Leadership Team launch the enterprise SaaS product with core automation and integration features by March 2025.",
+    "analyticalFramework": "COMPETITIVE_DYNAMICS"
+  }
+}

@@ -1,11 +1,11 @@
 # Phase 2 Compliance Report
 
-Baseline measured over 20 captured responses in tests/golden/.
+Baseline measured over 21 captured responses in tests/golden/.
 Produced with zero API calls. Re-run after any prompt change and compare.
 
 ## Schema conformance
 
-17 of 20 captures satisfy the schema the app declared.
+18 of 21 captures satisfy the schema the app declared.
 
 - **narrative-spine-1.json** (narrative-spine)
   - / missing:analyticalFramework
@@ -49,6 +49,10 @@ Gemini does not enforce `required`. Any consumer reading these fields gets undef
 **narrative-spine-2.json** — renders 408 chars, 0 literal "undefined"
 - schema fields present: coreThesis, keyClaims
 - claims carrying evidence: 0/1
+
+**narrative-spine-3.json** — renders 1895 chars, 0 literal "undefined"
+- schema fields present: coreThesis, keyClaims, tensionPair, analyticalFramework, recommendedAction
+- claims carrying evidence: 3/3
 
 ## Document editorial quality
 
