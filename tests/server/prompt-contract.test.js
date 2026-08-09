@@ -296,3 +296,44 @@ describe('prompt examples demonstrate the rule they state', () => {
     }
   );
 });
+
+describe('slide-count rules cannot contradict each other', () => {
+  /**
+   * This class of defect has now appeared twice in the same prompt.
+   *
+   * First: "minimum 5 slides per section" alongside "aim for 15-30 slides total" — a floor of
+   * 45 against a ceiling of 30 at nine sections. The model obeyed the floor and produced 50,
+   * which truncated the downstream speaker notes.
+   *
+   * Second, introduced by the fix for the first: the deck cap told a nine-section deck to use
+   * about three slides per section, while the three-phase narrative arc separately REQUIRED
+   * 1-2 + 3-5 + 2-3 = six to ten per section, and fixed sections demanded 4-8. The floor was
+   * back at ~50.
+   *
+   * The rule is therefore structural rather than about any one number: the prompt must not
+   * state a hard per-section slide count anywhere, because any fixed count multiplied by the
+   * section count will eventually exceed the deck cap. Section shape is expressed
+   * proportionally instead.
+   */
+  const swimlanesOf = n => Array.from({ length: n }, (_, i) => ({ name: `S${i}`, entity: 'E', taskCount: 2 }));
+
+  it.each([3, 6, 9, 12])('states no fixed per-section slide count (%i sections)', n => {
+    const prompt = generateSlidesPrompt(userPrompt, researchFiles, swimlanesOf(n), { sections: [] }, precomputed);
+
+    // Any "<digit>-<digit> slides" phrasing is a hard count that does not scale with section
+    // count. The single derived "about N per section" target is the only place a number belongs.
+    const hardCounts = [...prompt.matchAll(/(\d+)\s*-\s*(\d+)\s+slides/gi)].map(m => m[0]);
+    expect(hardCounts).toEqual([]);
+  });
+
+  it('the derived per-section target never implies more than the deck cap', () => {
+    for (const n of [3, 5, 6, 9, 12, 15]) {
+      const prompt = generateSlidesPrompt(userPrompt, researchFiles, swimlanesOf(n), { sections: [] }, precomputed);
+      const m = prompt.match(/which is about (\d+) per section/);
+      expect(m).not.toBeNull();
+      const perSection = Number(m[1]);
+      // A small floor is allowed for many-section decks, but never the 45-vs-30 blowout.
+      expect(perSection * n).toBeLessThanOrEqual(SLIDE_LIMITS.DECK_MAX_SLIDES + n);
+    }
+  });
+});

@@ -63,7 +63,7 @@ function formatSwimlaneList(swimlanes, taskSuffix) {
   if (swimlanes.length === 0) return null;
   return swimlanes.map((s, i) => {
     if (s.isFixed) {
-      return `${i + 1}. "${s.name}" (FIXED SECTION - 4-8 slides required)`;
+      return `${i + 1}. "${s.name}" (FIXED SECTION)`;
     }
     return `${i + 1}. "${s.name}" (${s.taskCount} ${taskSuffix})`;
   }).join('\n');
@@ -612,7 +612,7 @@ FIXED SECTION REQUIREMENTS:
 OVERVIEW SECTION (FIRST SECTION - REQUIRED):
 - swimlane: "Overview"
 - Purpose: Set the stage, introduce key themes, establish urgency
-- Generate 4-8 slides covering:
+- Generate slides covering:
   1-2. CONTEXT: What is the landscape/situation? Frame the problem/opportunity
   3-4. KEY THEMES: What are the 2-3 major topics this presentation covers? Preview without deep diving
   5-6. DATA ANCHOR: Key statistics that frame the opportunity/challenge from research
@@ -623,7 +623,7 @@ OVERVIEW SECTION (FIRST SECTION - REQUIRED):
 CONCLUSION SECTION (LAST SECTION - REQUIRED):
 - swimlane: "Conclusion"
 - Purpose: Synthesize insights, provide recommendations, call to action
-- Generate 4-8 slides covering:
+- Generate slides covering:
   1-2. SYNTHESIS: Key insights across all sections (not repetition - true synthesis of interconnections)
   3-4. IMPLICATIONS: What do these findings mean collectively? Strategic impact
   5-6. RECOMMENDATIONS: Specific actions with timelines and ownership
@@ -786,7 +786,7 @@ export function generateSlidesPrompt(userPrompt, researchFiles, swimlanes = [], 
   // Fixed section content generation instructions
   const fixedSectionContentInstructions = `
 FIXED SECTION CONTENT REQUIREMENTS:
-Follow outline structure for Overview (first section: context, themes, data anchor, bridge - no deep dives) and Conclusion (last section: synthesis of cross-section connections, strategic implications, actionable recommendations with timelines, call to action with urgency). Each fixed section: 4-8 slides.
+Follow outline structure for Overview (first section: context, themes, data anchor, bridge - no deep dives) and Conclusion (last section: synthesis of cross-section connections, strategic implications, actionable recommendations with timelines, call to action with urgency). Fixed sections follow the same per-section slide target as the rest.
 `;
 
   // Per-section count is derived, not stated as a fixed floor.
@@ -830,20 +830,20 @@ SLIDES PER SECTION:
 NARRATIVE PROGRESSION WITHIN EACH SECTION (REQUIRED):
 Every section must follow this three-phase arc for coherent storytelling:
 
-PHASE 1 - CONTEXT (1-2 slides at section start):
+PHASE 1 - CONTEXT (the section's opening slide, two if the section is large):
 - What IS happening? (Competitive move, market shift, regulatory change)
 - Use twoColumn layout for focused, authoritative opening
 - Tagline signals the situation: "MARKET SHIFT", "Q3 DEADLINE", "COMPETITOR MOVE"
 - Establish urgency and stakes before diving into analysis
 
-PHASE 2 - ANALYSIS (3-5 slides, section middle):
+PHASE 2 - ANALYSIS (the bulk of the section, between the opening and closing slides):
 - Why does it matter? Deep dive into data, comparisons, implications
 - Mix twoColumn and threeColumn layouts for visual variety
 - Each slide explores a distinct analytical angle
 - Tagline signals insight: "COST GAP WIDENING", "MARGIN EROSION", "60% UNPREPARED"
 - Build the case with compounding evidence
 
-PHASE 3 - IMPLICATIONS (2-3 slides at section end):
+PHASE 3 - IMPLICATIONS (the section's closing slide, two if the section is large):
 - What should we DO? Recommendations, timelines, decision points
 - Prefer threeColumn for presenting options or multiple factors
 - Tagline signals action: "DECISION REQUIRED", "TIMELINE CRITICAL", "INVESTMENT CASE"
