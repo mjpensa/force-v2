@@ -194,55 +194,35 @@
   --sn-lead: var(--text-base);     /* 16px — the one line per slide that must land */
   --sn-measure: 76ch;              /* prose was running ~130 characters per line */
 
-  /* ---- Dark theme token overrides ---- */
+  /* ---- Ink and surface ----
+     One text colour and one surface, per owner direction. The panel previously used 42
+     distinct text colours and 41 distinct backgrounds: a six-step opacity ramp for text
+     plus per-block tints, which meant importance was being signalled three ways at once
+     (size, opacity, fill) and none of them consistently.
+
+     Everything is now full-strength white on the panel's own glass. Rank comes from the
+     type scale alone — case, tracking, weight and space — which is the only channel left,
+     and the one that survives being printed, projected or read at a glance.
+
+     --sn-rule is the same white at hairline strength: it draws separators and the accent
+     bars that used to be red and green. It is opacity, not a second colour. */
+  --sn-ink: #fff;
+  --sn-rule: rgba(255, 255, 255, 0.18);
+  --sn-rule-strong: rgba(255, 255, 255, 0.45);
+
   /* Text hierarchy */
-  --sn-text-primary: #fff;
-  --sn-text-secondary: rgba(255, 255, 255, 0.85);
-  --sn-text-tertiary: rgba(255, 255, 255, 0.8);
-  --sn-text-muted: rgba(255, 255, 255, 0.7);
-  --sn-text-faded: rgba(255, 255, 255, 0.6);
-  --sn-text-dim: rgba(255, 255, 255, 0.5);
   /* Backgrounds */
-  --sn-bg-card: rgba(255, 255, 255, 0.08);
-  --sn-bg-subtle: rgba(255, 255, 255, 0.06);
   /* Borders */
-  --sn-border-light: rgba(255, 255, 255, 0.1);
-  --sn-border-item: rgba(255, 255, 255, 0.08);
-  --sn-border-section: rgba(255, 255, 255, 0.1);
   /* Key phrase */
-  --sn-key-phrase-bg: linear-gradient(135deg, rgba(218, 41, 28, 0.25) 0%, rgba(218, 41, 28, 0.15) 100%);
   /* Pushback type inline */
-  --sn-pushback-type-bg: rgba(255, 255, 255, 0.15);
   /* So-what block */
-  --sn-so-what-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
-  --sn-so-what-border: rgba(255, 255, 255, 0.5);
   /* Source items */
-  --sn-source-border: rgba(255, 255, 255, 0.1);
   /* Error / warning states */
-  --sn-error-bg: rgba(218, 41, 28, 0.16);
-  --sn-error-border: rgba(218, 41, 28, 0.45);
-  --sn-error-title: #ffb3ab;
-  --sn-warning-bg: rgba(255, 255, 255, 0.07);
-  --sn-warning-border: rgba(255, 255, 255, 0.22);
-  --sn-warning-title: var(--sn-text-secondary);
   /* Elapsed timer */
-  --sn-elapsed-color: var(--sn-text-secondary);
   /* Reasoning section */
-  --sn-reasoning-bg: rgba(255, 255, 255, 0.05);
-  --sn-reasoning-border: rgba(255, 255, 255, 0.14);
-  --sn-reasoning-title: var(--sn-text-faded);
-  --sn-reasoning-intro-border: rgba(255, 255, 255, 0.12);
   /* Evidence chain */
-  --sn-evidence-bg: rgba(255, 255, 255, 0.08);
-  --sn-evidence-border: rgba(255, 255, 255, 0.3);
-  --sn-chain-number-color: var(--sn-text-faded);
   /* Source inventory */
-  --sn-source-inv-bg: rgba(255, 255, 255, 0.08);
   /* Pushback items */
-  --sn-pushback-bg: rgba(218, 41, 28, 0.14);
-  --sn-pushback-border: var(--sn-accent);
-  --sn-pushback-badge-bg: rgba(218, 41, 28, 0.28);
-  --sn-pushback-badge-color: #ffb3ab;
   /* ---- Accents ----
      This panel carried 29 distinct hex colours and 12 non-neutral rgb triplets, almost
      all of them stock general-purpose UI swatches — #f87171, #fb923c, #22c55e, #c4b5fd,
@@ -254,85 +234,48 @@
      Structure is carried by white-alpha on navy. Two accents only, both already in the
      design system, each with one job. Where a field is genuinely ordinal it gets a
      single-hue ramp rather than traffic lights — a ramp shows rank, four unrelated hues
-     only show difference. */
-  --sn-accent: var(--color-accent-red);              /* the one thing that matters most */
-  --sn-positive: var(--color-glass-success);         /* the one genuinely good thing */
+     only show difference. */              /* the one thing that matters most */         /* the one genuinely good thing */
 
   /* Severity of an objection — ordinal, so red deepens with the trouble it means. */
-  --sn-sev-1-bg: rgba(255, 255, 255, 0.10);
-  --sn-sev-1-color: rgba(255, 255, 255, 0.75);
-  --sn-sev-2-bg: rgba(218, 41, 28, 0.14);
-  --sn-sev-2-color: rgba(255, 175, 168, 0.95);
-  --sn-sev-3-bg: rgba(218, 41, 28, 0.26);
-  --sn-sev-3-color: #ffb3ab;
-  --sn-sev-4-bg: rgba(218, 41, 28, 0.55);
-  --sn-sev-4-color: #fff;
 
-  /* Distance from source — metadata, not alarm, so it stays neutral and just fades. */
-  --sn-conf-1-color: rgba(255, 255, 255, 0.92);
-  --sn-conf-2-color: rgba(255, 255, 255, 0.75);
-  --sn-conf-3-color: rgba(255, 255, 255, 0.6);
-  --sn-conf-4-color: rgba(255, 175, 168, 0.9);       /* inference: the one to check */
-  --sn-conf-bg: rgba(255, 255, 255, 0.1);
+  /* Distance from source — metadata, not alarm, so it stays neutral and just fades. */       /* inference: the one to check */
 
   /* Quick reference */
   /* Neutral wrapper: the block tinted itself red and then put a red card inside it,
      so the accent competed with itself and the whole panel read pink. */
-  --sn-quick-ref-bg: rgba(255, 255, 255, 0.04);
-  --sn-quick-ref-border: rgba(255, 255, 255, 0.12);
   /* Cheat sheet — one neutral card treatment; only the ask carries the accent */
-  --sn-cheat-bg: rgba(255, 255, 255, 0.07);
-  --sn-cheat-color: var(--sn-text-primary);
-  --sn-cheat-ask-bg: rgba(218, 41, 28, 0.18);
-  --sn-cheat-ask-color: #ffb3ab;
   /* Risk */
-  --sn-risk-bg: rgba(255, 255, 255, 0.08);
-  --sn-risk-border: rgba(255, 255, 255, 0.25);
-  --sn-risk-proof-bg: rgba(255, 255, 255, 0.06);
-  --sn-risk-proof-color: var(--sn-text-secondary);
   /* Emergency bridge */
-  --sn-emergency-bg: rgba(218, 41, 28, 0.2);
-  --sn-emergency-color: rgba(255, 255, 255, 0.9);
   /* Competitor */
-  --sn-competitor-bg: rgba(255, 255, 255, 0.08);
-  --sn-competitor-border: rgba(255, 255, 255, 0.3);
   /* Bridge phrase */
-  --sn-bridge-bg: rgba(255, 255, 255, 0.1);
-  --sn-bridge-color: var(--sn-text-secondary);
   /* Internal team / do-nothing */
-  --sn-internal-bg: rgba(255, 255, 255, 0.06);
-  --sn-do-nothing-bg: rgba(218, 41, 28, 0.15);
-  --sn-do-nothing-border: var(--sn-accent);
   /* Phrase categories */
-  --sn-phrase-bg: rgba(255, 255, 255, 0.08);
-  --sn-phrase-border: rgba(255, 255, 255, 0.25);
-  --sn-phrase-hostile-bg: rgba(218, 41, 28, 0.12);
-  --sn-phrase-hostile-border: rgba(218, 41, 28, 0.6);
-  --sn-phrase-warning-bg: rgba(255, 255, 255, 0.06);
-  --sn-phrase-warning-border: rgba(255, 255, 255, 0.4);
 }
 
 /* Collapsible header button */
+/* These are <button> elements. With no background declared they fall back to the UA
+   button face (#efefef), so stripping the fills turned the header into a white bar with
+   white text on it. `none` is the explicit version of "the panel's surface". */
+.speaker-notes-header.speaker-notes-toggle,
+.notes-retry-btn {
+  background: none;
+}
+
 .speaker-notes-header.speaker-notes-toggle {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
   padding: 14px 20px;
-  background: transparent;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
 }
 
-.speaker-notes-header.speaker-notes-toggle:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.speaker-notes-header.speaker-notes-toggle:focus {
-  outline: none;
-  background: rgba(255, 255, 255, 0.08);
+.speaker-notes-header.speaker-notes-toggle:focus-visible {
+  outline: 2px solid var(--sn-rule-strong);
+  outline-offset: -2px;
 }
 
 .speaker-notes-header-left {
@@ -345,7 +288,7 @@
   margin: 0;
   font-size: var(--sn-label);
   font-weight: 600;
-  color: var(--glass-text-primary, #fff);
+  color: var(--sn-ink);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -353,7 +296,7 @@
 .speaker-notes-slide-indicator {
   font-size: var(--sn-label);
   font-weight: 400;
-  color: var(--glass-text-secondary, rgba(255, 255, 255, 0.7));
+  color: var(--sn-ink);
   margin-left: 4px;
   max-width: 300px;
   overflow: hidden;
@@ -363,7 +306,7 @@
 
 .speaker-notes-chevron {
   font-size: var(--sn-label);
-  color: var(--glass-text-secondary, rgba(255, 255, 255, 0.6));
+  color: var(--sn-ink);
   transition: transform 0.3s ease;
 }
 
@@ -376,8 +319,8 @@
 .speaker-notes-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-top-color: #DA291C;
+  border: 2px solid var(--sn-rule);
+  border-top-color: var(--sn-rule);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-right: 8px;
@@ -398,7 +341,6 @@
   width: 100%;
   max-width: 300px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
   margin: 1rem auto 0;
   overflow: hidden;
@@ -407,8 +349,7 @@
 .notes-progress-fill {
   height: 100%;
   width: 30%;
-  background: linear-gradient(90deg, var(--sn-accent), #ff6b5b, var(--sn-accent));
-  background-size: 200% 100%;
+  background: var(--sn-ink);
   border-radius: 2px;
   animation: notes-progress-shimmer 1.5s ease-in-out infinite;
 }
@@ -422,17 +363,12 @@
 .notes-retry-btn {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
-  background: #DA291C;
-  color: white;
-  border: none;
+  color: var(--sn-ink);
+  border: 1px solid var(--sn-rule-strong);
   border-radius: 4px;
   cursor: pointer;
   font-size: var(--sn-body);
   transition: background 0.2s ease;
-}
-
-.notes-retry-btn:hover {
-  background: #b82318;
 }
 
 /* Content area - hidden by default, shown when expanded */
@@ -464,14 +400,14 @@
 
 /* Separator line between header and content when expanded */
 .speaker-notes-panel.expanded .speaker-notes-header.speaker-notes-toggle {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--sn-rule);
 }
 
 /* Notes Sections */
 .notes-section {
   margin-bottom: 24px;
   padding-bottom: 20px;
-  border-bottom: 1px solid var(--sn-border-light);
+  border-bottom: 1px solid var(--sn-rule);
 }
 
 .notes-section:last-child {
@@ -488,7 +424,7 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--sn-text-faded);
+  color: var(--sn-ink);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -502,7 +438,7 @@
 .notes-list li {
   margin-bottom: 10px;
   line-height: 1.6;
-  color: var(--sn-text-secondary);
+  color: var(--sn-ink);
   font-size: var(--sn-body);
 }
 
@@ -511,19 +447,17 @@
 .key-phrase {
   margin-top: 16px;
   padding: 14px 18px;
-  background: var(--sn-key-phrase-bg);
-  border-left: 3px solid #DA291C;
+  border-left: 3px solid var(--sn-rule);
   border-radius: 0 8px 8px 0;
   font-size: var(--sn-lead);
   line-height: 1.5;
-  color: var(--sn-text-primary);
+  color: var(--sn-ink);
 }
 
 /* Q&A Items */
 .qa-item {
   margin-bottom: 18px;
   padding: 16px;
-  background: var(--sn-bg-card);
   border-radius: 10px;
 }
 
@@ -531,25 +465,24 @@
   margin: 0 0 10px 0;
   font-size: var(--sn-body);
   font-weight: 600;
-  color: var(--sn-text-primary);
+  color: var(--sn-ink);
 }
 
 .qa-item .response {
   margin: 0 0 10px 0;
   font-size: var(--sn-body);
-  color: var(--sn-text-tertiary);
+  color: var(--sn-ink);
   line-height: 1.6;
 }
 
 .pushback-type {
   display: inline-block;
   padding: 3px 8px;
-  background: none;
-  border: 1px solid var(--sn-pushback-type-bg);
+  border: 1px solid var(--sn-rule);
   border-radius: 4px;
   font-size: var(--sn-label);
   font-weight: 500;
-  color: var(--sn-text-muted);
+  color: var(--sn-ink);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -558,47 +491,46 @@
 .narrative-position {
   margin: 0 0 10px 0;
   font-size: var(--sn-body);
-  color: var(--sn-text-faded);
+  color: var(--sn-ink);
   text-transform: capitalize;
 }
 
 .so-what {
   margin-top: 12px;
   padding: 14px 18px;
-  background: var(--sn-so-what-bg);
-  border-left: 4px solid var(--sn-so-what-border);
+  border-left: 4px solid var(--sn-rule);
   border-radius: 0 8px 8px 0;
   font-size: var(--sn-body);
   line-height: 1.6;
-  color: var(--sn-text-primary);
+  color: var(--sn-ink);
 }
 
 /* Source Items */
 .speaker-notes-content .source-item {
   margin-bottom: 14px;
   padding: 14px 16px;
-  background: var(--sn-bg-subtle);
   border-radius: 8px;
-  border: 1px solid var(--sn-source-border);
+  border: 1px solid var(--sn-rule);
 }
 
 .speaker-notes-content .source-item .claim {
   margin: 0 0 8px 0;
   font-size: var(--sn-body);
   font-style: italic;
-  color: var(--sn-text-tertiary);
+  color: var(--sn-ink);
   line-height: 1.5;
 }
 
 .speaker-notes-content .source-item .source {
   margin: 0 0 8px 0;
   font-size: var(--sn-label);
-  color: var(--sn-text-faded);
+  color: var(--sn-ink);
 }
 
 .confidence {
   display: inline-block;
   padding: 3px 8px;
+  border: 1px solid var(--sn-rule);
   border-radius: 4px;
   font-size: var(--sn-label);
   text-transform: uppercase;
@@ -606,23 +538,19 @@
 }
 
 .confidence-direct_extraction {
-  background: var(--sn-conf-bg);
-  color: var(--sn-conf-1-color);
+  color: var(--sn-ink);
 }
 
 .confidence-paraphrase {
-  background: var(--sn-conf-bg);
-  color: var(--sn-conf-2-color);
+  color: var(--sn-ink);
 }
 
 .confidence-synthesis {
-  background: var(--sn-conf-bg);
-  color: var(--sn-conf-3-color);
+  color: var(--sn-ink);
 }
 
 .confidence-inference {
-  background: var(--sn-conf-bg);
-  color: var(--sn-conf-4-color);
+  color: var(--sn-ink);
 }
 
 /* Collapsible sections */
@@ -650,7 +578,7 @@
 .notes-placeholder {
   text-align: center;
   padding: 40px 20px;
-  color: var(--sn-text-muted);
+  color: var(--sn-ink);
 }
 
 .notes-placeholder p {
@@ -665,7 +593,7 @@
 .notes-elapsed {
   font-size: var(--sn-body);
   font-weight: 500;
-  color: var(--sn-elapsed-color);
+  color: var(--sn-ink);
   margin-top: 4px;
 }
 
@@ -678,7 +606,7 @@
   margin: 8px 0 0 0;
   padding-left: 20px;
   font-size: var(--sn-label);
-  color: var(--sn-text-faded);
+  color: var(--sn-ink);
 }
 
 .assumptions-list li {
@@ -708,28 +636,27 @@
    ============================================================================ */
 
 .reasoning-section {
-  background: var(--sn-reasoning-bg);
-  border: 1px solid var(--sn-reasoning-border);
+  border: 1px solid var(--sn-rule);
   border-radius: 8px;
   margin-bottom: 16px;
 }
 
 .reasoning-section .notes-section-title {
-  color: var(--sn-reasoning-title);
+  color: var(--sn-ink);
 }
 
 .reasoning-intro {
   font-size: var(--sn-label);
-  color: var(--sn-text-faded);
+  color: var(--sn-ink);
   margin: 0 0 16px 0;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--sn-reasoning-intro-border);
+  border-bottom: 1px solid var(--sn-rule);
 }
 
 .reasoning-item {
   margin-bottom: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--sn-border-item);
+  border-bottom: 1px solid var(--sn-rule);
 }
 
 .reasoning-item:last-child {
@@ -742,13 +669,13 @@
   margin: 0 0 8px 0;
   font-size: var(--sn-label);
   font-weight: 600;
-  color: var(--sn-text-primary);
+  color: var(--sn-ink);
 }
 
 .reasoning-value {
   margin: 0;
   font-size: var(--sn-body);
-  color: var(--sn-text-secondary);
+  color: var(--sn-ink);
   line-height: 1.5;
 }
 
@@ -756,7 +683,7 @@
   margin: 8px 0 0 0;
   padding-left: 20px;
   font-size: var(--sn-body);
-  color: var(--sn-text-secondary);
+  color: var(--sn-ink);
 }
 
 .reasoning-list li {
@@ -764,11 +691,10 @@
 }
 
 .evidence-chain {
-  background: var(--sn-evidence-bg);
   border-radius: 6px;
   padding: 12px;
   margin-bottom: 10px;
-  border-left: 3px solid var(--sn-evidence-border);
+  border-left: 3px solid var(--sn-rule);
 }
 
 .evidence-chain:last-child {
@@ -778,7 +704,7 @@
 .chain-number {
   font-size: var(--sn-label);
   font-weight: 600;
-  color: var(--sn-chain-number-color);
+  color: var(--sn-ink);
   text-transform: uppercase;
   margin: 0 0 8px 0;
   letter-spacing: 0.05em;
@@ -787,7 +713,7 @@
 .evidence-chain p {
   margin: 0 0 6px 0;
   font-size: var(--sn-body);
-  color: var(--sn-text-secondary);
+  color: var(--sn-ink);
   line-height: 1.4;
 }
 
@@ -796,7 +722,6 @@
 }
 
 .source-inventory-item {
-  background: var(--sn-source-inv-bg);
   border-radius: 6px;
   padding: 10px 12px;
   margin-bottom: 8px;
@@ -813,14 +738,14 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  color: var(--sn-text-primary);
+  color: var(--sn-ink);
 }
 
 .speaker-notes-content .findings-list {
   margin: 6px 0 0 0;
   padding-left: 16px;
   font-size: var(--sn-body);
-  color: var(--sn-text-faded);
+  color: var(--sn-ink);
 }
 
 .speaker-notes-content .findings-list li {
@@ -828,11 +753,10 @@
 }
 
 .pushback-item {
-  background: var(--sn-pushback-bg);
   border-radius: 6px;
   padding: 12px;
   margin-bottom: 10px;
-  border-left: 3px solid var(--sn-pushback-border);
+  border-left: 3px solid var(--sn-rule);
 }
 
 .pushback-item:last-child {
@@ -847,20 +771,19 @@
   letter-spacing: 0.05em;
   padding: 3px 8px;
   border-radius: 4px;
-  background: var(--sn-pushback-badge-bg);
-  color: var(--sn-pushback-badge-color);
+  color: var(--sn-ink);
   margin-bottom: 8px;
 }
 
 .objection {
   font-style: italic;
-  color: var(--sn-text-faded);
+  color: var(--sn-ink);
 }
 
 .pushback-item p {
   margin: 0 0 6px 0;
   font-size: var(--sn-body);
-  color: var(--sn-text-secondary);
+  color: var(--sn-ink);
   line-height: 1.4;
 }
 
@@ -879,18 +802,15 @@
 }
 
 .confidence-badge.confidence-high {
-  background: var(--sn-conf-bg);
-  color: var(--sn-conf-1-color);
+  color: var(--sn-ink);
 }
 
 .confidence-badge.confidence-medium {
-  background: var(--sn-conf-bg);
-  color: var(--sn-conf-2-color);
+  color: var(--sn-ink);
 }
 
 .confidence-badge.confidence-low {
-  background: var(--sn-conf-bg);
-  color: var(--sn-conf-4-color);
+  color: var(--sn-ink);
 }
 
 /* =========================
@@ -906,6 +826,7 @@
 .severity-badge {
   display: inline-block;
   padding: 3px 8px;
+  border: 1px solid var(--sn-rule);
   border-radius: 4px;
   font-size: var(--sn-label);
   font-weight: 600;
@@ -913,14 +834,13 @@
   letter-spacing: 0.06em;
 }
 
-.severity-probing { background: var(--sn-sev-1-bg); color: var(--sn-sev-1-color); }
-.severity-skeptical { background: var(--sn-sev-2-bg); color: var(--sn-sev-2-color); }
-.severity-hostile { background: var(--sn-sev-3-bg); color: var(--sn-sev-3-color); }
-.severity-deal_breaker { background: var(--sn-sev-4-bg); color: var(--sn-sev-4-color); }
+.severity-probing { border-color: var(--sn-rule); }
+.severity-skeptical { border-color: var(--sn-rule); }
+.severity-hostile { border-color: var(--sn-rule-strong); }
+.severity-deal_breaker { border-color: var(--sn-ink); font-weight: 700; }
 
 .qa-severity-deal_breaker {
-  border-left: 3px solid var(--sn-accent);
-  background: rgba(218, 41, 28, 0.07);
+  border-left: 3px solid var(--sn-rule);
 }
 
 /* These three are the follow-up answers — what you say when the first response did
@@ -933,17 +853,15 @@
 .deferral-option {
   margin-top: 10px;
   padding: 10px 12px;
-  background: var(--sn-bg-subtle);
-  border-left: 2px solid var(--sn-border-section);
+  border-left: 2px solid var(--sn-rule);
   border-radius: 0 4px 4px 0;
   font-size: var(--sn-body);
   line-height: 1.55;
-  color: var(--sn-text-tertiary);
+  color: var(--sn-ink);
 }
 
 .bridge-to-strength {
-  background: rgba(80, 175, 123, 0.10);
-  border-left-color: var(--sn-positive);
+  border-left-color: var(--sn-rule);
 }
 
 /* =========================
@@ -956,48 +874,44 @@
 }
 
 .competitor-card {
-  background: var(--sn-competitor-bg);
   border-radius: 6px;
   padding: 12px;
-  border-left: 3px solid var(--sn-competitor-border);
+  border-left: 3px solid var(--sn-rule);
 }
 
 .competitor-name {
   margin: 0 0 8px 0;
   font-size: var(--sn-body);
-  color: var(--sn-text-primary);
+  color: var(--sn-ink);
 }
 
 .competitor-strength,
 .our-counter {
   margin: 0 0 6px 0;
   font-size: var(--sn-body);
-  color: var(--sn-text-tertiary);
+  color: var(--sn-ink);
 }
 
 .bridge-phrase {
   margin: 8px 0 0 0;
   padding: 8px;
-  background: var(--sn-bridge-bg);
   border-radius: 4px;
   font-size: var(--sn-body);
   font-style: italic;
-  color: var(--sn-bridge-color);
+  color: var(--sn-ink);
 }
 
 .internal-team-block,
 .do-nothing-risk {
   margin-top: 12px;
   padding: 10px 12px;
-  background: var(--sn-internal-bg);
   border-radius: 6px;
   font-size: var(--sn-body);
-  color: var(--sn-text-secondary);
+  color: var(--sn-ink);
 }
 
 .do-nothing-risk {
-  background: var(--sn-do-nothing-bg);
-  border-left: 3px solid var(--sn-do-nothing-border);
+  border-left: 3px solid var(--sn-rule);
 }
 
 /* =========================
@@ -1017,30 +931,28 @@
   margin: 0 0 8px 0;
   font-size: 12px;
   font-weight: 600;
-  color: var(--sn-text-primary);
+  color: var(--sn-ink);
 }
 
 .signal-block p {
   margin: 0 0 6px 0;
   font-size: 12px;
-  color: var(--sn-text-secondary);
+  color: var(--sn-ink);
 }
 
 .emergency-bridge {
   margin-top: 8px;
   padding: 8px;
-  background: var(--sn-emergency-bg);
   border-radius: 4px;
   font-style: italic;
-  color: var(--sn-emergency-color);
+  color: var(--sn-ink);
 }
 
 /* =========================
    #5 Quick Reference / Cheat Sheet
    ========================= */
 .quick-reference-section {
-  background: var(--sn-quick-ref-bg);
-  border: 1px solid var(--sn-quick-ref-border);
+  border: 1px solid var(--sn-rule);
   border-radius: 8px;
 }
 
@@ -1056,7 +968,6 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: var(--sn-bg-card);
 }
 
 .cheat-label {
@@ -1064,7 +975,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--sn-text-faded);
+  color: var(--sn-ink);
   opacity: 0.7;
 }
 
@@ -1074,28 +985,24 @@
    the label doing the identifying. Only ASK FOR keeps an accent, because it is the one
    card that asks the audience to do something. */
 .cheat-number {
-  background: var(--sn-cheat-bg);
-  color: var(--sn-cheat-color);
+  color: var(--sn-ink);
   font-size: var(--sn-lead);
   font-weight: 600;
 }
 
 .cheat-phrase {
-  background: var(--sn-cheat-bg);
-  color: var(--sn-cheat-color);
+  color: var(--sn-ink);
   font-size: var(--sn-body);
   font-style: italic;
 }
 
 .cheat-proof {
-  background: var(--sn-cheat-bg);
-  color: var(--sn-cheat-color);
+  color: var(--sn-ink);
   font-size: var(--sn-body);
 }
 
 .cheat-ask {
-  background: var(--sn-cheat-ask-bg);
-  color: var(--sn-cheat-ask-color);
+  color: var(--sn-ink);
   font-size: var(--sn-body);
   font-weight: 500;
 }
@@ -1103,13 +1010,13 @@
 .drop-phrase {
   margin: 0 0 6px 0;
   font-size: var(--sn-body);
-  color: var(--sn-text-secondary);
+  color: var(--sn-ink);
 }
 
 .full-citation {
   margin: 0;
   font-size: 11px;
-  color: var(--sn-text-dim);
+  color: var(--sn-ink);
 }
 
 /* =========================
@@ -1117,10 +1024,9 @@
    ========================= */
 .risk-block {
   padding: 12px;
-  background: var(--sn-risk-bg);
   border-radius: 6px;
   margin-bottom: 10px;
-  border-left: 3px solid var(--sn-risk-border);
+  border-left: 3px solid var(--sn-rule);
 }
 
 .risk-block:last-child {
@@ -1131,28 +1037,27 @@
   margin: 0 0 8px 0;
   font-size: 12px;
   font-weight: 600;
-  color: var(--sn-text-primary);
+  color: var(--sn-ink);
 }
 
 .risk-concern {
   margin: 0 0 8px 0;
   font-size: 12px;
-  color: var(--sn-text-faded);
+  color: var(--sn-ink);
 }
 
 .risk-response {
   margin: 0 0 6px 0;
   font-size: 12px;
-  color: var(--sn-text-secondary);
+  color: var(--sn-ink);
 }
 
 .risk-proof {
   margin: 0;
   padding: 8px;
-  background: var(--sn-risk-proof-bg);
   border-radius: 4px;
   font-size: 11px;
-  color: var(--sn-risk-proof-color);
+  color: var(--sn-ink);
 }
 
 .cta-option {
@@ -1175,7 +1080,7 @@
 .cta-option p {
   margin: 0;
   font-size: 12px;
-  color: var(--sn-text-secondary);
+  color: var(--sn-ink);
 }
 
 .cta-timeline,
@@ -1183,20 +1088,20 @@
 .cta-fallback {
   margin-top: 6px !important;
   font-size: 11px !important;
-  color: var(--sn-text-faded) !important;
+  color: var(--sn-ink);
 }
 
 .condensed-version {
   margin: 10px 0 0 0;
   font-size: 12px;
   font-style: italic;
-  color: var(--sn-text-muted);
+  color: var(--sn-ink);
 }
 
 .must-include {
   margin: 8px 0 0 0;
   font-size: 11px;
-  color: var(--sn-text-dim);
+  color: var(--sn-ink);
 }
 
 /* =========================
@@ -1210,23 +1115,22 @@
 
 .phrase-category {
   padding: 10px;
-  background: var(--sn-phrase-bg);
   border-radius: 6px;
-  border-left: 3px solid var(--sn-phrase-border);
+  border-left: 3px solid var(--sn-rule);
 }
 
 .phrase-category h6 {
   margin: 0 0 8px 0;
   font-size: var(--sn-label);
   font-weight: 600;
-  color: var(--sn-text-primary);
+  color: var(--sn-ink);
 }
 
 .phrase-category ul {
   margin: 0;
   padding-left: 16px;
   font-size: var(--sn-body);
-  color: var(--sn-text-tertiary);
+  color: var(--sn-ink);
 }
 
 .phrase-category li {
@@ -1234,13 +1138,11 @@
 }
 
 .phrase-hostile {
-  background: var(--sn-phrase-hostile-bg);
-  border-left-color: var(--sn-phrase-hostile-border);
+  border-left-color: var(--sn-rule);
 }
 
 .phrase-warning {
-  background: var(--sn-phrase-warning-bg);
-  border-left-color: var(--sn-phrase-warning-border);
+  border-left-color: var(--sn-rule);
 }
 
 /* Responsive adjustments for new components */
@@ -1312,28 +1214,26 @@
 
 /* Error state placeholder */
 .notes-placeholder.notes-error {
-  background: var(--sn-error-bg);
-  border: 1px solid var(--sn-error-border);
+  border: 1px solid var(--sn-rule);
   border-radius: 10px;
   padding: 28px 24px;
 }
 
 .notes-placeholder.notes-error p:first-child {
-  color: var(--sn-error-title);
+  color: var(--sn-ink);
   font-weight: 600;
   font-size: var(--sn-lead);
 }
 
 /* Warning state placeholder */
 .notes-placeholder.notes-warning {
-  background: var(--sn-warning-bg);
-  border: 1px solid var(--sn-warning-border);
+  border: 1px solid var(--sn-rule);
   border-radius: 10px;
   padding: 28px 24px;
 }
 
 .notes-placeholder.notes-warning p:first-child {
-  color: var(--sn-warning-title);
+  color: var(--sn-ink);
   font-weight: 600;
   font-size: var(--sn-lead);
 }
@@ -1341,16 +1241,16 @@
 /* Hint text */
 .notes-hint {
   font-size: var(--sn-label);
-  color: var(--sn-text-dim);
+  color: var(--sn-ink);
 }
 
 /* Action hint text */
 .notes-action {
   font-size: var(--sn-body);
-  color: var(--sn-text-dim);
+  color: var(--sn-ink);
   margin-top: 14px !important;
   padding-top: 14px;
-  border-top: 1px solid var(--sn-border-section);
+  border-top: 1px solid var(--sn-rule);
 }
 
 /* ========== PRESENTATION MODE ========== */
@@ -1368,7 +1268,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #000;
 }
 
 .slides-view-container.presentation-mode .slides-area {
