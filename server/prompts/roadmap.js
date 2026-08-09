@@ -25,13 +25,8 @@ export const roadmapSchema = {
             },
             required: ["startCol", "endCol", "color"]
           },
-          taskType: {
-            type: "string",
-            enum: ["milestone", "decision", "task"],
-            description: "Task classification for Executive View filtering"
-          }
         },
-        required: ["title", "isSwimlane", "entity", "taskType"]
+        required: ["title", "isSwimlane", "entity"]
       }
     },
     legend: {
@@ -102,7 +97,7 @@ const roadmapPrompt = `You are an expert project management analyst. Your job is
           * "Project X - Announcement" (2018)
           * "Project X - Launch" (2019)
           * "Project X - Completion" (2021)
-        - Each distinct event/phase gets its own row with appropriate taskType (milestone for launch/completion, task for others)
+        - Each distinct event/phase gets its own row
 
         **KEY INSIGHT:** A task that STARTED BEFORE the user's range but is STILL ONGOING or ENDS WITHIN the range MUST BE INCLUDED. The start date being before the range is NOT a reason to exclude - only exclude if the task ENDED before the range started.
 
@@ -132,8 +127,7 @@ const roadmapPrompt = `You are an expert project management analyst. Your job is
         - The goal is COMPREHENSIVENESS - no task should be excluded just because its swimlane is small
         - Only exclude a swimlane if it has ZERO tasks that overlap with the time range
 4.  **CHART DATA STRUCTURE:**
-    - Add an object for each swimlane: \`{ "title": "Swimlane Name", "isSwimlane": true, "entity": "Swimlane Name", "taskType": "task" }\`
-    - Note: Swimlanes use taskType "task" as a placeholder (the value is ignored for swimlanes but required by schema)
+    - Add an object for each swimlane: \`{ "title": "Swimlane Name", "isSwimlane": true, "entity": "Swimlane Name" }\`
     - Immediately after each swimlane, add all tasks belonging to it
     - **Task Ordering Within Swimlanes (DETERMINISTIC):** Sort tasks within each swimlane by:
       1. First by startCol (ascending, null values last)
@@ -172,13 +166,7 @@ const roadmapPrompt = `You are an expert project management analyst. Your job is
           - Assign one unique color to each swimlane based on ALPHABETICAL position: 1st="priority-red", 2nd="medium-red", 3rd="mid-grey", 4th="light-grey", 5th="white", 6th="dark-blue", 7th+ cycle back
           - All tasks within the same swimlane get that swimlane's color
           - Set 'legend' to an EMPTY array: \`"legend": []\` (no legend displayed since colors just represent swimlanes which are already labeled)
-7.  **TASK TYPE CLASSIFICATION (DETERMINISTIC):** Classify each task using EXACT keyword matching (case-insensitive):
-    - **"decision"** - Task title contains ANY of these EXACT words: "Approval", "Approve", "Decision", "Decide", "Gate", "Go/No-Go", "Review Board", "Steering Committee", "Sign-off", "Signoff"
-    - **"milestone"** - Task title contains ANY of these EXACT words: "Launch", "Go Live", "Go-Live", "Complete", "Completion", "Deliver", "Delivery", "Milestone", "Release", "Deploy", "Deployment", "Rollout", "Roll-out", "Cutover", "Cut-over", "Phase Complete"
-    - **"task"** - Default for all other tasks
-    - **Priority:** If a task matches both "decision" and "milestone" keywords, classify as "decision"
-    - **IMPORTANT:** Executive View will only show tasks where taskType is "milestone" or "decision"
-9.  **COMPREHENSIVENESS (CRITICAL - EXTRACT EVERYTHING - THIS IS THE MOST IMPORTANT RULE):** You MUST extract ALL events from the research. Scan the research files exhaustively and include:
+7.  **COMPREHENSIVENESS (CRITICAL - EXTRACT EVERYTHING - THIS IS THE MOST IMPORTANT RULE):** You MUST extract ALL events from the research. Scan the research files exhaustively and include:
     - **Tasks:** Any work item, activity, implementation, development, testing, or operational task
     - **Milestones:** Any deliverable, phase completion, launch, go-live, release, or achievement
     - **Decisions:** Any approval, gate, review, sign-off, or decision point
