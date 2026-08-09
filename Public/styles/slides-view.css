@@ -179,6 +179,21 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     inset 0 -1px 0 rgba(0, 0, 0, 0.1);
 
+  /* ---- Type scale ----
+     This panel used to hardcode seven pixel sizes (10 11 12 13 14 15 16) and touch
+     none of the design system's scale. Six of the seven sat at the small end, where
+     they only separated one kind of fine print from another, while the section
+     heading was 16px against 15px body — a one-pixel difference doing all the work
+     of establishing rank. The result read as one undifferentiated wall.
+
+     Four steps now, on --text-*. Hierarchy comes from case, colour and space rather
+     than from size, which is what the rest of the app already does: CONTENTS,
+     SPEAKER NOTES and KEY NUMBER are all tracked uppercase eyebrows, not big text. */
+  --sn-label: var(--text-xs);      /* 12px — uppercase eyebrows, chips, meta */
+  --sn-body: var(--text-sm);       /* 14px — all prose */
+  --sn-lead: var(--text-base);     /* 16px — the one line per slide that must land */
+  --sn-measure: 76ch;              /* prose was running ~130 characters per line */
+
   /* ---- Dark theme token overrides ---- */
   /* Text hierarchy */
   --sn-text-primary: #fff;
@@ -318,13 +333,9 @@
   gap: 10px;
 }
 
-.speaker-notes-icon {
-  font-size: 16px;
-}
-
 .speaker-notes-title {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--sn-label);
   font-weight: 600;
   color: var(--glass-text-primary, #fff);
   text-transform: uppercase;
@@ -332,7 +343,7 @@
 }
 
 .speaker-notes-slide-indicator {
-  font-size: 12px;
+  font-size: var(--sn-label);
   font-weight: 400;
   color: var(--glass-text-secondary, rgba(255, 255, 255, 0.7));
   margin-left: 4px;
@@ -343,7 +354,7 @@
 }
 
 .speaker-notes-chevron {
-  font-size: 10px;
+  font-size: var(--sn-label);
   color: var(--glass-text-secondary, rgba(255, 255, 255, 0.6));
   transition: transform 0.3s ease;
 }
@@ -408,7 +419,7 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--sn-body);
   transition: background 0.2s ease;
 }
 
@@ -430,8 +441,17 @@
   overflow-y: auto;
   opacity: 1;
   padding: 16px 28px 28px 28px;
-  font-size: 15px;
+  font-size: var(--sn-body);
   line-height: 1.65;
+}
+
+/* One measured column rather than a per-element cap. Capping each paragraph while the
+   cards around them stayed full width left ragged voids inside every card; constraining
+   the column keeps cards, grids and prose on the same left and right edges. */
+.speaker-notes-panel .speaker-notes-content > * {
+  max-width: var(--sn-measure);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Separator line between header and content when expanded */
@@ -452,11 +472,16 @@
   margin-bottom: 0;
 }
 
+/* Section headings are eyebrows, not headlines — the same idiom as CONTENTS and
+   SPEAKER NOTES. Smaller than the prose they introduce, and separated from it by
+   case and tracking, which reads as rank far more clearly than 16px-over-15px did. */
 .notes-section-title {
-  margin: 0 0 14px 0;
-  font-size: 16px;
+  margin: 0 0 12px 0;
+  font-size: var(--sn-label);
   font-weight: 600;
-  color: var(--sn-text-primary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sn-text-faded);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -464,25 +489,26 @@
 
 .notes-list {
   margin: 0;
-  padding-left: 24px;
+  padding-left: 20px;
 }
 
 .notes-list li {
   margin-bottom: 10px;
-  line-height: 1.65;
+  line-height: 1.6;
   color: var(--sn-text-secondary);
-  font-size: 15px;
+  font-size: var(--sn-body);
 }
 
-/* Key Phrase */
+/* Key Phrase — the single largest thing in the panel, because it is the one line
+   the presenter is meant to actually say. */
 .key-phrase {
-  margin-top: 14px;
+  margin-top: 16px;
   padding: 14px 18px;
   background: var(--sn-key-phrase-bg);
-  border-left: 4px solid #DA291C;
+  border-left: 3px solid #DA291C;
   border-radius: 0 8px 8px 0;
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: var(--sn-lead);
+  line-height: 1.5;
   color: var(--sn-text-primary);
 }
 
@@ -496,33 +522,34 @@
 
 .qa-item .question {
   margin: 0 0 10px 0;
-  font-size: 15px;
-  font-weight: 500;
+  font-size: var(--sn-body);
+  font-weight: 600;
   color: var(--sn-text-primary);
 }
 
 .qa-item .response {
   margin: 0 0 10px 0;
-  font-size: 15px;
+  font-size: var(--sn-body);
   color: var(--sn-text-tertiary);
-  line-height: 1.65;
+  line-height: 1.6;
 }
 
 .pushback-type {
   display: inline-block;
-  padding: 4px 10px;
+  padding: 3px 8px;
   background: var(--sn-pushback-type-bg);
   border-radius: 4px;
-  font-size: 12px;
+  font-size: var(--sn-label);
+  font-weight: 500;
   color: var(--sn-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
 }
 
 /* Story Context */
 .narrative-position {
   margin: 0 0 10px 0;
-  font-size: 14px;
+  font-size: var(--sn-body);
   color: var(--sn-text-faded);
   text-transform: capitalize;
 }
@@ -533,7 +560,7 @@
   background: var(--sn-so-what-bg);
   border-left: 4px solid var(--sn-so-what-border);
   border-radius: 0 8px 8px 0;
-  font-size: 15px;
+  font-size: var(--sn-body);
   line-height: 1.6;
   color: var(--sn-text-primary);
 }
@@ -549,7 +576,7 @@
 
 .speaker-notes-content .source-item .claim {
   margin: 0 0 8px 0;
-  font-size: 14px;
+  font-size: var(--sn-body);
   font-style: italic;
   color: var(--sn-text-tertiary);
   line-height: 1.5;
@@ -557,7 +584,7 @@
 
 .speaker-notes-content .source-item .source {
   margin: 0 0 8px 0;
-  font-size: 13px;
+  font-size: var(--sn-label);
   color: var(--sn-text-faded);
 }
 
@@ -565,7 +592,7 @@
   display: inline-block;
   padding: 3px 8px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: var(--sn-label);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -603,7 +630,7 @@
 
 .notes-section-toggle::after {
   content: ' ▼';
-  font-size: 10px;
+  font-size: var(--sn-label);
   opacity: 0.5;
 }
 
@@ -623,12 +650,12 @@
 }
 
 .notes-hint {
-  font-size: 12px;
+  font-size: var(--sn-label);
   opacity: 0.7;
 }
 
 .notes-elapsed {
-  font-size: 13px;
+  font-size: var(--sn-body);
   font-weight: 500;
   color: var(--sn-elapsed-color);
   margin-top: 4px;
@@ -642,7 +669,7 @@
 .assumptions-list {
   margin: 8px 0 0 0;
   padding-left: 20px;
-  font-size: 12px;
+  font-size: var(--sn-label);
   color: var(--sn-text-faded);
 }
 
@@ -658,16 +685,6 @@
 
   .speaker-notes-content {
     padding: 12px 16px;
-  }
-
-  .notes-section-title {
-    font-size: 12px;
-  }
-
-  .notes-list li,
-  .qa-item .question,
-  .qa-item .response {
-    font-size: 12px;
   }
 }
 
@@ -694,7 +711,7 @@
 }
 
 .reasoning-intro {
-  font-size: 12px;
+  font-size: var(--sn-label);
   color: var(--sn-text-faded);
   margin: 0 0 16px 0;
   padding-bottom: 12px;
@@ -715,14 +732,14 @@
 
 .reasoning-label {
   margin: 0 0 8px 0;
-  font-size: 13px;
+  font-size: var(--sn-label);
   font-weight: 600;
   color: var(--sn-text-primary);
 }
 
 .reasoning-value {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--sn-body);
   color: var(--sn-text-secondary);
   line-height: 1.5;
 }
@@ -730,7 +747,7 @@
 .reasoning-list {
   margin: 8px 0 0 0;
   padding-left: 20px;
-  font-size: 13px;
+  font-size: var(--sn-body);
   color: var(--sn-text-secondary);
 }
 
@@ -751,7 +768,7 @@
 }
 
 .chain-number {
-  font-size: 11px;
+  font-size: var(--sn-label);
   font-weight: 600;
   color: var(--sn-chain-number-color);
   text-transform: uppercase;
@@ -761,7 +778,7 @@
 
 .evidence-chain p {
   margin: 0 0 6px 0;
-  font-size: 12px;
+  font-size: var(--sn-body);
   color: var(--sn-text-secondary);
   line-height: 1.4;
 }
@@ -783,7 +800,7 @@
 
 .source-name {
   margin: 0 0 6px 0;
-  font-size: 13px;
+  font-size: var(--sn-body);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -794,7 +811,7 @@
 .speaker-notes-content .findings-list {
   margin: 6px 0 0 0;
   padding-left: 16px;
-  font-size: 12px;
+  font-size: var(--sn-body);
   color: var(--sn-text-faded);
 }
 
@@ -816,7 +833,7 @@
 
 .pushback-type-badge {
   display: inline-block;
-  font-size: 10px;
+  font-size: var(--sn-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -834,7 +851,7 @@
 
 .pushback-item p {
   margin: 0 0 6px 0;
-  font-size: 12px;
+  font-size: var(--sn-body);
   color: var(--sn-text-secondary);
   line-height: 1.4;
 }
@@ -846,7 +863,7 @@
 /* Confidence badges in reasoning */
 .confidence-badge {
   display: inline-block;
-  font-size: 10px;
+  font-size: var(--sn-label);
   font-weight: 500;
   padding: 2px 6px;
   border-radius: 4px;
@@ -923,12 +940,12 @@
 
 .severity-badge {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: var(--sn-label);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
 }
 
 .severity-probing { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
@@ -941,19 +958,27 @@
   background: rgba(239, 68, 68, 0.05);
 }
 
+/* These three are the follow-up answers — what you say when the first response did
+   not land. They were 12px on `rgba(12, 35, 64, 0.04)`: a 4%-opacity navy wash,
+   which is a light-theme value. On this dark panel it tints toward invisible, so
+   the hardest part of the Q&A was set as the faintest text in the panel. They read
+   at body size on a real surface now. */
 .escalation-response,
 .bridge-to-strength,
 .deferral-option {
-  margin-top: 8px;
-  padding: 8px 10px;
-  background: rgba(12, 35, 64, 0.04);
-  border-radius: 4px;
-  font-size: 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--sn-bg-subtle);
+  border-left: 2px solid var(--sn-border-section);
+  border-radius: 0 4px 4px 0;
+  font-size: var(--sn-body);
+  line-height: 1.55;
+  color: var(--sn-text-tertiary);
 }
 
 .bridge-to-strength {
   background: rgba(34, 197, 94, 0.08);
-  border-left: 2px solid #22c55e;
+  border-left-color: #22c55e;
 }
 
 /* =========================
@@ -974,14 +999,14 @@
 
 .competitor-name {
   margin: 0 0 8px 0;
-  font-size: 13px;
+  font-size: var(--sn-body);
   color: var(--sn-text-primary);
 }
 
 .competitor-strength,
 .our-counter {
   margin: 0 0 6px 0;
-  font-size: 12px;
+  font-size: var(--sn-body);
   color: var(--sn-text-tertiary);
 }
 
@@ -990,7 +1015,7 @@
   padding: 8px;
   background: var(--sn-bridge-bg);
   border-radius: 4px;
-  font-size: 12px;
+  font-size: var(--sn-body);
   font-style: italic;
   color: var(--sn-bridge-color);
 }
@@ -1001,7 +1026,7 @@
   padding: 10px 12px;
   background: var(--sn-internal-bg);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--sn-body);
   color: var(--sn-text-secondary);
 }
 
@@ -1080,7 +1105,7 @@
 }
 
 .cheat-label {
-  font-size: 10px;
+  font-size: var(--sn-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1091,27 +1116,27 @@
 .cheat-number {
   background: var(--sn-cheat-number-bg);
   color: var(--sn-cheat-number-color);
-  font-size: 16px;
+  font-size: var(--sn-lead);
   font-weight: 600;
 }
 
 .cheat-phrase {
   background: var(--sn-cheat-phrase-bg);
   color: var(--sn-cheat-phrase-color);
-  font-size: 13px;
+  font-size: var(--sn-body);
   font-style: italic;
 }
 
 .cheat-proof {
   background: var(--sn-cheat-proof-bg);
   color: var(--sn-cheat-proof-color);
-  font-size: 12px;
+  font-size: var(--sn-body);
 }
 
 .cheat-ask {
   background: var(--sn-cheat-ask-bg);
   color: var(--sn-cheat-ask-color);
-  font-size: 13px;
+  font-size: var(--sn-body);
   font-weight: 500;
 }
 
@@ -1157,7 +1182,7 @@
 
 .drop-phrase {
   margin: 0 0 6px 0;
-  font-size: 12px;
+  font-size: var(--sn-body);
   color: var(--sn-text-secondary);
 }
 
@@ -1334,7 +1359,7 @@
 
 .phrase-category h6 {
   margin: 0 0 8px 0;
-  font-size: 11px;
+  font-size: var(--sn-label);
   font-weight: 600;
   color: var(--sn-text-primary);
 }
@@ -1342,7 +1367,7 @@
 .phrase-category ul {
   margin: 0;
   padding-left: 16px;
-  font-size: 11px;
+  font-size: var(--sn-body);
   color: var(--sn-text-tertiary);
 }
 
@@ -1402,11 +1427,11 @@
   .speaker-notes-panel.expanded .speaker-notes-content {
     max-height: 70vh;
     padding: 12px 18px 18px 18px;
-    font-size: 14px;
+    font-size: var(--sn-body);
   }
 
   .notes-section-title {
-    font-size: 15px;
+    font-size: var(--sn-body);
   }
 
   .notes-list li,
@@ -1414,7 +1439,7 @@
   .qa-item .response,
   .key-phrase,
   .so-what {
-    font-size: 14px;
+    font-size: var(--sn-body);
   }
 }
 
@@ -1424,7 +1449,7 @@
 
 /* Base placeholder styles */
 .notes-placeholder {
-  font-size: 15px;
+  font-size: var(--sn-body);
   line-height: 1.6;
 }
 
@@ -1443,7 +1468,7 @@
 .notes-placeholder.notes-error p:first-child {
   color: var(--sn-error-title);
   font-weight: 600;
-  font-size: 16px;
+  font-size: var(--sn-lead);
 }
 
 /* Warning state placeholder */
@@ -1457,18 +1482,18 @@
 .notes-placeholder.notes-warning p:first-child {
   color: var(--sn-warning-title);
   font-weight: 600;
-  font-size: 16px;
+  font-size: var(--sn-lead);
 }
 
 /* Hint text */
 .notes-hint {
-  font-size: 14px;
+  font-size: var(--sn-label);
   color: var(--sn-text-dim);
 }
 
 /* Action hint text */
 .notes-action {
-  font-size: 13px;
+  font-size: var(--sn-body);
   color: var(--sn-text-dim);
   margin-top: 14px !important;
   padding-top: 14px;

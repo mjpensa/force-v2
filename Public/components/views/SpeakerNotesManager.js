@@ -11,11 +11,32 @@ function _placeholderHTML(type, title, hint, extra = '') {
   `;
 }
 
-function _wrapSection(icon, title, bodyHTML, { collapsible = false } = {}) {
+/**
+ * Section headings are tracked uppercase eyebrows (see .notes-section-title). They used
+ * to lead with a full-colour emoji set at heading size — 💬 🔄 ❓ 📚 ⚡ 🧠 — which sat on
+ * different baselines, carried more visual weight than the words beside them, and used a
+ * palette unrelated to anything else in the app. The label alone is the heading now.
+ */
+/**
+ * The pushback-type chip, unless it is just restating the severity chip beside it.
+ *
+ * severity and pushbackType are different enums that overlap in wording, so a question
+ * routinely rendered as `SKEPTICAL  SKEPTICISM` — two chips, two colours, one fact.
+ */
+function _pushbackChip(qa) {
+  const type = (qa.pushbackType || '').replace(/_/g, ' ').trim();
+  if (!type) return '';
+  const severity = (qa.severity || 'probing').replace(/_/g, ' ').trim();
+  const stem = s => s.toLowerCase().replace(/(ism|al|ity|ness)$/, '');
+  if (stem(type) === stem(severity)) return '';
+  return `<span class="pushback-type">${escapeHtml(type)}</span>`;
+}
+
+function _wrapSection(title, bodyHTML, { collapsible = false } = {}) {
   if (collapsible) {
     return `
       <div class="notes-section notes-section-collapsed">
-        <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">${icon} ${title}</h4>
+        <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">${title}</h4>
         <div class="notes-section-body">
           ${bodyHTML}
         </div>
@@ -24,7 +45,7 @@ function _wrapSection(icon, title, bodyHTML, { collapsible = false } = {}) {
   }
   return `
     <div class="notes-section">
-      <h4 class="notes-section-title">${icon} ${title}</h4>
+      <h4 class="notes-section-title">${title}</h4>
       ${bodyHTML}
     </div>
   `;
@@ -60,9 +81,6 @@ export class SpeakerNotesManager {
     const headerLeft = document.createElement('div');
     headerLeft.className = 'speaker-notes-header-left';
 
-    const icon = document.createElement('span');
-    icon.className = 'speaker-notes-icon';
-    icon.textContent = '\ud83d\udcdd';
 
     const title = document.createElement('span');
     title.className = 'speaker-notes-title';
@@ -73,7 +91,6 @@ export class SpeakerNotesManager {
     slideIndicator.id = 'speaker-notes-slide-indicator';
     slideIndicator.textContent = '';
 
-    headerLeft.appendChild(icon);
     headerLeft.appendChild(title);
     headerLeft.appendChild(slideIndicator);
 
@@ -320,7 +337,7 @@ export class SpeakerNotesManager {
     const sections = [];
 
     if (notes.narrative?.talkingPoints?.length) {
-      sections.push(_wrapSection('\ud83d\udcac', 'Talking Points', `
+      sections.push(_wrapSection('Talking Points', `
           <ul class="notes-list">
             ${notes.narrative.talkingPoints.map(point => `<li>${escapeHtml(point)}</li>`).join('')}
           </ul>
@@ -333,19 +350,19 @@ export class SpeakerNotesManager {
     }
 
     if (notes.narrative?.transitionIn || notes.narrative?.transitionOut) {
-      sections.push(_wrapSection('\ud83d\udd04', 'Transitions', `
+      sections.push(_wrapSection('Transitions', `
           ${notes.narrative.transitionIn ? `<p><strong>\u2190 From previous:</strong> ${escapeHtml(notes.narrative.transitionIn)}</p>` : ''}
           ${notes.narrative.transitionOut ? `<p><strong>\u2192 To next:</strong> ${escapeHtml(notes.narrative.transitionOut)}</p>` : ''}
       `));
     }
 
     if (notes.anticipatedQuestions?.length) {
-      sections.push(_wrapSection('\u2753', 'Anticipated Questions', `
+      sections.push(_wrapSection('Anticipated Questions', `
           ${notes.anticipatedQuestions.map(qa => `
             <div class="qa-item qa-severity-${qa.severity || 'probing'}">
               <div class="qa-header">
                 <span class="severity-badge severity-${qa.severity || 'probing'}">${escapeHtml((qa.severity || 'probing').replace(/_/g, ' '))}</span>
-                <span class="pushback-type">${escapeHtml(qa.pushbackType?.replace(/_/g, ' '))}</span>
+                ${_pushbackChip(qa)}
               </div>
               <p class="question"><strong>Q:</strong> ${escapeHtml(qa.question)}</p>
               <p class="response"><strong>A:</strong> ${escapeHtml(qa.response)}</p>
@@ -370,7 +387,7 @@ export class SpeakerNotesManager {
     }
 
     if (notes.sourceAttribution?.length) {
-      sections.push(_wrapSection('\ud83d\udcda', 'Sources', `
+      sections.push(_wrapSection('Sources', `
           ${notes.sourceAttribution.map(src => `
             <div class="source-item">
               <p class="claim">"${escapeHtml(src.claim)}"</p>
@@ -385,7 +402,7 @@ export class SpeakerNotesManager {
       const qr = notes.quickReference;
       const quickRefSection = `
         <div class="notes-section quick-reference-section">
-          <h4 class="notes-section-title">\u26a1 Quick Reference</h4>
+          <h4 class="notes-section-title">Quick Reference</h4>
           <div class="cheat-sheet">
             ${qr.keyNumber ? `<div class="cheat-item cheat-number"><span class="cheat-label">Key Number</span>${escapeHtml(qr.keyNumber)}</div>` : ''}
             ${qr.keyPhrase ? `<div class="cheat-item cheat-phrase"><span class="cheat-label">Key Phrase</span>"${escapeHtml(qr.keyPhrase)}"</div>` : ''}
@@ -409,7 +426,7 @@ export class SpeakerNotesManager {
     if (reasoning.presentationNarrativeArc) {
       sections.push(`
         <div class="reasoning-item">
-          <h5 class="reasoning-label">\ud83c\udfaf Narrative Arc</h5>
+          <h5 class="reasoning-label">Narrative Arc</h5>
           <p class="reasoning-value">${escapeHtml(reasoning.presentationNarrativeArc)}</p>
         </div>
       `);
@@ -419,7 +436,7 @@ export class SpeakerNotesManager {
       const profile = reasoning.audienceProfile;
       sections.push(`
         <div class="reasoning-item">
-          <h5 class="reasoning-label">\ud83d\udc64 Audience Profile</h5>
+          <h5 class="reasoning-label">Audience Profile</h5>
           ${profile.primaryStakeholder ? `<p><strong>Decision Maker:</strong> ${escapeHtml(profile.primaryStakeholder)}</p>` : ''}
           ${profile.painPoints?.length ? `
             <p><strong>Pain Points:</strong></p>
@@ -440,7 +457,7 @@ export class SpeakerNotesManager {
     if (reasoning.keyEvidenceChains?.length) {
       sections.push(`
         <div class="reasoning-item">
-          <h5 class="reasoning-label">\ud83d\udcca Key Evidence Chains</h5>
+          <h5 class="reasoning-label">Key Evidence Chains</h5>
           ${reasoning.keyEvidenceChains.map((chain, i) => `
             <div class="evidence-chain">
               <p class="chain-number">Chain ${i + 1}</p>
@@ -457,7 +474,7 @@ export class SpeakerNotesManager {
     if (reasoning.sourceInventory?.length) {
       sections.push(`
         <div class="reasoning-item">
-          <h5 class="reasoning-label">\ud83d\udcda Source Inventory</h5>
+          <h5 class="reasoning-label">Source Inventory</h5>
           ${reasoning.sourceInventory.map(src => `
             <div class="source-inventory-item">
               <p class="source-name"><strong>${escapeHtml(src.sourceName)}</strong>
@@ -477,7 +494,7 @@ export class SpeakerNotesManager {
     if (reasoning.anticipatedPushback?.length) {
       sections.push(`
         <div class="reasoning-item">
-          <h5 class="reasoning-label">\u26a1 Anticipated Pushback</h5>
+          <h5 class="reasoning-label">Anticipated Pushback</h5>
           ${reasoning.anticipatedPushback.map(pb => `
             <div class="pushback-item">
               <span class="pushback-type-badge">${escapeHtml(pb.pushbackType?.replace(/_/g, ' '))}</span>
@@ -494,7 +511,7 @@ export class SpeakerNotesManager {
       const cp = reasoning.competitivePositioning;
       sections.push(`
         <div class="reasoning-item">
-          <h5 class="reasoning-label">\u2694\ufe0f Competitive Positioning</h5>
+          <h5 class="reasoning-label">Competitive Positioning</h5>
           ${cp.primaryCompetitors?.length ? `
             <div class="competitors-list">
               ${cp.primaryCompetitors.map(comp => `
@@ -527,7 +544,7 @@ export class SpeakerNotesManager {
       const bp = reasoning.bridgePhrases;
       sections.push(`
         <div class="reasoning-item">
-          <h5 class="reasoning-label">\ud83c\udf09 Bridge Phrases</h5>
+          <h5 class="reasoning-label">Bridge Phrases</h5>
           <div class="bridge-phrases-grid">
             ${[
               { key: 'dontKnowAnswer', label: "Don't Know Answer", css: '' },
@@ -550,7 +567,7 @@ export class SpeakerNotesManager {
 
     return `
       <div class="notes-section notes-section-collapsed reasoning-section">
-        <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">\ud83e\udde0 Presentation Reasoning (CoT)</h4>
+        <h4 class="notes-section-title notes-section-toggle" aria-expanded="false">Presentation Reasoning (CoT)</h4>
         <div class="notes-section-body">
           <p class="reasoning-intro">Chain-of-thought analysis from two-pass generation:</p>
           ${sections.join('')}
